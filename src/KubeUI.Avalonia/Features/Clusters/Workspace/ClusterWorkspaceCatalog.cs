@@ -160,6 +160,6 @@ public sealed class ClusterWorkspaceCatalog : IDisposable
 
         Clusters.Remove(workspace);
         _preferences.Detach(workspace);
-        workspace.Dispose();
+        workspace.DisconnectAfterRemoval();
     }
 }

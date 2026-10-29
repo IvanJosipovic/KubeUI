@@ -46,16 +46,16 @@ public sealed class ClusterNavigationPreferencesTests
         var node = vm.Clusters.Single(x => x.Cluster == workspace);
         node.ExpansionMenuHeader.ShouldBe(Assets.Resources.NavigationView_ContextMenu_Expand);
 
-        await vm.ToggleClusterExpansionCommand.ExecuteAsync(null);
-        await vm.ToggleClusterExpansionCommand.ExecuteAsync(node);
+        await vm.ToggleClusterExpansionCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
+        await vm.ToggleClusterExpansionCommand.ExecuteAsync(node).WaitAsync(TestContext.Current.CancellationToken);
         await TestWait.UntilAsync(() => workspace.Runtime.Connected && node.IsExpanded, 5000, TestContext.Current.CancellationToken, () => Dispatcher.UIThread.RunJobs());
         node.ExpansionMenuHeader.ShouldBe(Assets.Resources.NavigationView_ContextMenu_Collapse);
 
-        await vm.ToggleClusterExpansionCommand.ExecuteAsync(node);
+        await vm.ToggleClusterExpansionCommand.ExecuteAsync(node).WaitAsync(TestContext.Current.CancellationToken);
         node.IsExpanded.ShouldBeFalse();
         node.ExpansionMenuHeader.ShouldBe(Assets.Resources.NavigationView_ContextMenu_Expand);
 
-        await vm.ToggleClusterExpansionCommand.ExecuteAsync(node);
+        await vm.ToggleClusterExpansionCommand.ExecuteAsync(node).WaitAsync(TestContext.Current.CancellationToken);
         node.IsExpanded.ShouldBeTrue();
     }
 }

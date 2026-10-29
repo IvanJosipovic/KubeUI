@@ -36,7 +36,7 @@ public sealed class KubeConfigDiscovery : IKubeConfigDiscovery
         {
             foreach (var file in Directory.EnumerateFiles(directory, "*", SearchOption.TopDirectoryOnly))
             {
-                if (IsKubeConfig(file))
+                if (!Path.GetFileName(file).StartsWith('.') && IsKubeConfig(file))
                 {
                     files.Add(file);
                 }
@@ -57,7 +57,7 @@ public sealed class KubeConfigDiscovery : IKubeConfigDiscovery
         ArgumentNullException.ThrowIfNull(path);
 
         var fileName = Path.GetFileName(path);
-        if (string.IsNullOrEmpty(fileName) || fileName.StartsWith('.'))
+        if (string.IsNullOrEmpty(fileName))
         {
             return false;
         }

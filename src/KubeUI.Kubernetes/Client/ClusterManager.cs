@@ -24,6 +24,10 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
     private readonly IKubeConfigDiscovery _discovery;
     private readonly HashSet<string> _discoveredPaths = new(StringComparer.Ordinal);
     private FileSystemWatcher? _discoveryWatcher;
+    private int _discoveryGeneration;
+    private Task? _discoveryTask;
+    private CancellationTokenSource _discoveryCancellation = new();
+    private bool _disposed;
     private readonly IDictionary<string, FileSystemWatcher> _fileWatchers = new Dictionary<string, FileSystemWatcher>(StringComparer.Ordinal);
     private readonly Lock _syncRoot = new();
 
@@ -85,13 +89,29 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
             }
         }
 
-        if (_settings.KubeConfigAutoDiscoveryEnabled)
+        int generation;
+        CancellationToken discoveryToken;
+        lock (_syncRoot)
         {
-            await DiscoverKubeConfigsAsync(cancellationToken).ConfigureAwait(false);
+            if (!_settings.KubeConfigAutoDiscoveryEnabled || _disposed)
+            {
+                return;
+            }
+            generation = _discoveryGeneration;
+            discoveryToken = _discoveryCancellation.Token;
+        }
+
+        using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, discoveryToken);
+        try
+        {
+            await DiscoverKubeConfigsAsync(generation, linkedCancellation.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (linkedCancellation.IsCancellationRequested)
+        {
         }
     }
 
-    private async Task DiscoverKubeConfigsAsync(CancellationToken cancellationToken)
+    private async Task DiscoverKubeConfigsAsync(int generation, CancellationToken cancellationToken)
     {
         var directory = _kubeConfigPathProvider.DiscoveryDirectory;
         if (string.IsNullOrWhiteSpace(directory))
@@ -99,22 +119,22 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
             return;
         }
 
-        StartDiscoveryWatcher(directory);
+        StartDiscoveryWatcher(directory, generation);
 
-        var files = await Task.Run(() => _discovery.DiscoverFiles(directory), CancellationToken.None)
+        var files = await Task.Run(() => _discovery.DiscoverFiles(directory), cancellationToken)
             .WaitAsync(cancellationToken)
             .ConfigureAwait(false);
 
         foreach (var file in files)
         {
-            if (!TryTrackDiscoveredPath(file))
+            if (!TryTrackDiscoveredPath(file, generation))
             {
                 continue;
             }
 
             try
             {
-                await LoadFromConfigFromPathAsync(file, persist: false, cancellationToken).ConfigureAwait(false);
+                await LoadFromConfigFromPathAsync(file, persist: false, cancellationToken, generation).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -127,7 +147,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
         }
     }
 
-    private async Task LoadFromConfigFromPathAsync(string path, bool persist, CancellationToken cancellationToken)
+    private async Task LoadFromConfigFromPathAsync(string path, bool persist, CancellationToken cancellationToken, int? discoveryGeneration = null)
     {
         ArgumentNullException.ThrowIfNull(path);
 
@@ -150,7 +170,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
                 var config = await Task.Run(() => KubernetesClientConfiguration.LoadKubeConfig(path), CancellationToken.None)
                     .WaitAsync(cancellationToken)
                     .ConfigureAwait(false);
-                AddClustersFromConfig(config);
+                AddClustersFromConfig(config, discoveryGeneration);
                 return;
             }
             catch (IOException ex)
@@ -167,7 +187,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
         LoadFromPath(path, persist: true);
     }
 
-    private void LoadFromPath(string path, bool persist)
+    private void LoadFromPath(string path, bool persist, int? discoveryGeneration = null)
     {
         ArgumentNullException.ThrowIfNull(path);
 
@@ -188,7 +208,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
             try
             {
                 var config = KubernetesClientConfiguration.LoadKubeConfig(path);
-                AddClustersFromConfig(config);
+                AddClustersFromConfig(config, discoveryGeneration);
                 return;
             }
             catch (IOException ex)
@@ -211,11 +231,13 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
         WatchKubeConfig(path);
     }
 
-    private bool TryTrackDiscoveredPath(string path)
+    private bool TryTrackDiscoveredPath(string path, int? generation = null)
     {
         lock (_syncRoot)
         {
-            if (IsPersistedPath(path))
+            if (!_settings.KubeConfigAutoDiscoveryEnabled || _disposed
+                || (generation.HasValue && generation.Value != _discoveryGeneration)
+                || IsPersistedPath(path))
             {
                 return false;
             }
@@ -237,51 +259,72 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
     /// <inheritdoc />
     public void SetKubeConfigAutoDiscovery(bool enabled)
     {
-        if (_settings.KubeConfigAutoDiscoveryEnabled == enabled)
+        int generation;
+        CancellationToken discoveryToken;
+        string[] discovered;
+        lock (_syncRoot)
         {
-            return;
+            if (_disposed || _settings.KubeConfigAutoDiscoveryEnabled == enabled)
+            {
+                return;
+            }
+
+            _settings.KubeConfigAutoDiscoveryEnabled = enabled;
+            generation = ++_discoveryGeneration;
+            _discoveryCancellation.Cancel();
+            _discoveryCancellation.Dispose();
+            _discoveryCancellation = new CancellationTokenSource();
+            discoveryToken = _discoveryCancellation.Token;
+            discovered = enabled ? [] : [.. _discoveredPaths];
+            if (!enabled)
+            {
+                _discoveredPaths.Clear();
+            }
         }
 
-        _settings.KubeConfigAutoDiscoveryEnabled = enabled;
         OnPropertyChanged(nameof(KubeConfigAutoDiscoveryEnabled));
-
         if (enabled)
         {
-            DiscoverKubeConfigs();
+            lock (_syncRoot)
+            {
+                if (generation == _discoveryGeneration && !_disposed)
+                {
+                    _discoveryTask = RunDiscoveryAsync(generation, discoveryToken);
+                }
+            }
             return;
         }
 
         StopDiscoveryWatcher();
-
-        string[] discovered;
-        lock (_syncRoot)
-        {
-            discovered = [.. _discoveredPaths];
-            _discoveredPaths.Clear();
-        }
-
         foreach (var path in discovered)
         {
             RemoveClustersForPath(path);
         }
     }
 
-    private void DiscoverKubeConfigs()
+    internal Task? DiscoveryTask
     {
-        var directory = _kubeConfigPathProvider.DiscoveryDirectory;
-        if (string.IsNullOrWhiteSpace(directory))
+        get
         {
-            return;
-        }
-
-        StartDiscoveryWatcher(directory);
-
-        foreach (var file in _discovery.DiscoverFiles(directory))
-        {
-            if (TryTrackDiscoveredPath(file))
+            lock (_syncRoot)
             {
-                LoadFromPath(file, persist: false);
+                return _discoveryTask;
             }
+        }
+    }
+
+    private async Task RunDiscoveryAsync(int generation, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Run(() => DiscoverKubeConfigsAsync(generation, cancellationToken), cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error discovering kubeconfigs");
         }
     }
 
@@ -317,6 +360,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
         return _settings.KubeConfigAutoDiscoveryEnabled
             && !string.IsNullOrWhiteSpace(directory)
             && string.Equals(Path.GetDirectoryName(path), directory, StringComparison.Ordinal)
+            && !Path.GetFileName(path).StartsWith('.')
             && _discovery.IsKubeConfig(path);
     }
 
@@ -338,7 +382,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
         AddClustersFromConfig(kubeConfig);
     }
 
-    private void AddClustersFromConfig(K8SConfiguration kubeConfig)
+    private void AddClustersFromConfig(K8SConfiguration kubeConfig, int? discoveryGeneration = null)
     {
         foreach (var item in kubeConfig.Contexts)
         {
@@ -347,16 +391,38 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
             cluster.Name = item.Name;
             cluster.KubeConfig = kubeConfig;
             cluster.KubeConfigPath = kubeConfig.FileName;
-            AddCluster(cluster);
+            AddCluster(cluster, discoveryGeneration);
         }
     }
 
     public void AddCluster(IClusterRuntime cluster)
     {
         ArgumentNullException.ThrowIfNull(cluster);
+        AddCluster(cluster, null);
+    }
 
+    private void AddCluster(IClusterRuntime cluster, int? discoveryGeneration)
+    {
         _dispatcher.Invoke(() =>
         {
+            if (discoveryGeneration.HasValue)
+            {
+                lock (_syncRoot)
+                {
+                    if (_disposed || !_settings.KubeConfigAutoDiscoveryEnabled
+                        || discoveryGeneration.Value != _discoveryGeneration
+                        || IsPersistedPath(cluster.KubeConfigPath)
+                        || !_discoveredPaths.Contains(cluster.KubeConfigPath)
+                        || !File.Exists(cluster.KubeConfigPath)
+                        || Clusters.Any(existing => existing.Name == cluster.Name))
+                    {
+                        return;
+                    }
+                    Clusters.Add(cluster);
+                    return;
+                }
+            }
+
             if (!ClusterExists(cluster.Name, cluster.KubeConfigPath))
             {
                 Clusters.Add(cluster);
@@ -548,7 +614,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
         LoadFromConfigFromPath(path);
     }
 
-    private void StartDiscoveryWatcher(string directory)
+    private void StartDiscoveryWatcher(string directory, int generation)
     {
         if (!Directory.Exists(directory))
         {
@@ -557,22 +623,30 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
         lock (_syncRoot)
         {
-            if (_discoveryWatcher is not null)
+            if (_discoveryWatcher is not null || _disposed || !_settings.KubeConfigAutoDiscoveryEnabled
+                || generation != _discoveryGeneration)
             {
                 return;
             }
 
-            _discoveryWatcher = new FileSystemWatcher
+            try
             {
-                Path = directory,
-                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName,
-                IncludeSubdirectories = false,
-                EnableRaisingEvents = true,
-            };
-
-            _discoveryWatcher.Changed += DiscoveryWatcher_Changed;
-            _discoveryWatcher.Created += DiscoveryWatcher_Changed;
-            _discoveryWatcher.Renamed += DiscoveryWatcher_Changed;
+                _discoveryWatcher = new FileSystemWatcher();
+                _discoveryWatcher.Path = directory;
+                _discoveryWatcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName;
+                _discoveryWatcher.IncludeSubdirectories = false;
+                _discoveryWatcher.Changed += DiscoveryWatcher_Changed;
+                _discoveryWatcher.Created += DiscoveryWatcher_Changed;
+                _discoveryWatcher.Deleted += DiscoveryWatcher_Deleted;
+                _discoveryWatcher.Renamed += DiscoveryWatcher_Changed;
+                _discoveryWatcher.EnableRaisingEvents = true;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                _discoveryWatcher?.Dispose();
+                _discoveryWatcher = null;
+                _logger.LogWarning(ex, "Unable to watch kubeconfig directory {Directory}", directory);
+            }
         }
     }
 
@@ -592,30 +666,63 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
         watcher.Changed -= DiscoveryWatcher_Changed;
         watcher.Created -= DiscoveryWatcher_Changed;
+        watcher.Deleted -= DiscoveryWatcher_Deleted;
         watcher.Renamed -= DiscoveryWatcher_Changed;
         watcher.Dispose();
+    }
+
+    private void DiscoveryWatcher_Deleted(object sender, FileSystemEventArgs e)
+    {
+        int generation;
+        lock (_syncRoot)
+        {
+            if (_disposed || !_settings.KubeConfigAutoDiscoveryEnabled || IsPersistedPath(e.FullPath))
+            {
+                return;
+            }
+            generation = _discoveryGeneration;
+        }
+
+        _dispatcher.Invoke(() =>
+        {
+            lock (_syncRoot)
+            {
+                if (_disposed || !_settings.KubeConfigAutoDiscoveryEnabled
+                    || generation != _discoveryGeneration || IsPersistedPath(e.FullPath)
+                    || File.Exists(e.FullPath) || !_discoveredPaths.Remove(e.FullPath))
+                {
+                    return;
+                }
+            }
+
+            foreach (var cluster in Clusters.Where(x => string.Equals(x.KubeConfigPath, e.FullPath, StringComparison.Ordinal)).ToArray())
+            {
+                Clusters.Remove(cluster);
+            }
+        });
     }
 
     private void DiscoveryWatcher_Changed(object sender, FileSystemEventArgs e)
     {
         try
         {
-            if (!_settings.KubeConfigAutoDiscoveryEnabled || !_discovery.IsKubeConfig(e.FullPath))
+            int generation;
+            lock (_syncRoot)
+            {
+                if (_disposed || !_settings.KubeConfigAutoDiscoveryEnabled)
+                {
+                    return;
+                }
+                generation = _discoveryGeneration;
+            }
+
+            if (Path.GetFileName(e.FullPath).StartsWith('.') || !_discovery.IsKubeConfig(e.FullPath)
+                || !TryTrackDiscoveredPath(e.FullPath, generation))
             {
                 return;
             }
 
-            lock (_syncRoot)
-            {
-                if (IsPersistedPath(e.FullPath))
-                {
-                    return;
-                }
-
-                _discoveredPaths.Add(e.FullPath);
-            }
-
-            LoadFromPath(e.FullPath, persist: false);
+            LoadFromPath(e.FullPath, persist: false, generation);
         }
         catch (Exception ex)
         {
@@ -664,6 +771,17 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
     public void Dispose()
     {
+        lock (_syncRoot)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+            _disposed = true;
+            _discoveryGeneration++;
+            _discoveryCancellation.Cancel();
+            _discoveryCancellation.Dispose();
+        }
         StopDiscoveryWatcher();
 
         foreach (var watcher in _fileWatchers.Values)

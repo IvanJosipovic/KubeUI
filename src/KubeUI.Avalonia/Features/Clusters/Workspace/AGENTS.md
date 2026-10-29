@@ -22,6 +22,8 @@
 - Namespace-set changes discard only namespace-scoped authorization decisions; retain cluster-wide decisions so an added or removed namespace does not trigger redundant access reviews for globally allowed resources.
 - Start RBAC watchers only for kinds whose resource configuration has both list and watch access. Without those rights, permissions remain best-effort until another trigger fires.
 - Events exist so downstream UI can update incrementally.
+- Disabling a workspace waits for in-flight connection initialization before disconnecting; a disabled workspace must not initialize permissions or seed resources after connecting.
+- Removing a workspace disconnects its runtime, including a connection already in progress, without changing stored cluster preferences.
 - `Alias`/`DisplayName`/`IsEnabled` are user preferences applied and persisted by `ClusterWorkspacePreferences`, attached by `ClusterWorkspaceCatalog` before the workspace is added to the catalog.
 - Raise `ResourceConfigProcessed` per config as soon as its permission evaluation completes; do not batch at the source, so ready resources are not blocked by unrelated slow permission checks.
 - Custom resource configs are dropped on disconnect and re-registered when the CRD informer lists resources again.

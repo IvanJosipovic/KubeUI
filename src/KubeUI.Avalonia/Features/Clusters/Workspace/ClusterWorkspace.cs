@@ -88,7 +88,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
     partial void OnIsEnabledChanged(bool value)
     {
-        if (!value && Runtime.Connected)
+        if (!value)
         {
             _ = DisconnectDisabledAsync();
         }
@@ -98,7 +98,19 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     {
         try
         {
-            await Disconnect().ConfigureAwait(false);
+            Task? connectTask;
+            lock (_connectLock)
+            {
+                connectTask = _connectTask;
+            }
+            if (connectTask is not null)
+            {
+                await connectTask.ConfigureAwait(false);
+            }
+            if (!IsEnabled && Runtime.Connected)
+            {
+                await Disconnect().ConfigureAwait(false);
+            }
         }
         catch (Exception ex)
         {
@@ -131,6 +143,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     {
         lock (_connectLock)
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
             if (_connectTask is { IsCompleted: false })
             {
                 return _connectTask;
@@ -150,6 +163,12 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             await Runtime.Connect().ConfigureAwait(false);
             if (!Runtime.Connected)
             {
+                return;
+            }
+
+            if (!IsEnabled || _disposed)
+            {
+                await Disconnect().ConfigureAwait(false);
                 return;
             }
 
@@ -407,12 +426,15 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
     public void Dispose()
     {
-        if (_disposed)
+        lock (_connectLock)
         {
-            return;
+            if (_disposed)
+            {
+                return;
+            }
+            _disposed = true;
         }
 
-        _disposed = true;
         Runtime.OnChange -= OnRuntimeChange;
         if (Runtime.Permissions is { } permissions)
         {
@@ -432,6 +454,38 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
         _disposeCancellation.Cancel();
         _disposeCancellation.Dispose();
+    }
+
+    internal void DisconnectAfterRemoval()
+    {
+        Dispose();
+        _ = DisconnectAfterRemovalAsync();
+    }
+
+    private async Task DisconnectAfterRemovalAsync()
+    {
+        try
+        {
+            Task? connectTask;
+            lock (_connectLock)
+            {
+                connectTask = _connectTask;
+            }
+
+            if (connectTask is not null)
+            {
+                await connectTask.ConfigureAwait(false);
+            }
+
+            if (Runtime.Connected)
+            {
+                await Disconnect().ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error disconnecting removed cluster {ClusterName}", Runtime.Name);
+        }
     }
 
     private void EnsureBuiltInResourceConfigs()

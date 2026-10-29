@@ -8,6 +8,53 @@ namespace KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
 public sealed class ClusterWorkspacePreferencesTests
 {
     [AvaloniaFact]
+    public async Task removing_connected_cluster_disconnects_runtime()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        var runtime = workspace.Runtime;
+        runtime.Connected.ShouldBeTrue();
+        Application.Current.GetTestServices().GetRequiredService<ClusterManager>().Clusters.Remove(runtime);
+
+        await TestWait.UntilAsync(() => !runtime.Connected, 5000, TestContext.Current.CancellationToken,
+            () => Dispatcher.UIThread.RunJobs());
+    }
+
+    [AvaloniaFact]
+    public async Task removing_cluster_during_connection_disconnects_runtime()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        using var releaseConnection = new ManualResetEventSlim();
+        TaskCompletionSource started = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        var runtime = workspace.Runtime;
+        var notifications = (System.ComponentModel.INotifyPropertyChanged)runtime;
+        System.ComponentModel.PropertyChangedEventHandler handler = (_, args) =>
+        {
+            if (args.PropertyName == nameof(IClusterRuntime.Status) && runtime.Status == ClusterStatus.Connecting)
+            {
+                started.TrySetResult();
+                releaseConnection.Wait(TestContext.Current.CancellationToken);
+            }
+        };
+        notifications.PropertyChanged += handler;
+        try
+        {
+            var connect = workspace.Connect();
+            await started.Task.WaitAsync(TestContext.Current.CancellationToken);
+            Application.Current.GetTestServices().GetRequiredService<ClusterManager>().Clusters.Remove(runtime);
+            Dispatcher.UIThread.RunJobs();
+            releaseConnection.Set();
+            await connect.WaitAsync(TestContext.Current.CancellationToken);
+            await TestWait.UntilAsync(() => !runtime.Connected, 5000, TestContext.Current.CancellationToken,
+                () => Dispatcher.UIThread.RunJobs());
+        }
+        finally
+        {
+            releaseConnection.Set();
+            notifications.PropertyChanged -= handler;
+        }
+    }
+
+    [AvaloniaFact]
     public void attach_applies_persisted_alias_and_enabled_state()
     {
         var services = Application.Current.GetTestServices();
@@ -74,11 +121,47 @@ public sealed class ClusterWorkspacePreferencesTests
     }
 
     [AvaloniaFact]
+    public async Task disabling_during_connection_prevents_workspace_initialization()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        using var releaseConnection = new ManualResetEventSlim();
+        TaskCompletionSource started = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var notifications = (System.ComponentModel.INotifyPropertyChanged)workspace.Runtime;
+        System.ComponentModel.PropertyChangedEventHandler handler = (_, args) =>
+        {
+            if (args.PropertyName == nameof(IClusterRuntime.Status)
+                && workspace.Runtime.Status == ClusterStatus.Connecting)
+            {
+                started.TrySetResult();
+                releaseConnection.Wait(cancellationToken);
+            }
+        };
+        notifications.PropertyChanged += handler;
+        try
+        {
+            var connectTask = workspace.Connect();
+            await started.Task.WaitAsync(TestContext.Current.CancellationToken);
+            workspace.IsEnabled = false;
+            releaseConnection.Set();
+            await connectTask.WaitAsync(TestContext.Current.CancellationToken);
+
+            workspace.Runtime.Connected.ShouldBeFalse();
+            workspace.GetResourceConfigs().ShouldAllBe(config => !config.PermissionsLoaded);
+        }
+        finally
+        {
+            releaseConnection.Set();
+            notifications.PropertyChanged -= handler;
+        }
+    }
+
+    [AvaloniaFact]
     public async Task disabling_a_connected_workspace_disconnects_it()
     {
         var services = Application.Current.GetTestServices();
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        await workspace.Connect();
+        await workspace.Connect().WaitAsync(TestContext.Current.CancellationToken);
         await TestWait.UntilAsync(() => workspace.Runtime.Connected, 5000, TestContext.Current.CancellationToken, () => Dispatcher.UIThread.RunJobs());
 
         workspace.IsEnabled = false;

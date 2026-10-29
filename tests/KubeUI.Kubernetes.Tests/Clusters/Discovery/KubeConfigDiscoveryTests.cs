@@ -51,6 +51,17 @@ public class KubeConfigDiscoveryTests
     }
 
     [Fact]
+    public void IsKubeConfig_accepts_a_manually_selected_hidden_file()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = Write(directory.Path, ".kubeconfig", ValidKubeConfig);
+        var discovery = new KubeConfigDiscovery(NullLogger<KubeConfigDiscovery>.Instance);
+
+        discovery.IsKubeConfig(path).ShouldBeTrue();
+        discovery.DiscoverFiles(directory.Path).ShouldBeEmpty();
+    }
+
+    [Fact]
     public void IsKubeConfig_returns_false_for_missing_file()
     {
         var discovery = new KubeConfigDiscovery(NullLogger<KubeConfigDiscovery>.Instance);
