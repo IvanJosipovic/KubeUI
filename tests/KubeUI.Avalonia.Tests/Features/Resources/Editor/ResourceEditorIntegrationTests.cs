@@ -249,7 +249,7 @@ public sealed class ResourceEditorIntegrationTests
         using var vm = Application.Current.GetRequiredTestService<ResourceEditorViewModel>();
         vm.Initialize(cluster, pod);
         var previousEditorRoot = vm.EditorRoot;
-        var updatedPod = Utilities.CloneObject(pod);
+        var updatedPod = Utilities.CloneObject(pod, Application.Current.GetRequiredTestService<KubeUI.Kubernetes.Serialization.IKubernetesJsonSerializer>());
         updatedPod.Metadata.Labels = new Dictionary<string, string> { ["source"] = "watch" };
         await cluster.Runtime.AddOrUpdateResource(updatedPod).WaitAsync(TestContext.Current.CancellationToken);
 

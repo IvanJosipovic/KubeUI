@@ -11,6 +11,7 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
     public const string SectionValidationPropertyName = "Section";
 
     private readonly ResourceEditorSchemaNode _schema;
+    private readonly IKubernetesYamlSerializer _yamlSerializer;
     private readonly Action<JsonNode?> _replace;
     private readonly Action _changed;
     private readonly Action<ResourceEditorNodeViewModel>? _remove;
@@ -34,9 +35,11 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
         Action<JsonNode?> replace,
         Action changed,
         Action<ResourceEditorNodeViewModel>? remove = null,
-        ResourceEditorNodeViewModel? parent = null)
+        ResourceEditorNodeViewModel? parent = null,
+        IKubernetesYamlSerializer? yamlSerializer = null)
     {
         _schema = schema;
+        _yamlSerializer = parent?._yamlSerializer ?? yamlSerializer!;
         _value = value;
         _replace = replace;
         _changed = changed;
@@ -94,7 +97,7 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
                 return;
             try
             {
-                var parsed = KubernetesYaml.Deserialize<JsonNode>(value);
+                var parsed = _yamlSerializer.Deserialize<JsonNode>(value);
                 if (parsed is null)
                 {
                     SetLocalValidation(nameof(YamlValue), "Enter a YAML value.");
@@ -236,13 +239,15 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
     }
 
     public static ResourceEditorNodeViewModel Create(
+        IKubernetesYamlSerializer yamlSerializer,
         ResourceEditorSchemaNode schema,
         JsonNode value,
         Action? changed = null)
     {
         ArgumentNullException.ThrowIfNull(schema);
         ArgumentNullException.ThrowIfNull(value);
-        return new(schema, value, string.Empty, schema.Name, false, _ => { }, changed ?? NoOp);
+        ArgumentNullException.ThrowIfNull(yamlSerializer);
+        return new(schema, value, string.Empty, schema.Name, false, _ => { }, changed ?? NoOp, yamlSerializer: yamlSerializer);
     }
 
     [RelayCommand]
@@ -668,8 +673,8 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
         {
             try
             {
-                var parsed = KubernetesYaml.Deserialize<JsonNode>(text);
-                _yamlValue = parsed is null ? text : KubernetesYaml.Serialize(parsed);
+                var parsed = _yamlSerializer.Deserialize<JsonNode>(text);
+                _yamlValue = parsed is null ? text : _yamlSerializer.Serialize(parsed);
                 return;
             }
             catch (YamlDotNet.Core.YamlException)
@@ -677,7 +682,7 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
                 try
                 {
                     var parsed = JsonNode.Parse(text);
-                    _yamlValue = parsed is null ? text : KubernetesYaml.Serialize(parsed);
+                    _yamlValue = parsed is null ? text : _yamlSerializer.Serialize(parsed);
                     return;
                 }
                 catch (JsonException)
@@ -688,7 +693,7 @@ public sealed partial class ResourceEditorNodeViewModel : ObservableObject, INot
             }
         }
 
-        _yamlValue = value is null ? string.Empty : KubernetesYaml.Serialize(value);
+        _yamlValue = value is null ? string.Empty : _yamlSerializer.Serialize(value);
     }
 
     private static string JoinPath(string path, string name)

@@ -1,3 +1,4 @@
+using KubeUI.Kubernetes.Serialization;
 using System.Globalization;
 using System.Net;
 using System.Text;
@@ -18,6 +19,7 @@ namespace KubeUI.Avalonia.Features.Resources.Editor;
 public sealed partial class ResourceEditorViewModel : ViewModelBase, IDisposable
 {
     private readonly ILogger<ResourceEditorViewModel> _logger;
+    private readonly IKubernetesYamlSerializer _yamlSerializer;
     private GroupApiVersionKind _kind;
 
     [ObservableProperty] public partial ClusterWorkspace? Cluster { get; set; }
@@ -40,9 +42,10 @@ public sealed partial class ResourceEditorViewModel : ViewModelBase, IDisposable
         ? FAInfoBarSeverity.Success
         : FAInfoBarSeverity.Error;
 
-    public ResourceEditorViewModel(ILogger<ResourceEditorViewModel> logger)
+    public ResourceEditorViewModel(ILogger<ResourceEditorViewModel> logger, IKubernetesYamlSerializer yamlSerializer)
     {
         _logger = logger;
+        _yamlSerializer = yamlSerializer;
         Title = "Resource Editor";
         Id = nameof(ResourceEditorViewModel);
     }
@@ -325,7 +328,7 @@ public sealed partial class ResourceEditorViewModel : ViewModelBase, IDisposable
             EditorRoot = null;
             return;
         }
-        EditorRoot = ResourceEditorNodeViewModel.Create(Schema, Document.Root, () =>
+        EditorRoot = ResourceEditorNodeViewModel.Create(_yamlSerializer, Schema, Document.Root, () =>
         {
             Validate();
             UpdateImmediateValidationResult();

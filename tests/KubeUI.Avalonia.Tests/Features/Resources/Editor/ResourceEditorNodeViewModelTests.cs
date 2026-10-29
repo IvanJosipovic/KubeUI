@@ -1,3 +1,6 @@
+using KubeUI.Kubernetes;
+using KubeUI.Kubernetes.Serialization;
+using Microsoft.Extensions.DependencyInjection;
 using System.Text.Json.Nodes;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Editor;
@@ -11,6 +14,8 @@ public sealed class ResourceEditorNodeViewModelTests
     [Fact]
     public void Create_BuildsNestedObjectArrayAndMapHierarchy()
     {
+        using var services = new ServiceCollection().AddKubeUIKubernetesServices(false, false).BuildServiceProvider();
+        var yamlSerializer = services.GetRequiredService<IKubernetesYamlSerializer>();
         var document = ResourceEditorDocument.Parse("""
             {
               "spec": {
@@ -21,7 +26,7 @@ public sealed class ResourceEditorNodeViewModelTests
             }
             """);
 
-        var root = ResourceEditorNodeViewModel.Create(CreateSchema(), document.Root);
+        var root = ResourceEditorNodeViewModel.Create(yamlSerializer, CreateSchema(), document.Root);
 
         var spec = Assert.Single(root.Children);
         Assert.Equal(ResourceEditorValueKind.ObjectKind, spec.Kind);
@@ -42,10 +47,12 @@ public sealed class ResourceEditorNodeViewModelTests
     [Fact]
     public void TypedScalarEdits_UpdateJsonAndExposeValidation()
     {
+        using var services = new ServiceCollection().AddKubeUIKubernetesServices(false, false).BuildServiceProvider();
+        var yamlSerializer = services.GetRequiredService<IKubernetesYamlSerializer>();
         var document = ResourceEditorDocument.Parse("""
             { "spec": { "replicas": 2, "containers": [], "labels": {} } }
             """);
-        var root = ResourceEditorNodeViewModel.Create(CreateSchema(), document.Root);
+        var root = ResourceEditorNodeViewModel.Create(yamlSerializer, CreateSchema(), document.Root);
         var spec = Assert.Single(root.Children);
         var replicas = Assert.Single(spec.Children, child => child.Name == "replicas");
 
@@ -63,13 +70,15 @@ public sealed class ResourceEditorNodeViewModelTests
     [Fact]
     public void EnumAndBooleanEdits_UpdateTypedJsonValues()
     {
+        using var services = new ServiceCollection().AddKubeUIKubernetesServices(false, false).BuildServiceProvider();
+        var yamlSerializer = services.GetRequiredService<IKubernetesYamlSerializer>();
         var schema = ObjectSchema("root", new Dictionary<string, ResourceEditorSchemaNode>
         {
             ["mode"] = ScalarSchema("mode", ResourceEditorValueKind.EnumKind, enumValues: ["Active", "Passive"]),
             ["enabled"] = ScalarSchema("enabled", ResourceEditorValueKind.BooleanKind),
         });
         var document = ResourceEditorDocument.Parse("{\"mode\":\"Active\",\"enabled\":true}");
-        var root = ResourceEditorNodeViewModel.Create(schema, document.Root);
+        var root = ResourceEditorNodeViewModel.Create(yamlSerializer, schema, document.Root);
 
         Assert.Single(root.Children, child => child.Name == "mode").SelectedEnum = "Passive";
         Assert.Single(root.Children, child => child.Name == "enabled").BooleanValue = false;
@@ -84,11 +93,13 @@ public sealed class ResourceEditorNodeViewModelTests
     [Fact]
     public void RequiredEnum_DoesNotExposeUnsetOption()
     {
+        using var services = new ServiceCollection().AddKubeUIKubernetesServices(false, false).BuildServiceProvider();
+        var yamlSerializer = services.GetRequiredService<IKubernetesYamlSerializer>();
         var schema = ObjectSchema("root", new Dictionary<string, ResourceEditorSchemaNode>
         {
             ["mode"] = ScalarSchema("mode", ResourceEditorValueKind.EnumKind, enumValues: ["Active", "Passive"]),
         }, required: new HashSet<string>(["mode"], StringComparer.Ordinal));
-        var root = ResourceEditorNodeViewModel.Create(schema, JsonNode.Parse("{\"mode\":\"Active\"}")!);
+        var root = ResourceEditorNodeViewModel.Create(yamlSerializer, schema, JsonNode.Parse("{\"mode\":\"Active\"}")!);
 
         var mode = Assert.Single(root.Children);
         Assert.DoesNotContain(mode.EnumOptions, option => option.Value is null);
@@ -97,10 +108,12 @@ public sealed class ResourceEditorNodeViewModelTests
     [Fact]
     public void Array_AddAndRemoveItem_MutatesCollectionAndRenumbersChildren()
     {
+        using var services = new ServiceCollection().AddKubeUIKubernetesServices(false, false).BuildServiceProvider();
+        var yamlSerializer = services.GetRequiredService<IKubernetesYamlSerializer>();
         var document = ResourceEditorDocument.Parse("""
             { "spec": { "replicas": 1, "containers": [], "labels": {} } }
             """);
-        var root = ResourceEditorNodeViewModel.Create(CreateSchema(), document.Root);
+        var root = ResourceEditorNodeViewModel.Create(yamlSerializer, CreateSchema(), document.Root);
         var containers = Assert.Single(Assert.Single(root.Children).Children, child => child.Name == "containers");
 
         containers.AddItem();
@@ -120,10 +133,12 @@ public sealed class ResourceEditorNodeViewModelTests
     [Fact]
     public void Map_AddEditAndRemoveEntry_MutatesObject()
     {
+        using var services = new ServiceCollection().AddKubeUIKubernetesServices(false, false).BuildServiceProvider();
+        var yamlSerializer = services.GetRequiredService<IKubernetesYamlSerializer>();
         var document = ResourceEditorDocument.Parse("""
             { "spec": { "replicas": 1, "containers": [], "labels": {} } }
             """);
-        var root = ResourceEditorNodeViewModel.Create(CreateSchema(), document.Root);
+        var root = ResourceEditorNodeViewModel.Create(yamlSerializer, CreateSchema(), document.Root);
         var labels = Assert.Single(Assert.Single(root.Children).Children, child => child.Name == "labels");
 
         Assert.True(labels.TryAddMapEntry("team"));
@@ -142,6 +157,8 @@ public sealed class ResourceEditorNodeViewModelTests
     [Fact]
     public void Create_ExposesDescriptionsAndRequiredMarkers()
     {
+        using var services = new ServiceCollection().AddKubeUIKubernetesServices(false, false).BuildServiceProvider();
+        var yamlSerializer = services.GetRequiredService<IKubernetesYamlSerializer>();
         var schema = ObjectSchema(
             "root",
             new Dictionary<string, ResourceEditorSchemaNode>
@@ -149,7 +166,7 @@ public sealed class ResourceEditorNodeViewModelTests
                 ["spec"] = ScalarSchema("spec", ResourceEditorValueKind.StringKind, description: "Desired state"),
             },
             required: new HashSet<string>(["spec"], StringComparer.Ordinal));
-        var root = ResourceEditorNodeViewModel.Create(schema, JsonNode.Parse("{\"spec\":\"ready\"}")!);
+        var root = ResourceEditorNodeViewModel.Create(yamlSerializer, schema, JsonNode.Parse("{\"spec\":\"ready\"}")!);
 
         var spec = Assert.Single(root.Children);
         Assert.True(spec.IsRequired);
@@ -160,13 +177,15 @@ public sealed class ResourceEditorNodeViewModelTests
     [Fact]
     public void ApiVersionAndKind_AreReadOnly()
     {
+        using var services = new ServiceCollection().AddKubeUIKubernetesServices(false, false).BuildServiceProvider();
+        var yamlSerializer = services.GetRequiredService<IKubernetesYamlSerializer>();
         var schema = ObjectSchema("root", new Dictionary<string, ResourceEditorSchemaNode>
         {
             ["apiVersion"] = ScalarSchema("apiVersion", ResourceEditorValueKind.StringKind),
             ["kind"] = ScalarSchema("kind", ResourceEditorValueKind.StringKind),
         });
         var document = ResourceEditorDocument.Parse("{\"apiVersion\":\"v1\",\"kind\":\"Pod\"}");
-        var root = ResourceEditorNodeViewModel.Create(schema, document.Root);
+        var root = ResourceEditorNodeViewModel.Create(yamlSerializer, schema, document.Root);
         var apiVersion = Assert.Single(root.Children, child => child.Name == "apiVersion");
         var kind = Assert.Single(root.Children, child => child.Name == "kind");
 
@@ -182,6 +201,8 @@ public sealed class ResourceEditorNodeViewModelTests
     [Fact]
     public void StatusSubtree_IsReadOnlyIncludingNestedCollections()
     {
+        using var services = new ServiceCollection().AddKubeUIKubernetesServices(false, false).BuildServiceProvider();
+        var yamlSerializer = services.GetRequiredService<IKubernetesYamlSerializer>();
         var schema = ObjectSchema("root", new Dictionary<string, ResourceEditorSchemaNode>
         {
             ["status"] = ObjectSchema("status", new Dictionary<string, ResourceEditorSchemaNode>
@@ -192,7 +213,7 @@ public sealed class ResourceEditorNodeViewModelTests
             }),
         });
         var document = ResourceEditorDocument.Parse("{\"status\":{\"phase\":\"Running\",\"conditions\":[]}}");
-        var root = ResourceEditorNodeViewModel.Create(schema, document.Root);
+        var root = ResourceEditorNodeViewModel.Create(yamlSerializer, schema, document.Root);
         var status = Assert.Single(root.Children);
         var phase = Assert.Single(status.Children, child => child.Name == "phase");
         var conditions = Assert.Single(status.Children, child => child.Name == "conditions");
@@ -211,12 +232,14 @@ public sealed class ResourceEditorNodeViewModelTests
     [Fact]
     public void SchemaMarkedYamlString_UsesYamlEditorValueAndWritesBackAsJsonString()
     {
+        using var services = new ServiceCollection().AddKubeUIKubernetesServices(false, false).BuildServiceProvider();
+        var yamlSerializer = services.GetRequiredService<IKubernetesYamlSerializer>();
         var schema = ObjectSchema("root", new Dictionary<string, ResourceEditorSchemaNode>
         {
             ["values"] = ScalarSchema("values", ResourceEditorValueKind.StringKind, isYamlEditor: true),
         });
         var document = ResourceEditorDocument.Parse("{\"values\":\"{\\\"allow\\\":{\\\"enabled\\\":false}}\"}");
-        var root = ResourceEditorNodeViewModel.Create(schema, document.Root);
+        var root = ResourceEditorNodeViewModel.Create(yamlSerializer, schema, document.Root);
         var values = Assert.Single(root.Children);
 
         Assert.True(values.IsYamlText);
@@ -230,12 +253,14 @@ public sealed class ResourceEditorNodeViewModelTests
     [Fact]
     public void YamlScalarString_WritesBackPlainTextWithoutJsonQuoting()
     {
+        using var services = new ServiceCollection().AddKubeUIKubernetesServices(false, false).BuildServiceProvider();
+        var yamlSerializer = services.GetRequiredService<IKubernetesYamlSerializer>();
         var schema = ObjectSchema("root", new Dictionary<string, ResourceEditorSchemaNode>
         {
             ["values"] = ScalarSchema("values", ResourceEditorValueKind.StringKind, isYamlEditor: true),
         });
         var document = ResourceEditorDocument.Parse("{\"values\":\"hello\"}");
-        var values = Assert.Single(ResourceEditorNodeViewModel.Create(schema, document.Root).Children);
+        var values = Assert.Single(ResourceEditorNodeViewModel.Create(yamlSerializer, schema, document.Root).Children);
 
         Assert.True(values.IsYamlText);
         Assert.Equal("hello", values.YamlValue);
@@ -249,12 +274,14 @@ public sealed class ResourceEditorNodeViewModelTests
     [Fact]
     public void YamlScalarString_DoesNotQuoteTheValueWhenOnlyWhitespaceChanges()
     {
+        using var services = new ServiceCollection().AddKubeUIKubernetesServices(false, false).BuildServiceProvider();
+        var yamlSerializer = services.GetRequiredService<IKubernetesYamlSerializer>();
         var schema = ObjectSchema("root", new Dictionary<string, ResourceEditorSchemaNode>
         {
             ["values"] = ScalarSchema("values", ResourceEditorValueKind.StringKind, isYamlEditor: true),
         });
         var document = ResourceEditorDocument.Parse("{\"values\":\"hello\"}");
-        var values = Assert.Single(ResourceEditorNodeViewModel.Create(schema, document.Root).Children);
+        var values = Assert.Single(ResourceEditorNodeViewModel.Create(yamlSerializer, schema, document.Root).Children);
 
         values.YamlValue = "hello ";
 
@@ -264,8 +291,10 @@ public sealed class ResourceEditorNodeViewModelTests
     [Fact]
     public void ClearingSection_DetachesChildrenSoEditsCannotResurrectDeletedData()
     {
+        using var services = new ServiceCollection().AddKubeUIKubernetesServices(false, false).BuildServiceProvider();
+        var yamlSerializer = services.GetRequiredService<IKubernetesYamlSerializer>();
         var document = ResourceEditorDocument.Parse("{\"spec\":{\"replicas\":2}}");
-        var root = ResourceEditorNodeViewModel.Create(CreateSchema(), document.Root);
+        var root = ResourceEditorNodeViewModel.Create(yamlSerializer, CreateSchema(), document.Root);
         var spec = Assert.Single(root.Children, child => child.Name == "spec");
         var replicas = Assert.Single(spec.Children, child => child.Name == "replicas");
 
@@ -282,8 +311,10 @@ public sealed class ResourceEditorNodeViewModelTests
     [Fact]
     public void ClearingSection_RemovesTheClearedChildFromTheTree()
     {
+        using var services = new ServiceCollection().AddKubeUIKubernetesServices(false, false).BuildServiceProvider();
+        var yamlSerializer = services.GetRequiredService<IKubernetesYamlSerializer>();
         var document = ResourceEditorDocument.Parse("{\"spec\":{\"replicas\":2}}");
-        var root = ResourceEditorNodeViewModel.Create(CreateSchema(), document.Root);
+        var root = ResourceEditorNodeViewModel.Create(yamlSerializer, CreateSchema(), document.Root);
         var spec = Assert.Single(root.Children, child => child.Name == "spec");
 
         spec.ClearSectionCommand.Execute(null);
@@ -294,12 +325,14 @@ public sealed class ResourceEditorNodeViewModelTests
     [Fact]
     public void JsonLookingStringWithoutYamlSchema_UsesNormalStringEditor()
     {
+        using var services = new ServiceCollection().AddKubeUIKubernetesServices(false, false).BuildServiceProvider();
+        var yamlSerializer = services.GetRequiredService<IKubernetesYamlSerializer>();
         var schema = ObjectSchema("root", new Dictionary<string, ResourceEditorSchemaNode>
         {
             ["values"] = ScalarSchema("values", ResourceEditorValueKind.StringKind),
         });
         var document = ResourceEditorDocument.Parse("{\"values\":\"{\\\"enabled\\\":true}\"}");
-        var values = Assert.Single(ResourceEditorNodeViewModel.Create(schema, document.Root).Children);
+        var values = Assert.Single(ResourceEditorNodeViewModel.Create(yamlSerializer, schema, document.Root).Children);
 
         Assert.False(values.IsYamlText);
         Assert.Equal("{\"enabled\":true}", values.StringValue);

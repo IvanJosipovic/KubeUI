@@ -1,3 +1,6 @@
+using KubeUI.Kubernetes;
+using KubeUI.Kubernetes.Serialization;
+using Microsoft.Extensions.DependencyInjection;
 using System.Text.Json.Nodes;
 using Avalonia.Automation;
 using Avalonia.Controls;
@@ -22,7 +25,9 @@ public sealed class ResourceEditorNodeControlTests
     [AvaloniaFact]
     public void Recursive_editor_renders_collapsible_sections_and_typed_editors()
     {
-        var root = ResourceEditorNodeViewModel.Create(CreateSchema(), JsonNode.Parse("""
+        using var services = new ServiceCollection().AddKubeUIKubernetesServices(false, false).BuildServiceProvider();
+        var yamlSerializer = services.GetRequiredService<IKubernetesYamlSerializer>();
+        var root = ResourceEditorNodeViewModel.Create(yamlSerializer, CreateSchema(), JsonNode.Parse("""
             {
               "spec": {
                 "replicas": 2,
@@ -66,7 +71,9 @@ public sealed class ResourceEditorNodeControlTests
     [AvaloniaFact]
     public void Collection_commands_refresh_the_rendered_recursive_tree()
     {
-        var root = ResourceEditorNodeViewModel.Create(CreateSchema(), JsonNode.Parse("""
+        using var services = new ServiceCollection().AddKubeUIKubernetesServices(false, false).BuildServiceProvider();
+        var yamlSerializer = services.GetRequiredService<IKubernetesYamlSerializer>();
+        var root = ResourceEditorNodeViewModel.Create(yamlSerializer, CreateSchema(), JsonNode.Parse("""
             { "spec": { "replicas": 1, "enabled": true, "mode": "Active", "containers": [], "labels": {} } }
             """)!);
         var control = new ResourceEditorNodeControl(root);
@@ -91,8 +98,10 @@ public sealed class ResourceEditorNodeControlTests
     [AvaloniaFact]
     public void Clearing_section_sets_object_to_null_and_collapses_until_reopened()
     {
+        using var services = new ServiceCollection().AddKubeUIKubernetesServices(false, false).BuildServiceProvider();
+        var yamlSerializer = services.GetRequiredService<IKubernetesYamlSerializer>();
         var document = JsonNode.Parse("""{"spec":{"replicas":2,"containers":[],"labels":{}}}""")!;
-        var root = ResourceEditorNodeViewModel.Create(CreateSchema(), document);
+        var root = ResourceEditorNodeViewModel.Create(yamlSerializer, CreateSchema(), document);
         var control = new ResourceEditorNodeControl(root);
         using var window = Application.Current.CreateTestWindow(900, 700, control);
         window.Show();
@@ -130,11 +139,13 @@ public sealed class ResourceEditorNodeControlTests
     [AvaloniaFact]
     public void Read_only_fields_show_an_indicator_while_remaining_selectable()
     {
+        using var services = new ServiceCollection().AddKubeUIKubernetesServices(false, false).BuildServiceProvider();
+        var yamlSerializer = services.GetRequiredService<IKubernetesYamlSerializer>();
         var schema = ObjectSchema("root", new Dictionary<string, ResourceEditorSchemaNode>
         {
             ["apiVersion"] = ScalarSchema("apiVersion", ResourceEditorValueKind.StringKind),
         });
-        var root = ResourceEditorNodeViewModel.Create(schema, JsonNode.Parse("{\"apiVersion\":\"v1\"}")!);
+        var root = ResourceEditorNodeViewModel.Create(yamlSerializer, schema, JsonNode.Parse("{\"apiVersion\":\"v1\"}")!);
         var control = new ResourceEditorNodeControl(root);
         using var window = Application.Current.CreateTestWindow(600, 300, control);
 
@@ -150,6 +161,8 @@ public sealed class ResourceEditorNodeControlTests
     [AvaloniaFact]
     public void Yaml_fields_initialize_the_editor_with_the_current_value()
     {
+        using var services = new ServiceCollection().AddKubeUIKubernetesServices(false, false).BuildServiceProvider();
+        var yamlSerializer = services.GetRequiredService<IKubernetesYamlSerializer>();
         var schema = new ResourceEditorSchemaNode(
             "values",
             ResourceEditorValueKind.StringKind,
@@ -160,7 +173,7 @@ public sealed class ResourceEditorNodeControlTests
             new HashSet<string>(StringComparer.Ordinal),
             null,
             true);
-        var node = ResourceEditorNodeViewModel.Create(
+        var node = ResourceEditorNodeViewModel.Create(yamlSerializer,
             schema,
             JsonValue.Create("allow:\n  enabled: false")!);
 
@@ -190,6 +203,8 @@ public sealed class ResourceEditorNodeControlTests
     [AvaloniaFact]
     public void Validation_errors_are_attached_to_actual_editors()
     {
+        using var services = new ServiceCollection().AddKubeUIKubernetesServices(false, false).BuildServiceProvider();
+        var yamlSerializer = services.GetRequiredService<IKubernetesYamlSerializer>();
         var schema = ObjectSchema("root", new Dictionary<string, ResourceEditorSchemaNode>
         {
             ["replicas"] = ScalarSchema("replicas", ResourceEditorValueKind.NumberKind),
@@ -205,7 +220,7 @@ public sealed class ResourceEditorNodeControlTests
                 EmptyRequired,
                 null),
         });
-        var root = ResourceEditorNodeViewModel.Create(schema, JsonNode.Parse("""{"replicas":2,"mode":"Active","values":"ready","labels":{"team":"platform"}}""")!);
+        var root = ResourceEditorNodeViewModel.Create(yamlSerializer, schema, JsonNode.Parse("""{"replicas":2,"mode":"Active","values":"ready","labels":{"team":"platform"}}""")!);
         var control = new ResourceEditorNodeControl(root);
         using var window = Application.Current.CreateTestWindow(900, 700, control);
 
@@ -241,7 +256,9 @@ public sealed class ResourceEditorNodeControlTests
     [AvaloniaFact]
     public void Validation_error_marks_each_parent_section_invalid_and_clears_when_fixed()
     {
-        var root = ResourceEditorNodeViewModel.Create(
+        using var services = new ServiceCollection().AddKubeUIKubernetesServices(false, false).BuildServiceProvider();
+        var yamlSerializer = services.GetRequiredService<IKubernetesYamlSerializer>();
+        var root = ResourceEditorNodeViewModel.Create(yamlSerializer,
             CreateSchema(),
             JsonNode.Parse("""{"spec":{"replicas":2}}""")!);
         var control = new ResourceEditorNodeControl(root);
