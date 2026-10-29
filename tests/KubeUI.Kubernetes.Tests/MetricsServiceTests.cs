@@ -433,7 +433,7 @@ public sealed class MetricsServiceTests
             settings,
             new ServiceCollection().BuildServiceProvider(),
             new ImmediateThreadDispatcher(),
-            new KubeUI.Kubernetes.Serialization.KubernetesJsonSerializer(new System.Text.Json.JsonSerializerOptions()),
+            new KubeUI.Kubernetes.Serialization.KubernetesJsonSerializer(new System.Text.Json.JsonSerializerOptions(KubeUI.Kubernetes.Serialization.KubernetesJsonStaticContext.Default.Options) { TypeInfoResolver = KubeUI.Kubernetes.Serialization.KubernetesJsonStaticContext.Default }),
             Moq.Mock.Of<KubeUI.Kubernetes.Serialization.IKubernetesYamlSerializer>(),
             metricsService)
         {
@@ -484,61 +484,59 @@ public sealed class MetricsServiceTests
 
     private static string CreatePodMetricsJson(string name, string namespaceName, DateTime? timestamp, string cpu)
     {
-        return JsonSerializer.Serialize(new
+        return new System.Text.Json.Nodes.JsonObject
         {
-            metadata = new { name, @namespace = namespaceName },
-            timestamp,
-            window = "30s",
-            containers = new[]
+            ["metadata"] = new System.Text.Json.Nodes.JsonObject { ["name"] = name, ["namespace"] = namespaceName },
+            ["timestamp"] = timestamp,
+            ["window"] = "30s",
+            ["containers"] = new System.Text.Json.Nodes.JsonArray
             {
-                new
+                new System.Text.Json.Nodes.JsonObject
                 {
-                    name = "app",
-                    usage = new Dictionary<string, string> { ["cpu"] = cpu, ["memory"] = "128Mi" },
+                    ["name"] = "app",
+                    ["usage"] = new System.Text.Json.Nodes.JsonObject { ["cpu"] = cpu, ["memory"] = "128Mi" },
                 },
             },
-        });
+        }.ToJsonString();
     }
 
     private static string CreateNodeMetricsJson(DateTime? timestamp, string cpu)
     {
-        return JsonSerializer.Serialize(new
+        return new System.Text.Json.Nodes.JsonObject
         {
-            metadata = new { name = "node-1" },
-            timestamp,
-            window = "30s",
-            usage = new Dictionary<string, string> { ["cpu"] = cpu, ["memory"] = "512Mi" },
-        });
+            ["metadata"] = new System.Text.Json.Nodes.JsonObject { ["name"] = "node-1" },
+            ["timestamp"] = timestamp,
+            ["window"] = "30s",
+            ["usage"] = new System.Text.Json.Nodes.JsonObject { ["cpu"] = cpu, ["memory"] = "512Mi" },
+        }.ToJsonString();
     }
 
     private static string CreatePodMetricsListJson(DateTime? timestamp, string cpu)
-    {
-        return CreatePodMetricsListJson((timestamp, cpu));
-    }
+        => CreatePodMetricsListJson((timestamp, cpu));
 
     private static string CreatePodMetricsListJson(params (DateTime? Timestamp, string Cpu)[] samples)
-    {
-        return JsonSerializer.Serialize(new
-        {
-            apiVersion = "metrics.k8s.io/v1beta1",
-            kind = "PodMetricsList",
-            items = samples.Select(static sample => JsonSerializer.Deserialize<JsonElement>(CreatePodMetricsJson(sample.Timestamp, sample.Cpu))).ToArray(),
-        });
-    }
+        => CreateMetricsListJson("PodMetricsList", samples, CreatePodMetricsJson);
 
     private static string CreateNodeMetricsListJson(DateTime? timestamp, string cpu)
-    {
-        return CreateNodeMetricsListJson((timestamp, cpu));
-    }
+        => CreateNodeMetricsListJson((timestamp, cpu));
 
     private static string CreateNodeMetricsListJson(params (DateTime? Timestamp, string Cpu)[] samples)
+        => CreateMetricsListJson("NodeMetricsList", samples, CreateNodeMetricsJson);
+
+    private static string CreateMetricsListJson(string kind, (DateTime? Timestamp, string Cpu)[] samples, Func<DateTime?, string, string> createItem)
     {
-        return JsonSerializer.Serialize(new
+        var items = new System.Text.Json.Nodes.JsonArray();
+        foreach (var sample in samples)
         {
-            apiVersion = "metrics.k8s.io/v1beta1",
-            kind = "NodeMetricsList",
-            items = samples.Select(static sample => JsonSerializer.Deserialize<JsonElement>(CreateNodeMetricsJson(sample.Timestamp, sample.Cpu))).ToArray(),
-        });
+            items.Add(System.Text.Json.Nodes.JsonNode.Parse(createItem(sample.Timestamp, sample.Cpu)));
+        }
+
+        return new System.Text.Json.Nodes.JsonObject
+        {
+            ["apiVersion"] = "metrics.k8s.io/v1beta1",
+            ["kind"] = kind,
+            ["items"] = items,
+        }.ToJsonString();
     }
 
     private static FakeKubernetesHttpApi CreateMetricsServerApi()

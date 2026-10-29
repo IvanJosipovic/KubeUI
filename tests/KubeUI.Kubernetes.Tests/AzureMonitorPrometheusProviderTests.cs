@@ -8,7 +8,7 @@ public sealed class AzureMonitorPrometheusProviderTests
     [Fact]
     public void Cluster_metrics_settings_do_not_serialize_bearer_token()
     {
-        var serialized = JsonSerializer.Serialize(new ClusterMetricsSettings { PrometheusBearerToken = "secret-token" });
+        var serialized = JsonSerializer.Serialize(new ClusterMetricsSettings { PrometheusBearerToken = "secret-token" }, MetricsTestJsonContext.Default.ClusterMetricsSettings);
 
         serialized.ShouldNotContain("secret-token");
         serialized.ShouldNotContain("PrometheusBearerToken");
