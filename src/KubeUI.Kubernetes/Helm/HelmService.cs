@@ -49,7 +49,8 @@ public sealed class HelmService : IHelmService, IDisposable
                 var prefix = $"{repositoryName}/";
                 return charts.Where(chart => chart.Reference.StartsWith(prefix, StringComparison.Ordinal)).ToArray();
             },
-            cancellationToken);
+            cancellationToken,
+            isWriteOperation: true);
     }
 
     /// <inheritdoc />
@@ -59,7 +60,8 @@ public sealed class HelmService : IHelmService, IDisposable
         return InvokeAsync(
             connection,
             client => client.ShowValues(chart, version),
-            cancellationToken);
+            cancellationToken,
+            isWriteOperation: true);
     }
 
     /// <inheritdoc />
@@ -70,7 +72,8 @@ public sealed class HelmService : IHelmService, IDisposable
         return InvokeAsync(
             connection,
             client => client.GetManifest(releaseName, connection.Namespace, revision),
-            cancellationToken);
+            cancellationToken,
+            isWriteOperation: true);
     }
 
     /// <inheritdoc />
@@ -87,12 +90,13 @@ public sealed class HelmService : IHelmService, IDisposable
                 namespaceName: connection.Namespace,
                 setValues: ToJsonElement(values),
                 version: version),
-            cancellationToken);
+            cancellationToken,
+            isWriteOperation: true);
     }
 
     /// <inheritdoc />
     public Task<IReadOnlyList<HelmRepository>> ListRepositoriesAsync(HelmConnection connection, CancellationToken cancellationToken = default)
-        => InvokeAsync(connection, static client => client.RepoList(), cancellationToken);
+        => InvokeAsync(connection, static client => client.RepoList(), cancellationToken, isWriteOperation: true);
 
     /// <inheritdoc />
     public Task AddRepositoryAsync(HelmConnection connection, string name, string url, string? username = null, string? password = null, CancellationToken cancellationToken = default)
@@ -103,19 +107,20 @@ public sealed class HelmService : IHelmService, IDisposable
         return InvokeVoidAsync(
             connection,
             client => client.RepoAdd(name, url, username, password, forceUpdate: true),
-            cancellationToken);
+            cancellationToken,
+            isWriteOperation: true);
     }
 
     /// <inheritdoc />
     public Task RemoveRepositoryAsync(HelmConnection connection, string name, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
-        return InvokeVoidAsync(connection, client => client.RepoRemove(name), cancellationToken);
+        return InvokeVoidAsync(connection, client => client.RepoRemove(name), cancellationToken, isWriteOperation: true);
     }
 
     /// <inheritdoc />
     public Task UpdateRepositoriesAsync(HelmConnection connection, CancellationToken cancellationToken = default)
-        => InvokeVoidAsync(connection, static client => client.RepoUpdate(), cancellationToken);
+        => InvokeVoidAsync(connection, static client => client.RepoUpdate(), cancellationToken, isWriteOperation: true);
 
     /// <inheritdoc />
     public Task<IReadOnlyList<HelmRelease>> ListReleasesAsync(HelmConnection connection, bool allNamespaces = true, string? filter = null, CancellationToken cancellationToken = default)
@@ -125,20 +130,21 @@ public sealed class HelmService : IHelmService, IDisposable
                 namespaceName: allNamespaces ? null : connection.Namespace,
                 allNamespaces: allNamespaces,
                 filter: filter),
-            cancellationToken);
+            cancellationToken,
+            isWriteOperation: true);
 
     /// <inheritdoc />
     public Task<HelmRelease> StatusAsync(HelmConnection connection, string releaseName, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseName);
-        return InvokeAsync(connection, client => client.Status(releaseName, connection.Namespace), cancellationToken);
+        return InvokeAsync(connection, client => client.Status(releaseName, connection.Namespace), cancellationToken, isWriteOperation: true);
     }
 
     /// <inheritdoc />
     public Task<IReadOnlyList<HelmRelease>> HistoryAsync(HelmConnection connection, string releaseName, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseName);
-        return InvokeAsync(connection, client => client.History(releaseName, connection.Namespace), cancellationToken);
+        return InvokeAsync(connection, client => client.History(releaseName, connection.Namespace), cancellationToken, isWriteOperation: true);
     }
 
     /// <inheritdoc />
@@ -157,7 +163,8 @@ public sealed class HelmService : IHelmService, IDisposable
 
                 return values.Clone();
             },
-            cancellationToken);
+            cancellationToken,
+            isWriteOperation: true);
     }
 
     /// <inheritdoc />
@@ -186,7 +193,8 @@ public sealed class HelmService : IHelmService, IDisposable
                 wait: wait,
                 timeout: timeout,
                 version: version),
-            cancellationToken);
+            cancellationToken,
+            isWriteOperation: true);
     }
 
     /// <inheritdoc />
@@ -217,7 +225,8 @@ public sealed class HelmService : IHelmService, IDisposable
                 wait: wait,
                 timeout: timeout,
                 version: version),
-            cancellationToken);
+            cancellationToken,
+            isWriteOperation: true);
     }
 
     /// <inheritdoc />
@@ -231,7 +240,8 @@ public sealed class HelmService : IHelmService, IDisposable
                 revision,
                 namespaceName: connection.Namespace,
                 wait: wait),
-            cancellationToken);
+            cancellationToken,
+            isWriteOperation: true);
     }
 
     /// <inheritdoc />
@@ -241,7 +251,8 @@ public sealed class HelmService : IHelmService, IDisposable
         return InvokeVoidAsync(
             connection,
             client => client.Uninstall(releaseName, connection.Namespace, wait),
-            cancellationToken);
+            cancellationToken,
+            isWriteOperation: true);
     }
 
     /// <inheritdoc />
@@ -262,7 +273,8 @@ public sealed class HelmService : IHelmService, IDisposable
                 chart: chart,
                 namespaceName: connection.Namespace,
                 setValues: ToJsonElement(values)),
-            cancellationToken);
+            cancellationToken,
+            isWriteOperation: true);
     }
 
     private static JsonElement? ToJsonElement(IReadOnlyDictionary<string, object?>? values)
@@ -276,7 +288,7 @@ public sealed class HelmService : IHelmService, IDisposable
         return document.RootElement.Clone();
     }
 
-    private Task InvokeVoidAsync(HelmConnection connection, Action<IHelmClient> operation, CancellationToken cancellationToken)
+    private Task InvokeVoidAsync(HelmConnection connection, Action<IHelmClient> operation, CancellationToken cancellationToken, bool isWriteOperation = false)
         => InvokeAsync(
             connection,
             client =>
@@ -284,9 +296,10 @@ public sealed class HelmService : IHelmService, IDisposable
                 operation(client);
                 return true;
             },
-            cancellationToken);
+            cancellationToken,
+            isWriteOperation);
 
-    private Task<T> InvokeAsync<T>(HelmConnection connection, Func<IHelmClient, T> operation, CancellationToken cancellationToken)
+    private Task<T> InvokeAsync<T>(HelmConnection connection, Func<IHelmClient, T> operation, CancellationToken cancellationToken, bool isWriteOperation = false)
     {
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(operation);
@@ -306,7 +319,9 @@ public sealed class HelmService : IHelmService, IDisposable
                 token.ThrowIfCancellationRequested();
                 ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
 
-                var entered = _nativeGate.TryEnterWriteLock(TimeSpan.FromMilliseconds(50));
+                var entered = isWriteOperation
+                    ? _nativeGate.TryEnterWriteLock(TimeSpan.FromMilliseconds(50))
+                    : _nativeGate.TryEnterReadLock(TimeSpan.FromMilliseconds(50));
                 if (!entered)
                 {
                     continue;
@@ -320,7 +335,14 @@ public sealed class HelmService : IHelmService, IDisposable
                 }
                 finally
                 {
-                    _nativeGate.ExitWriteLock();
+                    if (isWriteOperation)
+                    {
+                        _nativeGate.ExitWriteLock();
+                    }
+                    else
+                    {
+                        _nativeGate.ExitReadLock();
+                    }
                 }
             }
         }, CancellationToken.None);

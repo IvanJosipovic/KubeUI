@@ -105,19 +105,29 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
             CreateColumn("namespace", Assets.Resources.MRDiffDetectionView_Namespace!, typeof(string), static row => row.Namespace),
             CreateColumn("apiVersion", Assets.Resources.MRDiffDetectionView_ApiVersion!, typeof(string), static row => row.ApiVersion),
             CreateColumn("kind", Assets.Resources.MRDiffDetectionView_Kind!, typeof(string), static row => row.Kind),
-            CreateColumn("diffField", Assets.Resources.MRDiffDetectionView_DiffField!, typeof(string), static row => row.DiffField),
+            CreateColumn(
+                "diffField",
+                Assets.Resources.MRDiffDetectionView_DiffField!,
+                typeof(string),
+                static row => row.DiffField,
+                widthMode: DynamicTableViewWidthMode.Star,
+                width: 1),
             CreateColumn(
                 "oldValue",
                 Assets.Resources.MRDiffDetectionView_OldValue!,
                 typeof(string),
                 static row => row.OldValue,
-                static row => row.Sensitive ? Assets.Resources.MRDiffDetectionView_Sensitive! : row.OldValue),
+                static row => row.Sensitive ? Assets.Resources.MRDiffDetectionView_Sensitive! : row.OldValue,
+                DynamicTableViewWidthMode.Star,
+                2),
             CreateColumn(
                 "newValue",
                 Assets.Resources.MRDiffDetectionView_NewValue!,
                 typeof(string),
                 static row => row.NewValue,
-                static row => row.Sensitive ? Assets.Resources.MRDiffDetectionView_Sensitive! : row.NewValue),
+                static row => row.Sensitive ? Assets.Resources.MRDiffDetectionView_Sensitive! : row.NewValue,
+                DynamicTableViewWidthMode.Star,
+                2),
             CreateColumn("newComputed", Assets.Resources.MRDiffDetectionView_NewComputed!, typeof(bool), static row => row.NewComputed),
             CreateColumn("newRemoved", Assets.Resources.MRDiffDetectionView_NewRemoved!, typeof(bool), static row => row.NewRemoved),
             CreateColumn("requiresNew", Assets.Resources.MRDiffDetectionView_RequiresNew!, typeof(bool), static row => row.RequiresNew),
@@ -131,7 +141,9 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         string name,
         Type valueType,
         Func<CrossplaneDiffRow, object?> valueSelector,
-        Func<CrossplaneDiffRow, string>? displaySelector = null)
+        Func<CrossplaneDiffRow, string>? displaySelector = null,
+        DynamicTableViewWidthMode widthMode = DynamicTableViewWidthMode.Auto,
+        double width = 1)
     {
         return new DynamicTableViewColumn<CrossplaneDiffRow>(
             key,
@@ -139,7 +151,11 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
             valueType,
             valueSelector,
             displaySelector ?? (row => valueSelector(row)?.ToString() ?? string.Empty),
-            cellTemplate: null);
+            cellTemplate: null)
+        {
+            WidthMode = widthMode,
+            Width = width
+        };
     }
 
     public static bool IsAvailable(ClusterWorkspace cluster)

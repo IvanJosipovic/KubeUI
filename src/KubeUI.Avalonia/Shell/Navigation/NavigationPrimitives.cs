@@ -7,7 +7,9 @@ namespace KubeUI.Avalonia.Shell.Navigation;
 /// <param name="Name">Localized display name.</param>
 /// <param name="Order">Sort position relative to sibling items.</param>
 /// <param name="Icon">Optional group icon.</param>
-public sealed record NavigationGroup(string Id, string Name, int Order, Icon? Icon);
+/// <param name="SvgIcon">Optional light-theme SVG asset path.</param>
+/// <param name="SvgIconDark">Optional dark-theme SVG asset path; <paramref name="SvgIcon"/> is the fallback.</param>
+public sealed record NavigationGroup(string Id, string Name, int Order, Icon? Icon, string? SvgIcon = null, string? SvgIconDark = null);
 
 /// <summary>Stable identity and display metadata for a top-level navigation section.</summary>
 /// <param name="Id">Stable section identifier, unique among registered sections.</param>
@@ -64,7 +66,7 @@ internal static class NavigationTreeEditor
         {
             var part = path[index];
             key += "/" + part.Id;
-            target = EnsureNode(target, key, part.Name, part.Order, part.Icon).NavigationItems;
+            target = EnsureNode(target, key, part.Name, part.Order, part.Icon, part.SvgIcon, part.SvgIconDark).NavigationItems;
         }
 
         return target;

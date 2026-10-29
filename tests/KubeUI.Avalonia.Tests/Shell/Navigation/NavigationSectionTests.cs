@@ -3,6 +3,7 @@ using FluentIcons.Common;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Avalonia.Features.Cilium.Hubble;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Crossplane;
 using KubeUI.Avalonia.Features.Helm;
@@ -61,6 +62,29 @@ public sealed class NavigationSectionTests
     }
 
     [AvaloniaFact]
+    public async Task hubble_documents_remain_visible_while_cilium_detection_is_pending()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        await workspace.Connect();
+
+        using var node = new ClusterNavigationNode(workspace);
+        var provider = new HubbleNavigationSectionProvider();
+        var builder = CreateBuilder(new NavigationSectionCatalog([provider]));
+
+        builder.Reconcile(node);
+
+        var cilium = node.NavigationItems.Single(item => item.Id == $"{workspace.Runtime.Name}-section-cilium");
+        cilium.Name.ShouldBe(Assets.Resources.NavigationView_Cilium);
+        cilium.SvgIcon.ShouldBe(HubbleNavigationSectionProvider.CiliumIconAssetPath);
+        cilium.SvgIconDark.ShouldBe(HubbleNavigationSectionProvider.CiliumIconDarkAssetPath);
+        var hubble = cilium.NavigationItems.Single(item => item.Name == Assets.Resources.Hubble_GroupName);
+        hubble.SvgIcon.ShouldBe(HubbleNavigationSectionProvider.HubbleIconAssetPath);
+        hubble.SvgIconDark.ShouldBe(HubbleNavigationSectionProvider.HubbleIconDarkAssetPath);
+        hubble.NavigationItems.OfType<NavigationLink>().Select(link => link.DocumentId).OrderBy(id => id)
+            .ShouldBe(new[] { HubbleNavigationSectionProvider.FlowsDocumentId, HubbleNavigationSectionProvider.ServiceMapDocumentId }.OrderBy(id => id));
+    }
+
+    [AvaloniaFact]
     public async Task helm_section_node_uses_svg_icon_without_fluent_icon()
     {
         using var workspace = await Application.Current.CreateClusterAsync(connect: false);
@@ -79,7 +103,7 @@ public sealed class NavigationSectionTests
     [Fact]
     public void section_svg_icon_overrides_fluent_icon_and_clears_when_removed()
     {
-        System.Collections.ObjectModel.ObservableCollection<NavigationItem> items = [];
+        var items = new System.Collections.ObjectModel.ObservableCollection<NavigationItem>();
 
         var withSvg = NavigationTreeEditor.EnsureNode(
             items,
@@ -98,6 +122,21 @@ public sealed class NavigationSectionTests
         fluentOnly.FluentIcon.ShouldBe(Icon.DataUsage);
         fluentOnly.SvgIcon.ShouldBeNull();
         fluentOnly.SvgIconDark.ShouldBeNull();
+    }
+
+    [Fact]
+    public void navigation_group_carries_theme_specific_svg_icons()
+    {
+        System.Collections.ObjectModel.ObservableCollection<NavigationItem> items = [];
+        var group = new NavigationGroup("hubble", "Hubble", 0, null, "/Assets/cilium/hubble-light.svg", "/Assets/cilium/hubble-dark.svg");
+
+        var children = NavigationTreeEditor.EnsurePath(items, "section-cilium", [group]);
+        var hubble = items.Single();
+
+        hubble.SvgIcon.ShouldBe("/Assets/cilium/hubble-light.svg");
+        hubble.SvgIconDark.ShouldBe("/Assets/cilium/hubble-dark.svg");
+        hubble.FluentIcon.ShouldBeNull();
+        children.ShouldBeSameAs(hubble.NavigationItems);
     }
 
     [Theory]
@@ -125,6 +164,16 @@ public sealed class NavigationSectionTests
 
         placement.ShouldNotBeNull().Groups.Select(group => group.Name).ShouldBe(
             ["crossplane.io", "aws.crossplane.io", "provider.aws.crossplane.io"]);
+    }
+
+    [Fact]
+    public void crossplane_section_uses_theme_specific_svg_icons()
+    {
+        var provider = new CrossplaneNavigationSectionProvider();
+
+        provider.Section.Icon.ShouldBeNull();
+        provider.Section.SvgIcon.ShouldBe(CrossplaneNavigationSectionProvider.IconAssetPath);
+        provider.Section.SvgIconDark.ShouldBe(CrossplaneNavigationSectionProvider.IconDarkAssetPath);
     }
 
     [Fact]
@@ -187,7 +236,7 @@ public sealed class NavigationSectionTests
                 [new NavigationGroup("gateway", "Gateway", 0, null)]),
         };
         workspace.AddResourceConfigForTest(resourceConfig);
-
+            var provider = new CrossplaneNavigationSectionProvider();
         using var node = new ClusterNavigationNode(workspace);
         CreateBuilder(new NavigationSectionCatalog([])).Reconcile(node);
 
@@ -406,9 +455,41 @@ public sealed class NavigationSectionTests
             {
                 return nested;
             }
+
         }
 
         return null;
+    }
+
+    [Theory]
+    [InlineData("cilium.io", true)]
+    [InlineData("api.cilium.io", true)]
+    [InlineData("policy.api.cilium.io", true)]
+    [InlineData("cilium.io.example", false)]
+    [InlineData("notcilium.io", false)]
+    [InlineData("Cilium.io", false)]
+    public void cilium_section_matches_exact_group_and_dot_boundary_subgroups(string group, bool expected)
+    {
+        var provider = new HubbleNavigationSectionProvider();
+
+        var placement = provider.Place(CreateResourceConfig(group));
+
+        (placement is not null).ShouldBe(expected);
+        if (expected)
+        {
+            placement!.SectionId.ShouldBe(NavigationSections.CiliumId);
+        }
+    }
+
+    [Fact]
+    public void cilium_section_preserves_custom_resource_group_hierarchy()
+    {
+        var provider = new HubbleNavigationSectionProvider();
+
+        var placement = provider.Place(CreateResourceConfig("policy.api.cilium.io"));
+
+        placement.ShouldNotBeNull().Groups.Select(group => group.Name).ShouldBe(
+            ["cilium.io", "api.cilium.io", "policy.api.cilium.io"]);
     }
 
     private static IEnumerable<NavigationLink> GetResourceLinks(NavigationItem root)

@@ -9,6 +9,8 @@ namespace KubeUI.Avalonia.Features.Crossplane;
 internal sealed class CrossplaneNavigationSectionProvider : INavigationSectionProvider
 {
     public const string FeatureId = "crossplane-mr-diff-detection";
+    public const string IconAssetPath = "/Assets/crossplane/crossplane-light.svg";
+    public const string IconDarkAssetPath = "/Assets/crossplane/crossplane-dark.svg";
 
     public CrossplaneNavigationSectionProvider()
     {
@@ -16,7 +18,9 @@ internal sealed class CrossplaneNavigationSectionProvider : INavigationSectionPr
             "crossplane",
             Assets.Resources.NavigationView_Crossplane!,
             NavigationSections.AfterCustomResourcesOrder,
-            null);
+            null,
+            IconAssetPath,
+            IconDarkAssetPath);
 
         Documents =
         [

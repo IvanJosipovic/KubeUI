@@ -4,6 +4,7 @@ using KubeUI.AI.Agents;
 using KubeUI.AI.Configuration;
 using KubeUI.AI.Permissions;
 using KubeUI.Avalonia.Features.AI;
+using KubeUI.Avalonia.Features.Cilium.Hubble;
 using KubeUI.Avalonia.Features.Crossplane;
 using KubeUI.Avalonia.Features.Crossplane.MRDiffDetection;
 using KubeUI.Avalonia.Features.Helm;
@@ -65,6 +66,7 @@ public static partial class KubeUIShellServiceCollectionExtensions
         services.AddTransient(static serviceProvider => new CustomResourceConfig(serviceProvider));
         services.AddSingleton<INavigationSectionProvider, CrossplaneNavigationSectionProvider>();
         services.AddSingleton<INavigationSectionProvider, HelmNavigationSectionProvider>();
+        services.AddSingleton<INavigationSectionProvider, HubbleNavigationSectionProvider>();
         services.AddSingleton<IHelmListNotifier, HelmListNotifier>();
         services.AddTransient<IHelmDocumentOpener, HelmDocumentOpener>();
         services.AddTransient<Func<HelmChartsViewModel>>(sp => () => sp.GetRequiredService<HelmChartsViewModel>());
@@ -73,6 +75,10 @@ public static partial class KubeUIShellServiceCollectionExtensions
         services.AddTransient<IHelmReleasePreviewService, HelmReleasePreviewService>();
         services.AddTransient<Func<VisualizationViewModel>>(sp => () => sp.GetRequiredService<VisualizationViewModel>());
         services.AddTransient<Func<ResourceYamlViewModel>>(sp => () => sp.GetRequiredService<ResourceYamlViewModel>());
+        services.AddTransient<FlowListViewModel>();
+        services.AddTransient<ServiceMapViewModel>();
+        services.AddTransient<Func<FlowListViewModel>>(sp => () => sp.GetRequiredService<FlowListViewModel>());
+        services.AddTransient<Func<ServiceMapViewModel>>(sp => () => sp.GetRequiredService<ServiceMapViewModel>());
         services.AddSingleton<NavigationSectionCatalog>();
         services.AddSingleton<CrossplaneDiffLogParser>();
         services.AddTransient<CrossplaneProviderLogMonitor>();

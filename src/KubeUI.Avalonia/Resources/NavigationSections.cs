@@ -11,6 +11,7 @@ internal static class NavigationSections
     public const string StorageId = "storage";
     public const string AccessControlId = "access-control";
     public const string CustomResourcesId = "custom-resources";
+    public const string CiliumId = "cilium";
 
     public static NavigationSection Workloads { get; } = new(
         WorkloadsId, Assets.Resources.ResourceConfig_Category_Workloads!, 8, null);

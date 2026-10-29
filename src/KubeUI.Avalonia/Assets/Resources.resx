@@ -2874,6 +2874,9 @@
   <data name="NavigationView_GatewayApiExperimental" xml:space="preserve">
     <value>Experimental</value>
   </data>
+  <data name="NavigationView_Cilium" xml:space="preserve">
+    <value>Cilium</value>
+  </data>
   <data name="NavigationView_Crossplane" xml:space="preserve">
     <value>Crossplane</value>
   </data>
@@ -3010,4 +3013,98 @@
   <data name="HelmChartsView_ItemsFormat" xml:space="preserve"><value>Charts: {0}</value></data>
   <data name="HelmChartsView_SearchPlaceholder" xml:space="preserve"><value>Search</value></data>
   <data name="HelmReleaseEditorView_ChartVersionPlaceholder" xml:space="preserve"><value>Leave empty to use latest</value></data>
+  <data name="HelmChartsView_SearchNotice" xml:space="preserve"><value>Charts come from cached repository indexes. Update repository indexes to load their latest versions.</value></data>
+  <data name="HelmChartsView_AllRepositories" xml:space="preserve"><value>All repositories</value></data>
+  <data name="HelmChartsView_Repository" xml:space="preserve"><value>Repository</value></data>
+  <data name="FlowListView_Title" xml:space="preserve"><value>Network Flows</value></data>
+  <data name="FlowListView_TooltipClear" xml:space="preserve"><value>Clear all flows</value></data>
+  <data name="FlowListView_ItemsFormat" xml:space="preserve"><value>Flows: {0}</value></data>
+  <data name="FlowListView_SearchWatermark" xml:space="preserve"><value>Search flows...</value></data>
+  <data name="FlowListView_FilterVerdictAll" xml:space="preserve"><value>All Verdicts</value></data>
+  <data name="FlowListView_FilterDirectionAll" xml:space="preserve"><value>All Directions</value></data>
+  <data name="FlowListView_FilterPortWatermark" xml:space="preserve"><value>Port</value></data>
+  <data name="FlowListView_FilterErrorsOnly" xml:space="preserve"><value>Errors Only</value></data>
+  <data name="FlowListView_ButtonResetFilter" xml:space="preserve"><value>Reset Filter</value></data>
+  <data name="FlowListView_StatusDisconnected" xml:space="preserve"><value>Disconnected</value></data>
+  <data name="FlowListView_StatusConnecting" xml:space="preserve"><value>Connecting...</value></data>
+  <data name="FlowListView_StatusConnected" xml:space="preserve"><value>Connected</value></data>
+  <data name="FlowListView_StatusError" xml:space="preserve"><value>Error</value></data>
+  <data name="FlowListView_StatusCiliumNotDetected" xml:space="preserve"><value>Cilium not detected</value></data>
+  <data name="FlowListView_ColumnTimestamp" xml:space="preserve"><value>Timestamp</value></data>
+  <data name="FlowListView_ColumnVerdict" xml:space="preserve"><value>Verdict</value></data>
+  <data name="FlowListView_ColumnDirection" xml:space="preserve"><value>Direction</value></data>
+  <data name="FlowListView_ColumnSource" xml:space="preserve"><value>Source</value></data>
+  <data name="FlowListView_ColumnDestination" xml:space="preserve"><value>Destination</value></data>
+  <data name="FlowListView_ColumnProtocol" xml:space="preserve"><value>Protocol</value></data>
+  <data name="FlowListView_ColumnPort" xml:space="preserve"><value>Port</value></data>
+  <data name="FlowListView_ColumnLatency" xml:space="preserve"><value>Latency</value></data>
+  <data name="FlowListView_ButtonClear" xml:space="preserve"><value>Clear</value></data>
+  <data name="FlowListView_ColumnPolicy" xml:space="preserve"><value>Policy</value></data>
+  <data name="FlowListView_NoPolicy" xml:space="preserve"><value>—</value></data>
+  <data name="FlowVerdict_Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="FlowVerdict_Allowed" xml:space="preserve"><value>Allowed</value></data>
+  <data name="FlowVerdict_Denied" xml:space="preserve"><value>Denied</value></data>
+  <data name="FlowVerdict_Dropped" xml:space="preserve"><value>Dropped</value></data>
+  <data name="FlowVerdict_Error" xml:space="preserve"><value>Error</value></data>
+  <data name="FlowVerdict_Forwarded" xml:space="preserve"><value>Forwarded</value></data>
+  <data name="FlowDirection_Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="FlowDirection_Ingress" xml:space="preserve"><value>Ingress</value></data>
+  <data name="FlowDirection_Egress" xml:space="preserve"><value>Egress</value></data>
+  <data name="FlowDirection_Lateral" xml:space="preserve"><value>Lateral</value></data>
+  <data name="ServiceMapView_Title" xml:space="preserve"><value>Service Map</value></data>
+  <data name="ServiceMapView_LayoutAlgorithm" xml:space="preserve"><value>Layout algorithm</value></data>
+  <data name="ServiceMapView_Layout_BoundedFR" xml:space="preserve"><value>Bounded FR</value></data>
+  <data name="ServiceMapView_Layout_Circular" xml:space="preserve"><value>Circular</value></data>
+  <data name="ServiceMapView_Layout_CompoundFDP" xml:space="preserve"><value>Compound FDP</value></data>
+  <data name="ServiceMapView_Layout_EfficientSugiyama" xml:space="preserve"><value>Efficient Sugiyama</value></data>
+  <data name="ServiceMapView_Layout_FR" xml:space="preserve"><value>Fruchterman-Reingold</value></data>
+  <data name="ServiceMapView_Layout_ISOM" xml:space="preserve"><value>ISOM</value></data>
+  <data name="ServiceMapView_Layout_KK" xml:space="preserve"><value>Kamada-Kawai</value></data>
+  <data name="ServiceMapView_Layout_LinLog" xml:space="preserve"><value>LinLog</value></data>
+  <data name="ServiceMapView_Layout_Random" xml:space="preserve"><value>Random</value></data>
+  <data name="ServiceMapView_Layout_Sugiyama" xml:space="preserve"><value>Sugiyama</value></data>
+  <data name="ServiceMapView_Layout_Tree" xml:space="preserve"><value>Tree</value></data>
+  <data name="ServiceMapView_AggregateByNamespace" xml:space="preserve"><value>Aggregate by Namespace</value></data>
+  <data name="ServiceMapView_ShowErrorsOnly" xml:space="preserve"><value>Show Errors Only</value></data>
+  <data name="ServiceMapView_TooltipAggregate" xml:space="preserve"><value>Aggregate by namespace</value></data>
+  <data name="ServiceMapView_TooltipErrorsOnly" xml:space="preserve"><value>Show errors only</value></data>
+  <data name="ServiceMapView_TimeWindowMinutes" xml:space="preserve"><value>min</value></data>
+  <data name="ServiceMapView_Nodes" xml:space="preserve"><value>Nodes</value></data>
+  <data name="ServiceMapView_Edges" xml:space="preserve"><value>Edges</value></data>
+  <data name="ServiceMapView_GraphCountsFormat" xml:space="preserve"><value>Nodes: {0}  Edges: {1}</value></data>
+  <data name="ServiceMapView_ShowFlowsForNode" xml:space="preserve"><value>Show node flows</value></data>
+  <data name="ServiceMapView_NoFlows" xml:space="preserve"><value>No flows in the selected time window.</value></data>
+  <data name="ServiceMapView_SelectNamespacePrompt" xml:space="preserve"><value>Select at least one namespace to load the service map.</value></data>
+  <data name="ServiceMapView_StatusConnecting" xml:space="preserve"><value>Connecting</value></data>
+  <data name="ServiceMapView_StatusConnected" xml:space="preserve"><value>Connected</value></data>
+  <data name="ServiceMapView_StatusDisconnected" xml:space="preserve"><value>Disconnected</value></data>
+  <data name="ServiceMapView_StatusSelectNamespace" xml:space="preserve"><value>Select a namespace</value></data>
+  <data name="ServiceMapView_StatusCiliumNotDetected" xml:space="preserve"><value>Cilium not detected</value></data>
+  <data name="ServiceMapView_StatusError" xml:space="preserve"><value>Hubble connection failed</value></data>
+  <data name="ServiceMapView_StatusErrorFormat" xml:space="preserve"><value>Hubble connection failed: {0}</value></data>
+  <data name="ServiceMapGraphControl_External" xml:space="preserve"><value>External</value></data>
+  <data name="ServiceMapGraphControl_View" xml:space="preserve"><value>View</value></data>
+  <data name="ServiceMapGraphControl_FlowCountsFormat" xml:space="preserve"><value>In {0}  Out {1}  Denied {2}</value></data>
+  <data name="ServiceMapGraphControl_IncomingPortFormat" xml:space="preserve"><value>→ {0} • {1}{2}</value></data>
+  <data name="ServiceMapGraphControl_EdgeTooltipFormat" xml:space="preserve"><value>{0} flow events · destination ports: {1}</value></data>
+  <data name="ServiceMapGraphControl_NodeTooltipFormat" xml:space="preserve"><value>{0} ({1})&#10;Namespace: {2}&#10;Ingress: {3} · Egress: {4} · Allowed: {5} · Denied: {6}&#10;Access points: {7}</value></data>
+  <data name="ServiceMapNodePropertiesView_Title" xml:space="preserve"><value>Service map node</value></data>
+  <data name="ServiceMapNodePropertiesView_TitleFormat" xml:space="preserve"><value>Service map: {0}</value></data>
+  <data name="ServiceMapNodePropertiesView_NoNode" xml:space="preserve"><value>No node selected.</value></data>
+  <data name="ServiceMapNodePropertiesView_Id" xml:space="preserve"><value>Identity</value></data>
+  <data name="ServiceMapNodePropertiesView_Name" xml:space="preserve"><value>Name</value></data>
+  <data name="ServiceMapNodePropertiesView_Namespace" xml:space="preserve"><value>Namespace</value></data>
+  <data name="ServiceMapNodePropertiesView_WorkloadType" xml:space="preserve"><value>Workload type</value></data>
+  <data name="ServiceMapNodePropertiesView_IngressFlows" xml:space="preserve"><value>Ingress flows</value></data>
+  <data name="ServiceMapNodePropertiesView_EgressFlows" xml:space="preserve"><value>Egress flows</value></data>
+  <data name="ServiceMapNodePropertiesView_AllowedFlows" xml:space="preserve"><value>Allowed flows</value></data>
+  <data name="ServiceMapNodePropertiesView_DeniedFlows" xml:space="preserve"><value>Denied flows</value></data>
+  <data name="ServiceMapNodePropertiesView_AccessPoints" xml:space="preserve"><value>Access points</value></data>
+  <data name="ServiceMapNodePropertiesView_AccessPointFormat" xml:space="preserve"><value>{0}:{1} — {2} flows, {3} denied; applications: {4}</value></data>
+  <data name="ServiceMapNodePropertiesView_NoAccessPoints" xml:space="preserve"><value>None</value></data>
+  <data name="ServiceMapNodePropertiesView_NoApplicationProtocols" xml:space="preserve"><value>None</value></data>
+  <data name="Hubble_GroupName" xml:space="preserve"><value>Hubble</value></data>
+  <data name="Hubble_Flows_Title" xml:space="preserve"><value>Flows</value></data>
+  <data name="Hubble_ServiceMap_Title" xml:space="preserve"><value>Service Map</value></data>
+  <data name="Hubble_PolicyVerdicts_Title" xml:space="preserve"><value>Policy Verdicts</value></data>
 </root>
