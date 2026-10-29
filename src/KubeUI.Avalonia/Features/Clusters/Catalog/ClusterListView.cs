@@ -25,25 +25,18 @@ public sealed partial class ClusterListView : KubeUIView<ClusterListViewModel>
             .Children(
                 new StackPanel()
                     .Row(0)
+                    .MinHeight(32)
                     .Orientation(Orientation.Horizontal)
-                    .Spacing(8)
-                    .Margin(4)
+                    .Spacing(2)
+                    .Margin(2, 2, 0, 2)
                     .Children(
                         new Button()
-                            .Content(new StackPanel()
-                                .Orientation(Orientation.Horizontal)
-                                .Spacing(4)
-                                .Children(
-                                    new FluentIcon().Icon(Icon.Add),
-                                    new TextBlock().Text(Assets.Resources.ClusterListView_AddKubeConfig)))
+                            .Content(new FluentIcon().Icon(Icon.AddSquare))
+                            .ToolTip_Tip(Assets.Resources.ClusterListView_AddKubeConfig)
                             .Command(vm, x => x.AddKubeConfigCommand),
                         new DropDownButton()
-                            .Content(new StackPanel()
-                                .Orientation(Orientation.Horizontal)
-                                .Spacing(4)
-                                .Children(
-                                    new FluentIcon().Icon(Icon.Delete),
-                                    new TextBlock().Text(Assets.Resources.ClusterListView_RemoveKubeConfig)))
+                            .Content(new FluentIcon().Icon(Icon.Delete))
+                            .ToolTip_Tip(Assets.Resources.ClusterListView_RemoveKubeConfig)
                             .IsEnabled(vm, x => x.RemovableKubeConfigs.Count, BindingMode.OneWay, new FuncValueConverter<int, bool>(count => count > 0))
                             .Flyout(new MenuFlyout()
                                 .ItemsSource(vm.RemovableKubeConfigs)
