@@ -70,34 +70,18 @@ public sealed class MainWindowMenuTests
     }
 
     [AvaloniaFact]
-    public async Task in_window_menu_bar_presents_the_window_menu()
+    public async Task managed_chrome_does_not_add_a_duplicate_menu_bar()
     {
         var viewModel = Application.Current.GetRequiredTestService<MainViewModel>();
-        var window = new MainWindow { DataContext = viewModel };
+        var window = new MainWindow(useNativeChrome: false) { DataContext = viewModel };
         window.Show();
         try
         {
-            var attached = NativeMenu.GetMenu(window).ShouldNotBeNull();
-
             await TestApplicationExtensions.WaitForUiAsync();
 
-            // Exactly one menu bar is hosted by the view.
-            window.GetVisualDescendants().OfType<NativeMenuBar>().Single();
-
-            var presenter = window.GetVisualDescendants().OfType<Menu>().Single();
-
-            // Headless has no native menu exporter, so the bar presents the menu inside the window.
+            NativeMenu.GetMenu(window).ShouldNotBeNull();
             NativeMenu.GetIsNativeMenuExported(window).ShouldBeFalse();
-            presenter.IsVisible.ShouldBeTrue();
-            presenter.ItemsSource.ShouldBeSameAs(attached.Items);
-
-            var presentedHeaders = Enumerable.Range(0, presenter.ItemCount)
-                .Select(presenter.ContainerFromIndex)
-                .OfType<MenuItem>()
-                .Select(item => item.Header?.ToString())
-                .ToList();
-
-            presentedHeaders.ShouldBe(attached.Items.OfType<NativeMenuItem>().Select(item => item.Header).ToList());
+            window.GetVisualDescendants().OfType<NativeMenuBar>().ShouldBeEmpty();
         }
         finally
         {

@@ -2,6 +2,7 @@
 
 - Use the production Kubernetes client with `FakeKubernetesHttpApi` for local deterministic tests.
 - Shared backend tests use `TestClusterGenerator` and the same assertions against fake and Kind backends; Kind is enabled with `KUBEUI_RUN_KIND_TESTS=1`.
+- Run tests through `dotnet test` (MTP mode) so self-registered platform extensions such as HangDump are loaded. A bare invocation of the generated executable uses xUnit's ConsoleRunner path and bypasses those extension hooks.
 - Add `[KubernetesBackendData]` to one test method; do not create separate Fake and Kind test methods. Rows are displayed with the test method name followed by `- fake` or `- kind`.
 - HTTP-backed authorization and limited-access behavior must use the shared backend matrix too; configure `TestClusterConfig` and the generated client directly rather than constructing test doubles.
 - Keep REST behavior in the fake `DelegatingHandler` and WebSocket-only behavior in the WebSocket transport fake.

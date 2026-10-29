@@ -1,6 +1,8 @@
 #nullable enable
 
 using BenchmarkDotNet.Attributes;
+using Microsoft.Extensions.DependencyInjection;
+using KubeUI.Kubernetes.Serialization;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Kubernetes;
@@ -11,6 +13,7 @@ namespace KubeUI.Benchmarks;
 [ShortRunJob]
 public class ModelCatalogBenchmarks
 {
+    private ServiceProvider _services = null!;
     private KubernetesModelCatalog _sharedCatalog = null!;
     private ClusterModelCatalog _clusterCatalog = null!;
     private GroupApiVersionKind _podKey;
@@ -26,12 +29,16 @@ public class ModelCatalogBenchmarks
     [GlobalSetup]
     public void Setup()
     {
+        _services = new ServiceCollection().AddKubeUIKubernetesServices(jsonAllowReflection: false, yamlAllowReflection: false).BuildServiceProvider();
         _sharedCatalog = new KubernetesModelCatalog();
         _clusterCatalog = new ClusterModelCatalog(_sharedCatalog);
         _podKey = new GroupApiVersionKind(string.Empty, "v1", "Pod", "pods");
         _missingKey = new GroupApiVersionKind("example.com", "v1", "Missing", "missings");
-        _yamlValidationService = new YamlSyntaxValidationService(_sharedCatalog);
+        _yamlValidationService = new YamlSyntaxValidationService(_sharedCatalog, _services.GetRequiredService<IKubernetesYamlSerializer>());
     }
+
+    [GlobalCleanup]
+    public void Cleanup() => _services.Dispose();
 
     [Benchmark]
     public void BuiltInTypeLookup()

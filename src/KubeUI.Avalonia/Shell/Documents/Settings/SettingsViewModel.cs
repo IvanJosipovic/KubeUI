@@ -13,10 +13,24 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable, INot
     private readonly IAgentRegistry? _agentRegistry;
     private readonly IMcpServerState? _mcpServerState;
     private readonly IMcpCredentialService _mcpCredentialService;
+    private readonly IClusterRuntimeCatalog? _clusterCatalog;
     private bool _shouldValidateExternalMcpClientName;
     private string? _externalMcpClientNameError;
 
     public ISettingsService SettingsService { get; }
+
+    /// <summary>Gets or sets automatic kubeconfig discovery.</summary>
+    public bool KubeConfigAutoDiscoveryEnabled
+    {
+        get => SettingsService.Settings.KubeConfigAutoDiscoveryEnabled;
+        set
+        {
+            if (_clusterCatalog is not null)
+                _clusterCatalog.SetKubeConfigAutoDiscovery(value);
+            else
+                SettingsService.Settings.KubeConfigAutoDiscoveryEnabled = value;
+        }
+    }
     public IReadOnlyList<IAgent> Agents => _agentRegistry?.Agents ?? [];
     public IReadOnlyList<McpExternalClientGrant> ExternalMcpGrants => SettingsService.Settings.McpExternalClientGrants;
 
@@ -118,6 +132,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable, INot
         Id = nameof(SettingsViewModel);
 
         SettingsService = settingsService;
+        _clusterCatalog = clusterCatalog;
         _agentRegistry = agentRegistry;
         _mcpServerState = mcpServerState;
         _mcpCredentialService = mcpCredentialService;
@@ -209,6 +224,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable, INot
         SettingsService.SaveSettings();
         if (e.PropertyName == nameof(Options.Settings.SelectedAgentId))
             OnPropertyChanged(nameof(SelectedAgent));
+        else if (e.PropertyName == nameof(Options.Settings.KubeConfigAutoDiscoveryEnabled))
+            OnPropertyChanged(nameof(KubeConfigAutoDiscoveryEnabled));
         else if (e.PropertyName == nameof(Options.Settings.McpServerPort))
             OnPropertyChanged(nameof(McpServerPort));
         else if (e.PropertyName == nameof(Options.Settings.McpServerEnabled))

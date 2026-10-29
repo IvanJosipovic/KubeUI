@@ -1,9 +1,12 @@
+using System.Text.Json;
 using KubeUI.AI.Agents;
 using KubeUI.Avalonia.Infrastructure.Mcp;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Options;
 using KubeUI.Avalonia.Services.Settings;
 using LiveMarkdown.Avalonia;
+using SvcSystems.AI.AgentClientProtocol;
+using SvcSystems.AI.AgentClientProtocol.Models;
 
 namespace KubeUI.Avalonia.Features.AI;
 
@@ -27,6 +30,7 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
     private readonly IAgentContextService _contextService;
     private readonly IMcpServerState _mcpServerState;
     private readonly IMcpCredentialService? _mcpCredentialService;
+    private readonly ILogger<AgentChatViewModel>? _logger;
     private IAgentSession? _session;
     private IDisposable? _mcpCredentialLease;
     private CancellationTokenSource? _turnCancellation;
@@ -52,13 +56,15 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
         ISettingsService settingsService,
         IAgentContextService contextService,
         IMcpServerState mcpServerState,
-        IMcpCredentialService? mcpCredentialService = null)
+        IMcpCredentialService? mcpCredentialService = null,
+        ILogger<AgentChatViewModel>? logger = null)
     {
         _registry = registry;
         _settingsService = settingsService;
         _contextService = contextService;
         _mcpServerState = mcpServerState;
         _mcpCredentialService = mcpCredentialService;
+        _logger = logger;
         Messages.CollectionChanged += MessagesOnCollectionChanged;
         _settingsService.Settings.PropertyChanged += SettingsOnPropertyChanged;
         Context = _contextService.Context;
@@ -108,7 +114,7 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
                     TrustedMcpServers = new HashSet<string>(StringComparer.Ordinal) { "kubeui" }
                 }, _turnCancellation.Token);
             }
-            catch
+            catch (Exception exception)
             {
                 mcpCredential?.Dispose();
                 _mcpCredentialLease = null;
@@ -117,37 +123,47 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
             promptTask = _session.PromptAsync(BuildAgentPrompt(text), _turnCancellation.Token);
             await foreach (var item in _session.Events)
             {
-                if (item is AgentMessageEvent message)
-                    AddAgentMessage(message.Message);
-                else if (item is AgentToolStartedEvent toolStarted)
+                if (item is SessionUpdateEvent { Update.Value: SessionUpdateVariant0UserMessageChunk userChunk }
+                    && userChunk.Content.Value is TextContent userText)
+                    Messages.Add(new AgentChatMessage(Assets.Resources.AgentChatView_User, userText.Text));
+                else if (item is SessionUpdateEvent { Update.Value: SessionUpdateVariant1AgentMessageChunk assistantChunk }
+                    && assistantChunk.Content.Value is TextContent assistantText)
+                    AddAgentMessage(assistantText.Text);
+                else if (item is SessionUpdateEvent { Update.Value: ToolCall toolStarted })
                     Messages.Add(new AgentChatMessage(
                         Assets.Resources.AgentChatView_Tool,
-                        string.Format(Assets.Resources.AgentChatView_ToolStartedFormat!, toolStarted.Tool.Name, FormatInput(toolStarted.Tool.Input))));
-                else if (item is AgentToolCompletedEvent toolCompleted)
+                        string.Format(
+                            Assets.Resources.AgentChatView_ToolStartedFormat!,
+                            toolStarted.Title ?? toolStarted.Name ?? toolStarted.ToolCallId,
+                            FormatInput(toolStarted.RawInput))));
+                else if (item is SessionUpdateEvent { Update.Value: ToolCallUpdate toolCompleted }
+                    && toolCompleted.Status is "completed" or "failed")
+                {
+                    var succeeded = toolCompleted.Status == "completed";
+                    var toolName = toolCompleted.Title ?? toolCompleted.Name ?? toolCompleted.ToolCallId;
+                    if (!succeeded)
+                    {
+                        _logger?.LogError(
+                            "AI agent {AgentId} tool {ToolName} failed.",
+                            SelectedAgent?.Id,
+                            toolName);
+                    }
                     Messages.Add(new AgentChatMessage(
                         Assets.Resources.AgentChatView_Tool,
                         string.Format(
                             Assets.Resources.AgentChatView_ToolCompletedFormat!,
-                            toolCompleted.Result.Succeeded
+                            succeeded
                                 ? Assets.Resources.AgentChatView_ToolSucceeded
                                 : Assets.Resources.AgentChatView_ToolFailed,
-                            toolCompleted.Result.Name)));
-                else if (item is AgentPlanChangedEvent plan)
+                            toolName)));
+                }
+                else if (item is SessionUpdateEvent { Update.Value: Plan plan })
                     Messages.Add(new AgentChatMessage(
                         Assets.Resources.AgentChatView_Plan,
                         string.Join(
                             Environment.NewLine,
-                            plan.Plan.Steps.Select(step => string.Format(Assets.Resources.AgentChatView_PlanStepFormat!, step)))));
-                else if (item is AgentPermissionRequestedEvent permission)
-                    Messages.Add(new AgentChatMessage(
-                        Assets.Resources.AgentChatView_Permission,
-                        string.Format(
-                            Assets.Resources.AgentChatView_PermissionFormat!,
-                            permission.Request.Action,
-                            permission.Request.Resource ?? Assets.Resources.AgentChatView_Unspecified)));
-                else if (item is AgentDiagnosticEvent diagnostic)
-                    Messages.Add(new AgentChatMessage(Assets.Resources.AgentChatView_Diagnostic, diagnostic.Text));
-                else if (item is AgentTurnCompletedEvent)
+                            plan.Entries.Select(entry => string.Format(Assets.Resources.AgentChatView_PlanStepFormat!, entry.Content)))));
+                else if (item is Completed)
                     break;
             }
             await promptTask;
@@ -157,7 +173,10 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
             if (_turnCancellation?.IsCancellationRequested == true)
                 Messages.Add(new AgentChatMessage(Assets.Resources.AgentChatView_Status, Assets.Resources.AgentChatView_Canceled));
             else
+            {
+                _logger?.LogError(ex, "AI chat turn failed for agent {AgentId}", SelectedAgent?.Id);
                 Messages.Add(new AgentChatMessage(Assets.Resources.AgentChatView_Error, ex.Message));
+            }
         }
         finally
         {
@@ -232,22 +251,27 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
         }
     }
 
-    private static string FormatInput(string? input)
-        => string.IsNullOrWhiteSpace(input)
-            ? string.Empty
-            : string.Format(Assets.Resources.AgentChatView_ToolInputFormat!, input);
-
-    private void AddAgentMessage(AgentMessage message)
+    private void AddAgentMessage(string text)
     {
-        if (message.Role == "assistant"
-            && Messages.LastOrDefault() is { } previous
-            && previous.Role == message.Role)
+        if (Messages.LastOrDefault() is { } previous
+            && previous.Role == "assistant")
         {
-            Messages[^1] = previous with { Text = previous.Text + message.Text };
+            Messages[^1] = previous with { Text = previous.Text + text };
             return;
         }
 
-        Messages.Add(new AgentChatMessage(message.Role, message.Text));
+        Messages.Add(new AgentChatMessage("assistant", text));
+    }
+
+    private static string FormatInput(JsonElement? input)
+    {
+        if (input is not { } element || element.ValueKind == JsonValueKind.Undefined)
+            return string.Empty;
+
+        var raw = element.GetRawText();
+        return string.IsNullOrWhiteSpace(raw)
+            ? string.Empty
+            : string.Format(Assets.Resources.AgentChatView_ToolInputFormat!, raw);
     }
 
     private void MessagesOnCollectionChanged(object? _, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)

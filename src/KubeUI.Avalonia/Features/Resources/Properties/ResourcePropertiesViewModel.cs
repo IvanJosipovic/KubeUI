@@ -9,7 +9,7 @@ using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Features.Resources.Properties;
 
-public sealed partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDisposable where T : class, IKubernetesObject<V1ObjectMeta>, new()
+public sealed partial class ResourcePropertiesViewModel<T> : ViewModelBase, IViewModelViewFactory, IClusterWorkspaceContext, IDisposable where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     [ObservableProperty]
     public partial ClusterWorkspace? Cluster { get; set; }
@@ -39,6 +39,9 @@ public sealed partial class ResourcePropertiesViewModel<T> : ViewModelBase, IDis
         Title = Assets.Resources.ResourcePropertiesView_Title;
         Id = nameof(ResourcePropertiesViewModel<>);
     }
+
+    Control IViewModelViewFactory.CreateView(IServiceProvider serviceProvider) =>
+        ActivatorUtilities.CreateInstance<ResourcePropertiesView<T>>(serviceProvider);
 
     public void Initialize(ClusterWorkspace cluster, T resource)
     {

@@ -1,7 +1,7 @@
 using k8s;
 using KubeUI.Avalonia.Infrastructure;
 using YamlDotNet.Core;
-using KubernetesYamlSerializer = KubeUI.Kubernetes.Serialization.KubernetesYaml;
+using KubeUI.Kubernetes.Serialization;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml;
 
@@ -28,11 +28,11 @@ internal static class YamlDotNetDiagnosticFactory
         return [CreateDiagnostic(new YamlDiagnosticLocation(1, 1, 1, 1), Utilities.GetMeaningfulExceptionMessage(sourceException))];
     }
 
-    public static IReadOnlyList<YamlDiagnostic> CreateUnknownTypeDiagnostic(string yaml)
+    public static IReadOnlyList<YamlDiagnostic> CreateUnknownTypeDiagnostic(string yaml, IKubernetesYamlSerializer serializer)
     {
         try
         {
-            var manifest = KubernetesYamlSerializer.Deserialize<KubernetesObject>(yaml);
+            var manifest = serializer.Deserialize<KubernetesObject>(yaml);
             var location = FindHeaderLocation(yaml, "kind") ?? FindHeaderLocation(yaml, "apiVersion");
             return
             [

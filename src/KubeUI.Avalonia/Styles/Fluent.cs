@@ -1,16 +1,20 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Avalonia.Controls.Documents;
+using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
 using Avalonia.Controls.Templates;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Themes.Fluent;
 using Avalonia.Xaml.Interactivity;
+using AvaloniaEdit;
 using Dock.Avalonia.Controls;
 using Dock.Avalonia.Themes.Fluent;
 using Dock.Model.Core;
 using FluentAvalonia.Styling;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using LiveMarkdown.Avalonia;
 using Semi.Avalonia;
 using SvcSystems.UI.Terminal;
@@ -29,6 +33,7 @@ public sealed class Fluent : AvaloniaStyles
     private readonly ColorPaletteResources _lightPalette = CreateLightPalette();
     private readonly ColorPaletteResources _darkPalette = CreateDarkPalette();
 
+    [RequiresUnreferencedCode("Fluent styles load Avalonia styles from runtime XAML resources.")]
     public Fluent()
     {
         Add(new SemiTheme { Locale = s_locale });
@@ -46,6 +51,9 @@ public sealed class Fluent : AvaloniaStyles
         Add(new DockFluentTheme());
         Add(new TerminalTheme());
 
+        Add(new Style<TextEditor>()
+            .Background(new DynamicResourceExtension("SystemAltHighColor")));
+
         Add(new Style<ToolControl>()
             .Background(new DynamicResourceExtension("SystemRegionBrush")));
 
@@ -53,7 +61,7 @@ public sealed class Fluent : AvaloniaStyles
             .Setter(DocumentControl.HeaderTemplateProperty, new FuncDataTemplate<IDockable>((dockable, _) => CreateDocumentHeader(dockable!), false)));
 
         Add(new Style<MultiComboBoxItem>()
-            .Setter(global::Avalonia.Controls.Primitives.TemplatedControl.PaddingProperty, new Thickness(4, 2, 4, 2))
+            .Setter(TemplatedControl.PaddingProperty, new Thickness(4, 2, 4, 2))
             .Setter(Layoutable.WidthProperty, 200d)
             .Setter(Layoutable.MinHeightProperty, 22d));
 
@@ -157,6 +165,10 @@ public sealed class Fluent : AvaloniaStyles
         };
 
         styles.Add(new Style<Control>()
+            .Setter(TextElement.FontFamilyProperty, new DynamicResourceExtension(Typography.AppFontFamilyResourceKey))
+            .Setter(TextElement.FontSizeProperty, new DynamicResourceExtension(Typography.AppFontSizeResourceKey)));
+
+        styles.Add(new Style<MenuItem>()
             .Setter(TextElement.FontFamilyProperty, new DynamicResourceExtension(Typography.AppFontFamilyResourceKey))
             .Setter(TextElement.FontSizeProperty, new DynamicResourceExtension(Typography.AppFontSizeResourceKey)));
 
@@ -326,6 +338,7 @@ public sealed class Fluent : AvaloniaStyles
         RegionColor = Color("#1E1E1E")
     };
 
+    [RequiresUnreferencedCode("Calls Avalonia.Markup.Xaml.Styling.StyleInclude.StyleInclude(Uri)")]
     private static StyleInclude CreateStyleInclude(string source) => new(s_baseUri) { Source = new Uri(source) };
 
     private static Color Color(string value) => global::Avalonia.Media.Color.Parse(value);
@@ -366,6 +379,6 @@ public sealed class Fluent : AvaloniaStyles
 
     private static ClusterWorkspace? GetCluster(IDockable dockable)
     {
-        return dockable.GetType().GetProperty("Cluster")?.GetValue(dockable) as ClusterWorkspace;
+        return (dockable as IClusterWorkspaceContext)?.Cluster;
     }
 }

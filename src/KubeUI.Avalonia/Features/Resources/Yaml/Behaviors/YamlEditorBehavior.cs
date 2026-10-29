@@ -9,13 +9,10 @@ using AvaloniaEdit.Document;
 using AvaloniaEdit.Editing;
 using AvaloniaEdit.Folding;
 using AvaloniaEdit.Indentation;
-using AvaloniaEdit.TextMate;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Styles;
 using KubeUI.Kubernetes;
-using TextMateSharp.Grammars;
-using static AvaloniaEdit.TextMate.TextMate;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 
@@ -56,8 +53,6 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         }
     }
 
-    private Installation? _textMateInstallation;
-    private RegistryOptions _registryOptions = null!;
     private FoldingManager? _foldingManager;
     private LeakSafeFoldingMargin? _foldingMargin;
     private ResourceYamlViewModel? _currentViewModel;
@@ -86,14 +81,9 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
             return;
         }
 
-        _registryOptions = new RegistryOptions(Application.Current!.ActualThemeVariant == ThemeVariant.Light
-            ? ThemeName.Light
-            : ThemeName.DarkPlus);
-
         // Keep behavior lifecycle tied to ViewModel attach/detach only.
 
         AssociatedObject.TextChanged += Editor_TextChanged;
-        Application.Current!.ActualThemeVariantChanged += ThemeChanged;
 
         AssociatedObject.DataContextChanged += OnDataContextChanged;
         AssociatedObject.AttachedToVisualTree += AttachedToVisualTree;
@@ -175,13 +165,6 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         AssociatedObject.Document = vm.YamlDocument;
         AssociatedObject.TextArea.IndentationStrategy = s_yamlIndentationStrategy;
 
-        if (_textMateInstallation == null)
-        {
-            _textMateInstallation = AssociatedObject.InstallTextMate(_registryOptions, true);
-            _textMateInstallation.SetGrammar(_registryOptions
-                .GetScopeByLanguageId(_registryOptions.GetLanguageByExtension(".yaml").Id));
-        }
-
         if (_foldingManager == null)
         {
             _foldingManager = FoldingManager.Install(AssociatedObject.TextArea);
@@ -244,11 +227,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
             _foldingUpdateTimer = null;
         }
 
-        Application.Current!.ActualThemeVariantChanged -= ThemeChanged;
         CloseCompletionWindow();
-
-        _textMateInstallation?.Dispose();
-        _textMateInstallation = null;
 
         if (_foldingManager != null)
         {
@@ -267,23 +246,6 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         _currentViewModel = null;
 
         base.OnDetaching();
-    }
-
-    private void ThemeChanged(object? sender, EventArgs e)
-    {
-        if (_textMateInstallation == null)
-        {
-            return;
-        }
-
-        if (Application.Current!.ActualThemeVariant == ThemeVariant.Light)
-        {
-            _textMateInstallation.SetTheme(_registryOptions.LoadTheme(ThemeName.Light));
-        }
-        else
-        {
-            _textMateInstallation.SetTheme(_registryOptions.LoadTheme(ThemeName.DarkPlus));
-        }
     }
 
     private void Editor_TextChanged(object? sender, EventArgs e)

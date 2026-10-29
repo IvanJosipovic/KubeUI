@@ -1,3 +1,4 @@
+using KubeUI.Kubernetes.Serialization;
 using System.Text;
 using System.Text.Json;
 using Azure.Core;
@@ -16,15 +17,17 @@ public sealed class AksClusterService : IAksClusterService
 {
     private const string AzureManagementScope = "https://management.azure.com/.default";
     private readonly AzureCliCredential _azureCliCredential;
+    private readonly IKubernetesYamlSerializer _yamlSerializer;
 
-    public AksClusterService()
-        : this(new AzureCliCredential())
+    public AksClusterService(IKubernetesYamlSerializer yamlSerializer)
+        : this(new AzureCliCredential(), yamlSerializer)
     {
     }
 
-    private AksClusterService(AzureCliCredential azureCliCredential)
+    private AksClusterService(AzureCliCredential azureCliCredential, IKubernetesYamlSerializer yamlSerializer)
     {
         _azureCliCredential = azureCliCredential;
+        _yamlSerializer = yamlSerializer;
     }
 
     /// <inheritdoc />
@@ -116,7 +119,7 @@ public sealed class AksClusterService : IAksClusterService
         }
 
         var decodedConfig = Encoding.UTF8.GetString(firstKubeConfig.Value);
-        var kubeConfig = Serialization.KubernetesYaml.Deserialize<K8SConfiguration>(decodedConfig);
+        var kubeConfig = _yamlSerializer.Deserialize<K8SConfiguration>(decodedConfig);
         kubeConfig.FileName = string.Empty;
         NormalizeKubeConfigNames(kubeConfig, cluster.Name);
 

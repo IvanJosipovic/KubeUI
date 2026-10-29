@@ -2,17 +2,17 @@ using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v2.HorizontalPodAutoscaler;
 
-public sealed partial class V2HorizontalPodAutoscalerConfig : ResourceConfigBase<V2HorizontalPodAutoscaler>
+public sealed partial class V2HorizontalPodAutoscalerConfig : ResourceConfig<V2HorizontalPodAutoscaler>
 {
     public V2HorizontalPodAutoscalerConfig(IServiceProvider serviceProvider)
         : base(serviceProvider)
     {
     }
     public override bool IsNamespaced => true;
-    public override string Category => Assets.Resources.ResourceConfig_Category_Configuration!;
+    public override NavigationPlacement Navigation => NavigationPlacement.InSection(NavigationSections.ConfigurationId);
     public override int Order => 4;
 
-    public override IList<IResourceListColumn> Columns()
+    protected override IList<IResourceListColumn> CreateDefaultColumns()
     {
         return [
             NameColumn(SortDirection.Ascending),

@@ -1,3 +1,4 @@
+using KubeUI.Kubernetes.Serialization;
 using System.Runtime.InteropServices;
 using System.Text;
 using CliWrap;
@@ -112,7 +113,8 @@ public static class Kind
 
     public static async Task<K8SConfiguration> GetK8SConfiguration(string name, CancellationToken cancellationToken = default)
     {
-        var kubeConfig = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<K8SConfiguration>(await GetKubeConfig(name, cancellationToken).ConfigureAwait(false));
+        using var serializer = new KubernetesYamlSerializer(allowReflection: false);
+        var kubeConfig = serializer.Deserialize<K8SConfiguration>(await GetKubeConfig(name, cancellationToken).ConfigureAwait(false));
         if (kubeConfig is null)
         {
             throw new InvalidOperationException($"kind did not return a valid kubeconfig for cluster '{name}'.");

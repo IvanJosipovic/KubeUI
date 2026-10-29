@@ -9,4 +9,7 @@ public sealed class DefaultKubeConfigPathProvider : IKubeConfigPathProvider
 {
     /// <inheritdoc />
     public string DefaultPath => KubernetesClientConfiguration.KubeConfigDefaultLocation;
+
+    /// <inheritdoc />
+    public string? DiscoveryDirectory => Path.GetDirectoryName(DefaultPath);
 }

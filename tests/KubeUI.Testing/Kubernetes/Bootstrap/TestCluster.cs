@@ -1,3 +1,4 @@
+using KubeUI.Kubernetes.Serialization;
 using System.Reflection;
 using k8s;
 using k8s.KubeConfigModels;
@@ -10,6 +11,7 @@ public sealed class TestCluster : IDisposable, IAsyncDisposable
 {
     private readonly Func<CancellationToken, Task>? _cleanup;
     private readonly FakeKubernetesHttpApi? _fakeApi;
+    private readonly IKubernetes? _adminClient;
     private readonly IServiceProvider _services;
     private readonly List<KubeUI.Kubernetes.Cluster> _additionalClusters = [];
     private IClusterRuntimeCatalog? _runtimeCatalog;
@@ -22,7 +24,8 @@ public sealed class TestCluster : IDisposable, IAsyncDisposable
         KubeUI.Kubernetes.Cluster cluster,
         IServiceProvider services,
         Func<CancellationToken, Task>? cleanup = null,
-        FakeKubernetesHttpApi? fakeApi = null)
+        FakeKubernetesHttpApi? fakeApi = null,
+        IKubernetes? adminClient = null)
     {
         Client = client;
         KubeConfig = kubeConfig;
@@ -31,9 +34,15 @@ public sealed class TestCluster : IDisposable, IAsyncDisposable
         _services = services;
         _cleanup = cleanup;
         _fakeApi = fakeApi;
+        _adminClient = adminClient;
     }
 
     public IKubernetes Client { get; }
+
+    /// <summary>
+    /// Gets the administrative client used to prepare RBAC state for the authenticated test client.
+    /// </summary>
+    public IKubernetes AdminClient => _adminClient ?? Client;
 
     public K8SConfiguration KubeConfig { get; }
 
@@ -186,8 +195,8 @@ public sealed class TestCluster : IDisposable, IAsyncDisposable
 
     private K8SConfiguration CloneKubeConfig(string name)
     {
-        var kubeConfig = KubeUI.Kubernetes.Serialization.KubernetesYaml.Deserialize<K8SConfiguration>(
-            KubeUI.Kubernetes.Serialization.KubernetesYaml.Serialize(KubeConfig))
+        var serializer = _services.GetRequiredService<IKubernetesYamlSerializer>();
+        var kubeConfig = serializer.Deserialize<K8SConfiguration>(serializer.Serialize(KubeConfig))
             ?? throw new InvalidOperationException("Unable to clone the kubeconfig.");
         var currentContext = kubeConfig.CurrentContext
             ?? throw new InvalidOperationException("The kubeconfig has no current context.");
@@ -212,9 +221,10 @@ public sealed class TestCluster : IDisposable, IAsyncDisposable
         var createMethod = typeof(TestCluster)
             .GetMethod(nameof(CreateResourceAsync), BindingFlags.Static | BindingFlags.NonPublic)!;
 
-        foreach (var resource in KubeUI.Kubernetes.Serialization.KubernetesYaml.LoadAllFromString(
+        var typeMap = _services.GetRequiredService<KubernetesModelCatalog>().GetYamlTypeMap();
+        foreach (var resource in _services.GetRequiredService<IKubernetesYamlSerializer>().LoadAllFromString(
             yaml,
-            _services.GetRequiredService<KubernetesModelCatalog>().GetYamlTypeMap()).Cast<IKubernetesObject>())
+            key => typeMap[key]).Cast<IKubernetesObject>())
         {
             var createTask = (Task)createMethod
                 .MakeGenericMethod(resource.GetType())
@@ -242,18 +252,54 @@ public sealed class TestCluster : IDisposable, IAsyncDisposable
     public Task<T> CreateAsync<T>(T item, CancellationToken cancellationToken = default)
         where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
+        return CreateAsync(Cluster.Client!, item, cancellationToken);
+    }
+
+    /// <summary>
+    /// Creates a resource with the administrative client instead of the authenticated test client.
+    /// </summary>
+    public Task<T> CreateAsAdminAsync<T>(T item, CancellationToken cancellationToken = default)
+        where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        return CreateAsync(AdminClient, item, cancellationToken);
+    }
+
+    private static Task<T> CreateAsync<T>(
+        IKubernetes kubernetes,
+        T item,
+        CancellationToken cancellationToken)
+        where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
         ArgumentNullException.ThrowIfNull(item);
-        using var client = Cluster.Client!.GetGenericClient<T>();
+        using var client = kubernetes.GetGenericClient<T>();
         return string.IsNullOrEmpty(item.Namespace())
             ? client.CreateAsync(item, cancellationToken)
             : client.CreateNamespacedAsync(item, item.Namespace(), cancellationToken);
     }
 
-    public async Task<T> ReplaceAsync<T>(T item, CancellationToken cancellationToken = default)
+    public Task<T> ReplaceAsync<T>(T item, CancellationToken cancellationToken = default)
+        where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        return ReplaceAsync(Cluster.Client!, item, cancellationToken);
+    }
+
+    /// <summary>
+    /// Replaces a resource with the administrative client instead of the authenticated test client.
+    /// </summary>
+    public Task<T> ReplaceAsAdminAsync<T>(T item, CancellationToken cancellationToken = default)
+        where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        return ReplaceAsync(AdminClient, item, cancellationToken);
+    }
+
+    private static async Task<T> ReplaceAsync<T>(
+        IKubernetes kubernetes,
+        T item,
+        CancellationToken cancellationToken)
         where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         ArgumentNullException.ThrowIfNull(item);
-        using var client = Cluster.Client!.GetGenericClient<T>();
+        using var client = kubernetes.GetGenericClient<T>();
         var current = string.IsNullOrEmpty(item.Namespace())
             ? await client.ReadAsync<T>(item.Name(), cancellationToken).ConfigureAwait(false)
             : await client.ReadNamespacedAsync<T>(item.Namespace(), item.Name(), cancellationToken).ConfigureAwait(false);
@@ -263,11 +309,29 @@ public sealed class TestCluster : IDisposable, IAsyncDisposable
             : await client.ReplaceNamespacedAsync(item, item.Namespace(), item.Name(), cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task DeleteAsync<T>(T item, CancellationToken cancellationToken = default)
+    public Task DeleteAsync<T>(T item, CancellationToken cancellationToken = default)
+        where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        return DeleteAsync(Cluster.Client!, item, cancellationToken);
+    }
+
+    /// <summary>
+    /// Deletes a resource with the administrative client instead of the authenticated test client.
+    /// </summary>
+    public Task DeleteAsAdminAsync<T>(T item, CancellationToken cancellationToken = default)
+        where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        return DeleteAsync(AdminClient, item, cancellationToken);
+    }
+
+    private static async Task DeleteAsync<T>(
+        IKubernetes kubernetes,
+        T item,
+        CancellationToken cancellationToken)
         where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         ArgumentNullException.ThrowIfNull(item);
-        using var client = Cluster.Client!.GetGenericClient<T>();
+        using var client = kubernetes.GetGenericClient<T>();
         if (string.IsNullOrEmpty(item.Namespace()))
         {
             await client.DeleteAsync<T>(item.Name(), cancellationToken).ConfigureAwait(false);
@@ -299,6 +363,10 @@ public sealed class TestCluster : IDisposable, IAsyncDisposable
         if (Client is IDisposable client)
         {
             client.Dispose();
+        }
+        if (_adminClient is not null && !ReferenceEquals(_adminClient, Client) && _adminClient is IDisposable adminClient)
+        {
+            adminClient.Dispose();
         }
         if (_cleanup is not null)
         {

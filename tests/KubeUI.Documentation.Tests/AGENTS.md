@@ -5,7 +5,7 @@
 - Render intro cards at the same 1440×900 resolution as all video frames.
 - Use app theme resources `SystemAltHighColor` and `SystemBaseHighBrush` for intro background and text; do not hardcode palette colors.
 - Place recording tests under `Features/` or `Shell/` to mirror the corresponding Avalonia feature.
-- Start views with `StartAt<TView, TViewModel>()`; it resolves both from the test scope, sets `DataContext`, and initializes `IInitializeCluster` view models. Pass a setup action when a view model needs custom initialization instead.
+- Start views with `StartAt<TView, TViewModel>()`; it resolves both from the test scope, sets `DataContext`, and initializes `IInitializeCluster` view models. Pass a setup action when a view model needs custom initialization; use `LoadCustomView` only when the recording needs explicit test doubles or asynchronous setup.
 - Use step readiness predicates for scenario-specific UI state; wait for rendered controls and stable layout, not only ViewModel data.
 - Keep the recorder's readiness mechanism generic.
 - Record YAML exploration through the editor's real hover popup, keyboard text input, and IntelliSense arrow/Enter navigation.
@@ -20,7 +20,10 @@
 - Build walkthrough resources with ten Deployments, one active ReplicaSet per Deployment, and deterministic varied Pod replica counts. Keep at least two Pods in every Deployment so controller log scopes demonstrate stream aggregation. Verify the featured `web` Pod scope and its parent scopes.
 - Narration-only closing steps may omit actions to hold the current view while speech finishes.
 - Pod-log walkthroughs use the real context menu and parent-controller navigation with a deterministic fake log stream.
+- Helm walkthroughs use a real, popular classic Helm repository and chart for repository metadata, chart versions, default values, and template previews. Release listing/install/upgrade bookkeeping may be simulated because the generated fake transport is not an HTTP kube-apiserver; never point Helm at or mutate a real cluster. Pin or filter the chosen chart when stable recording output is needed, and keep all Helm repository/cache paths isolated from user configuration.
+- Keep recording-harness details (fake cluster and simulated release bookkeeping) out of viewer narration. Narrate KubeUI's user-facing workflow and outcomes.
 - Filter virtualized resource lists before targeting rows that may be outside the visible table area.
 - Resource-relationship walkthroughs zoom into the featured Deployment, then pan down through its ReplicaSet to a Pod.
 - Encode one high quality H.264 MP4 per theme using lossless PNG source frames captured at the video resolution.
-- Regenerate clips from the repository root with `Get-Content -Raw .\generate-walkthrough-videos.com | pwsh -NoProfile -Command -`; it clears old MP4 outputs after a successful build and before recording.
+- Record walkthrough content inside `MainWindow` and reuse the `WindowDrawnDecorations` overlay produced by its production theme so clips show the same managed decorations as Windows/Linux.
+- Regenerate clips from the repository root with `& .\generate-walkthrough-videos.ps1`; it clears old MP4 outputs after a successful build and before recording.

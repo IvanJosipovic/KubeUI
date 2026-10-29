@@ -15,6 +15,8 @@ public sealed class KubernetesTestKubeConfigPathProvider : IKubeConfigPathProvid
     }
 
     public string DefaultPath { get; }
+
+    public string? DiscoveryDirectory => null;
 }
 
 public sealed class KubernetesTestHostApplicationLifetime : IHostApplicationLifetime
@@ -38,6 +40,10 @@ public sealed class KubernetesTestSettingsStore : IClusterSettingsStore
     }
 
     public IReadOnlyCollection<string> KubeConfigPaths => _kubeConfigPaths;
+
+    public bool KubeConfigAutoDiscoveryEnabled { get; set; } = true;
+
+    public void RemoveKubeConfigPath(string path) => _kubeConfigPaths.Remove(path);
 
     public void AddKubeConfigPath(string path)
     {
@@ -65,7 +71,7 @@ public static class KubernetesTestServiceProvider
         services.AddLogging(builder => builder.AddDebug().SetMinimumLevel(LogLevel.Information));
         services.AddSingleton<IHostApplicationLifetime, KubernetesTestHostApplicationLifetime>();
         services.AddSingleton(settings);
-        services.AddKubeUIKubernetesServices();
+        services.AddKubeUIKubernetesServices(jsonAllowReflection: false, yamlAllowReflection: true);
         configure?.Invoke(services);
         var provider = services.BuildServiceProvider();
         RegisterYamlModels(provider.GetRequiredService<KubernetesModelCatalog>());

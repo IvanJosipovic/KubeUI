@@ -1,6 +1,7 @@
 using System.Windows.Input;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using Avalonia.Xaml.Interactivity;
 
@@ -8,12 +9,12 @@ namespace KubeUI.Avalonia.Shell.Navigation;
 
 internal sealed class NavigationTreeSelectionBehavior : Behavior<TreeView>
 {
-    private readonly ICommand _selectionChangedCommand;
+    private readonly ICommand _itemInvokedCommand;
 
-    public NavigationTreeSelectionBehavior(ICommand selectionChangedCommand)
+    public NavigationTreeSelectionBehavior(ICommand itemInvokedCommand)
     {
-        ArgumentNullException.ThrowIfNull(selectionChangedCommand);
-        _selectionChangedCommand = selectionChangedCommand;
+        ArgumentNullException.ThrowIfNull(itemInvokedCommand);
+        _itemInvokedCommand = itemInvokedCommand;
     }
 
     protected override void OnAttached()
@@ -22,8 +23,8 @@ internal sealed class NavigationTreeSelectionBehavior : Behavior<TreeView>
 
         if (AssociatedObject is { } tree)
         {
-            tree.SelectionChanged += OnSelectionChanged;
-            tree.AddHandler(InputElement.PointerPressedEvent, OnPointerPressed, RoutingStrategies.Tunnel);
+            tree.AddHandler(InputElement.PointerReleasedEvent, OnPointerReleased, RoutingStrategies.Tunnel);
+            tree.AddHandler(InputElement.KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
         }
     }
 
@@ -31,38 +32,55 @@ internal sealed class NavigationTreeSelectionBehavior : Behavior<TreeView>
     {
         if (AssociatedObject is { } tree)
         {
-            tree.SelectionChanged -= OnSelectionChanged;
-            tree.RemoveHandler(InputElement.PointerPressedEvent, OnPointerPressed);
+            tree.RemoveHandler(InputElement.PointerReleasedEvent, OnPointerReleased);
+            tree.RemoveHandler(InputElement.KeyDownEvent, OnKeyDown);
         }
 
         base.OnDetaching();
     }
 
-    private void OnSelectionChanged(object? sender, SelectionChangedEventArgs args)
-    {
-        if (args.AddedItems.Count > 0)
-        {
-            _selectionChangedCommand.Execute(args);
-        }
-    }
-
-    private void OnPointerPressed(object? sender, PointerPressedEventArgs args)
+    private void OnPointerReleased(object? sender, PointerReleasedEventArgs args)
     {
         var tree = AssociatedObject;
         if (tree is null
-            || args.GetCurrentPoint(tree).Properties.PointerUpdateKind != PointerUpdateKind.LeftButtonPressed
-            || args.Source is not Visual source)
+            || args.GetCurrentPoint(tree).Properties.PointerUpdateKind != PointerUpdateKind.LeftButtonReleased
+            || args.Source is not Visual source
+            || FindItem(source) is not { DataContext: { } item })
         {
             return;
         }
 
+        Invoke(item);
+    }
+
+    private void OnKeyDown(object? sender, KeyEventArgs args)
+    {
+        if (args.Key is not (Key.Enter or Key.Space)
+            || AssociatedObject?.SelectedItem is not { } item)
+        {
+            return;
+        }
+
+        Invoke(item);
+        args.Handled = true;
+    }
+
+    private void Invoke(object item)
+    {
+        if (_itemInvokedCommand.CanExecute(item))
+        {
+            _itemInvokedCommand.Execute(item);
+        }
+    }
+
+    private static TreeViewItem? FindItem(Visual source)
+    {
         TreeViewItem? item = null;
-        var isExpanderPress = false;
         foreach (var ancestor in source.GetSelfAndVisualAncestors())
         {
             if (ancestor is ToggleButton)
             {
-                isExpanderPress = true;
+                return null;
             }
 
             if (ancestor is TreeViewItem treeViewItem)
@@ -72,14 +90,6 @@ internal sealed class NavigationTreeSelectionBehavior : Behavior<TreeView>
             }
         }
 
-        if (item is null || isExpanderPress)
-        {
-            return;
-        }
-
-        if (ReferenceEquals(tree.SelectedItem, item.DataContext))
-        {
-            tree.SelectedItem = null;
-        }
+        return item;
     }
 }

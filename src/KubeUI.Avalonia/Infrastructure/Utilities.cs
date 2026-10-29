@@ -1,3 +1,5 @@
+using System.Text.Json;
+using KubeUI.Kubernetes.Serialization;
 using Avalonia.Controls.Notifications;
 using Avalonia.Input;
 using Avalonia.Xaml.Interactivity;
@@ -10,15 +12,19 @@ namespace KubeUI.Avalonia.Infrastructure;
 
 public static class Utilities
 {
-    public static T CloneObject<T>(T resource)
+    /// <summary>Clones a resource using the owning application's JSON serializer.</summary>
+    /// <param name="resource">Resource to clone.</param>
+    /// <param name="serializer">Serializer configured by application Settings.</param>
+    /// <returns>An independent resource with the same data.</returns>
+    public static T CloneObject<T>(T resource, IKubernetesJsonSerializer serializer)
         where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         ArgumentNullException.ThrowIfNull(resource);
 
         return resource is GenericKubernetesObject generic
-            ? (T)(object)(KubernetesJson.Deserialize<GenericKubernetesObject>(KubernetesJson.Serialize(generic))
+            ? (T)(object)(serializer.Deserialize<GenericKubernetesObject>(serializer.Serialize(generic))
                 ?? throw new InvalidOperationException("Deserialization returned null."))
-            : KubernetesJson.Deserialize<T>(KubernetesJson.Serialize(resource))
+            : serializer.Deserialize<T>(serializer.Serialize(resource))
                 ?? throw new InvalidOperationException("Deserialization returned null.");
     }
 
@@ -34,7 +40,7 @@ public static class Utilities
                     {
                         if (item is HttpOperationException opEx)
                         {
-                            var status = KubernetesJson.Deserialize<V1Status>(opEx.Response.Content);
+                            var status = JsonSerializer.Deserialize(opEx.Response.Content, KubernetesJsonStaticContext.Default.V1Status);
 
                             if (status != null)
                             {
@@ -50,7 +56,7 @@ public static class Utilities
                 }
                 else if (ex is HttpOperationException opEx)
                 {
-                    var status = KubernetesJson.Deserialize<V1Status>(opEx.Response.Content);
+                    var status = JsonSerializer.Deserialize(opEx.Response.Content, KubernetesJsonStaticContext.Default.V1Status);
 
                     if (status != null)
                     {
@@ -111,7 +117,7 @@ public static class Utilities
 
         try
         {
-            var status = KubernetesJson.Deserialize<V1Status>(opEx.Response.Content);
+            var status = JsonSerializer.Deserialize(opEx.Response.Content, KubernetesJsonStaticContext.Default.V1Status);
             if (status == null)
             {
                 message = string.Empty;

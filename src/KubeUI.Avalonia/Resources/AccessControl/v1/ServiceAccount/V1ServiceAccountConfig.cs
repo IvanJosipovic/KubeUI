@@ -2,7 +2,7 @@ using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.AccessControl.v1.ServiceAccount;
 
-public sealed partial class V1ServiceAccountConfig : ResourceConfigBase<V1ServiceAccount>
+public sealed partial class V1ServiceAccountConfig : ResourceConfig<V1ServiceAccount>
 {
     public V1ServiceAccountConfig(IServiceProvider serviceProvider)
         : base(serviceProvider)
@@ -10,10 +10,10 @@ public sealed partial class V1ServiceAccountConfig : ResourceConfigBase<V1Servic
     }
 
     public override bool IsNamespaced => true;
-    public override string Category => Assets.Resources.ResourceConfig_Category_AccessControl!;
+    public override NavigationPlacement Navigation => NavigationPlacement.InSection(NavigationSections.AccessControlId);
     public override int Order => 0;
 
-    public override IList<IResourceListColumn> Columns()
+    protected override IList<IResourceListColumn> CreateDefaultColumns()
     {
         return [
             NameColumn(SortDirection.Ascending),

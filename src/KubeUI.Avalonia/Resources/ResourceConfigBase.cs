@@ -24,38 +24,63 @@ using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources;
 
-public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourceConfig where T : class, IKubernetesObject<V1ObjectMeta>, new()
+public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourceConfig
+    where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
-    protected IServiceProvider ServiceProvider { get; }
-    protected readonly ILogger<ResourceConfigBase<T>> _logger;
-    protected readonly IDialogService _dialogService;
-    protected readonly INotificationManager _notificationManager;
-    protected readonly IFactory _factory;
-    private readonly IPodLogsLauncher _podLogsLauncher;
+    protected IServiceProvider ServiceProvider { get; private set; } = null!;
+    protected ILogger<ResourceConfigBase<T>> _logger = null!;
+    protected IDialogService _dialogService = null!;
+    protected INotificationManager _notificationManager = null!;
+    protected IFactory _factory = null!;
+    private IPodLogsLauncher _podLogsLauncher = null!;
+
+    protected ResourceConfigBase()
+    {
+    }
 
     protected ResourceConfigBase(IServiceProvider serviceProvider)
     {
-        ServiceProvider = serviceProvider;
+        InitializeServices(serviceProvider);
+    }
+
+    private void InitializeServices(IServiceProvider serviceProvider)
+    {
+        ArgumentNullException.ThrowIfNull(serviceProvider);
+
+        // Services are resolved once per service provider. A configuration that is created
+        // without a service provider receives one when it is initialized against a cluster.
+        // If initialized with a different service provider (e.g., different cluster), re-initialize.
+        if (ServiceProvider == serviceProvider)
+        {
+            return;
+        }
+
         _logger = serviceProvider.GetRequiredService<ILogger<ResourceConfigBase<T>>>();
         _dialogService = serviceProvider.GetRequiredService<IDialogService>();
         _factory = serviceProvider.GetRequiredService<IFactory>();
         _podLogsLauncher = serviceProvider.GetRequiredService<IPodLogsLauncher>();
         _notificationManager = serviceProvider.GetRequiredService<INotificationManager>();
+        ServiceProvider = serviceProvider;
     }
 
     public virtual GroupApiVersionKind Kind => GroupApiVersionKind.From<T>();
+
+    /// <inheritdoc />
+    public virtual ResourceOrigin Origin => ResourceOrigin.BuiltIn;
+
+    /// <inheritdoc />
+    public virtual V1CustomResourceDefinition? CustomResourceDefinition => null;
 
     public ClusterWorkspace Cluster { get; private set; }
 
     public virtual string Name => Kind.Kind.Humanize(LetterCasing.Title).Pluralize();
 
-    public virtual string? Category { get; }
+    /// <inheritdoc />
+    public virtual NavigationPlacement Navigation => NavigationPlacement.Root;
 
     public virtual bool ShowNewResource { get; } = true;
 
     public virtual bool IsNamespaced { get; private set; }
-
-    public virtual bool IsCustomResource => false;
 
     public virtual bool SeedOnConnect => false;
 
@@ -63,21 +88,24 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public bool PermissionsLoaded { get; protected set; }
 
-    public Task SeedResource(bool waitForReady = false)
+    public virtual Task SeedResource(bool waitForReady = false)
         => SeedResource(waitForReady, CancellationToken.None);
 
-    public Task SeedResource(bool waitForReady, CancellationToken cancellationToken)
-    {
-        return IsCustomResource
-            ? Cluster.Runtime.SeedResource(Kind, waitForReady, cancellationToken)
-            : Cluster.Runtime.SeedResource<T>(waitForReady, cancellationToken);
-    }
+    /// <summary>Seeds this resource kind using its typed or dynamic resource implementation.</summary>
+    /// <param name="waitForReady">Waits until the informer reports that it is ready.</param>
+    /// <param name="cancellationToken">Cancels the seed request.</param>
+    public abstract Task SeedResource(bool waitForReady, CancellationToken cancellationToken);
 
     public virtual int Order { get; }
 
     public virtual Style[] ListStyle() => [];
 
-    public virtual IList<IResourceListColumn> Columns()
+    public IList<IResourceListColumn> Columns()
+    {
+        return CreateDefaultColumns();
+    }
+
+    protected virtual IList<IResourceListColumn> CreateDefaultColumns()
     {
         if (IsNamespaced)
         {
@@ -100,7 +128,8 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     public IEnumerable<MenuItemViewModel> GetCustomMenuItems(IEnumerable? selectedItems)
     {
-        return CreateCustomMenuItems(selectedItems?.OfType<T>());
+        var typedItems = selectedItems?.OfType<T>();
+        return CreateCustomMenuItems(typedItems);
     }
 
     protected virtual IEnumerable<MenuItemViewModel> CreateCustomMenuItems(IEnumerable<T>? selectedItems) => [];
@@ -200,7 +229,8 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         return false;
     }
 
-    public virtual Control[] Properties(T resource) => [];
+    public virtual Control[] Properties(T resource)
+        => [];
 
     protected ResourceListColumn<T, string> NameColumn(SortDirection sort = SortDirection.None)
     {
@@ -240,17 +270,14 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         };
     }
 
-    public void Initialize(ClusterWorkspace cluster)
+    public virtual void Initialize(ClusterWorkspace cluster)
     {
-        Cluster = cluster;
-
-        if (!IsCustomResource)
+        if (ServiceProvider is null)
         {
-            Cluster.Runtime.ModelCatalog.RegisterResource(
-                Kind,
-                typeof(T),
-                (waitForReady, cancellationToken) => Cluster.Runtime.SeedResource<T>(waitForReady, cancellationToken));
+            InitializeServices(cluster.ServiceProvider);
         }
+
+        Cluster = cluster;
     }
 
     public IEnumerable<MenuItemViewModel> GetDefaultMenuItems(IEnumerable? selectedItems)
@@ -318,7 +345,11 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         return Task.CompletedTask;
     }
 
-    private bool HasListAndWatchAccess()
+    /// <summary>
+    /// Determines whether this kind can be listed and watched, either cluster-wide or in at
+    /// least one namespace. Subclasses that resolve access differently must not narrow this.
+    /// </summary>
+    protected bool HasListAndWatchAccess()
     {
         if (Cluster.Runtime.Permissions.CanIAnyNamespace(Kind, IsNamespaced, Verb.List)
             && Cluster.Runtime.Permissions.CanIAnyNamespace(Kind, IsNamespaced, Verb.Watch))
@@ -354,20 +385,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     [RelayCommand(CanExecute = nameof(CanNewResource))]
     public void NewResource()
     {
-        var resource = new T
-        {
-            Kind = Kind.Kind,
-            ApiVersion = Kind.GroupApiVersion,
-            Metadata = new()
-            {
-                Name = "temp",
-            }
-        };
-
-        if (IsNamespaced)
-        {
-            resource.Metadata.NamespaceProperty = "default";
-        }
+        var resource = CreateNewResource();
 
         var vm = ServiceProvider.GetRequiredService<ResourceYamlViewModel>();
         vm.Initialize(Cluster, resource);
@@ -375,6 +393,29 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
         _factory.AddToBottom(vm);
     }
+
+    internal virtual T CreateNewResource()
+    {
+        var resource = CreateInitialResourceTemplate();
+        resource.Kind = Kind.Kind;
+        resource.ApiVersion = Kind.GroupApiVersion;
+        resource.Metadata ??= new();
+        if (string.IsNullOrWhiteSpace(resource.Metadata.Name))
+        {
+            resource.Metadata.Name = "temp";
+        }
+
+        if (IsNamespaced && string.IsNullOrWhiteSpace(resource.Metadata.NamespaceProperty))
+        {
+            resource.Metadata.NamespaceProperty = "default";
+        }
+
+        return resource;
+    }
+
+    /// <summary>Creates a fresh, kind-specific object used to start a new resource document.</summary>
+    /// <remarks>Override to return a fully typed template. Called for each new resource.</remarks>
+    protected virtual T CreateInitialResourceTemplate() => new();
 
     public bool CanNewResource()
     {

@@ -12,7 +12,7 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
     private readonly TcpListener _listener;
     private readonly IPortForwardSessionFactory _sessionFactory;
     private readonly HashSet<Socket> _activeSockets = [];
-    private readonly object _activeSocketsGate = new();
+    private readonly Lock _activeSocketsGate = new();
 
     public string Name { get; private set; }
 
@@ -305,7 +305,9 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
             }
         }
 
-        return null;
+        return string.IsNullOrEmpty(servicePort.Name) && ports.Count == 1
+            ? ports[0]
+            : null;
     }
 
     private static bool TrySelectPod(V1EndpointSlice endpointSlice, out string podName)

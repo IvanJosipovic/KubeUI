@@ -16,6 +16,71 @@ public static class FactoryExtensions
                 .FirstOrDefault(x => string.Equals(x.Id, id, StringComparison.Ordinal));
     }
 
+    /// <summary>
+    /// Adds a document, or updates and focuses the open document with the same identifier.
+    /// </summary>
+    /// <typeparam name="T">Type of the document to add or update.</typeparam>
+    /// <param name="factory">Dock factory that owns the document dock.</param>
+    /// <param name="document">
+    /// Candidate document. The view model must set <see cref="IDockable.Id"/> before this call.
+    /// </param>
+    /// <param name="update">Applies request state to the live document, whether newly added or already open.</param>
+    /// <returns>The live document instance.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// The document has no identifier, or a different document type owns the identifier.
+    /// </exception>
+    public static T AddOrUpdateToDocuments<T>(
+        this IFactory factory,
+        T document,
+        Action<T>? update = null)
+        where T : class, IDockable
+    {
+        ArgumentNullException.ThrowIfNull(factory);
+        ArgumentNullException.ThrowIfNull(document);
+
+        if (string.IsNullOrWhiteSpace(document.Id))
+        {
+            (document as IDisposable)?.Dispose();
+            throw new InvalidOperationException($"{document.GetType().Name} must set Id before it is opened.");
+        }
+
+        if (factory.FindDockableById(document.Id) is { } existing)
+        {
+            if (existing is not T dockable)
+            {
+                (document as IDisposable)?.Dispose();
+                throw new InvalidOperationException(
+                    $"Document '{document.Id}' is already open as {existing.GetType().Name}.");
+            }
+
+            try
+            {
+                update?.Invoke(dockable);
+                ActivateInOwner(factory, dockable);
+                return dockable;
+            }
+            finally
+            {
+                if (!ReferenceEquals(document, dockable))
+                {
+                    (document as IDisposable)?.Dispose();
+                }
+            }
+        }
+
+        try
+        {
+            update?.Invoke(document);
+            factory.AddToDocuments(document);
+            return document;
+        }
+        catch
+        {
+            (document as IDisposable)?.Dispose();
+            throw;
+        }
+    }
+
     public static bool AddToDocuments(this IFactory factory, IDockable vm)
     {
         var documents = factory.GetDockable<IDocumentDock>("Documents");
@@ -153,6 +218,16 @@ public static class FactoryExtensions
         if (!ReferenceEquals(replaced, replacement) && replaced is IDisposable disposable)
         {
             disposable.Dispose();
+        }
+    }
+
+    private static void ActivateInOwner(IFactory factory, IDockable dockable)
+    {
+        factory.SetActiveDockable(dockable);
+
+        if (dockable.Owner is IDock owner)
+        {
+            factory.SetFocusedDockable(owner, dockable);
         }
     }
 }

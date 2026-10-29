@@ -74,7 +74,7 @@ internal static class ResourceGraphStyles
             .Foreground(new DynamicResourceExtension(resourceKey)));
     }
 
-    private static FuncControlTemplate<EdgeControl> CreateDirectedEdgeTemplate()
+    internal static FuncControlTemplate<EdgeControl> CreateDirectedEdgeTemplate(double arrowSize = 10, double arrowOpacity = 1)
     {
         return new FuncControlTemplate<EdgeControl>((_, nameScope) =>
         {
@@ -86,8 +86,9 @@ internal static class ResourceGraphStyles
             {
                 Data = Geometry.Parse("M0,0.5 L1,1 1,0"),
                 Stretch = Stretch.Uniform,
-                Width = 10,
-                Height = 10,
+                Width = arrowSize,
+                Height = arrowSize,
+                Opacity = arrowOpacity,
             };
             targetArrow.Bind(Shape.FillProperty, new TemplateBinding { Property = TemplatedControl.ForegroundProperty });
 
@@ -95,8 +96,8 @@ internal static class ResourceGraphStyles
             {
                 Data = Geometry.Parse("F1 M 17.4167,32.25L 32.9107,32.25L 38,18L 43.0893,32.25L 58.5833,32.25L 45.6798,41.4944L 51.4583,56L 38,48.0833L 26.125,56L 30.5979,41.7104L 17.4167,32.25 Z"),
                 Stretch = Stretch.Uniform,
-                Width = 10,
-                Height = 10,
+                Width = arrowSize,
+                Height = arrowSize,
             }.Name("PART_SelfLoopedEdge", nameScope);
             selfLoop.Bind(Shape.FillProperty, new TemplateBinding { Property = TemplatedControl.ForegroundProperty });
 
@@ -104,9 +105,11 @@ internal static class ResourceGraphStyles
             {
                 NeedRotation = true,
                 Content = targetArrow,
-                Width = 10,
-                Height = 10,
+                Width = arrowSize,
+                Height = arrowSize,
+                Opacity = arrowOpacity,
             }.Name("PART_EdgePointerForTarget", nameScope);
+            targetPointer.Bind(Visual.IsVisibleProperty, new TemplateBinding { Property = EdgeControlBase.ShowArrowsProperty });
             return new Canvas
             {
                 Children =

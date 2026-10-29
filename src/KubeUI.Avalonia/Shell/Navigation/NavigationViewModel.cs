@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Avalonia.Controls.Notifications;
 using Dock.Model.Controls;
 using Dock.Model.Core;
@@ -26,12 +27,11 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     private readonly IDialogService _dialogService;
     public new IFactory Factory => _serviceProvider.GetRequiredService<IFactory>();
     private readonly IResourceNavigationService _documentService;
-    private readonly IResourceIconService _iconService;
     private readonly IPlatformServices _platformServices;
-    private readonly NavigationResourceSynchronizer _resourceNavigation;
-    private readonly NavigationFeatureSynchronizer _featureNavigation;
+    private readonly NavigationTreeBuilder _treeBuilder;
     private readonly NavigationClusterCatalogSynchronizer _clusterNavigation;
     private readonly NavigationSelectionHandler _selection;
+    private readonly ConcurrentDictionary<ClusterWorkspace, byte> _queuedReconciliations = new();
 
     [ObservableProperty]
     public partial ClusterWorkspaceCatalog ClusterCatalog { get; set; }
@@ -46,29 +46,27 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         ClusterWorkspaceCatalog clusterCatalog,
         IServiceProvider serviceProvider,
         IResourceNavigationService documentService,
-        IResourceIconService iconService,
-        NavigationFeatureCatalog featureCatalog,
+        NavigationSectionCatalog sectionCatalog,
         IPlatformServices platformServices)
     {
         _logger = logger;
         _notificationManager = notificationManager;
         _serviceProvider = serviceProvider;
-        _iconService = iconService;
         _platformServices = platformServices;
         _dialogService = dialogService;
         ClusterCatalog = clusterCatalog;
         _documentService = documentService;
-        _resourceNavigation = new NavigationResourceSynchronizer(
-            _iconService,
+        _treeBuilder = new NavigationTreeBuilder(
+            sectionCatalog,
+            _serviceProvider.GetRequiredService<IResourceIconService>(),
             OpenResourceNavigationCommand,
             OpenResourceNavigationInNewTabCommand,
-            _logger);
-        _featureNavigation = new NavigationFeatureSynchronizer(featureCatalog);
+            logger);
         _selection = new NavigationSelectionHandler(
             _logger,
             _notificationManager,
             _serviceProvider,
-            featureCatalog,
+            sectionCatalog,
             _platformServices,
             dockable => Factory.AddToDocuments(dockable));
         Title = Assets.Resources.NavigationView_Title!;
@@ -79,9 +77,10 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             Clusters,
             SubscribeCluster,
             UnsubscribeCluster,
-            (cluster, config) => ApplyResourceConfigNavigation(cluster, config),
+            Reconcile,
             ToggleClusterConnectionCommand,
             OpenClusterSettingsCommand,
+            ToggleClusterExpansionCommand,
             _serviceProvider.GetRequiredService<ILogger<NavigationClusterCatalogSynchronizer>>());
         _clusterNavigation.Reload();
     }
@@ -92,10 +91,9 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     }
 
     [RelayCommand]
-    private Task HandleSelectionChangedAsync(SelectionChangedEventArgs? e)
+    private Task ActivateNavigationItemAsync(object? item)
     {
-        var selectedItem = e?.AddedItems.Count > 0 ? e.AddedItems[0] : null;
-        return TreeViewSelectionChangedAsync(selectedItem);
+        return TreeViewSelectionChangedAsync(item);
     }
 
     internal async Task TreeViewSelectionChangedAsync(object? item)
@@ -104,13 +102,16 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         {
             await HandleClusterSelectionAsync(clusterNode).ConfigureAwait(false);
         }
-        else if (item is ResourceNavigationLink resourceNavLink)
+        else if (item is NavigationLink link)
         {
-            _documentService.Open(resourceNavLink);
-        }
-        else if (item is NavigationLink navLink)
-        {
-            await _selection.SelectAsync(navLink).ConfigureAwait(true);
+            if (link.ResourceKind is not null)
+            {
+                _documentService.Open(link);
+            }
+            else
+            {
+                await _selection.SelectAsync(link).ConfigureAwait(true);
+            }
         }
 
         if (item is NavigationItem nav && nav.NavigationItems.Count > 0 && item is not ClusterNavigationNode)
@@ -151,6 +152,26 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         _ = ConnectClusterAsync(clusterNode);
     }
 
+    /// <summary>
+    /// Expands or collapses a connected cluster node. A disconnected cluster is connected and expands once connected.
+    /// </summary>
+    [RelayCommand]
+    private Task ToggleClusterExpansionAsync(ClusterNavigationNode? clusterNode)
+    {
+        if (clusterNode == null)
+        {
+            return Task.CompletedTask;
+        }
+
+        if (clusterNode.Cluster.Runtime.Connected)
+        {
+            clusterNode.IsExpanded = !clusterNode.IsExpanded;
+            return Task.CompletedTask;
+        }
+
+        return ConnectClusterAsync(clusterNode);
+    }
+
     private async Task ConnectClusterAsync(ClusterNavigationNode clusterNode)
     {
         await clusterNode.Cluster.Connect().ConfigureAwait(false);
@@ -166,31 +187,25 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
         return _selection.SelectAsync(CreateNavigationLink(
             clusterNode.Cluster,
-            NavigationTargets.ClusterSettings,
-            Assets.Resources.ClusterSettingsView_Title!));
+            NavigationTargets.ClusterSettings));
     }
 
-    private static NavigationLink CreateNavigationLink(ClusterWorkspace cluster, string id, string name, int order = 0) => new()
+    private static NavigationLink CreateNavigationLink(ClusterWorkspace cluster, string id)
     {
-        Cluster = cluster,
-        Id = $"{cluster.Runtime.Name}-{id}",
-        Name = name,
-        ViewModelKey = id,
-        Order = order,
-        FluentIcon = id switch
+        var target = NavigationTargets.Find(id);
+        return new NavigationLink
         {
-            NavigationTargets.ClusterWorkspace => Icon.Desktop,
-            NavigationTargets.Visualization => Icon.DataUsage,
-            NavigationTargets.ClusterSettings => Icon.Settings,
-            NavigationTargets.PortForwarders => Icon.CloudFlow,
-            NavigationTargets.LoadYaml => Icon.ArrowUpload,
-            NavigationTargets.LoadFolder => Icon.FolderAdd,
-            _ => null,
-        }
-    };
+            Cluster = cluster,
+            Id = $"{cluster.Runtime.Name}-{target.Key}",
+            Name = target.Name,
+            ViewModelKey = target.Key,
+            Order = target.Order,
+            FluentIcon = target.Icon,
+        };
+    }
 
     [RelayCommand]
-    private Task OpenResourceNavigationAsync(ResourceNavigationLink? resourceNavLink)
+    private Task OpenResourceNavigationAsync(NavigationLink? resourceNavLink)
     {
         if (resourceNavLink == null)
         {
@@ -202,7 +217,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     }
 
     [RelayCommand]
-    private Task OpenResourceNavigationInNewTabAsync(ResourceNavigationLink? resourceNavLink)
+    private Task OpenResourceNavigationInNewTabAsync(NavigationLink? resourceNavLink)
     {
         if (resourceNavLink == null)
         {
@@ -280,7 +295,8 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
     {
         if (sender is not IClusterRuntime runtime
             || (e.PropertyName != nameof(IClusterRuntime.Status)
-                && e.PropertyName != nameof(IClusterRuntime.Connected)))
+                && e.PropertyName != nameof(IClusterRuntime.Connected)
+                && e.PropertyName != nameof(IClusterRuntime.Name)))
         {
             return;
         }
@@ -291,6 +307,12 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             e.PropertyName,
             runtime.Connected,
             runtime.Status);
+
+        if (e.PropertyName == nameof(IClusterRuntime.Name) && Dispatcher.UIThread.CheckAccess())
+        {
+            RenameCluster(runtime);
+            return;
+        }
 
         Dispatcher.UIThread.Post(() =>
         {
@@ -306,13 +328,14 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                 return;
             }
 
+            if (e.PropertyName == nameof(IClusterRuntime.Name))
+            {
+                RenameCluster(runtime);
+                return;
+            }
+
             if (e.PropertyName == nameof(IClusterRuntime.Connected))
             {
-                _logger.LogDebug(
-                    "Navigation connection state applying for {ClusterName}: Connected={Connected}; ExistingItems={ExistingItems}",
-                    runtime.Name,
-                    runtime.Connected,
-                    node.NavigationItems.Count);
                 node.UpdateConnectionNavigation(runtime.Connected);
 
                 if (runtime.Connected)
@@ -325,20 +348,9 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                 }
             }
 
-            if (runtime.Connected
-                && runtime.Status == ClusterStatus.Connected)
+            if (runtime.Connected && runtime.Status == ClusterStatus.Connected)
             {
-                var resourceConfigs = cluster.GetResourceConfigs().ToArray();
-                foreach (var resourceConfig in resourceConfigs)
-                {
-                    ApplyResourceConfigNavigation(cluster, resourceConfig);
-                }
-
-                _logger.LogDebug(
-                    "Navigation resource state replayed for {ClusterName}; ResourceConfigs={ResourceConfigs}; Items={Items}",
-                    runtime.Name,
-                    resourceConfigs.Length,
-                    node.NavigationItems.Count);
+                ApplyOnUiThread(cluster);
             }
 
             if (runtime.Status == ClusterStatus.Errored)
@@ -346,6 +358,21 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
                 ShowClusterError(runtime.LastError);
             }
         });
+    }
+
+    private void RenameCluster(IClusterRuntime runtime)
+    {
+        if (!_clusterNavigation.TryGetWorkspace(runtime, out var cluster)
+            || !_clusterNavigation.TryGetNode(cluster, out var node))
+        {
+            return;
+        }
+
+        node.UpdateNavigationName(runtime.Name);
+        if (runtime.Connected && runtime.Status == ClusterStatus.Connected)
+        {
+            ApplyOnUiThread(cluster);
+        }
     }
 
     private static void ApplyClusterExpansion(ClusterNavigationNode clusterNode)
@@ -375,30 +402,41 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             cluster.Runtime.Connected,
             cluster.Runtime.Status);
 
+        ApplyOnUiThread(cluster);
+    }
+
+    private void ApplyOnUiThread(ClusterWorkspace cluster)
+    {
         if (Dispatcher.UIThread.CheckAccess())
         {
-            ApplyResourceConfigNavigation(cluster, resourceConfig);
+            Reconcile(cluster);
             return;
         }
 
-        Dispatcher.UIThread.Post(() => ApplyResourceConfigNavigation(cluster, resourceConfig));
+        if (!_queuedReconciliations.TryAdd(cluster, 0))
+        {
+            return;
+        }
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            _queuedReconciliations.TryRemove(cluster, out _);
+            Reconcile(cluster);
+        }, DispatcherPriority.Background);
     }
 
-    private void ApplyResourceConfigNavigation(
-        ClusterWorkspace cluster,
-        IResourceConfig resourceConfig,
-        IReadOnlyCollection<IResourceConfig>? resourceConfigs = null)
+    private void Reconcile(ClusterWorkspace cluster)
     {
-        _resourceNavigation.Apply(cluster, resourceConfig, resourceConfigs, _clusterNavigation.Nodes);
-        if (_clusterNavigation.TryGetNode(cluster, out var node))
+        if (!_clusterNavigation.TryGetNode(cluster, out var node))
         {
-            _featureNavigation.Update(cluster, node);
-            _logger.LogDebug(
-                "Navigation resource config applied for {ClusterName}: {ResourceKind}; Items={Items}",
-                cluster.Runtime.Name,
-                resourceConfig.Kind,
-                node.NavigationItems.Count);
+            return;
         }
+
+        _treeBuilder.Reconcile(node);
+        _logger.LogDebug(
+            "Navigation reconciled for {ClusterName}: Items={Items}",
+            cluster.Runtime.Name,
+            node.NavigationItems.Count);
     }
 
     private void OnClusterCustomResourceDefinitionRemoved(ClusterWorkspace cluster, GroupApiVersionKind removedKind)
@@ -408,39 +446,20 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             cluster.Runtime.Name,
             removedKind);
 
-        Dispatcher.UIThread.Post(() =>
-        {
-            if (!_clusterNavigation.TryGetNode(cluster, out var node))
-            {
-                return;
-            }
-
-            _resourceNavigation.RemoveCustomResourceDefinition(node, removedKind);
-            _featureNavigation.Update(cluster, node);
-            foreach (var resourceConfig in cluster.GetResourceConfigs())
-            {
-                ApplyResourceConfigNavigation(cluster, resourceConfig);
-            }
-
-            _logger.LogDebug(
-                "Navigation custom resource definition removal applied for {ClusterName}: {ResourceKind}; Items={Items}",
-                cluster.Runtime.Name,
-                removedKind,
-                node.NavigationItems.Count);
-        });
+        ApplyOnUiThread(cluster);
     }
 
     private void OnClusterResourceSeeded(IClusterRuntime runtime, GroupApiVersionKind kind)
     {
         Dispatcher.UIThread.Post(() =>
         {
-            if (!_clusterNavigation.TryGetWorkspace(runtime, out var cluster))
+            if (!_clusterNavigation.TryGetWorkspace(runtime, out var cluster)
+                || !_clusterNavigation.TryGetNode(cluster, out var node))
             {
                 return;
             }
 
-            _resourceNavigation.AttachResourceCount(cluster, kind, _clusterNavigation.Nodes);
+            _treeBuilder.AttachResourceCount(node, kind);
         });
     }
-
 }

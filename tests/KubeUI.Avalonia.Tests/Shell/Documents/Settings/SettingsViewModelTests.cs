@@ -6,6 +6,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using KubeUI.AI.Agents;
 using KubeUI.Avalonia.Infrastructure.Mcp;
+using KubeUI.Avalonia.Options;
 using KubeUI.Avalonia.Shell.Documents.Settings;
 using KubeUI.Kubernetes;
 using Moq;
@@ -16,6 +17,39 @@ namespace KubeUI.Avalonia.Tests.Shell.Documents.Settings;
 
 public sealed class SettingsViewModelTests
 {
+    [AvaloniaFact]
+    public void auto_discovery_setting_updates_runtime_and_persisted_setting()
+    {
+        var services = Application.Current.GetTestServices();
+        var runtimeCatalog = services.GetRequiredService<IClusterRuntimeCatalog>();
+        var settings = services.GetRequiredService<ISettingsService>();
+        var agent = new Mock<IAgent>();
+        agent.SetupGet(value => value.Name).Returns("Test agent");
+        var registry = new Mock<IAgentRegistry>();
+        registry.SetupGet(value => value.Agents).Returns([agent.Object]);
+        using var viewModel = CreateViewModel(settings, registry.Object, runtimeCatalog);
+        var view = new SettingsView { DataContext = viewModel };
+        using var window = Application.Current.CreateTestWindow(600, 900, view);
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+        var toggle = FindToggleRow(view, Assets.Resources.SettingsView_AutoDiscovery_Label!).Children.OfType<CheckBox>().Single();
+        try
+        {
+            toggle.IsChecked = false;
+            Dispatcher.UIThread.RunJobs();
+            runtimeCatalog.KubeConfigAutoDiscoveryEnabled.ShouldBeFalse();
+            settings.Settings.KubeConfigAutoDiscoveryEnabled.ShouldBeFalse();
+            toggle.IsChecked = true;
+            Dispatcher.UIThread.RunJobs();
+            runtimeCatalog.KubeConfigAutoDiscoveryEnabled.ShouldBeTrue();
+            settings.Settings.KubeConfigAutoDiscoveryEnabled.ShouldBeTrue();
+        }
+        finally
+        {
+            runtimeCatalog.SetKubeConfigAutoDiscovery(true);
+        }
+    }
+
     [Fact]
     public void selected_agent_updates_persisted_agent_id()
     {
@@ -139,6 +173,62 @@ public sealed class SettingsViewModelTests
 
         view.GetVisualDescendants().OfType<CheckBox>().Select(checkBox => checkBox.IsChecked).ShouldContain(true);
         view.GetVisualDescendants().OfType<NumericUpDown>().Select(control => control.Value).ShouldContain(63888);
+    }
+
+    [AvaloniaFact]
+    public void settings_view_exposes_preview_feature_toggles()
+    {
+        var settings = new AppSettings
+        {
+            PreviewFeatures = new FeatureSettings
+            {
+                Helm = true,
+                Hubble = false,
+                DisableJsonSerializationReflection = false,
+                DisableYamlSerializationReflection = true
+            }
+        };
+        var settingsService = new Mock<ISettingsService>();
+        settingsService.SetupGet(service => service.Settings).Returns(settings);
+        var agent = new Mock<IAgent>();
+        agent.SetupGet(value => value.Name).Returns("Test agent");
+        var registry = new Mock<IAgentRegistry>();
+        registry.SetupGet(value => value.Agents).Returns([agent.Object]);
+        using var viewModel = CreateViewModel(settingsService.Object, registry.Object);
+        var view = new SettingsView { DataContext = viewModel };
+        using var window = Application.Current.CreateTestWindow(600, 900, view);
+
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        view.GetVisualDescendants().OfType<TextBlock>().Select(text => text.Text)
+            .ShouldContain(Assets.Resources.SettingsView_FeaturesHeading);
+
+        var helmRow = FindToggleRow(view, Assets.Resources.SettingsView_HelmFeature_Label!);
+        var hubbleRow = FindToggleRow(view, Assets.Resources.SettingsView_HubbleFeature_Label!);
+        var jsonRow = FindToggleRow(view, Assets.Resources.SettingsView_DisableJsonSerializationReflection_Label!);
+        var yamlRow = FindToggleRow(view, Assets.Resources.SettingsView_DisableYamlSerializationReflection_Label!);
+        var helm = helmRow.Children.OfType<CheckBox>().Single();
+        var hubble = hubbleRow.Children.OfType<CheckBox>().Single();
+        var json = jsonRow.Children.OfType<CheckBox>().Single();
+        var yaml = yamlRow.Children.OfType<CheckBox>().Single();
+
+        helm.IsChecked.ShouldBe(true);
+        hubble.IsChecked.ShouldBe(false);
+        json.IsChecked.ShouldBe(false);
+        yaml.IsChecked.ShouldBe(true);
+
+        helm.IsChecked = false;
+        hubble.IsChecked = true;
+        Dispatcher.UIThread.RunJobs();
+
+        settings.PreviewFeatures.Helm.ShouldBeFalse();
+        settings.PreviewFeatures.Hubble.ShouldBeTrue();
+        json.IsChecked = true;
+        yaml.IsChecked = false;
+        Dispatcher.UIThread.RunJobs();
+        settings.PreviewFeatures.DisableJsonSerializationReflection.ShouldBeTrue();
+        settings.PreviewFeatures.DisableYamlSerializationReflection.ShouldBeFalse();
     }
 
     [AvaloniaFact]
@@ -389,6 +479,13 @@ public sealed class SettingsViewModelTests
             .Where(member => member.GetCustomAttribute<ObsoleteAttribute>() is not null)
             .Select(member => member.Name)
             .ShouldBeEmpty();
+    }
+
+    private static Grid FindToggleRow(SettingsView view, string label)
+    {
+        return view.GetVisualDescendants()
+            .OfType<Grid>()
+            .Single(grid => grid.Children.OfType<Label>().Any(control => Equals(control.Content, label)));
     }
 
     private static McpServerState CreateBoundMcpServerState()

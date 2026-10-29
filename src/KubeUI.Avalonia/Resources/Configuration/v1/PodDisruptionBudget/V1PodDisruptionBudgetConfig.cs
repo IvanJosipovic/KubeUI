@@ -2,17 +2,17 @@ using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v1.PodDisruptionBudget;
 
-public sealed partial class V1PodDisruptionBudgetConfig : ResourceConfigBase<V1PodDisruptionBudget>
+public sealed partial class V1PodDisruptionBudgetConfig : ResourceConfig<V1PodDisruptionBudget>
 {
     public V1PodDisruptionBudgetConfig(IServiceProvider serviceProvider)
         : base(serviceProvider)
     {
     }
     public override bool IsNamespaced => true;
-    public override string Category => Assets.Resources.ResourceConfig_Category_Configuration!;
+    public override NavigationPlacement Navigation => NavigationPlacement.InSection(NavigationSections.ConfigurationId);
     public override int Order => 5;
 
-    public override IList<IResourceListColumn> Columns()
+    protected override IList<IResourceListColumn> CreateDefaultColumns()
     {
         return [
             NameColumn(SortDirection.Ascending),

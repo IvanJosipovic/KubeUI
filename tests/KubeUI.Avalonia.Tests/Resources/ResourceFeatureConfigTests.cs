@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Resources;
+using KubeUI.Avalonia.Shell.Navigation;
 using Shouldly;
 using ClusterRoleBindingPropertiesView = KubeUI.Avalonia.Resources.AccessControl.v1.ClusterRoleBinding.PropertiesView;
 using ClusterRolePropertiesView = KubeUI.Avalonia.Resources.AccessControl.v1.ClusterRole.PropertiesView;
@@ -60,12 +61,15 @@ public sealed class ResourceFeatureConfigTests
         controls[0].ShouldBeOfType<TView>();
     }
 
-    private static void AssertCategory<TConfig>(string expected)
+    private static void AssertSection<TConfig>(string expectedSectionId, string expectedName)
         where TConfig : IResourceConfig
     {
         IResourceConfig config = ResolveConfig<TConfig>();
 
-        config.Category.ShouldBe(expected);
+        config.Navigation.SectionId.ShouldBe(expectedSectionId);
+
+        var catalog = Application.Current.GetTestServices().GetRequiredService<NavigationSectionCatalog>();
+        catalog.Find(expectedSectionId).ShouldNotBeNull().Name.ShouldBe(expectedName);
     }
 
     private static TConfig ResolveConfig<TConfig>()
@@ -504,9 +508,9 @@ public sealed class ResourceFeatureConfigTests
         controls[0].ShouldBeOfType<CrdPropertiesView>();
     }
 
-    [AvaloniaFact] public void workloads_category_is_localized() => AssertCategory<V1DeploymentConfig>("Workloads");
-    [AvaloniaFact] public void network_category_is_localized() => AssertCategory<V1ServiceConfig>("Network");
-    [AvaloniaFact] public void storage_category_is_localized() => AssertCategory<V1StorageClassConfig>("Storage");
-    [AvaloniaFact] public void configuration_category_is_localized() => AssertCategory<V1ConfigMapConfig>("Configuration");
-    [AvaloniaFact] public void access_control_category_is_localized() => AssertCategory<V1RoleConfig>("Access Control");
+    [AvaloniaFact] public void workloads_section_is_localized() => AssertSection<V1DeploymentConfig>(NavigationSections.WorkloadsId, "Workloads");
+    [AvaloniaFact] public void network_section_is_localized() => AssertSection<V1ServiceConfig>(NavigationSections.NetworkId, "Network");
+    [AvaloniaFact] public void storage_section_is_localized() => AssertSection<V1StorageClassConfig>(NavigationSections.StorageId, "Storage");
+    [AvaloniaFact] public void configuration_section_is_localized() => AssertSection<V1ConfigMapConfig>(NavigationSections.ConfigurationId, "Configuration");
+    [AvaloniaFact] public void access_control_section_is_localized() => AssertSection<V1RoleConfig>(NavigationSections.AccessControlId, "Access Control");
 }
