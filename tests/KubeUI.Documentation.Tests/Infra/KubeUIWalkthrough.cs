@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace KubeUI.Documentation.Tests.Infra;
 
 internal sealed record WalkthroughStart(
-    Func<ClusterWorkspace, WalkthroughDemoResources, IServiceProvider, Control> CreateView,
+    Func<ClusterWorkspace, WalkthroughDemoResources, IServiceProvider, Task<Control>> CreateView,
     bool ConnectToCluster);
 
 internal sealed record WalkthroughIntro(string Title, string Narration);
@@ -126,8 +126,20 @@ internal sealed class KubeUIWalkthrough
                     new WalkthroughViewModelContext<TViewModel>(workspace, demoResources, viewModel));
                 var view = services.GetRequiredService<TView>();
                 view.DataContext = viewModel;
-                return view;
+                return Task.FromResult<Control>(view);
             },
+            connectToCluster);
+        return this;
+    }
+
+    public KubeUIWalkthrough LoadCustomView<TView>(
+        Func<ClusterWorkspace, WalkthroughDemoResources, IServiceProvider, Task<TView>> createView,
+        bool connectToCluster = true)
+        where TView : Control
+    {
+        ArgumentNullException.ThrowIfNull(createView);
+        _start = new WalkthroughStart(
+            async (workspace, demoResources, services) => await createView(workspace, demoResources, services),
             connectToCluster);
         return this;
     }
@@ -252,6 +264,85 @@ internal sealed class KubeUIWalkthrough
     public KubeUIWalkthrough HoverYamlHeader(string name)
     {
         AddAction(new(WalkthroughActionKind.Hover, "yaml-header", name));
+        return this;
+    }
+
+    public KubeUIWalkthrough HoverHelmEditorField(string name)
+    {
+        AddAction(new(WalkthroughActionKind.Hover, "helm-editor-field", name));
+        return this;
+    }
+
+    public KubeUIWalkthrough RightClickHelmRepository(string name)
+    {
+        AddAction(new(WalkthroughActionKind.RightClick, "helm-repository", name));
+        return this;
+    }
+
+    public KubeUIWalkthrough RightClickHelmChart(string name)
+    {
+        AddAction(new(WalkthroughActionKind.RightClick, "helm-chart", name));
+        return this;
+    }
+
+    public KubeUIWalkthrough SearchHelmCharts(string query)
+    {
+        AddAction(new(WalkthroughActionKind.SetText, "helm-chart-search", query));
+        return this;
+    }
+
+    public KubeUIWalkthrough RightClickHelmRelease(string name)
+    {
+        AddAction(new(WalkthroughActionKind.RightClick, "helm-release", name));
+        return this;
+    }
+
+    public KubeUIWalkthrough SelectHelmRelease(string name, Func<Control, bool>? readyWhen = null)
+    {
+        AddAction(new(WalkthroughActionKind.Click, "helm-release", name, ReadyWhen: readyWhen));
+        return this;
+    }
+
+    public KubeUIWalkthrough SelectHelmContextMenuItem(string name, Func<Control, bool>? readyWhen = null)
+    {
+        AddAction(new(WalkthroughActionKind.Click, "helm-context-menu-item", name, ReadyWhen: readyWhen));
+        return this;
+    }
+
+    public KubeUIWalkthrough SetHelmReleaseName(string name)
+    {
+        AddAction(new(WalkthroughActionKind.SetText, "helm-release-name", name));
+        return this;
+    }
+
+    public KubeUIWalkthrough ClickHelmValuesEditor()
+    {
+        AddAction(new(WalkthroughActionKind.Click, "helm-values-editor"));
+        return this;
+    }
+
+    public KubeUIWalkthrough ReplaceHelmReplicaValue(string value)
+    {
+        AddAction(new(WalkthroughActionKind.TypeText, "helm-values-replica", value));
+        return this;
+    }
+
+    public KubeUIWalkthrough PreviewHelmRelease(Func<Control, bool> previewReadyWhen)
+    {
+        ArgumentNullException.ThrowIfNull(previewReadyWhen);
+        AddAction(new(WalkthroughActionKind.Click, "helm-editor-preview", ReadyWhen: previewReadyWhen));
+        return this;
+    }
+
+    public KubeUIWalkthrough SaveHelmRelease()
+    {
+        AddAction(new(WalkthroughActionKind.Click, "helm-editor-save"));
+        return this;
+    }
+
+    public KubeUIWalkthrough ReturnToHelmReleaseEditor()
+    {
+        AddAction(new(WalkthroughActionKind.Click, "helm-editor-return"));
         return this;
     }
 

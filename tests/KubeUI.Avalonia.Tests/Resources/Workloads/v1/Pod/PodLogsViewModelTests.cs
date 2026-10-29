@@ -4,8 +4,10 @@ using System.Net;
 using System.Text;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using DynamicData;
 using k8s;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
 using Microsoft.Extensions.Logging;
@@ -19,7 +21,7 @@ public sealed class PodLogsViewModelTests
     public async Task Connect_should_batch_buffered_logs_to_keep_ui_updates_bounded()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        var pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
+        var pod = CreatePod("app", "default", null, containers: ["app"]);
         await workspace.Runtime.AddOrUpdateResource(pod);
         await workspace.Runtime.SeedResource<V1Pod>(true);
         var payload = string.Join('\n', Enumerable.Range(1, 500).Select(index => $"line-{index}"));
@@ -679,7 +681,7 @@ public sealed class PodLogsViewModelTests
         await WaitForAsync(() => viewModel.Logs.Text.Contains("sidecar line", StringComparison.Ordinal), 60000);
         viewModel.Logs.Text.ShouldNotContain("app line");
 
-        await workspace.Runtime.AddOrUpdateResource(runningPod);
+        await UpdatePodAsync((Cluster)workspace.Runtime, runningPod);
         await WaitForAsync(() => workspace.Runtime.GetResourceList<V1Pod>().Any(item =>
             item.Name() == runningPod.Name()
             && item.Status?.ContainerStatuses?.FirstOrDefault(status => status.Name == "app")?.State?.Running is not null), 60000);
@@ -693,8 +695,8 @@ public sealed class PodLogsViewModelTests
     {
         using var workspace = await Application.Current.CreateClusterAsync();
         await workspace.Runtime.SeedResource<V1Deployment>(true);
+        await workspace.Runtime.SeedResource<V1Pod>(true);
         var deployment = CreateKindDeployment("api", "api", "unused");
-        deployment.Metadata!.Uid = "deployment-uid";
         await workspace.Runtime.AddOrUpdateResource(deployment);
         RecordingPodLogStreamClient streamClient = new(["first pod line\n"]);
         using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
@@ -708,7 +710,7 @@ public sealed class PodLogsViewModelTests
         var pod = CreatePod(
             "api-pod",
             "default",
-            "pod-uid",
+            null,
             deployment.Uid(),
             deployment.Name(),
             V1Deployment.KubeKind,
@@ -873,7 +875,7 @@ public sealed class PodLogsViewModelTests
                 throw new InvalidOperationException($"Unknown container state change '{change}'.");
         }
 
-        await workspace.Runtime.AddOrUpdateResource(updatedPod);
+        await UpdatePodAsync((Cluster)workspace.Runtime, updatedPod);
 
         await WaitForAsync(() =>
             viewModel.Object?.Metadata?.Annotations is { } annotations
@@ -890,7 +892,6 @@ public sealed class PodLogsViewModelTests
     [InlineData("UnknownController")]
     public async Task Parent_kind_fallback_should_keep_pod_logs_available(string ownerKind)
     {
-        using var workspace = await Application.Current.CreateClusterAsync();
         var pod = CreatePod(
             "api-pod",
             "default",
@@ -910,23 +911,10 @@ public sealed class PodLogsViewModelTests
             "CronJob" => new V1CronJob { Metadata = CreateOwnerMetadata() },
             _ => null,
         };
-        switch (parent)
+        using var workspace = await Application.Current.CreateClusterAsync(config =>
         {
-            case V1DaemonSet daemonSet:
-                await workspace.Runtime.AddOrUpdateResource(daemonSet);
-                break;
-            case V1StatefulSet statefulSet:
-                await workspace.Runtime.AddOrUpdateResource(statefulSet);
-                break;
-            case V1Job job:
-                await workspace.Runtime.AddOrUpdateResource(job);
-                break;
-            case V1CronJob cronJob:
-                await workspace.Runtime.AddOrUpdateResource(cronJob);
-                break;
-        }
-
-        await workspace.Runtime.AddOrUpdateResource(pod);
+            config.InitialResources = parent is null ? [pod] : [parent, pod];
+        });
         RecordingPodLogStreamClient streamClient = new(["pod line\n"]);
         using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
@@ -957,8 +945,10 @@ public sealed class PodLogsViewModelTests
     public async Task Parent_identity_changes_should_reevaluate_by_uid_or_resource_coordinates(string change)
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        await workspace.Runtime.SeedResource<V1ReplicaSet>(true);
-        await workspace.Runtime.SeedResource<V1Deployment>(true);
+        var cluster = (Cluster)workspace.Runtime;
+        await cluster.SeedResource<V1ReplicaSet>(true);
+        await cluster.SeedResource<V1Deployment>(true);
+        await cluster.SeedResource<V1Pod>(true);
         var initialUid = change.StartsWith("uidless", StringComparison.Ordinal) ? null : "initial-owner-uid";
         V1ReplicaSet initialParent = new()
         {
@@ -976,7 +966,8 @@ public sealed class PodLogsViewModelTests
             initialUid,
             initialParent.Name(),
             V1ReplicaSet.KubeKind,
-            ["app"]);
+            ["app"],
+            preserveUid: true);
         pod.Metadata!.OwnerReferences =
         [
             new V1OwnerReference
@@ -989,8 +980,8 @@ public sealed class PodLogsViewModelTests
             },
         ];
         ConfigureRunningContainer(pod, "app", "echo line");
-        await workspace.Runtime.AddOrUpdateResource(initialParent);
-        await workspace.Runtime.AddOrUpdateResource(pod);
+        AddToResourceCache(cluster, initialParent);
+        AddToResourceCache(cluster, pod);
         using StatusChangingPodLogStreamClient streamClient = new("initial line\n");
         using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
@@ -1017,7 +1008,7 @@ public sealed class PodLogsViewModelTests
                     Annotations = new Dictionary<string, string> { ["kubeui.test/identity"] = change },
                 },
             };
-            await workspace.Runtime.AddOrUpdateResource(deployment);
+            AddToResourceCache(cluster, deployment);
             await WaitForAsync(() => workspace.Runtime.GetResourceList<V1Deployment>()
                 .Any(item => item.Name() == nextName));
             nextParent = deployment;
@@ -1032,7 +1023,7 @@ public sealed class PodLogsViewModelTests
             {
                 ["kubeui.test/identity"] = change,
             };
-            await workspace.Runtime.AddOrUpdateResource(replacement);
+            AddToResourceCache(cluster, replacement);
             replacement = workspace.Runtime.GetResourceList<V1ReplicaSet>()
                 .Single(item => item.Name() == nextName);
             nextUid = replacement.Uid();
@@ -1050,7 +1041,7 @@ public sealed class PodLogsViewModelTests
                     Annotations = new Dictionary<string, string> { ["kubeui.test/identity"] = change },
                 },
             };
-            await workspace.Runtime.AddOrUpdateResource(replacement);
+            AddToResourceCache(cluster, replacement);
             nextParent = replacement;
         }
 
@@ -1066,7 +1057,7 @@ public sealed class PodLogsViewModelTests
             ? V1Deployment.KubeKind
             : V1ReplicaSet.KubeKind;
         updatedPod.Status!.ContainerStatuses![0].RestartCount++;
-        await workspace.Runtime.AddOrUpdateResource(updatedPod);
+        AddToResourceCache(cluster, updatedPod);
 
         await WaitForAsync(() =>
             viewModel.Object?.Metadata?.Annotations is { } annotations
@@ -1130,12 +1121,12 @@ public sealed class PodLogsViewModelTests
         await workspace.Runtime.SeedResource<V1Deployment>(true);
         await workspace.Runtime.SeedResource<V1Pod>(true);
         var deployment = CreateKindDeployment("api", "api", "unused");
-        deployment.Metadata!.Uid = "deployment-uid";
         deployment.Spec!.Replicas = 0;
+        await workspace.Runtime.AddOrUpdateResource(deployment);
         var olderPod = CreatePod(
             "api-old",
             "default",
-            "old-uid",
+            null,
             deployment.Uid(),
             deployment.Name(),
             V1Deployment.KubeKind,
@@ -1143,7 +1134,7 @@ public sealed class PodLogsViewModelTests
         var newerPod = CreatePod(
             "api-new",
             "default",
-            "new-uid",
+            null,
             deployment.Uid(),
             deployment.Name(),
             V1Deployment.KubeKind,
@@ -1154,7 +1145,6 @@ public sealed class PodLogsViewModelTests
             ConfigureRunningContainer(pod, "app", "echo line");
         }
 
-        await workspace.Runtime.AddOrUpdateResource(deployment);
         await workspace.Runtime.AddOrUpdateResource(olderPod);
         await workspace.Runtime.AddOrUpdateResource(newerPod);
 
@@ -1195,7 +1185,6 @@ public sealed class PodLogsViewModelTests
         await workspace.Runtime.SeedResource<V1Deployment>(true);
         await workspace.Runtime.SeedResource<V1Pod>(true);
         var deployment = CreateKindDeployment("api", "api", "unused");
-        deployment.Metadata!.Uid = "deployment-uid";
         deployment.Spec!.Replicas = 0;
         await workspace.Runtime.AddOrUpdateResource(deployment);
 
@@ -1204,7 +1193,7 @@ public sealed class PodLogsViewModelTests
             var pod = CreatePod(
                 $"api-{i}",
                 "default",
-                $"pod-{i}-uid",
+                null,
                 deployment.Uid(),
                 deployment.Name(),
                 V1Deployment.KubeKind,
@@ -2090,7 +2079,7 @@ public sealed class PodLogsViewModelTests
         var pod = CreatePod(
             name: "app",
             namespaceName: "default",
-            uid: "pod-uid",
+            uid: null,
             containers: ["app"]);
         await workspace.Runtime.AddOrUpdateResource(pod);
         await workspace.Runtime.SeedResource<V1Pod>(true);
@@ -2208,7 +2197,6 @@ public sealed class PodLogsViewModelTests
         using var workspace = await Application.Current.CreateClusterAsync();
         var deployment = CreateKindDeployment("parallel-streams", "parallel-streams", "unused");
         deployment.Spec!.Replicas = 0;
-        deployment.Metadata!.Uid = "deployment-uid";
         await workspace.Runtime.SeedResource<V1Deployment>(true);
         await workspace.Runtime.SeedResource<V1Pod>(true);
         await workspace.Runtime.AddOrUpdateResource(deployment);
@@ -3086,9 +3074,11 @@ public sealed class PodLogsViewModelTests
         await workspace.Runtime.SeedResource<V1ReplicaSet>(true);
         await workspace.Runtime.SeedResource<V1Pod>(true);
         var deployment = CreateKindDeployment("api", "api", "unused");
-        deployment.Metadata!.Uid = "deployment-uid";
-        var replicaSet = CreateOwnedReplicaSet("api-rs", "replicaset-uid", deployment);
+        await workspace.Runtime.AddOrUpdateResource(deployment);
+        var replicaSet = CreateOwnedReplicaSet("api-rs", null, deployment);
+        replicaSet.Metadata!.Uid = null;
         replicaSet.Metadata!.OwnerReferences![0].ApiVersion = "apps/v1";
+        await workspace.Runtime.AddOrUpdateResource(replicaSet);
         var pod = CreatePod(
             "api-pod",
             "default",
@@ -3109,10 +3099,13 @@ public sealed class PodLogsViewModelTests
             ["app"]);
         siblingPod.Metadata!.OwnerReferences![0].ApiVersion = "apps/v1";
         ConfigureRunningContainer(siblingPod, "app", "echo sibling line");
-        await workspace.Runtime.AddOrUpdateResource(deployment);
-        await workspace.Runtime.AddOrUpdateResource(replicaSet);
         await workspace.Runtime.AddOrUpdateResource(pod);
         await workspace.Runtime.AddOrUpdateResource(siblingPod);
+        await WaitForAsync(() =>
+            workspace.Runtime.GetResourceList<V1Deployment>().Any(item => item.Name() == "api")
+            && workspace.Runtime.GetResourceList<V1ReplicaSet>().Any(item => item.Name() == "api-rs")
+            && workspace.Runtime.GetResourceList<V1Pod>().Count(item =>
+                item.Name() is "api-pod" or "api-pod-sibling") == 2);
 
         var streamClient = new RecordingPodLogStreamClient();
         using var viewModel = CreateViewModel(
@@ -3148,9 +3141,9 @@ public sealed class PodLogsViewModelTests
     public async Task JumpToControlledByLogs_should_keep_logs_working_for_a_cluster_scoped_parent()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        await workspace.Runtime.SeedResource<V1ConfigMap>(true);
-        await workspace.Runtime.SeedResource<V1DaemonSet>(true);
-        await workspace.Runtime.SeedResource<V1Pod>(true);
+        var cluster = (Cluster)workspace.Runtime;
+        await cluster.SeedResource<V1DaemonSet>(true);
+        await cluster.SeedResource<V1Pod>(true);
         V1ConfigMap clusterPolicy = new()
         {
             ApiVersion = "nvidia.com/v1",
@@ -3190,12 +3183,16 @@ public sealed class PodLogsViewModelTests
             daemonSet.Uid(),
             daemonSet.Name(),
             V1DaemonSet.KubeKind,
-            ["app"]);
+            ["app"],
+            preserveUid: true);
         pod.Metadata!.OwnerReferences![0].ApiVersion = "apps/v1";
         ConfigureRunningContainer(pod, "app", "echo line");
-        await workspace.Runtime.AddOrUpdateResource(clusterPolicy);
-        await workspace.Runtime.AddOrUpdateResource(daemonSet);
-        await workspace.Runtime.AddOrUpdateResource(pod);
+        AddToResourceCache(
+            cluster,
+            new GroupApiVersionKind("nvidia.com", "v1", "ClusterPolicy", "clusterpolicies"),
+            clusterPolicy);
+        AddToResourceCache(cluster, daemonSet);
+        AddToResourceCache(cluster, pod);
         RecordingPodLogStreamClient streamClient = new();
         using var viewModel = CreateViewModel(workspace.Runtime, streamClient);
         viewModel.Object = pod;
@@ -3288,9 +3285,28 @@ public sealed class PodLogsViewModelTests
             {
                 Name = "backup",
                 NamespaceProperty = "default",
-                Uid = "cronjob-uid",
+            },
+            Spec = new V1CronJobSpec
+            {
+                Schedule = "*/5 * * * *",
+                JobTemplate = new V1JobTemplateSpec
+                {
+                    Spec = new V1JobSpec
+                    {
+                        BackoffLimit = 0,
+                        Template = new V1PodTemplateSpec
+                        {
+                            Spec = new V1PodSpec
+                            {
+                                RestartPolicy = "Never",
+                                Containers = [new V1Container { Name = "backup", Image = "busybox:1.36" }],
+                            },
+                        },
+                    },
+                },
             },
         };
+        await workspace.Runtime.AddOrUpdateResource(cronJob);
         V1Job job = new()
         {
             ApiVersion = "batch/v1",
@@ -3299,7 +3315,6 @@ public sealed class PodLogsViewModelTests
             {
                 Name = "backup-job",
                 NamespaceProperty = "default",
-                Uid = "job-uid",
                 OwnerReferences =
                 [
                     new V1OwnerReference
@@ -3312,20 +3327,37 @@ public sealed class PodLogsViewModelTests
                     },
                 ],
             },
+            Spec = new V1JobSpec
+            {
+                BackoffLimit = 0,
+                Template = new V1PodTemplateSpec
+                {
+                    Spec = new V1PodSpec
+                    {
+                        RestartPolicy = "Never",
+                        Containers = [new V1Container { Name = "backup", Image = "busybox:1.36" }],
+                    },
+                },
+            },
         };
+        await workspace.Runtime.AddOrUpdateResource(job);
         var pod = CreatePod(
             "backup-pod",
             "default",
-            "pod-uid",
+            null,
             job.Uid(),
             job.Name(),
             V1Job.KubeKind,
             ["backup"]);
         pod.Metadata!.OwnerReferences![0].ApiVersion = "batch/v1";
         ConfigureRunningContainer(pod, "backup", "echo line");
-        await workspace.Runtime.AddOrUpdateResource(cronJob);
-        await workspace.Runtime.AddOrUpdateResource(job);
         await workspace.Runtime.AddOrUpdateResource(pod);
+        await TestWait.UntilAsync(
+            () => workspace.Runtime.GetResource<V1CronJob>("default", cronJob.Name()) is not null
+                && workspace.Runtime.GetResource<V1Job>("default", job.Name()) is not null
+                && workspace.Runtime.GetResource<V1Pod>("default", pod.Name()) is not null,
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         using var viewModel = CreateViewModel(
             workspace.Runtime,
@@ -3353,27 +3385,9 @@ public sealed class PodLogsViewModelTests
     public async Task Parent_resource_changes_should_update_controller_navigation_without_pod_changes()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        await workspace.Runtime.SeedResource<V1Pod>(true);
-        var pod = CreatePod(
-            "api-pod",
-            "default",
-            "pod-uid",
-            "replicaset-uid",
-            "api-rs",
-            V1ReplicaSet.KubeKind,
-            ["app"]);
-        pod.Metadata!.OwnerReferences![0].ApiVersion = "apps/v1";
-        ConfigureRunningContainer(pod, "app", "echo line");
-        await workspace.Runtime.AddOrUpdateResource(pod);
-        using var viewModel = CreateViewModel(
-            workspace.Runtime,
-            new RecordingPodLogStreamClient());
-        viewModel.Object = pod;
-        viewModel.ContainerName = "app";
-
-        await viewModel.Connect();
-        viewModel.CanJumpToController.ShouldBeFalse();
-
+        var cluster = (Cluster)workspace.Runtime;
+        await cluster.SeedResource<V1Pod>(true);
+        await cluster.SeedResource<V1ReplicaSet>(true);
         V1ReplicaSet replicaSet = new()
         {
             ApiVersion = "apps/v1",
@@ -3385,7 +3399,28 @@ public sealed class PodLogsViewModelTests
                 Uid = "replicaset-uid",
             },
         };
-        await workspace.Runtime.AddOrUpdateResource(replicaSet);
+        var pod = CreatePod(
+            "api-pod",
+            "default",
+            "pod-uid",
+            replicaSet.Uid(),
+            "api-rs",
+            V1ReplicaSet.KubeKind,
+            ["app"]);
+        pod.Metadata!.OwnerReferences![0].ApiVersion = "apps/v1";
+        ConfigureRunningContainer(pod, "app", "echo line");
+        AddToResourceCache(cluster, pod);
+        using var viewModel = CreateViewModel(
+            workspace.Runtime,
+            new RecordingPodLogStreamClient());
+        viewModel.Object = pod;
+        viewModel.ContainerName = "app";
+
+        await viewModel.Connect();
+        viewModel.SessionResolution.ShouldNotBeNull();
+        viewModel.SessionResolution!.ParentResource.ShouldBeNull();
+
+        AddToResourceCache(cluster, replicaSet);
 
         await WaitForAsync(() => viewModel.CanJumpToController);
         viewModel.SessionResolution!.ParentResource.ShouldBeOfType<V1ReplicaSet>().Name().ShouldBe("api-rs");
@@ -3398,18 +3433,17 @@ public sealed class PodLogsViewModelTests
         await workspace.Runtime.SeedResource<V1Deployment>(true);
         await workspace.Runtime.SeedResource<V1Pod>(true);
         var deployment = CreateKindDeployment("api", "api", "unused");
-        deployment.Metadata!.Uid = "deployment-uid";
+        await workspace.Runtime.AddOrUpdateResource(deployment);
         var pod = CreatePod(
             "api-pod",
             "default",
-            "pod-uid",
+            null,
             deployment.Uid(),
             deployment.Name(),
             V1Deployment.KubeKind,
             ["app"]);
         pod.Metadata!.OwnerReferences![0].ApiVersion = "apps/v1";
         ConfigureRunningContainer(pod, "app", "echo line");
-        await workspace.Runtime.AddOrUpdateResource(deployment);
         await workspace.Runtime.AddOrUpdateResource(pod);
         using var viewModel = CreateViewModel(
             workspace.Runtime,
@@ -3422,8 +3456,10 @@ public sealed class PodLogsViewModelTests
         {
             Waiting = new V1ContainerStateWaiting { Reason = "Pending" },
         };
-        await workspace.Runtime.AddOrUpdateResource(pod);
-        await WaitForAsync(() => !viewModel.IsConnected);
+        await UpdatePodAsync((Cluster)workspace.Runtime, pod);
+        await WaitForAsync(() => !viewModel.IsConnected
+            && !viewModel.IsConnecting
+            && viewModel.PlannedStreamCount == 0);
         viewModel.Logs.Text = "old pod scope output";
 
         await viewModel.JumpToControlledByLogs();
@@ -3495,7 +3531,7 @@ public sealed class PodLogsViewModelTests
     public async Task Http_open_failure_should_reconnect_and_stream_logs()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
-        var pod = CreatePod("app", "default", "pod-uid", containers: ["app"]);
+        var pod = CreatePod("app", "default", null, containers: ["app"]);
         pod.Status!.Phase = "Running";
         await workspace.Runtime.AddOrUpdateResource(pod);
         await workspace.Runtime.SeedResource<V1Pod>(true);
@@ -3924,6 +3960,30 @@ public sealed class PodLogsViewModelTests
         };
     }
 
+    private static void AddToResourceCache<T>(Cluster cluster, T resource)
+        where T : class, IKubernetesObject<V1ObjectMeta>, new()
+        => AddToResourceCache(cluster, GroupApiVersionKind.From<T>(), resource);
+
+    private static void AddToResourceCache<T>(Cluster cluster, GroupApiVersionKind kind, T resource)
+        where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        var container = cluster.Objects.TryGetValue(kind, out var existing)
+            ? existing.ShouldBeOfType<ContainerClass<T>>()
+            : new ContainerClass<T>();
+        container.Items.AddOrUpdate(resource);
+        cluster.Objects[kind] = container;
+    }
+
+    private static async Task UpdatePodAsync(Cluster cluster, V1Pod pod)
+    {
+        await cluster.AddOrUpdateResource(pod);
+        await cluster.Client!.CoreV1.ReplaceNamespacedPodStatusAsync(
+            pod,
+            pod.Name(),
+            pod.Namespace(),
+            cancellationToken: TestContext.Current.CancellationToken);
+    }
+
     private static V1Pod CreatePod(
         string name,
         string namespaceName,
@@ -3935,14 +3995,15 @@ public sealed class PodLogsViewModelTests
         string[]? initContainers = null,
         string[]? ephemeralContainers = null,
         int restartCount = 0,
-        DateTime? creationTimestamp = null)
+        DateTime? creationTimestamp = null,
+        bool preserveUid = false)
     {
         var containerList = new List<V1Container>();
         if (containers is not null)
         {
             for (var i = 0; i < containers.Length; i++)
             {
-                containerList.Add(new V1Container { Name = containers[i] });
+                containerList.Add(new V1Container { Name = containers[i], Image = "busybox:1.36" });
             }
         }
 
@@ -3951,7 +4012,7 @@ public sealed class PodLogsViewModelTests
         {
             for (var i = 0; i < ephemeralContainers.Length; i++)
             {
-                ephemeralContainerList.Add(new V1EphemeralContainer { Name = ephemeralContainers[i] });
+                ephemeralContainerList.Add(new V1EphemeralContainer { Name = ephemeralContainers[i], Image = "busybox:1.36" });
             }
         }
 
@@ -3960,7 +4021,7 @@ public sealed class PodLogsViewModelTests
         {
             for (var i = 0; i < initContainers.Length; i++)
             {
-                initContainerList.Add(new V1Container { Name = initContainers[i] });
+                initContainerList.Add(new V1Container { Name = initContainers[i], Image = "busybox:1.36" });
             }
         }
 
@@ -3998,7 +4059,7 @@ public sealed class PodLogsViewModelTests
             {
                 Name = name,
                 NamespaceProperty = namespaceName,
-                Uid = uid,
+                Uid = preserveUid ? uid : null,
                 OwnerReferences = ownerReferences,
                 CreationTimestamp = creationTimestamp,
             },
@@ -4053,6 +4114,12 @@ public sealed class PodLogsViewModelTests
                         Controller = true,
                     },
                 ],
+            },
+            Spec = new V1ReplicaSetSpec
+            {
+                Replicas = 1,
+                Selector = deployment.Spec!.Selector,
+                Template = deployment.Spec.Template,
             },
         };
     }
@@ -4132,7 +4199,7 @@ public sealed class PodLogsViewModelTests
                     };
                     using HttpRequestMessage update = new(
                         HttpMethod.Put,
-                        $"http://fake-kubernetes/api/v1/namespaces/{completedPod.Namespace()}/pods/{completedPod.Name()}")
+                        $"http://fake-kubernetes/api/v1/namespaces/{completedPod.Namespace()}/pods/{completedPod.Name()}/status")
                     {
                         Content = new StringContent(
                             KubernetesJson.Serialize(completedPod),
@@ -4224,20 +4291,6 @@ public sealed class PodLogsViewModelTests
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var path = request.RequestUri?.AbsolutePath ?? string.Empty;
-            if (request.Method == HttpMethod.Post
-                && path.EndsWith("/pods", StringComparison.Ordinal)
-                && request.Content is not null)
-            {
-                var pod = KubernetesJson.Deserialize<V1Pod>(
-                    await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
-                pod.Metadata ??= new V1ObjectMeta();
-                pod.Metadata.Uid = "multi-pod-uid";
-                request.Content = new StringContent(
-                    KubernetesJson.Serialize(pod),
-                    Encoding.UTF8,
-                    "application/json");
-            }
-
             if (request.Method == HttpMethod.Get && path.EndsWith("/log", StringComparison.Ordinal))
             {
                 var payload = request.RequestUri?.Query.Contains("container=sidecar", StringComparison.Ordinal) == true
@@ -4259,20 +4312,6 @@ public sealed class PodLogsViewModelTests
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var path = request.RequestUri?.AbsolutePath ?? string.Empty;
-            if (request.Method == HttpMethod.Post
-                && path.EndsWith("/pods", StringComparison.Ordinal)
-                && request.Content is not null)
-            {
-                var pod = KubernetesJson.Deserialize<V1Pod>(
-                    await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
-                pod.Metadata ??= new V1ObjectMeta();
-                pod.Metadata.Uid = "pod-uid";
-                request.Content = new StringContent(
-                    KubernetesJson.Serialize(pod),
-                    Encoding.UTF8,
-                    "application/json");
-            }
-
             if (request.Method == HttpMethod.Get && path.EndsWith("/log", StringComparison.Ordinal))
             {
                 return new HttpResponseMessage(HttpStatusCode.OK)
@@ -4291,20 +4330,6 @@ public sealed class PodLogsViewModelTests
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var path = request.RequestUri?.AbsolutePath ?? string.Empty;
-            if ((request.Method == HttpMethod.Post || request.Method == HttpMethod.Put)
-                && path.Contains("/pods", StringComparison.Ordinal)
-                && request.Content is not null)
-            {
-                var pod = KubernetesJson.Deserialize<V1Pod>(
-                    await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
-                pod.Metadata ??= new V1ObjectMeta();
-                pod.Metadata.Uid ??= "pod-uid";
-                request.Content = new StringContent(
-                    KubernetesJson.Serialize(pod),
-                    Encoding.UTF8,
-                    "application/json");
-            }
-
             if (request.Method == HttpMethod.Get && path.EndsWith("/log", StringComparison.Ordinal))
             {
                 var payload = request.RequestUri?.Query.Contains("container=app", StringComparison.Ordinal) == true
@@ -4326,20 +4351,6 @@ public sealed class PodLogsViewModelTests
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var path = request.RequestUri?.AbsolutePath ?? string.Empty;
-            if (request.Method == HttpMethod.Post
-                && path.EndsWith("/pods", StringComparison.Ordinal)
-                && request.Content is not null)
-            {
-                var pod = KubernetesJson.Deserialize<V1Pod>(
-                    await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
-                pod.Metadata ??= new V1ObjectMeta();
-                pod.Metadata.Uid = "completed-pod-uid";
-                request.Content = new StringContent(
-                    KubernetesJson.Serialize(pod),
-                    Encoding.UTF8,
-                    "application/json");
-            }
-
             if (request.Method == HttpMethod.Get && path.EndsWith("/log", StringComparison.Ordinal))
             {
                 return new HttpResponseMessage(HttpStatusCode.OK)
@@ -4358,33 +4369,6 @@ public sealed class PodLogsViewModelTests
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var path = request.RequestUri?.AbsolutePath ?? string.Empty;
-            if ((request.Method == HttpMethod.Post || request.Method == HttpMethod.Put)
-                && request.Content is not null)
-            {
-                if (path.Contains("/deployments", StringComparison.Ordinal))
-                {
-                    var deployment = KubernetesJson.Deserialize<V1Deployment>(
-                        await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
-                    deployment.Metadata ??= new V1ObjectMeta();
-                    deployment.Metadata.Uid = "deployment-uid";
-                    request.Content = new StringContent(
-                        KubernetesJson.Serialize(deployment),
-                        Encoding.UTF8,
-                        "application/json");
-                }
-                else if (path.Contains("/pods", StringComparison.Ordinal))
-                {
-                    var pod = KubernetesJson.Deserialize<V1Pod>(
-                        await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
-                    pod.Metadata ??= new V1ObjectMeta();
-                    pod.Metadata.Uid = $"{pod.Metadata.Name}-uid";
-                    request.Content = new StringContent(
-                        KubernetesJson.Serialize(pod),
-                        Encoding.UTF8,
-                        "application/json");
-                }
-            }
-
             if (request.Method == HttpMethod.Get && path.EndsWith("/log", StringComparison.Ordinal))
             {
                 var payload = path.Contains("app-7c9dd9f4f4-fghij", StringComparison.Ordinal)
@@ -4406,33 +4390,6 @@ public sealed class PodLogsViewModelTests
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var path = request.RequestUri?.AbsolutePath ?? string.Empty;
-            if ((request.Method == HttpMethod.Post || request.Method == HttpMethod.Put)
-                && request.Content is not null)
-            {
-                if (path.Contains("/deployments", StringComparison.Ordinal))
-                {
-                    var deployment = KubernetesJson.Deserialize<V1Deployment>(
-                        await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
-                    deployment.Metadata ??= new V1ObjectMeta();
-                    deployment.Metadata.Uid = "deployment-uid";
-                    request.Content = new StringContent(
-                        KubernetesJson.Serialize(deployment),
-                        Encoding.UTF8,
-                        "application/json");
-                }
-                else if (path.Contains("/pods", StringComparison.Ordinal))
-                {
-                    var pod = KubernetesJson.Deserialize<V1Pod>(
-                        await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
-                    pod.Metadata ??= new V1ObjectMeta();
-                    pod.Metadata.Uid = $"{pod.Metadata.Name}-uid";
-                    request.Content = new StringContent(
-                        KubernetesJson.Serialize(pod),
-                        Encoding.UTF8,
-                        "application/json");
-                }
-            }
-
             if (request.Method == HttpMethod.Get && path.EndsWith("/log", StringComparison.Ordinal))
             {
                 var payload = path.Contains("app-7c9dd9f4f4-fghij", StringComparison.Ordinal)
@@ -4454,33 +4411,6 @@ public sealed class PodLogsViewModelTests
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var path = request.RequestUri?.AbsolutePath ?? string.Empty;
-            if ((request.Method == HttpMethod.Post || request.Method == HttpMethod.Put)
-                && request.Content is not null)
-            {
-                if (path.Contains("/deployments", StringComparison.Ordinal))
-                {
-                    var deployment = KubernetesJson.Deserialize<V1Deployment>(
-                        await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
-                    deployment.Metadata ??= new V1ObjectMeta();
-                    deployment.Metadata.Uid = "deployment-uid";
-                    request.Content = new StringContent(
-                        KubernetesJson.Serialize(deployment),
-                        Encoding.UTF8,
-                        "application/json");
-                }
-                else if (path.Contains("/pods", StringComparison.Ordinal))
-                {
-                    var pod = KubernetesJson.Deserialize<V1Pod>(
-                        await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
-                    pod.Metadata ??= new V1ObjectMeta();
-                    pod.Metadata.Uid = $"{pod.Metadata.Name}-uid";
-                    request.Content = new StringContent(
-                        KubernetesJson.Serialize(pod),
-                        Encoding.UTF8,
-                        "application/json");
-                }
-            }
-
             if (request.Method == HttpMethod.Get && path.EndsWith("/log", StringComparison.Ordinal))
             {
                 var podPrefix = path.Contains("app-7c9dd9f4f4-fghij", StringComparison.Ordinal) ? "newer" : "older";
@@ -4518,17 +4448,6 @@ public sealed class PodLogsViewModelTests
             var path = request.RequestUri?.AbsolutePath ?? string.Empty;
             var isJobWrite = path.Contains("/jobs", StringComparison.Ordinal)
                 && (request.Method == HttpMethod.Post || request.Method == HttpMethod.Put);
-            if (isJobWrite && Volatile.Read(ref _jobWrites) == 0 && request.Content is not null)
-            {
-                var job = KubernetesJson.Deserialize<V1Job>(
-                    await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
-                job.Metadata ??= new V1ObjectMeta();
-                job.Metadata.Uid = "job-uid";
-                request.Content = new StringContent(
-                    KubernetesJson.Serialize(job),
-                    Encoding.UTF8,
-                    "application/json");
-            }
             if (request.Method == HttpMethod.Get && path.EndsWith("/log", StringComparison.Ordinal))
             {
                 return new HttpResponseMessage(HttpStatusCode.OK)
@@ -4541,6 +4460,13 @@ public sealed class PodLogsViewModelTests
             var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
             if (isJobWrite && Interlocked.Increment(ref _jobWrites) == 1)
             {
+                var createdJob = KubernetesJson.Deserialize<V1Job>(
+                    await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
+                if (_pod.Metadata?.OwnerReferences is { Count: > 0 } ownerReferences)
+                {
+                    ownerReferences[0].Uid = createdJob?.Uid();
+                }
+
                 await SendResourceAsync(_pod, cancellationToken).ConfigureAwait(false);
             }
 
@@ -4591,17 +4517,6 @@ public sealed class PodLogsViewModelTests
             var path = request.RequestUri?.AbsolutePath ?? string.Empty;
             var isDeploymentWrite = path.Contains("/deployments", StringComparison.Ordinal)
                 && (request.Method == HttpMethod.Post || request.Method == HttpMethod.Put);
-            if (isDeploymentWrite && Volatile.Read(ref _deploymentWrites) == 0 && request.Content is not null)
-            {
-                var deployment = KubernetesJson.Deserialize<V1Deployment>(
-                    await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
-                deployment.Metadata ??= new V1ObjectMeta();
-                deployment.Metadata.Uid = "deployment-uid";
-                request.Content = new StringContent(
-                    KubernetesJson.Serialize(deployment),
-                    Encoding.UTF8,
-                    "application/json");
-            }
             if (request.Method == HttpMethod.Get && path.EndsWith("/log", StringComparison.Ordinal))
             {
                 var podName = path.Split('/', StringSplitOptions.RemoveEmptyEntries)[^2];
@@ -4616,16 +4531,22 @@ public sealed class PodLogsViewModelTests
             var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
             if (isDeploymentWrite)
             {
+                var deployment = KubernetesJson.Deserialize<V1Deployment>(
+                    await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
                 if (Interlocked.Increment(ref _deploymentWrites) == 1)
                 {
-                    await SendResourceAsync(_oldReplicaSet, cancellationToken).ConfigureAwait(false);
+                    _oldReplicaSet.Metadata!.OwnerReferences![0].Uid = deployment?.Uid();
+                    var oldReplicaSet = await SendResourceAsync(_oldReplicaSet, cancellationToken).ConfigureAwait(false);
+                    _oldPod.Metadata!.OwnerReferences![0].Uid = oldReplicaSet.Uid();
                     await SendResourceAsync(_oldPod, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
                     if (_newReplicaSet is not null && _newPod is not null)
                     {
-                        await SendResourceAsync(_newReplicaSet, cancellationToken).ConfigureAwait(false);
+                        _newReplicaSet.Metadata!.OwnerReferences![0].Uid = deployment?.Uid();
+                        var newReplicaSet = await SendResourceAsync(_newReplicaSet, cancellationToken).ConfigureAwait(false);
+                        _newPod.Metadata!.OwnerReferences![0].Uid = newReplicaSet.Uid();
                         await SendResourceAsync(_newPod, cancellationToken).ConfigureAwait(false);
                     }
                 }
@@ -4634,7 +4555,7 @@ public sealed class PodLogsViewModelTests
             return response;
         }
 
-        private async Task SendResourceAsync<T>(T resource, CancellationToken cancellationToken)
+        private async Task<T> SendResourceAsync<T>(T resource, CancellationToken cancellationToken)
             where T : IKubernetesObject<V1ObjectMeta>
         {
             var isPod = resource is V1Pod;
@@ -4645,7 +4566,10 @@ public sealed class PodLogsViewModelTests
                 Content = new StringContent(KubernetesJson.Serialize(resource), Encoding.UTF8, "application/json"),
             };
             using HttpMessageInvoker invoker = new(InnerHandler!, disposeHandler: false);
-            await invoker.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            using var response = await invoker.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+            return KubernetesJson.Deserialize<T>(
+                await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
         }
     }
 
@@ -4858,9 +4782,7 @@ public sealed class PodLogsViewModelTests
         }
 
         public override int Read(byte[] destination, int offset, int count)
-        {
-            return ReadAsync(destination.AsMemory(offset, count)).AsTask().GetAwaiter().GetResult();
-        }
+            => ReadAsync(destination.AsMemory(offset, count)).GetAwaiter().GetResult();
 
         public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
         {

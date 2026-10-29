@@ -1,4 +1,7 @@
 using KubeUI.Desktop;
+using KubeUI.Avalonia.Options;
+using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Kubernetes.Serialization;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;

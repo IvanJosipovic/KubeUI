@@ -7,7 +7,7 @@ using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.CustomResourceDefinition;
 
-public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBase<V1CustomResourceDefinition>
+public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfig<V1CustomResourceDefinition>
 {
     public override bool SeedOnConnect => true;
     public V1CustomResourceDefinitionConfig(IServiceProvider serviceProvider)
@@ -17,7 +17,12 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
 
     public override int Order => 13;
 
-    public override IList<IResourceListColumn> Columns()
+    public override NavigationPlacement Navigation => NavigationPlacement.InSection(
+        NavigationSections.CustomResourcesId,
+        name: Assets.Resources.V1CustomResourceDefinitionConfig_NavigationName,
+        order: -1);
+
+    protected override IList<IResourceListColumn> CreateDefaultColumns()
     {
         return [
             new ResourceListColumn<V1CustomResourceDefinition, string>()
@@ -104,7 +109,11 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfigBas
             return false;
         }
 
-        var resourceConfig = Cluster.GetResourceConfig(kind);
-        return resourceConfig?.PermissionsLoaded == true && resourceConfig.CanListAndWatch;
+        if (!Cluster.TryGetResourceConfig(kind, out var resourceConfig))
+        {
+            return false;
+        }
+
+        return resourceConfig.PermissionsLoaded && resourceConfig.CanListAndWatch;
     }
 }

@@ -31,7 +31,10 @@ jobs:
         run: |
           dotnet test \
             --configuration Release \
-            --no-build
+            --no-build \
+            --hangdump \
+            --hangdump-timeout 5m \
+            --timeout 60m
 
       - name: Upload test dump
         if: failure()
@@ -47,6 +50,7 @@ jobs:
           name: KubeUI Tests
           path: TestResults/*.trx
           reporter: dotnet-trx
+          fail-on-error: false
 
       - name: Test Summary
         uses: EnricoMi/publish-unit-test-result-action@v2

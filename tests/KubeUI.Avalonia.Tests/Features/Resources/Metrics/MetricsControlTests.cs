@@ -977,6 +977,8 @@ public sealed class MetricsControlTests
                 settings,
                 services,
                 new ImmediateThreadDispatcher(),
+                services.GetRequiredService<KubeUI.Kubernetes.Serialization.IKubernetesJsonSerializer>(),
+                services.GetRequiredService<KubeUI.Kubernetes.Serialization.IKubernetesYamlSerializer>(),
                 metricsService)
             {
                 Name = "metrics-control-cluster",
@@ -1047,6 +1049,8 @@ public sealed class MetricsControlTests
                 settings,
                 services,
                 new ImmediateThreadDispatcher(),
+                services.GetRequiredService<KubeUI.Kubernetes.Serialization.IKubernetesJsonSerializer>(),
+                services.GetRequiredService<KubeUI.Kubernetes.Serialization.IKubernetesYamlSerializer>(),
                 metricsService)
             {
                 Name = "metrics-server-control-cluster",

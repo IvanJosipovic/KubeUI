@@ -2,6 +2,8 @@
   <PropertyGroup>
     <DebugType>embedded</DebugType>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsTrimmable>true</IsTrimmable>
+    <WarningsAsErrors>$(WarningsAsErrors);IL2091</WarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
@@ -38,10 +40,17 @@
   <ItemGroup>
     <ProjectReference Include="..\KubeUI.Kubernetes\KubeUI.Kubernetes.csproj" PrivateAssets="all" />
     <ProjectReference Include="..\KubeUI.AI\KubeUI.AI.csproj" />
+    <ProjectReference Include="..\KubeUI.Cilium\KubeUI.Cilium.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" Exclude="Assets\Resources.resx" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)' == 'Release'">
+    <EmbeddedResource Include="ILLink.Substitutions.xml">
+      <LogicalName>ILLink.Substitutions.xml</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
@@ -66,7 +75,7 @@
     <PackageReference Include="Westermo.GraphX.Controls.Avalonia.Themes.Fluent" Version="4.2.0" />
     <PackageReference Include="Westermo.GraphX.Logic" Version="4.4.8" />
     <PackageReference Include="SvcSystems.UI.Terminal" Version="2.3.0" />
-    <PackageReference Include="SvcSystems.Avalonia.DynamicTableView" Version="1.0.0-alpha.15" />
+    <PackageReference Include="SvcSystems.Avalonia.DynamicTableView" Version="1.0.0-alpha.17" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="Dock.Avalonia" Version="12.1.0.2" />
     <PackageReference Include="Dock.Avalonia.Themes.Fluent" Version="12.1.0.2" />
@@ -82,7 +91,8 @@
     <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.1.0-dev-798" />
     <PackageReference Include="LiveMarkdown.Avalonia" Version="2.5.1" />
     <PackageReference Include="ModelContextProtocol" Version="2.3.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="11.0.0-rc.2.26504.105" />
+    <PackageReference Include="NuGet.Versioning" Version="7.9.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="11.0.0-rc.3.26522.148" />
     <PackageReference Include="OpenTelemetry" Version="1.20.1" />
     <PackageReference Include="PanAndZoom" Version="12.1.1" />
     <PackageReference Include="PropertyGenerator.Avalonia" Version="1.3.1">

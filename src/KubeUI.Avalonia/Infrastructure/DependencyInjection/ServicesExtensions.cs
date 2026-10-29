@@ -4,16 +4,25 @@ using KubeUI.AI.Agents;
 using KubeUI.AI.Configuration;
 using KubeUI.AI.Permissions;
 using KubeUI.Avalonia.Features.AI;
+using KubeUI.Avalonia.Features.Cilium.Hubble;
+using KubeUI.Avalonia.Features.Crossplane;
 using KubeUI.Avalonia.Features.Crossplane.MRDiffDetection;
+using KubeUI.Avalonia.Features.Helm;
+using KubeUI.Avalonia.Features.Helm.Charts;
+using KubeUI.Avalonia.Features.Helm.Releases;
+using KubeUI.Avalonia.Features.Helm.Repositories;
 using KubeUI.Avalonia.Features.Resources.List.Controls;
+using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Infrastructure.Logging;
 using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod;
+using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Services;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.ViewModels;
+using KubeUI.Avalonia.Services.FeatureFlags;
 using KubeUI.Avalonia.Services.Icons;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Shell.Main;
@@ -47,6 +56,7 @@ public static partial class KubeUIShellServiceCollectionExtensions
         services.AddSingleton<Instrumentation>();
         services.AddSingleton<IYamlValidationService, YamlSyntaxValidationService>();
         services.AddSingleton<ILogSink, LogSink>();
+        services.AddSingleton(GetViewFactories());
         services.AddSingleton<ViewLocator>();
         services.AddSingleton<IPodLogExportService, PodLogExportService>();
         services.AddSingleton<Func<PodLogsViewModel>>(sp =>
@@ -55,9 +65,26 @@ public static partial class KubeUIShellServiceCollectionExtensions
         services.AddSingleton<IDataTemplate>(sp => sp.GetRequiredService<ViewLocator>());
         services.AddSingleton<ISettingsPersistence, FileSettingsPersistence>();
         services.AddSingleton<ISettingsService, SettingsService>();
+        services.AddSingleton<IFeatureProvider, SettingsFeatureProvider>();
+        services.AddSingleton<IFeatureClient, FeatureClient>();
         services.AddSingleton<IResourceIconService, ResourceIconService>();
-        services.AddSingleton<NavigationFeatureCatalog>();
-        services.AddSingleton(_ => CrossplaneNavigationFeature.CreateDefinition());
+        services.AddTransient(static serviceProvider => new CustomResourceConfig(serviceProvider));
+        services.AddSingleton<INavigationSectionProvider, CrossplaneNavigationSectionProvider>();
+        services.AddSingleton<INavigationSectionProvider, HelmNavigationSectionProvider>();
+        services.AddSingleton<INavigationSectionProvider, HubbleNavigationSectionProvider>();
+        services.AddSingleton<IHelmListNotifier, HelmListNotifier>();
+        services.AddTransient<IHelmDocumentOpener, HelmDocumentOpener>();
+        services.AddTransient<Func<HelmChartsViewModel>>(sp => () => sp.GetRequiredService<HelmChartsViewModel>());
+        services.AddTransient<Func<HelmReleaseEditorViewModel>>(sp => () => sp.GetRequiredService<HelmReleaseEditorViewModel>());
+        services.AddTransient<Func<HelmRepositoryEditorViewModel>>(sp => () => sp.GetRequiredService<HelmRepositoryEditorViewModel>());
+        services.AddTransient<IHelmReleasePreviewService, HelmReleasePreviewService>();
+        services.AddTransient<Func<VisualizationViewModel>>(sp => () => sp.GetRequiredService<VisualizationViewModel>());
+        services.AddTransient<Func<ResourceYamlViewModel>>(sp => () => sp.GetRequiredService<ResourceYamlViewModel>());
+        services.AddTransient<FlowListViewModel>();
+        services.AddTransient<ServiceMapViewModel>();
+        services.AddTransient<Func<FlowListViewModel>>(sp => () => sp.GetRequiredService<FlowListViewModel>());
+        services.AddTransient<Func<ServiceMapViewModel>>(sp => () => sp.GetRequiredService<ServiceMapViewModel>());
+        services.AddSingleton<NavigationSectionCatalog>();
         services.AddSingleton<CrossplaneDiffLogParser>();
         services.AddTransient<CrossplaneProviderLogMonitor>();
         services.AddSingleton<IAgentRegistry>(sp => new AcpAgentRegistry(
@@ -75,4 +102,12 @@ public static partial class KubeUIShellServiceCollectionExtensions
     [GenerateServiceRegistrations(AssignableTo = typeof(ViewBase<>), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI.Avalonia")]
     [GenerateServiceRegistrations(AssignableTo = typeof(RefreshingCellTextBlock), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI.Avalonia")]
     private static partial IServiceCollection AddKubeUIShellGeneratedServices(this IServiceCollection services);
+
+    [ScanForTypes(AssignableTo = typeof(IViewFactoryDefinition), Handler = nameof(CreateViewFactory))]
+    private static partial IViewFactory[] GetViewFactories();
+
+    private static IViewFactory CreateViewFactory<TView>()
+        where TView : Control, IViewFactoryDefinition =>
+        new DiscoveredViewFactory(TView.CanCreate, serviceProvider => serviceProvider.GetRequiredService<TView>());
+
 }

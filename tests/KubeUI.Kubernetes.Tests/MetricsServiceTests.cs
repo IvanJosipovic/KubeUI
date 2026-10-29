@@ -82,7 +82,8 @@ public sealed class MetricsServiceTests
             MetricsServiceType = MetricsServiceType.KubernetesMetricsServer,
         });
         using var service = CreateMetricsService(settings, new FakePrometheusQueryClient());
-        await using var cluster = CreateCluster("metrics-server-cluster", service, settings, CreateFakeClient(api));
+        using var client = CreateFakeClient(api);
+        await using var cluster = CreateCluster("metrics-server-cluster", service, settings, client);
 
         await service.InitializeAsync(cluster);
 
@@ -100,7 +101,8 @@ public sealed class MetricsServiceTests
             PrometheusProviderKind = PrometheusProviderKind.External,
         });
         using var service = CreateMetricsService(settings, new FakePrometheusQueryClient());
-        await using var cluster = CreateCluster("explicit-prom-cluster", service, settings, CreateFakeClient(api));
+        using var client = CreateFakeClient(api);
+        await using var cluster = CreateCluster("explicit-prom-cluster", service, settings, client);
 
         await service.InitializeAsync(cluster);
 
@@ -117,7 +119,8 @@ public sealed class MetricsServiceTests
             MetricsServiceType = MetricsServiceType.KubernetesMetricsServer,
         });
         using var service = CreateMetricsService(settings, new FakePrometheusQueryClient());
-        await using var cluster = CreateCluster("metrics-server-data-cluster", service, settings, CreateFakeClient(api, includeMetricsData: true));
+        using var client = CreateFakeClient(api, includeMetricsData: true);
+        await using var cluster = CreateCluster("metrics-server-data-cluster", service, settings, client);
 
         await service.InitializeAsync(cluster);
 
@@ -140,7 +143,7 @@ public sealed class MetricsServiceTests
     public async Task SyncKubernetesMetricsAsync_appends_recent_samples_and_removes_samples_older_than_one_hour()
     {
         using var api = CreateMetricsServerApi();
-        var client = CreateFakeClient(api, out var discoveryHandler);
+        using var client = CreateFakeClient(api, out var discoveryHandler);
         var settings = new TestClusterSettingsStore(new ClusterMetricsSettings
         {
             MetricsServiceType = MetricsServiceType.KubernetesMetricsServer,
@@ -207,7 +210,8 @@ public sealed class MetricsServiceTests
             MetricsServiceType = MetricsServiceType.KubernetesMetricsServer,
         });
         using var service = CreateMetricsService(settings, new FakePrometheusQueryClient());
-        await using var cluster = CreateCluster("metrics-server-cluster", service, settings, CreateFakeClient(api));
+        using var client = CreateFakeClient(api);
+        await using var cluster = CreateCluster("metrics-server-cluster", service, settings, client);
 
         await service.InitializeAsync(cluster);
 
@@ -224,7 +228,8 @@ public sealed class MetricsServiceTests
             MetricsServiceType = MetricsServiceType.Auto,
         });
         using var service = CreateMetricsService(settings, new FakePrometheusQueryClient());
-        await using var cluster = CreateCluster("auto-metrics-cluster", service, settings, CreateFakeClient(api));
+        using var client = CreateFakeClient(api);
+        await using var cluster = CreateCluster("auto-metrics-cluster", service, settings, client);
 
         await service.InitializeAsync(cluster);
 
@@ -428,6 +433,8 @@ public sealed class MetricsServiceTests
             settings,
             new ServiceCollection().BuildServiceProvider(),
             new ImmediateThreadDispatcher(),
+            new KubeUI.Kubernetes.Serialization.KubernetesJsonSerializer(new System.Text.Json.JsonSerializerOptions()),
+            Moq.Mock.Of<KubeUI.Kubernetes.Serialization.IKubernetesYamlSerializer>(),
             metricsService)
         {
             Name = name,

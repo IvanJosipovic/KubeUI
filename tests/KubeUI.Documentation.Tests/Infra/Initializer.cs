@@ -27,8 +27,17 @@ public sealed class DocumentationTestApp : TestApp
 {
     protected override TimeProvider CreateTimeProvider() => TimeProvider.System;
 
-    protected override void ConfigureTestServices(IServiceCollection services)
+    public DocumentationTestApp()
+        : base(ConfigureServices)
+    {
+    }
+
+    private static void ConfigureServices(IServiceCollection services)
     {
         services.Replace(ServiceDescriptor.Singleton<IPrometheusQueryClient, WalkthroughPrometheusQueryClient>());
+        HelmWalkthroughService.ConfigureHelmRepositoryPaths();
+        services.AddSingleton<HelmService>();
+        services.Replace(ServiceDescriptor.Singleton(provider =>
+            HelmWalkthroughService.Create(provider.GetRequiredService<HelmService>())));
     }
 }

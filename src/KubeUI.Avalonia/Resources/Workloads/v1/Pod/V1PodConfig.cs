@@ -14,7 +14,7 @@ using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 
-public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
+public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
 {
     private readonly IPlatformServices _platformServices;
 
@@ -26,11 +26,11 @@ public sealed partial class V1PodConfig : ResourceConfigBase<V1Pod>
 
     public override bool IsNamespaced => true;
 
-    public override string Category => Assets.Resources.ResourceConfig_Category_Workloads!;
+    public override NavigationPlacement Navigation => NavigationPlacement.InSection(NavigationSections.WorkloadsId);
 
     public override int Order => 0;
 
-    public override IList<IResourceListColumn> Columns()
+    protected override IList<IResourceListColumn> CreateDefaultColumns()
     {
         List<IResourceListColumn> cols =
             [

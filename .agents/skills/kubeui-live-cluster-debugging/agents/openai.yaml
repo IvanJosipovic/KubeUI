@@ -1,0 +1,3 @@
+interface:
+  display_name: "KubeUI Live Cluster Debugging"
+  short_description: "Debug KubeUI against real clusters"

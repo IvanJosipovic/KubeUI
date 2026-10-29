@@ -135,6 +135,8 @@ public sealed class PrometheusMetricQueriesTests
         new NoopClusterSettingsStore(),
         new ServiceCollection().BuildServiceProvider(),
         new ImmediateThreadDispatcher(),
+        new KubeUI.Kubernetes.Serialization.KubernetesJsonSerializer(new System.Text.Json.JsonSerializerOptions()),
+        Moq.Mock.Of<KubeUI.Kubernetes.Serialization.IKubernetesYamlSerializer>(),
         new NoopMetricsService())
     {
         Name = "prom-cluster",

@@ -235,7 +235,7 @@ csharp_style_expression_bodied_lambdas = true:silent
 csharp_style_expression_bodied_local_functions = false:silent
 csharp_style_prefer_null_check_over_type_check = true:suggestion
 csharp_prefer_simple_default_expression = true:suggestion
-csharp_prefer_system_threading_lock = true:suggestion
+csharp_prefer_system_threading_lock = true:error
 dotnet_diagnostic.MA0006.severity = silent
 dotnet_diagnostic.MA0011.severity = silent
 dotnet_diagnostic.MA0004.severity = silent
@@ -257,18 +257,8 @@ dotnet_diagnostic.CS4014.severity = error
 # IDE0022: Use block body for method
 dotnet_diagnostic.IDE0022.severity = none
 
-# Xaml files
-
-[*.{xaml,axaml}]
-indent_size = 2
-end_of_line = lf
-indent_style = space
-
-# IDE0005: Using directive is unnecessary.
-dotnet_diagnostic.IDE0005.severity = error
-
 # IDE0330: Use 'System.Threading.Lock'
-dotnet_diagnostic.IDE0330.severity = suggestion
+dotnet_diagnostic.IDE0330.severity = error
 
 [*.g.cs]
 generated_code = true

@@ -10,7 +10,7 @@ using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Resources.Core.v1.Node;
 
-public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
+public sealed partial class V1NodeConfig : ResourceConfig<V1Node>
 {
     public V1NodeConfig(IServiceProvider serviceProvider)
         : base(serviceProvider)
@@ -18,7 +18,7 @@ public sealed partial class V1NodeConfig : ResourceConfigBase<V1Node>
     }
     public override int Order => 5;
 
-    public override IList<IResourceListColumn> Columns()
+    protected override IList<IResourceListColumn> CreateDefaultColumns()
     {
         return [
             NameColumn(SortDirection.Ascending),

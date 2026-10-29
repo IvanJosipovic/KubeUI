@@ -1,12 +1,13 @@
 using Avalonia.Controls.Primitives;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Styles;
 using LiveMarkdown.Avalonia;
 
 namespace KubeUI.Avalonia.Shell.Documents.Updates;
 
-public sealed class UpdateAvailableView : ViewBase<UpdateAvailableViewModel>
+public sealed class UpdateAvailableView : KubeUIView<UpdateAvailableViewModel>
 {
     protected override object Build(UpdateAvailableViewModel vm)
     {

@@ -322,6 +322,8 @@ public sealed class PrometheusQueryClientTests
             new TestClusterSettingsStore(),
             new ServiceCollection().BuildServiceProvider(),
             new ImmediateThreadDispatcher(),
+            new KubeUI.Kubernetes.Serialization.KubernetesJsonSerializer(new System.Text.Json.JsonSerializerOptions()),
+            Moq.Mock.Of<KubeUI.Kubernetes.Serialization.IKubernetesYamlSerializer>(),
             metricsService)
         {
             Name = name,

@@ -1,0 +1,76 @@
+# $schema: https://microsoft.github.io/apm/specs/schemas/manifest-v0.1.48.schema.json
+name: kubeui
+version: 1.0.0
+description: Agent config
+author: Ivan Josipovic
+# Which agent platforms to deploy to.
+# Resolution order: --target flag > this field > auto-detect from filesystem.
+# Accepted values: agent-skills, antigravity, claude, codex, copilot, cursor, gemini, grok-bot, grok-build, hermes, kiro, opencode, vscode, windsurf
+targets:
+- agent-skills
+- claude
+- codex
+- copilot
+- gemini
+- opencode
+- vscode
+dependencies:
+  apm:
+    - github.com/JuliusBrussee/caveman/skills/caveman
+    - github.com/Aaronontheweb/dotnet-skills/skills/ilspy-decompile
+    - github.com/microsoft/DebugMCP/skills/debug-live
+    - github.com/dotnet/skills/plugins/dotnet
+    - github.com/dotnet/skills/plugins/dotnet11
+    - github.com/dotnet/skills/plugins/dotnet-diag
+    - github.com/wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-12-migration
+    - github.com/wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-accessibility-and-validation
+    - github.com/wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-bindings-and-xaml
+    - github.com/wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-bootstrap-and-lifetime
+    - github.com/wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-controls-and-windowing
+    - github.com/wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-design-systems
+    - github.com/wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-fluent-design
+    - github.com/wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-input-and-commands
+    - github.com/wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-layout-and-virtualization
+    - github.com/wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-platform-services
+    - github.com/wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-rendering-and-graphics
+    - github.com/wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-styling-and-resources
+    - github.com/wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-testing-diagnostics-and-performance
+    - github.com/wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-threading-and-dispatcher
+    - github.com/wieslawsoltes/development-plugin-for-avalonia/skills/avalonia-views-and-templating
+    - ./skills/kube-ui-testing
+  mcp:
+    - name: roslyn-codelens-mcp
+      registry: false
+      transport: stdio
+      command: dnx
+      args: ["RoslynCodeLens.Mcp", "--yes"]
+    - name: avalonia-docs
+      registry: false
+      transport: http
+      url: https://docs-mcp.avaloniaui.net/mcp
+    - name: microsoft-learn
+      registry: false
+      transport: http
+      url: https://learn.microsoft.com/api/mcp
+    - name: avalonia
+      registry: false
+      transport: http
+      url: http://127.0.0.1:5599
+    - name: roslyn-mcp
+      registry: false
+      transport: stdio
+      command: dnx
+      args: ["RoslynMcp.Server"]
+    - name: mcp-debugger
+      registry: false
+      transport: stdio
+      command: npx
+      args: ["-y", "@debugmcp/mcp-debugger", "stdio"]
+    - name: aspire
+      registry: false
+      transport: stdio
+      command: dnx
+      args: ["Aspire.Cli dashboard run --allow-anonymous"]
+  lsp: []
+includes: auto
+scripts: {}

@@ -34,7 +34,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     private bool _disposed;
     private readonly Lock _outputEntriesGate = new();
     private readonly List<PodLogOutputEntry> _outputEntries = [];
-    private readonly object _streamReadersGate = new();
+    private readonly Lock _streamReadersGate = new();
     private readonly List<StreamReader> _streamReaders = [];
     private readonly ConcurrentDictionary<CancellationTokenSource, int> _readerCounts = new();
     private bool _hasLoadedSession;

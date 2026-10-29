@@ -96,7 +96,7 @@ internal static class McpServerServiceCollectionExtensions
                 ValueTask.FromResult(new ListResourcesResult { Resources = [] }))
             .WithListResourceTemplatesHandler(static (_, _) =>
                 ValueTask.FromResult(new ListResourceTemplatesResult { ResourceTemplates = [] }))
-            .WithTools<McpTools>()
+            .WithTools<McpTools>(McpToolJsonSerializationContext.CreateSerializerOptions())
             .WithRequestFilters(McpToolAuditFilter.Configure);
         services.AddSingleton<IHostedService>(serviceProvider =>
             new McpServerHostedService(serviceProvider, port));

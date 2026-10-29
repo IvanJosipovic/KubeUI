@@ -10,6 +10,10 @@
 - Set `StartDisconnected` only for connection-lifecycle behavior; use a connected `TestCluster` for resource, informer, authorization, and navigation tests.
 
 ## Coverage Focus
+- Tests that parse custom-resource starter templates must initialize the config with a test-owned workspace first, so parsing uses that workspace's serializer policy.
+- Every preview flag needs enabled and disabled behavior coverage through Settings. Exercise Helm/Hubble navigation with the real settings-backed feature provider, independent toggle combinations, and restart-only changes; serialization cases must exercise actual JSON/YAML operations with both reflection policies.
+- Serialization preview flags must cover actual JSON and YAML serialization and deserialization using an unregistered Kubernetes-like model. Test both reflection modes and verify generated Kubernetes models still round-trip. Start KubeUI with Settings overrides and use the configured serializers; do not construct serializer options in tests. Verify simultaneously alive hosts keep independent modes. Do not use environment variables or child test processes.
+- The headless test app enables the Helm and Hubble preview flags by default so existing navigation tests keep their sections; cover disabled and default-off behavior with explicit feature clients.
 - Prefer behavior tests for view models, resource configs, and shared UI behaviors that are easy to drift.
 - Preserve tests when migrating them. If a test asserted an implementation detail through a wrapper, replace it with an observable behavior assertion or add the missing transport scenario; do not silently delete coverage.
 - Kubernetes-client parity is exercised by the shared fake/Kind matrix. Avalonia tests that exercise HTTP-backed authorization, informer, or limited-access behavior use `AvaloniaTheory` with `[KubernetesBackendData]`; deterministic UI-only and fault-injection tests continue to use the fake transport. Local runs use fake only and CI enables Kind with `KUBEUI_RUN_KIND_TESTS=1`. Matrix rows are displayed with `- fake` or `- kind`.
@@ -27,6 +31,7 @@ Tests using Avalonia capabilities should use `[AvaloniaFact]`. Pure model, seria
 - Dispose scenario scopes with `await using`; dispose view models/workspaces owned directly by a test.
 - Keep fake transport behavior in `KubeUI.Testing`, not in individual tests.
 - Avalonia UI tests remain focused on UI behavior; cluster-backed REST/watch/auth parity belongs in the Kubernetes test project's backend matrix. WebSocket URI and local socket mechanics use deterministic transport/session fakes because they test client wiring or local ownership, not cluster state.
+- Pod-log ViewModel state-machine tests that inject log streams, block opens/reads, or assert UI batching stay Fake-only; API-backed pod CRUD, informer, workload-resolution, and rollout scenarios use the shared backend matrix. Data-display patch serialization stays UI-focused, while patch semantics are asserted in `ClusterApiContractTests` against Fake and Kind.
 - When replacing a test double, preserve the original observable behavior or strengthen it with a production-runtime regression; do not remove coverage merely to make a test fit the generated cluster.
 - Use coverage results to target high-fan-out navigation, resource readiness, relationship, CRD, and transport branches with behavior assertions.
 - In Release or parallel CI runs, wait for the exact view/cache state after resource mutations and selection changes; `Dispatcher.UIThread.RunJobs()` only drains queued UI work and is not a data-readiness guarantee.
@@ -35,3 +40,9 @@ Tests using Avalonia capabilities should use `[AvaloniaFact]`. Pure model, seria
 - Exercise Host, Origin, and authentication boundaries through the production loopback host; rejected callers must not reach tool or cluster operations.
 - Cover selected external cluster grants, the empty-scope all-clusters behavior, credential revocation, Secret approval, cancellation, request/output limits, native Settings validation, and ACP credential lifecycle.
 - Use controllable `TimeProvider` and explicit task gates for rate-limit and concurrency tests; do not use sleeps.
+
+## Opt-in live Helm visualization validation
+- `LiveHelmVisualizationTests` is opt-in and read-only: it checks an existing `authentik` release in namespace `authentik` through the production workspace and visualization pipeline. It must not create, update, or delete cluster resources.
+- Mark live-cluster tests with `[LiveClusterFact]`, not `Explicit = true`. An explicit test is reported as `NotRunnable` in the TRX file and the CI test reporter counts it as a failure; `[LiveClusterFact]` skips the test when `KUBEUI_LIVE_CONTEXT` is unset so it is reported as `NotExecuted` and counted as skipped.
+- Set `KUBEUI_LIVE_CONTEXT` to the host kubeconfig context, build first, then run `dotnet test --project tests\KubeUI.Avalonia.Tests\KubeUI.Avalonia.Tests.csproj --no-build --no-restore --filter-class '*LiveHelmVisualizationTests' --minimum-expected-tests 1`.
+- Keep the graph-publication starvation regression deterministic with the fake backend and explicit build gates; the live test supplements, not replaces, that regression.

@@ -31,26 +31,26 @@ public class TestApp : App, IDisposable
     private IHost? _host;
     private int _disposed;
 
-    public TestApp()
+    public TestApp() : this(null)
     {
-        _host = BuildHost();
+    }
+
+    public TestApp(Action<IServiceCollection>? configureServices)
+    {
+        _host = BuildHost(configureServices);
         InitializeApplication(_host.Services);
         Dispatcher.UIThread.ShutdownFinished += OnDispatcherShutdownFinished;
     }
 
-    private async void OnDispatcherShutdownFinished(object? sender, EventArgs e)
+    private void OnDispatcherShutdownFinished(object? sender, EventArgs e)
     {
         Dispatcher.UIThread.ShutdownFinished -= OnDispatcherShutdownFinished;
-        await DisposeAsync().ConfigureAwait(false);
+        Dispose();
     }
 
-    public void Dispose()
-    {
-        DisposeAsync().GetAwaiter().GetResult();
-        GC.SuppressFinalize(this);
-    }
+    public void Dispose() => DisposeCoreAsync().GetAwaiter().GetResult();
 
-    private async Task DisposeAsync()
+    private async Task DisposeCoreAsync()
     {
         if (Interlocked.Exchange(ref _disposed, 1) == 1)
         {
@@ -74,7 +74,7 @@ public class TestApp : App, IDisposable
         ContentDialogSettings = null;
     }
 
-    private IHost BuildHost()
+    private IHost BuildHost(Action<IServiceCollection>? configureServices)
     {
         var kubeConfigPath = Path.Combine(Path.GetTempPath(), $"kubeui-avalonia-{Guid.NewGuid():N}.config");
 
@@ -138,10 +138,10 @@ public class TestApp : App, IDisposable
             services.Replace(ServiceDescriptor.Singleton<IKubeConfigPathProvider>(
                 new KubernetesTestKubeConfigPathProvider(kubeConfigPath)));
             ConfigureTestServices(services);
+            configureServices?.Invoke(services);
         });
 
         var host = builder.Build();
-        host.Services.ConfigureKubeUIKubernetesJsonLogging();
         return host;
     }
 
@@ -151,7 +151,18 @@ public class TestApp : App, IDisposable
 
         public bool EnsureDirectoryExists() => true;
 
-        public SettingsPersistenceData Load() => new();
+        // Existing navigation tests expect preview sections; focused tests cover the disabled defaults.
+        public SettingsPersistenceData Load() => new()
+        {
+            Settings = new()
+            {
+                Features = new()
+                {
+                    Helm = true,
+                    Hubble = true
+                }
+            }
+        };
 
         public bool Save(SettingsPersistenceData data)
         {

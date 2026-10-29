@@ -68,8 +68,8 @@ public sealed class McpCredentialService(ISettingsService settingsService) : IMc
     private const int MaximumSessionCredentials = 128;
     private const int MaximumClusterCount = 100;
     private const int MaximumClusterNameLength = 128;
-    private readonly object _settingsLock = new();
-    private readonly object _sessionLock = new();
+    private readonly Lock _settingsLock = new();
+    private readonly Lock _sessionLock = new();
     private readonly ISettingsService _settingsService = settingsService;
     private readonly ConcurrentDictionary<string, McpClientIdentity> _sessionCredentials = new(StringComparer.Ordinal);
 

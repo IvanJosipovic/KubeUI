@@ -1,5 +1,4 @@
 using System.Text;
-using System.Text.Json;
 using KubeUI.Avalonia.Infrastructure.Mcp;
 using Shouldly;
 
@@ -52,76 +51,29 @@ public sealed class McpResourcePaginationTests
     [Fact]
     public void cursor_decoder_rejects_malformed_and_unsupported_cursors()
     {
-        var unsupportedVersion = EncodeJson(new
-        {
-            Version = 2,
-            Cluster = "dev",
-            ApiVersion = "v1",
-            Kind = "Pod",
-            Namespace = (string?)null,
-            LastNamespace = "default",
-            LastName = "api",
-            LastUid = "uid-api",
-        });
-        var missingLastName = EncodeJson(new
-        {
-            Version = 1,
-            Cluster = "dev",
-            ApiVersion = "v1",
-            Kind = "Pod",
-            Namespace = (string?)null,
-            LastNamespace = "default",
-            LastName = (string?)null,
-            LastUid = "uid-api",
-        });
-        var missingCluster = EncodeJson(new
-        {
-            Version = 1,
-            Cluster = string.Empty,
-            ApiVersion = "v1",
-            Kind = "Pod",
-            Namespace = (string?)null,
-            LastNamespace = "default",
-            LastName = "api",
-            LastUid = "uid-api",
-        });
-        var missingApiVersion = EncodeJson(new
-        {
-            Version = 1,
-            Cluster = "dev",
-            ApiVersion = string.Empty,
-            Kind = "Pod",
-            Namespace = (string?)null,
-            LastNamespace = "default",
-            LastName = "api",
-            LastUid = "uid-api",
-        });
-        var missingKind = EncodeJson(new
-        {
-            Version = 1,
-            Cluster = "dev",
-            ApiVersion = "v1",
-            Kind = string.Empty,
-            Namespace = (string?)null,
-            LastNamespace = "default",
-            LastName = "api",
-            LastUid = "uid-api",
-        });
-        var malformedJson = Convert.ToBase64String(Encoding.UTF8.GetBytes("{"))
-            .TrimEnd('=')
-            .Replace('+', '-')
-            .Replace('/', '_');
+        var unsupportedVersion = EncodeJson(
+            """{"Version":2,"Cluster":"dev","ApiVersion":"v1","Kind":"Pod","Namespace":null,"LastNamespace":"default","LastName":"api","LastUid":"uid-api"}""");
+        var missingLastName = EncodeJson(
+            """{"Version":1,"Cluster":"dev","ApiVersion":"v1","Kind":"Pod","Namespace":null,"LastNamespace":"default","LastName":null,"LastUid":"uid-api"}""");
+        var missingCluster = EncodeJson(
+            """{"Version":1,"Cluster":"","ApiVersion":"v1","Kind":"Pod","Namespace":null,"LastNamespace":"default","LastName":"api","LastUid":"uid-api"}""");
+        var missingApiVersion = EncodeJson(
+            """{"Version":1,"Cluster":"dev","ApiVersion":"","Kind":"Pod","Namespace":null,"LastNamespace":"default","LastName":"api","LastUid":"uid-api"}""");
+        var missingKind = EncodeJson(
+            """{"Version":1,"Cluster":"dev","ApiVersion":"v1","Kind":"","Namespace":null,"LastNamespace":"default","LastName":"api","LastUid":"uid-api"}""");
+        var malformedJson = EncodeJson("{");
+        var nullJson = EncodeJson("null");
 
         foreach (var cursor in new[]
         {
-            "", "!", malformedJson, EncodeJson<object?>(null), unsupportedVersion,
+            "", "!", malformedJson, nullJson, unsupportedVersion,
             missingLastName, missingCluster, missingApiVersion, missingKind
         })
             Should.Throw<ArgumentException>(() => McpResourceCursorCodec.Decode(cursor));
     }
 
-    private static string EncodeJson<T>(T value)
-        => Convert.ToBase64String(JsonSerializer.SerializeToUtf8Bytes(value))
+    private static string EncodeJson(string json)
+        => Convert.ToBase64String(Encoding.UTF8.GetBytes(json))
             .TrimEnd('=')
             .Replace('+', '-')
             .Replace('/', '_');

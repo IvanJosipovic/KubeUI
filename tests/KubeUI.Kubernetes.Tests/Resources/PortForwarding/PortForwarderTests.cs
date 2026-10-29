@@ -220,6 +220,79 @@ public sealed class PortForwarderTests
 
     [Theory, KubernetesBackendData]
     [Trait("Category", "Kind")]
+    public async Task Service_forward_resolves_single_unnamed_target_port(KubernetesBackend backend)
+    {
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig { Type = backend },
+            TestContext.Current.CancellationToken);
+        var cluster = harness.Cluster;
+        await cluster.Connect();
+        await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Service>(Verb.List);
+        await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1Service>(Verb.Watch);
+        await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1EndpointSlice>(Verb.List);
+        await cluster.Permissions.UpdatePermissionsAllNamespaceAsync<V1EndpointSlice>(Verb.Watch);
+        await cluster.SeedResource<V1Service>(true);
+        await cluster.SeedResource<V1EndpointSlice>(true);
+
+        var service = CreateService();
+        service.Spec!.Ports![0].Name = null;
+        service.Spec.Ports[0].Port = 80;
+        service.Spec.Ports[0].TargetPort = "grpc";
+        await cluster.AddOrUpdateResource(service);
+        await cluster.AddOrUpdateResource(new V1EndpointSlice
+        {
+            AddressType = "IPv4",
+            Metadata = new V1ObjectMeta
+            {
+                Name = "prometheus-slice",
+                NamespaceProperty = "default",
+                Labels = new Dictionary<string, string>
+                {
+                    ["kubernetes.io/service-name"] = "prometheus",
+                },
+            },
+            Ports = [new Discoveryv1EndpointPort { Port = 4245 }],
+            Endpoints =
+            [
+                new V1Endpoint
+                {
+                    Addresses = ["192.0.2.1"],
+                    Conditions = new V1EndpointConditions { Ready = true, Serving = true },
+                    TargetRef = new V1ObjectReference
+                    {
+                        Kind = "Pod",
+                        Name = "prometheus-0",
+                        NamespaceProperty = "default",
+                    },
+                },
+            ],
+        });
+        await ClusterRuntimeAssertions.WaitForResourceAsync<V1EndpointSlice>(
+            cluster,
+            "default",
+            "prometheus-slice",
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        using var stream = new CaptureStream();
+        var session = new Mock<IPortForwardSession>(MockBehavior.Strict);
+        session.SetupGet(x => x.Stream).Returns(stream);
+        session.Setup(x => x.Dispose());
+        var factory = new Mock<IPortForwardSessionFactory>(MockBehavior.Strict);
+        factory.Setup(x => x.CreateAsync("prometheus-0", "default", 4245)).ReturnsAsync(session.Object);
+
+        using var sut = new PortForwarder(cluster, "default", localPort: 0, sessionFactory: factory.Object, logger: Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance);
+        sut.SetService("prometheus", 80);
+        sut.Start();
+        await ConnectAsync(sut.LocalPort, TestContext.Current.CancellationToken);
+
+        await WaitForAsync(
+            () => factory.Invocations.Any(invocation => invocation.Method.Name == nameof(IPortForwardSessionFactory.CreateAsync)),
+            cancellationToken: TestContext.Current.CancellationToken);
+        factory.Verify(x => x.CreateAsync("prometheus-0", "default", 4245), Times.Once);
+    }
+
+    [Theory, KubernetesBackendData]
+    [Trait("Category", "Kind")]
     public async Task Service_forward_without_matching_port_sets_expected_status(KubernetesBackend backend)
     {
         await using var harness = await new TestClusterGenerator().CreateAsync(

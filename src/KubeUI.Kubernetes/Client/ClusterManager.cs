@@ -1,3 +1,4 @@
+using KubeUI.Kubernetes.Serialization;
 using System.Diagnostics;
 using k8s;
 using k8s.KubeConfigModels;
@@ -15,6 +16,7 @@ public sealed class ClusterComparer : IComparer<IClusterRuntime>
 
 public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCatalog, IDisposable
 {
+    private readonly IKubernetesYamlSerializer _yamlSerializer;
     private readonly ILogger<ClusterManager> _logger;
     private readonly IServiceProvider _serviceProvider;
     private readonly IClusterSettingsStore _settings;
@@ -32,8 +34,10 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
         IServiceProvider serviceProvider,
         IClusterSettingsStore settings,
         IThreadDispatcher dispatcher,
-        IKubeConfigPathProvider kubeConfigPathProvider)
+        IKubeConfigPathProvider kubeConfigPathProvider,
+        IKubernetesYamlSerializer yamlSerializer)
     {
+        _yamlSerializer = yamlSerializer;
         _logger = logger;
         _serviceProvider = serviceProvider;
         _settings = settings;
@@ -201,7 +205,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
         var path = _kubeConfigPathProvider.DefaultPath;
         var existing = File.Exists(path)
-            ? Serialization.KubernetesYaml.Deserialize<K8SConfiguration>(File.ReadAllText(path))
+            ? _yamlSerializer.Deserialize<K8SConfiguration>(File.ReadAllText(path))
             : new K8SConfiguration();
 
         K8SConfiguration merged = new()
@@ -225,7 +229,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
             Directory.CreateDirectory(directory);
         }
 
-        var yaml = KubernetesYaml.Serialize(merged);
+        var yaml = _yamlSerializer.Serialize(merged);
         File.WriteAllText(path, yaml);
 
         LoadFromConfigFromPath(path);
@@ -293,7 +297,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
             ((List<Context>)config.Contexts).Remove(context);
 
-            var yaml = KubernetesYaml.Serialize(config);
+            var yaml = _yamlSerializer.Serialize(config);
             File.WriteAllText(cluster.KubeConfigPath, yaml);
 
             Clusters.Remove(cluster);
