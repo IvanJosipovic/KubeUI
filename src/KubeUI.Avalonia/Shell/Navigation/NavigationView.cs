@@ -66,11 +66,6 @@ public sealed class NavigationView : KubeUIView<NavigationViewModel>
                 .ContextMenu(new ContextMenu()
                     .Items(
                         new MenuItem()
-                            .Header(node, x => x.ExpansionMenuHeader)
-                            .Command(node, x => x.ToggleExpansionCommand)
-                            .CommandParameter(node)
-                            .Icon(new FluentIcon().Icon(node, x => x.ExpansionMenuIcon)),
-                        new MenuItem()
                             .Header(node, x => x.ConnectionMenuHeader)
                             .Command(node, x => x.ToggleConnectionCommand)
                             .CommandParameter(node)

@@ -1,5 +1,4 @@
 using Avalonia.Headless.XUnit;
-using Avalonia.Threading;
 using KubeUI.Avalonia.Shell.Navigation;
 using Shouldly;
 
@@ -19,7 +18,7 @@ public sealed class ClusterNavigationPreferencesTests
         vm.Clusters.ShouldNotContain(node => node.Cluster == workspace);
 
         workspace.IsEnabled = true;
-        vm.Clusters.Single(node => node.Cluster == workspace).ToggleExpansionCommand.ShouldNotBeNull();
+        vm.Clusters.ShouldContain(node => node.Cluster == workspace);
     }
 
     [AvaloniaFact]
@@ -37,25 +36,4 @@ public sealed class ClusterNavigationPreferencesTests
         vm.Clusters.ShouldBeEmpty();
     }
 
-    [AvaloniaFact]
-    public async Task toggle_expansion_command_connects_then_toggles_expansion()
-    {
-        var services = Application.Current.GetTestServices();
-        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
-        using var vm = services.GetRequiredService<NavigationViewModel>();
-        var node = vm.Clusters.Single(x => x.Cluster == workspace);
-        node.ExpansionMenuHeader.ShouldBe(Assets.Resources.NavigationView_ContextMenu_Expand);
-
-        await vm.ToggleClusterExpansionCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
-        await vm.ToggleClusterExpansionCommand.ExecuteAsync(node).WaitAsync(TestContext.Current.CancellationToken);
-        await TestWait.UntilAsync(() => workspace.Runtime.Connected && node.IsExpanded, 5000, TestContext.Current.CancellationToken, () => Dispatcher.UIThread.RunJobs());
-        node.ExpansionMenuHeader.ShouldBe(Assets.Resources.NavigationView_ContextMenu_Collapse);
-
-        await vm.ToggleClusterExpansionCommand.ExecuteAsync(node).WaitAsync(TestContext.Current.CancellationToken);
-        node.IsExpanded.ShouldBeFalse();
-        node.ExpansionMenuHeader.ShouldBe(Assets.Resources.NavigationView_ContextMenu_Expand);
-
-        await vm.ToggleClusterExpansionCommand.ExecuteAsync(node).WaitAsync(TestContext.Current.CancellationToken);
-        node.IsExpanded.ShouldBeTrue();
-    }
 }
