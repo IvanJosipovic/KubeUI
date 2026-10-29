@@ -1,18 +1,20 @@
 using System.Collections.Frozen;
 using KubeUI.Kubernetes;
-using KubernetesYamlSerializer = KubeUI.Kubernetes.Serialization.KubernetesYaml;
+using KubeUI.Kubernetes.Serialization;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml;
 
 public sealed class YamlSyntaxValidationService : IYamlValidationService
 {
+    private readonly IKubernetesYamlSerializer _yamlSerializer;
     private readonly KubernetesModelCatalog _sharedCatalog;
     private FrozenDictionary<string, Type>? _typeMap;
     private long _typeMapVersion = -1;
 
-    public YamlSyntaxValidationService(KubernetesModelCatalog sharedCatalog)
+    public YamlSyntaxValidationService(KubernetesModelCatalog sharedCatalog, IKubernetesYamlSerializer yamlSerializer)
     {
         _sharedCatalog = sharedCatalog;
+        _yamlSerializer = yamlSerializer;
     }
 
     /// <summary>
@@ -31,7 +33,7 @@ public sealed class YamlSyntaxValidationService : IYamlValidationService
         try
         {
             var typeMap = GetTypeMap();
-            KubernetesYamlSerializer.LoadAllFromString(
+            _yamlSerializer.LoadAllFromString(
                 yaml,
                 key => typeMap.TryGetValue(key, out var type)
                     ? type
@@ -44,7 +46,7 @@ public sealed class YamlSyntaxValidationService : IYamlValidationService
         {
             if (YamlDotNetDiagnosticFactory.IsUnknownTypeException(ex))
             {
-                return YamlDotNetDiagnosticFactory.CreateUnknownTypeDiagnostic(yaml);
+                return YamlDotNetDiagnosticFactory.CreateUnknownTypeDiagnostic(yaml, _yamlSerializer);
             }
 
             return YamlDotNetDiagnosticFactory.Create(yaml, ex);

@@ -10,6 +10,8 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
 {
     private readonly ISettingsPersistence _persistence;
     private AppSettings? _settings;
+    private AppSettings? _hookedSettings;
+    private FeatureSettings? _hookedFeatures;
     private AppAppearanceSettings? _appearance;
 
     public AppSettings Settings
@@ -27,11 +29,6 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
         }
         set
         {
-            if (_settings is not null)
-            {
-                _settings.PropertyChanged -= Settings_PropertyChanged;
-            }
-
             _settings = value;
             HookSettings(_settings);
             SaveSettings();
@@ -149,8 +146,32 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
 
     private void HookSettings(AppSettings settings)
     {
-        settings.PropertyChanged -= Settings_PropertyChanged;
+        if (_hookedSettings is not null)
+        {
+            _hookedSettings.PropertyChanged -= Settings_PropertyChanged;
+        }
+
+        _hookedSettings = settings;
         settings.PropertyChanged += Settings_PropertyChanged;
+        if (settings.PreviewFeatures is null)
+        {
+            settings.PreviewFeatures = new();
+        }
+        HookFeatures(settings.PreviewFeatures);
+    }
+
+    private void HookFeatures(FeatureSettings? features)
+    {
+        if (_hookedFeatures is not null)
+        {
+            _hookedFeatures.PropertyChanged -= Features_PropertyChanged;
+        }
+
+        _hookedFeatures = features;
+        if (features is not null)
+        {
+            features.PropertyChanged += Features_PropertyChanged;
+        }
     }
 
     private void HookAppearance(AppAppearanceSettings appearance)
@@ -160,6 +181,15 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
     }
 
     private void Settings_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(AppSettings.PreviewFeatures) && sender is AppSettings settings)
+        {
+            HookFeatures(settings.PreviewFeatures);
+        }
+        SaveSettings();
+    }
+
+    private void Features_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         SaveSettings();
     }

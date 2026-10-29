@@ -1,3 +1,4 @@
+using KubeUI.Kubernetes.Serialization;
 using System.Reactive.Concurrency;
 using k8s;
 using k8s.KubeConfigModels;
@@ -26,7 +27,8 @@ public class ClusterManagerTests
             services.GetRequiredService<IClusterSettingsStore>(),
             dispatcher,
             services.GetRequiredService<IKubeConfigPathProvider>(),
-            services.GetRequiredService<IKubeConfigDiscovery>());
+            services.GetRequiredService<IKubeConfigDiscovery>(),
+            services.GetRequiredService<IKubernetesYamlSerializer>());
 
         await manager.LoadClustersAsync(TestContext.Current.CancellationToken);
 
@@ -51,7 +53,8 @@ public class ClusterManagerTests
             services.GetRequiredService<IClusterSettingsStore>(),
             dispatcher,
             services.GetRequiredService<IKubeConfigPathProvider>(),
-            services.GetRequiredService<IKubeConfigDiscovery>());
+            services.GetRequiredService<IKubeConfigDiscovery>(),
+            services.GetRequiredService<IKubernetesYamlSerializer>());
 
         var config = new K8SConfiguration
         {
@@ -97,7 +100,8 @@ public class ClusterManagerTests
             services.GetRequiredService<IClusterSettingsStore>(),
             dispatcher,
             services.GetRequiredService<IKubeConfigPathProvider>(),
-            services.GetRequiredService<IKubeConfigDiscovery>());
+            services.GetRequiredService<IKubeConfigDiscovery>(),
+            services.GetRequiredService<IKubernetesYamlSerializer>());
 
         await manager.LoadClustersAsync(TestContext.Current.CancellationToken);
         dispatcher.Drain();
@@ -148,7 +152,8 @@ public class ClusterManagerTests
             services.GetRequiredService<IClusterSettingsStore>(),
             dispatcher,
             services.GetRequiredService<IKubeConfigPathProvider>(),
-            services.GetRequiredService<IKubeConfigDiscovery>());
+            services.GetRequiredService<IKubeConfigDiscovery>(),
+            services.GetRequiredService<IKubernetesYamlSerializer>());
 
         await manager.LoadClustersAsync(TestContext.Current.CancellationToken);
         dispatcher.Drain();
@@ -324,7 +329,8 @@ public class ClusterManagerTests
                 settings,
                 dispatcher,
                 _services.GetRequiredService<IKubeConfigPathProvider>(),
-                _services.GetRequiredService<IKubeConfigDiscovery>());
+                _services.GetRequiredService<IKubeConfigDiscovery>(),
+                _services.GetRequiredService<IKubernetesYamlSerializer>());
         }
 
         public ClusterManager Manager { get; }

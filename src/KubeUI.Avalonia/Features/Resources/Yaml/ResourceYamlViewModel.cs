@@ -12,7 +12,7 @@ using KubeUI.Kubernetes.Serialization;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml;
 
-public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
+public partial class ResourceYamlViewModel : ViewModelBase, IClusterWorkspaceContext, IDisposable
 {
     public event EventHandler? CompletionRequested;
 
@@ -24,6 +24,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
     private bool _serverValidationDiagnostics;
     private CancellationTokenSource? _validationDebounceCts;
     private GroupApiVersionKind? _resourceKind;
+    private string? _readOnlyYaml;
 
     internal TimeSpan ValidationDebounceDelay { get; set; } = TimeSpan.FromSeconds(1);
 
@@ -65,6 +66,18 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     public partial bool EditMode { get; set; }
+
+    /// <summary>Whether this document is permanently locked against editing and cluster actions.</summary>
+    [ObservableProperty]
+    public partial bool IsReadOnlyLocked { get; private set; }
+
+    partial void OnEditModeChanging(bool value)
+    {
+        if (value && IsReadOnlyLocked)
+        {
+            throw new InvalidOperationException("This YAML document is read-only.");
+        }
+    }
 
     [ObservableProperty]
     public partial bool HideNoisyFields { get; set; } = true;
@@ -137,6 +150,9 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         IKubernetesObject<V1ObjectMeta> @object,
         GroupApiVersionKind? resourceKind)
     {
+        _readOnlyYaml = null;
+        IsReadOnlyLocked = false;
+        Title = Assets.Resources.ResourceYamlView_Title;
         Cluster = cluster;
         Cluster.Runtime.OnChange += Cluster_OnChange;
         _resourceKind = resourceKind;
@@ -145,6 +161,35 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
         var apiVersion = resourceKind?.GroupApiVersion ?? Object.ApiVersion;
         var kind = resourceKind?.Kind ?? Object.Kind;
         Id = $"{nameof(ResourceYamlViewModel)}-{Cluster.Runtime.Name}-{apiVersion}/{kind}/{Object.Metadata.NamespaceProperty}/{Object.Metadata.Name}";
+    }
+
+    /// <summary>Initializes a locked YAML text document without Kubernetes validation or live subscriptions.</summary>
+    /// <param name="title">Localized document title.</param>
+    /// <param name="id">Stable docking identity.</param>
+    /// <param name="yaml">Complete YAML text to display.</param>
+    public void InitializeReadOnly(string title, string id, string yaml)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(title);
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+        ArgumentNullException.ThrowIfNull(yaml);
+        if (Cluster is not null)
+        {
+            Cluster.Runtime.OnChange -= Cluster_OnChange;
+        }
+
+        CancelPendingValidation();
+        Cluster = null;
+        _resourceKind = null;
+        _readOnlyYaml = yaml;
+        IsReadOnlyLocked = true;
+        EditMode = false;
+        Object = null;
+        ValidationDiagnostics = [];
+        ClearActionResult();
+        Title = title;
+        Id = id;
+        SetYamlDocument();
+        SetEditModeCommand.NotifyCanExecuteChanged();
     }
 
     private bool TryResolveResourceKind(out GroupApiVersionKind resourceKind)
@@ -168,7 +213,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
     private void SetYamlDocument()
     {
-        YamlDocument.Text = _yamlSerializer.Serialize(Object!);
+        YamlDocument.Text = _readOnlyYaml ?? _yamlSerializer.Serialize(Object!);
     }
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
@@ -310,7 +355,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
     private bool CanSetEditMode()
     {
-        if (Cluster is null || Object is null || !TryResolveResourceKind(out var kind))
+        if (IsReadOnlyLocked || Cluster is null || Object is null || !TryResolveResourceKind(out var kind))
         {
             return false;
         }
@@ -381,6 +426,11 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
     private void YamlDocument_OnChanged(object? sender, DocumentChangeEventArgs e)
     {
+        if (IsReadOnlyLocked)
+        {
+            return;
+        }
+
         if (_serverValidationDiagnostics)
         {
             _serverValidationDiagnostics = false;
@@ -443,6 +493,11 @@ public partial class ResourceYamlViewModel : ViewModelBase, IDisposable
 
     private void ValidateYamlDocument()
     {
+        if (IsReadOnlyLocked)
+        {
+            return;
+        }
+
         _serverValidationDiagnostics = false;
         ValidationDiagnostics = _yamlValidationService.Validate(YamlDocument.Text, Cluster?.Runtime.ModelCatalog);
 

@@ -1,12 +1,15 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
-using System.Text.Json;
+using System.Text.Json.Nodes;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Chrome;
+using Avalonia.Controls.Templates;
 using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.LogicalTree;
+using Avalonia.Markup.Declarative;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Styling;
@@ -16,10 +19,15 @@ using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using AvaloniaEdit.CodeCompletion;
 using AvaloniaEdit.Rendering;
+using Dock.Model.Controls;
+using Helm.NET;
 using k8s;
 using k8s.Models;
 using KokoroSharp;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
+using KubeUI.Avalonia.Features.Helm.Charts;
+using KubeUI.Avalonia.Features.Helm.Releases;
+using KubeUI.Avalonia.Features.Helm.Repositories;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Features.Resources.List;
 using KubeUI.Avalonia.Features.Resources.Visualization;
@@ -27,6 +35,7 @@ using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
+using KubeUI.Avalonia.Shell.Main;
 using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Kubernetes;
 using KubeUI.Testing.Kubernetes.Bootstrap;
@@ -69,20 +78,37 @@ internal static class KubeUIWalkthroughRecorder
             throw new ArgumentException("A walkthrough needs at least one narration step.", nameof(steps));
         }
 
-        using var window = new RecordingWindow { Width = Width, Height = Height, CanResize = false };
         var cluster = await CreateWorkspaceAsync(
             clusterName,
             connect: start.ConnectToCluster,
             configureFakeCluster);
         using var serviceScope = KubeUIWalkthroughServices.GetRequiredServices().CreateScope();
+        var window = new MainWindow(useNativeChrome: false)
+        {
+            Width = Width,
+            Height = Height,
+            CanResize = false,
+        };
         try
         {
-            var root = start.CreateView(
+            var root = await start.CreateView(
                 cluster.Workspace,
                 cluster.DemoResources,
                 serviceScope.ServiceProvider);
+            var viewModel = root.DataContext is MainViewModel mainViewModel
+                ? mainViewModel
+                : serviceScope.ServiceProvider.GetRequiredService<MainViewModel>();
+            window.DataContext = viewModel;
             var cursor = new CursorOverlay { IsHitTestVisible = false };
-            window.Content = new Grid { Children = { root, cursor } };
+            var content = new Grid { RowDefinitions = new RowDefinitions("36,*") };
+            var titleBar = CreateRecordingDecorations(window);
+            Grid.SetRow(root, 1);
+            Grid.SetRow(cursor, 0);
+            Grid.SetRowSpan(cursor, 2);
+            content.Children.Add(titleBar);
+            content.Children.Add(root);
+            content.Children.Add(cursor);
+            window.Content = content;
             window.Show();
             await WaitForUiAsync();
             await RecordClipAsync(
@@ -98,8 +124,23 @@ internal static class KubeUIWalkthroughRecorder
         }
         finally
         {
+            window.Close();
             await cluster.TestCluster.DisposeAsync();
         }
+    }
+
+    private static Control CreateRecordingDecorations(MainWindow window)
+    {
+        var theme = window.WindowDecorationsTheme
+            ?? throw new InvalidOperationException("The recording window has no drawn decorations theme.");
+        var template = theme.Setters
+            .OfType<Setter>()
+            .SingleOrDefault(setter => setter.Property == WindowDrawnDecorations.TemplateProperty)
+            ?.Value as ITemplate
+            ?? throw new InvalidOperationException("The recording window decorations template was not found.");
+        var result = (TemplateResult<WindowDrawnDecorationsContent>)template.Build();
+        return result.Result.Overlay
+            ?? throw new InvalidOperationException("The recording window decorations template has no overlay.");
     }
 
     private static async Task<(
@@ -509,43 +550,43 @@ internal static class KubeUIWalkthroughRecorder
     private static GenericKubernetesObject CreateNodeMetrics(int index)
     {
         var nodeName = $"node-{index}";
-        return KubernetesJson.Deserialize<GenericKubernetesObject>(JsonSerializer.Serialize(new
+        return KubernetesJson.Deserialize<GenericKubernetesObject>(new JsonObject
         {
-            apiVersion = "metrics.k8s.io/v1beta1",
-            kind = "NodeMetrics",
-            metadata = new { name = nodeName },
-            timestamp = DateTime.UtcNow,
-            window = "30s",
-            usage = new Dictionary<string, string>
+            ["apiVersion"] = "metrics.k8s.io/v1beta1",
+            ["kind"] = "NodeMetrics",
+            ["metadata"] = new JsonObject { ["name"] = nodeName },
+            ["timestamp"] = DateTime.UtcNow,
+            ["window"] = "30s",
+            ["usage"] = new JsonObject
             {
                 ["cpu"] = $"{420 + index * 135}m",
                 ["memory"] = $"{1800 + index * 375}Mi",
             },
-        }))!;
+        }.ToJsonString())!;
     }
 
     private static GenericKubernetesObject CreatePodMetrics(string podName, string containerName, int index)
     {
-        return KubernetesJson.Deserialize<GenericKubernetesObject>(JsonSerializer.Serialize(new
+        return KubernetesJson.Deserialize<GenericKubernetesObject>(new JsonObject
         {
-            apiVersion = "metrics.k8s.io/v1beta1",
-            kind = "PodMetrics",
-            metadata = new { name = podName, @namespace = "default" },
-            timestamp = DateTime.UtcNow,
-            window = "30s",
-            containers = new[]
+            ["apiVersion"] = "metrics.k8s.io/v1beta1",
+            ["kind"] = "PodMetrics",
+            ["metadata"] = new JsonObject { ["name"] = podName, ["namespace"] = "default" },
+            ["timestamp"] = DateTime.UtcNow,
+            ["window"] = "30s",
+            ["containers"] = new JsonArray
             {
-                new
+                new JsonObject
                 {
-                    name = containerName,
-                    usage = new Dictionary<string, string>
+                    ["name"] = containerName,
+                    ["usage"] = new JsonObject
                     {
                         ["cpu"] = $"{25 + index * 17}m",
                         ["memory"] = $"{42 + index * 19}Mi",
                     },
                 },
             },
-        }))!;
+        }.ToJsonString())!;
     }
 
     private static string GetPodQosClass(int index) => (index % 5) switch
@@ -820,6 +861,20 @@ internal static class KubeUIWalkthroughRecorder
                         continue;
                     }
 
+                    if (action.Target == "helm-values-replica" && action.Kind == WalkthroughActionKind.TypeText)
+                    {
+                        origin = await ReplaceHelmReplicaValueAsync(
+                            action.Value!, root, window, origin, temporaryDirectory, stepIndex, movementFrames);
+                        continue;
+                    }
+
+                    if (action.Target == "helm-editor-return")
+                    {
+                        origin = await ReturnToHelmEditorAsync(
+                            root, window, cursor, origin, temporaryDirectory, stepIndex, movementFrames);
+                        continue;
+                    }
+
                     if (action.Target == "relationship-resource"
                         && action.Kind is WalkthroughActionKind.ZoomRelationshipResource or WalkthroughActionKind.PanRelationshipResource)
                     {
@@ -864,7 +919,7 @@ internal static class KubeUIWalkthroughRecorder
                         continue;
                     }
 
-                    if (action.Kind == WalkthroughActionKind.Hover)
+                    if (action.Kind == WalkthroughActionKind.Hover && action.Target == "yaml-header")
                     {
                         await workspace.Runtime.EnsureOpenApiSchemasAsync();
                         var editor = root.FindControl<TextEditor>("Editor")
@@ -912,7 +967,7 @@ internal static class KubeUIWalkthroughRecorder
                             action.Value!, root, window, cursor, origin, temporaryDirectory, stepIndex, movementFrames);
                     }
 
-                    var (target, afterClick) = await ResolveActionAsync(action, root, workspace);
+                    var (target, afterClick) = await ResolveActionAsync(action, root, workspace, window);
                     var destination = target.TranslatePoint(
                         new Point(target.Bounds.Width / 2, target.Bounds.Height / 2),
                         window)
@@ -1279,13 +1334,21 @@ internal static class KubeUIWalkthroughRecorder
     private static async Task<(Control Target, Func<Task>? AfterClick)> ResolveActionAsync(
         WalkthroughAction action,
         Control root,
-        ClusterWorkspace workspace)
+        ClusterWorkspace workspace,
+        Window window)
     {
         if (action.Kind == WalkthroughActionKind.Hover)
         {
             if (action.Target == "yaml-header")
             {
                 return (GetYamlEditor(root), null);
+            }
+
+            if (action.Target == "helm-editor-field")
+            {
+                return (await WaitForControlAsync<Control>(
+                    root,
+                    control => control.IsVisible && control.Name == action.Value), null);
             }
 
             throw new InvalidOperationException($"Unknown walkthrough hover target '{action.Target}'.");
@@ -1317,6 +1380,27 @@ internal static class KubeUIWalkthroughRecorder
             };
         }
 
+        if (action.Target == "helm-release-name" && action.Kind == WalkthroughActionKind.SetText)
+        {
+            var nameBox = await WaitForControlAsync<TextBox>(root, control => control.Name == "ReleaseName");
+            return (nameBox, async () =>
+            {
+                window.KeyPress(Key.A, RawInputModifiers.Control, PhysicalKey.A, null);
+                window.KeyTextInput(action.Value!);
+                await WaitForConditionAsync(() => nameBox.DataContext is HelmReleaseEditorViewModel viewModel
+                    && viewModel.ReleaseName == action.Value);
+            }
+            );
+        }
+
+        if (action.Target == "helm-context-menu-item" && action.Kind == WalkthroughActionKind.Click)
+        {
+            var item = await WaitForMenuItemAsync(GetTableContextMenu(root), action.Value!);
+            return (item, action.ReadyWhen is { } readyWhen
+                ? () => WaitForConditionAsync(() => readyWhen(root))
+                : null);
+        }
+
         if (action.Target == "pod-search" && action.Kind == WalkthroughActionKind.SetText)
         {
             var searchBox = await WaitForControlAsync<TextBox>(
@@ -1330,6 +1414,22 @@ internal static class KubeUIWalkthroughRecorder
                     .Any(row => row.IsVisible
                         && (row.DataContext as V1Pod)?.Metadata?.Name == action.Value));
             }
+            );
+        }
+
+        if (action.Target == "helm-chart-search" && action.Kind == WalkthroughActionKind.SetText)
+        {
+            var chartsView = await WaitForControlAsync<HelmChartsView>(root, view => view.IsVisible);
+            return (chartsView.GetVisualDescendants().OfType<TextBox>().First(textBox =>
+                    textBox.DataContext is HelmChartsViewModel),
+                async () =>
+                {
+                    chartsView.ViewModel.SearchText = action.Value!;
+                    await WaitForConditionAsync(() => root.GetVisualDescendants().OfType<TableViewRow>()
+                        .Any(row => row.IsVisible
+                            && row.DataContext is HelmChartSearchResult chart
+                            && chart.ChartName == action.Value));
+                }
             );
         }
 
@@ -1360,6 +1460,33 @@ internal static class KubeUIWalkthroughRecorder
                 }
 
                 return (podRow, () => WaitForConditionAsync(() => podRow.IsSelected));
+            case "helm-repository":
+                return await ResolveHelmRowAsync(
+                    root,
+                    row => row.DataContext is HelmRepository repository && repository.Name == action.Value,
+                    action);
+            case "helm-chart":
+                return await ResolveHelmRowAsync(
+                    root,
+                    row => row.DataContext is HelmChartSearchResult chart && chart.ChartName == action.Value,
+                    action);
+            case "helm-release":
+                return await ResolveHelmRowAsync(
+                    root,
+                    row => row.DataContext is HelmRelease release && release.Name == action.Value,
+                    action);
+            case "helm-values-editor":
+                return (GetHelmValuesEditor(root), null);
+            case "helm-editor-preview":
+                var previewView = await WaitForControlAsync<HelmReleaseEditorView>(root, view => view.IsVisible);
+                return (FindCommandButton(previewView, previewView.ViewModel.PreviewCommand), action.ReadyWhen is { } previewReady
+                    ? () => WaitForConditionAsync(() => previewReady(root))
+                    : null);
+            case "helm-editor-save":
+                var saveEditor = await WaitForControlAsync<HelmReleaseEditorView>(root, view => view.IsVisible);
+                var saveViewModel = saveEditor.ViewModel;
+                return (FindCommandButton(saveEditor, saveViewModel.SaveCommand), () => WaitForConditionAsync(
+                    () => GetDocumentDock(root).VisibleDockables?.Contains(saveViewModel) != true));
             case "context-menu-item":
                 var menu = GetResourceListContextMenu(root);
                 MenuItem menuItem;
@@ -1404,6 +1531,125 @@ internal static class KubeUIWalkthroughRecorder
             default:
                 throw new InvalidOperationException($"Unknown walkthrough click target '{action.Target}'.");
         }
+    }
+
+    private static async Task<(Control Target, Func<Task>? AfterClick)> ResolveHelmRowAsync(
+        Control root,
+        Func<Control, bool> matches,
+        WalkthroughAction action)
+    {
+        Control row;
+        try
+        {
+            row = await WaitForControlAsync<Control>(root, candidate => candidate.IsVisible && matches(candidate));
+        }
+        catch (TimeoutException error)
+        {
+            var mainView = root as MainView ?? root.GetVisualDescendants().OfType<MainView>().FirstOrDefault();
+            var helmDataControls = string.Join(", ", root.GetVisualDescendants().OfType<Control>()
+                .Where(static candidate => candidate.IsVisible && candidate.DataContext is HelmRepository or HelmChartSearchResult or HelmRelease)
+                .Select(static candidate => $"{candidate.GetType().Name}:{candidate.DataContext?.GetType().Name}:{candidate.Bounds.Width:0}x{candidate.Bounds.Height:0}"));
+            var activeDocument = mainView?.ViewModel.Factory.GetDockable<IDocumentDock>("Documents")?.ActiveDockable;
+            var details = activeDocument is HelmRepositoriesViewModel repositories
+                ? $" ItemCount={repositories.ItemCount}; status='{repositories.Status}'."
+                : string.Empty;
+            throw new InvalidOperationException(
+                $"Helm row '{action.Value}' was not found. Active document: {activeDocument?.GetType().Name ?? "none"}; visible Helm data controls: {helmDataControls}.{details}",
+                error);
+        }
+
+        if (action.Kind == WalkthroughActionKind.RightClick)
+        {
+            var menu = GetTableContextMenu(root);
+            return (row, () => WaitForConditionAsync(() => menu.IsOpen));
+        }
+
+        return (row, action.ReadyWhen is { } readyWhen
+            ? () => WaitForConditionAsync(() => readyWhen(root))
+            : null);
+    }
+
+    private static ContextMenu GetTableContextMenu(Control root)
+    {
+        var table = root.GetVisualDescendants().OfType<DynamicTableView>()
+            .FirstOrDefault(candidate => candidate.IsVisible)
+            ?? throw new InvalidOperationException("The Helm table was not found.");
+        return table.ContextMenu
+            ?? throw new InvalidOperationException("The Helm table context menu was not found.");
+    }
+
+    private static TextEditor GetHelmValuesEditor(Control root)
+        => root.GetVisualDescendants().OfType<TextEditor>()
+            .FirstOrDefault(editor => editor.Name == "ValuesYamlEditor" && editor.IsVisible)
+            ?? throw new InvalidOperationException("The Helm values editor was not found.");
+
+    private static IDocumentDock GetDocumentDock(Control root)
+    {
+        var mainView = root as MainView ?? root.GetVisualDescendants().OfType<MainView>().FirstOrDefault()
+            ?? throw new InvalidOperationException("The main view was not found.");
+        return mainView.ViewModel.Factory.GetDockable<IDocumentDock>("Documents")
+            ?? throw new InvalidOperationException("The document dock was not found.");
+    }
+
+    private static async Task<Point> ReturnToHelmEditorAsync(
+        Control root,
+        Window window,
+        CursorOverlay cursor,
+        Point origin,
+        string temporaryDirectory,
+        int stepIndex,
+        List<string> movementFrames)
+    {
+        var editorViewModel = GetDocumentDock(root).VisibleDockables?
+            .OfType<HelmReleaseEditorViewModel>()
+            .LastOrDefault()
+            ?? throw new InvalidOperationException("The Helm release editor tab was not found.");
+        var mainView = root as MainView ?? root.GetVisualDescendants().OfType<MainView>().First();
+        mainView.ViewModel.Factory.SetActiveDockable(editorViewModel);
+        await WaitForControlAsync<HelmReleaseEditorView>(root, view => view.IsVisible && view.ViewModel == editorViewModel);
+        var editor = await WaitForControlAsync<TextEditor>(root, control => control.Name == "ValuesYamlEditor" && control.IsVisible);
+        var destination = editor.TranslatePoint(new Point(editor.Bounds.Width / 2, editor.Bounds.Height / 2), window)
+            ?? throw new InvalidOperationException("Could not locate Helm values editor in the window.");
+        await MoveCursorAsync(window, cursor, origin, destination, temporaryDirectory, stepIndex, movementFrames);
+        movementFrames.Add(CaptureFrame(window, temporaryDirectory, stepIndex, movementFrames.Count));
+        return destination;
+    }
+
+    private static async Task<Point> ReplaceHelmReplicaValueAsync(
+        string value,
+        Control root,
+        Window window,
+        Point origin,
+        string temporaryDirectory,
+        int stepIndex,
+        List<string> movementFrames)
+    {
+        var editor = GetHelmValuesEditor(root);
+        editor.TextArea.Focus();
+        var lines = editor.Text.Split('\n');
+        var serverLine = Array.FindIndex(lines, static line => line.Trim() == "server:");
+        var replicaLine = serverLine < 0
+            ? -1
+            : Array.FindIndex(lines, serverLine + 1, static line => line.Trim() == "replicaCount: 1");
+        if (replicaLine < 0)
+        {
+            throw new InvalidOperationException("The real Prometheus chart's server.replicaCount default was not found in the values editor.");
+        }
+
+        var offset = 0;
+        for (var index = 0; index < replicaLine; index++)
+        {
+            offset += lines[index].Length + 1;
+        }
+
+        var line = editor.Document.GetLineByOffset(offset);
+        editor.ScrollToLine(line.LineNumber);
+        editor.CaretOffset = line.EndOffset;
+        window.KeyPress(Key.Back, RawInputModifiers.None, PhysicalKey.Backspace, null);
+        window.KeyTextInput(value);
+        await WaitForConditionAsync(() => editor.Text.Contains($"replicaCount: {value}", StringComparison.Ordinal));
+        movementFrames.Add(CaptureFrame(window, temporaryDirectory, stepIndex, movementFrames.Count));
+        return origin;
     }
 
     private static ResourceYamlView GetYamlView(Control root) => root as ResourceYamlView

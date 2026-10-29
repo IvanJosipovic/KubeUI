@@ -60,18 +60,7 @@ public sealed partial class ClusterListViewModel : ViewModelBase, IDisposable
         _tableSource = new DynamicTableViewSource<ClusterWorkspace, string>(
             _clusterCache,
             static cluster => cluster.Runtime.Name,
-            [
-                DynamicTableViewColumn<ClusterWorkspace>.Create("enabled", Assets.Resources.ClusterListView_Enabled,
-                    static cluster => cluster.IsEnabled,
-                    cellTemplate: CreateEnabledCellTemplate()),
-                DynamicTableViewColumn<ClusterWorkspace>.Create("alias", Assets.Resources.ClusterListView_Alias,
-                    static cluster => cluster.Alias ?? string.Empty,
-                    cellTemplate: CreateAliasCellTemplate()),
-                DynamicTableViewColumn<ClusterWorkspace>.Create("name", Assets.Resources.ClusterListView_Name,
-                    static cluster => cluster.Runtime.Name),
-                DynamicTableViewColumn<ClusterWorkspace>.Create("kubeconfig", Assets.Resources.ClusterListView_KubeConfig,
-                    static cluster => cluster.Runtime.KubeConfigPath)
-            ],
+            CreateColumns(),
             options: new DynamicTableViewSourceOptions
             {
                 SelectionIdentityMode = DynamicTableViewSelectionIdentityMode.Reference
@@ -97,6 +86,32 @@ public sealed partial class ClusterListViewModel : ViewModelBase, IDisposable
     }
 
     public IDynamicTableViewSource TableSource => _tableSource ?? throw new ObjectDisposedException(nameof(ClusterListViewModel));
+
+    internal static DynamicTableViewColumn<ClusterWorkspace>[] CreateColumns()
+    {
+        var nameColumn = DynamicTableViewColumn<ClusterWorkspace>.Create(
+            "name",
+            Assets.Resources.ClusterListView_Name,
+            static cluster => cluster.Runtime.Name);
+        nameColumn.WidthMode = DynamicTableViewWidthMode.Star;
+        nameColumn.Width = 1;
+
+        var kubeconfigColumn = DynamicTableViewColumn<ClusterWorkspace>.Create(
+            "kubeconfig",
+            Assets.Resources.ClusterListView_KubeConfig,
+            static cluster => cluster.Runtime.KubeConfigPath);
+        kubeconfigColumn.WidthMode = DynamicTableViewWidthMode.Star;
+        kubeconfigColumn.Width = 2;
+
+        return [
+            DynamicTableViewColumn<ClusterWorkspace>.Create("enabled", Assets.Resources.ClusterListView_Enabled,
+                static cluster => cluster.IsEnabled,
+                cellTemplate: CreateEnabledCellTemplate()),
+            DynamicTableViewColumn<ClusterWorkspace>.Create("alias", Assets.Resources.ClusterListView_Alias,
+                static cluster => cluster.Alias ?? string.Empty,
+                cellTemplate: CreateAliasCellTemplate()),
+            nameColumn, kubeconfigColumn];
+    }
 
     [ObservableProperty]
     public partial ClusterWorkspace? SelectedItem { get; set; }

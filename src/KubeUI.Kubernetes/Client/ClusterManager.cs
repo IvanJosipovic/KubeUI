@@ -1,4 +1,4 @@
-using System.Diagnostics;
+using KubeUI.Kubernetes.Serialization;
 using k8s;
 using k8s.KubeConfigModels;
 using Swordfish.NET.Collections;
@@ -15,6 +15,7 @@ public sealed class ClusterComparer : IComparer<IClusterRuntime>
 
 public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCatalog, IDisposable
 {
+    private readonly IKubernetesYamlSerializer _yamlSerializer;
     private readonly ILogger<ClusterManager> _logger;
     private readonly IServiceProvider _serviceProvider;
     private readonly IClusterSettingsStore _settings;
@@ -24,7 +25,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
     private readonly HashSet<string> _discoveredPaths = new(StringComparer.Ordinal);
     private FileSystemWatcher? _discoveryWatcher;
     private readonly IDictionary<string, FileSystemWatcher> _fileWatchers = new Dictionary<string, FileSystemWatcher>(StringComparer.Ordinal);
-    private readonly object _syncRoot = new();
+    private readonly Lock _syncRoot = new();
 
     public ObservableCollection<IClusterRuntime> Clusters { get; } = new ObservableSortedCollection<IClusterRuntime>(new ClusterComparer());
 
@@ -36,8 +37,10 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
         IClusterSettingsStore settings,
         IThreadDispatcher dispatcher,
         IKubeConfigPathProvider kubeConfigPathProvider,
-        IKubeConfigDiscovery discovery)
+        IKubeConfigDiscovery discovery,
+        IKubernetesYamlSerializer yamlSerializer)
     {
+        _yamlSerializer = yamlSerializer;
         _logger = logger;
         _serviceProvider = serviceProvider;
         _settings = settings;
@@ -45,18 +48,6 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
         _kubeConfigPathProvider = kubeConfigPathProvider;
         _discovery = discovery;
 
-        KubernetesClientConfiguration.ExecStdError += KubernetesClientConfiguration_ExecStdError;
-    }
-
-    private void KubernetesClientConfiguration_ExecStdError(object? sender, DataReceivedEventArgs e)
-    {
-        if (string.IsNullOrEmpty(e.Data))
-        {
-            _logger.LogError("Cluster ExecStdError: no data");
-            return;
-        }
-
-        _logger.LogError("Cluster ExecStdError: {data}", e.Data);
     }
 
     internal async Task LoadClustersAsync(CancellationToken cancellationToken)
@@ -379,7 +370,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
         var path = _kubeConfigPathProvider.DefaultPath;
         var existing = File.Exists(path)
-            ? Serialization.KubernetesYaml.Deserialize<K8SConfiguration>(File.ReadAllText(path))
+            ? _yamlSerializer.Deserialize<K8SConfiguration>(File.ReadAllText(path))
             : new K8SConfiguration();
 
         K8SConfiguration merged = new()
@@ -403,7 +394,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
             Directory.CreateDirectory(directory);
         }
 
-        var yaml = KubernetesYaml.Serialize(merged);
+        var yaml = _yamlSerializer.Serialize(merged);
         File.WriteAllText(path, yaml);
 
         LoadFromConfigFromPath(path);
@@ -471,7 +462,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
             ((List<Context>)config.Contexts).Remove(context);
 
-            var yaml = KubernetesYaml.Serialize(config);
+            var yaml = _yamlSerializer.Serialize(config);
             File.WriteAllText(cluster.KubeConfigPath, yaml);
 
             Clusters.Remove(cluster);
@@ -673,8 +664,6 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
     public void Dispose()
     {
-        KubernetesClientConfiguration.ExecStdError -= KubernetesClientConfiguration_ExecStdError;
-
         StopDiscoveryWatcher();
 
         foreach (var watcher in _fileWatchers.Values)

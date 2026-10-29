@@ -4,14 +4,16 @@ using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Presentation;
+
 
 namespace KubeUI.Avalonia.Features.Clusters.Catalog;
 
-public sealed partial class ClusterListView : ViewBase<ClusterListViewModel>
+public sealed partial class ClusterListView : KubeUIView<ClusterListViewModel>
 {
     public ClusterListView()
     {
-        if (Design.IsDesignMode)
+        if (DesignTimePreview.IsDesignMode)
             DataContext = DesignTimePreview.Get<ClusterListViewModel>();
     }
 

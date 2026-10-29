@@ -3,21 +3,22 @@ using System.Reactive.Linq;
 using Avalonia.Controls.Shapes;
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
-using Avalonia.Svg.Skia;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using KubeUI.Avalonia.Features.Clusters.Catalog.Behaviors;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
+
 
 namespace KubeUI.Avalonia.Shell.Navigation;
 
-public sealed class NavigationView : ViewBase<NavigationViewModel>
+public sealed class NavigationView : KubeUIView<NavigationViewModel>
 {
     public NavigationView()
     {
-        if (Design.IsDesignMode)
+        if (DesignTimePreview.IsDesignMode)
         {
             DataContext = DesignTimePreview.Get<NavigationViewModel>();
         }
@@ -45,11 +46,11 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
             )
             .DataTemplates(
                 CreateClusterTemplate(),
-                CreateResourceTemplate(),
+                CreateNavigationLinkTemplate(),
                 CreateNavigationItemTemplate()
             )
             .Behaviors(
-                new NavigationTreeSelectionBehavior(vm.HandleSelectionChangedCommand),
+                new NavigationTreeSelectionBehavior(vm.ActivateNavigationItemCommand),
                 new TreeViewItemContextMenuBehavior()
             );
     }
@@ -110,43 +111,51 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
             node => node.NavigationItems);
     }
 
-    private static FuncTreeDataTemplate<ResourceNavigationLink> CreateResourceTemplate()
+    private static FuncTreeDataTemplate<NavigationLink> CreateNavigationLinkTemplate()
     {
-        return new FuncTreeDataTemplate<ResourceNavigationLink>(
+        return new FuncTreeDataTemplate<NavigationLink>(
             (link, _) =>
                 new Border()
                     .Margin(-5, 0, 0, 0)
                     .HorizontalAlignment(HorizontalAlignment.Stretch)
                     .Background(Brushes.Transparent)
-                    .ContextMenu(new ContextMenu()
-                        .Items([
-                            new MenuItem()
-                                .Header(Assets.Resources.NavigationView_ContextMenu_Open)
-                                .Command(link, x => x.OpenCommand)
-                                .CommandParameter(link)
-                                .Icon(new FluentIcon().Icon(Icon.DocumentEdit)),
-                            new MenuItem()
-                                .Header(Assets.Resources.NavigationView_ContextMenu_OpenNewTab)
-                                .Command(link, x => x.OpenInNewTabCommand)
-                                .CommandParameter(link)
-                                .Icon(new FluentIcon().Icon(Icon.AddSquare))
-                        ]))
-                        .Child(
-                            new StackPanel()
-                                .Orientation(Orientation.Horizontal)
-                                .Children(
-                                    new Image()
-                                        .Source(link, x => x.ResourceIcon),
-                                    new TextBlock()
-                                        .VerticalAlignment(VerticalAlignment.Center)
-                                        .Text(link, x => x.Name),
-                                    new TextBlock()
-                                        .VerticalAlignment(VerticalAlignment.Center)
-                                        .Margin(4, 0, 0, 0)
-                                        .Text(CompiledBinding.Create<ResourceNavigationLink, int>(x => x.Count.StreamBinding()))
-                                )
-                        ),
-                link => link.NavigationItems);
+                    .ContextMenu(link.ResourceKind is not null
+                        ? new ContextMenu()
+                            .Items([
+                                new MenuItem()
+                                    .Header(Assets.Resources.NavigationView_ContextMenu_Open)
+                                    .Command(link, x => x.OpenCommand)
+                                    .CommandParameter(link)
+                                    .Icon(new FluentIcon().Icon(Icon.DocumentEdit)),
+                                new MenuItem()
+                                    .Header(Assets.Resources.NavigationView_ContextMenu_OpenNewTab)
+                                    .Command(link, x => x.OpenInNewTabCommand)
+                                    .CommandParameter(link)
+                                    .Icon(new FluentIcon().Icon(Icon.AddSquare))
+                            ])
+                        : null)
+                    .Child(
+                        new StackPanel()
+                            .Orientation(Orientation.Horizontal)
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .Children(
+                                new Image()
+                                    .Source(link, x => x.ResourceIcon)
+                                    .IsVisible(link, x => x.ResourceIcon, BindingMode.OneWay, Converters.Converters.NotNull),
+                                new FluentIcon()
+                                    .BindValue(FluentIcon.IconProperty, CompiledBinding.Create<NavigationLink, Icon?>(x => x.FluentIcon, link))
+                                    .IsVisible(link, x => x.FluentIcon, BindingMode.OneWay, Converters.Converters.NotNull),
+                                new TextBlock()
+                                    .VerticalAlignment(VerticalAlignment.Center)
+                                    .Text(link, x => x.Name),
+                                new TextBlock()
+                                    .VerticalAlignment(VerticalAlignment.Center)
+                                    .Margin(4, 0, 0, 0)
+                                    .Text(CompiledBinding.Create<NavigationLink, int>(x => x.Count.StreamBinding()))
+                                    .IsVisible(link, x => x.Count, BindingMode.OneWay, Converters.Converters.NotNull)
+                            )
+                    ),
+            link => link.NavigationItems);
     }
 
     private static FuncTreeDataTemplate<NavigationItem> CreateNavigationItemTemplate()
@@ -164,10 +173,11 @@ public sealed class NavigationView : ViewBase<NavigationViewModel>
                         new PathIcon()
                             .Data(item, x => x.StyleIcon, BindingMode.OneWay, new StringToGeometryConverter())
                             .IsVisible(item, x => x.StyleIcon, BindingMode.OneWay, Converters.Converters.NotNull),
-                        new Image()
+                        new ThemedSvgImage()
                             .Width(16)
                             .Height(16)
-                            .Source(item, x => x.SvgIcon, BindingMode.OneWay, new StringToSvgImageConverter())
+                            .BindValue(ThemedSvgImage.SourcePathProperty, CompiledBinding.Create<NavigationItem, string?>(x => x.SvgIcon, item))
+                            .BindValue(ThemedSvgImage.DarkSourcePathProperty, CompiledBinding.Create<NavigationItem, string?>(x => x.SvgIconDark, item))
                             .IsVisible(item, x => x.SvgIcon, BindingMode.OneWay, Converters.Converters.NotNull),
                         new TextBlock()
                             .VerticalAlignment(VerticalAlignment.Center)
@@ -184,29 +194,6 @@ internal sealed class StringToGeometryConverter : IValueConverter
         if (value is string geometryText && !string.IsNullOrWhiteSpace(geometryText))
         {
             return Geometry.Parse(geometryText);
-        }
-
-        return null;
-    }
-
-    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-    {
-        return BindingOperations.DoNothing;
-    }
-}
-
-internal sealed class StringToSvgImageConverter : IValueConverter
-{
-    private static readonly Uri AppUri = new("avares://KubeUI.Avalonia");
-
-    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-    {
-        if (value is string path && !string.IsNullOrWhiteSpace(path))
-        {
-            return new SvgImage
-            {
-                Source = SvgSource.Load(path, AppUri),
-            };
         }
 
         return null;

@@ -1,16 +1,16 @@
 namespace KubeUI.Avalonia.Resources.Configuration.v1.Secret;
 
-public sealed partial class V1SecretConfig : ResourceConfigBase<k8s.Models.V1Secret>
+public sealed partial class V1SecretConfig : ResourceConfig<k8s.Models.V1Secret>
 {
     public V1SecretConfig(IServiceProvider serviceProvider)
         : base(serviceProvider)
     {
     }
     public override bool IsNamespaced => true;
-    public override string Category => Assets.Resources.ResourceConfig_Category_Configuration!;
+    public override NavigationPlacement Navigation => NavigationPlacement.InSection(NavigationSections.ConfigurationId);
     public override int Order => 1;
 
-    public override IList<IResourceListColumn> Columns()
+    protected override IList<IResourceListColumn> CreateDefaultColumns()
     {
         return [
             NameColumn(SortDirection.Ascending),

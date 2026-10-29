@@ -3,11 +3,13 @@ using Avalonia.Input;
 using Avalonia.VisualTree;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
+
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.Pod;
 
-public partial class PortForwarderListView : ViewBase<PortForwarderListViewModel>
+public partial class PortForwarderListView : KubeUIView<PortForwarderListViewModel>
 {
     protected override object Build(PortForwarderListViewModel vm)
     {

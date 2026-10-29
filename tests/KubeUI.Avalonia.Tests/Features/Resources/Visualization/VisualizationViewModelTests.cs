@@ -10,6 +10,37 @@ namespace KubeUI.Avalonia.Tests.Features.Resources.Visualization;
 
 public sealed class VisualizationViewModelTests
 {
+    [AvaloniaFact]
+    public async Task namespace_selection_follows_cluster_until_unlinked_then_relinks()
+    {
+        using var cluster = await Application.Current.CreateClusterAsync(config => config.Type = KubernetesBackend.Fake);
+        var teamA = NamespaceResource("team-a");
+        var teamB = NamespaceResource("team-b");
+        var teamC = NamespaceResource("team-c");
+        cluster.SelectedNamespaces.Add(teamA);
+
+        using var viewModel = new VisualizationViewModel(new ResourceRelationshipBuilder());
+        viewModel.Initialize(cluster);
+
+        viewModel.IsNamespaceSelectionLinked.ShouldBeTrue();
+        ReferenceEquals(viewModel.SelectedNamespaces, cluster.SelectedNamespaces).ShouldBeTrue();
+
+        cluster.SelectedNamespaces.Add(teamB);
+        viewModel.SelectedNamespaces.Select(item => item.Name()).ShouldBe(["team-a", "team-b"]);
+
+        viewModel.IsNamespaceSelectionLinked = false;
+        viewModel.SelectedNamespaces.Select(item => item.Name()).ShouldBe(["team-a", "team-b"]);
+        viewModel.SelectedNamespaces.Add(teamC);
+
+        cluster.SelectedNamespaces.Select(item => item.Name()).ShouldBe(["team-a", "team-b"]);
+        viewModel.SelectedNamespaces.Select(item => item.Name()).ShouldBe(["team-a", "team-b", "team-c"]);
+
+        viewModel.IsNamespaceSelectionLinked = true;
+        ReferenceEquals(viewModel.SelectedNamespaces, cluster.SelectedNamespaces).ShouldBeTrue();
+        cluster.SelectedNamespaces.Add(NamespaceResource("team-d"));
+        viewModel.SelectedNamespaces.Select(item => item.Name()).ShouldBe(["team-a", "team-b", "team-d"]);
+    }
+
     [Fact]
     public void selecting_another_namespace_removes_resources_from_previous_selection()
     {
@@ -306,7 +337,7 @@ public sealed class VisualizationViewModelTests
         coordinator.Enqueue(2);
         await secondStarted.Task;
         releaseSecond.SetResult();
-        await TestWait.UntilAsync(() => !coordinator.IsPendingOrRunning, TimeSpan.FromSeconds(5));
+        await TestWait.UntilAsync(() => !coordinator.IsPendingOrRunning, TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
 
         started.ShouldBe([1, 2]);
     }
@@ -342,7 +373,7 @@ public sealed class VisualizationViewModelTests
         coordinator.Invalidate();
         await secondStarted.Task;
         releaseSecond.SetResult();
-        await TestWait.UntilAsync(() => !coordinator.IsPendingOrRunning, TimeSpan.FromSeconds(5));
+        await TestWait.UntilAsync(() => !coordinator.IsPendingOrRunning, TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
 
         started.ShouldBe([(1, 1), (2, 2)]);
     }
@@ -384,6 +415,9 @@ public sealed class VisualizationViewModelTests
                 Uid = $"uid-{name}",
             },
         };
+
+    private static V1Namespace NamespaceResource(string name)
+        => new() { Metadata = new V1ObjectMeta { Name = name } };
 
     private static GenericKubernetesObject ClusterResource(string apiVersion, string kind, string name, string uid)
         => new()

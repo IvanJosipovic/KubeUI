@@ -3,6 +3,7 @@ using Avalonia.Markup.Xaml.MarkupExtensions;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.List;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Styles;
 using LiveChartsCore;
 using LiveChartsCore.Kernel;
@@ -11,9 +12,10 @@ using LiveChartsCore.SkiaSharpView.Avalonia;
 using LiveChartsCore.SkiaSharpView.Painting;
 using SkiaSharp;
 
+
 namespace KubeUI.Avalonia.Features.Clusters.Overview;
 
-public sealed partial class ClusterView : ViewBase<ClusterViewModel>
+public sealed partial class ClusterView : KubeUIView<ClusterViewModel>
 {
     private readonly DispatcherTimer _timer = new();
 

@@ -2,16 +2,16 @@ using k8s.Models;
 
 namespace KubeUI.Avalonia.Resources.Configuration.v1.PriorityClass;
 
-public sealed partial class V1PriorityClassConfig : ResourceConfigBase<V1PriorityClass>
+public sealed partial class V1PriorityClassConfig : ResourceConfig<V1PriorityClass>
 {
     public V1PriorityClassConfig(IServiceProvider serviceProvider)
         : base(serviceProvider)
     {
     }
-    public override string Category => Assets.Resources.ResourceConfig_Category_Configuration!;
+    public override NavigationPlacement Navigation => NavigationPlacement.InSection(NavigationSections.ConfigurationId);
     public override int Order => 6;
 
-    public override IList<IResourceListColumn> Columns()
+    protected override IList<IResourceListColumn> CreateDefaultColumns()
     {
         return [
             NameColumn(SortDirection.Ascending),

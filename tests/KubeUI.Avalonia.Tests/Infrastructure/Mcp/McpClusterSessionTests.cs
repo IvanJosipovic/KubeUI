@@ -15,7 +15,7 @@ public sealed class McpClusterSessionTests
         var workspace = await Application.Current.CreateClusterAsync();
         var session = Application.Current.GetTestServices().GetRequiredService<IMcpClusterSession>();
         using var cancellation = new CancellationTokenSource();
-        cancellation.Cancel();
+        await cancellation.CancelAsync();
 
         await Should.ThrowAsync<OperationCanceledException>(() => session.ListResourcesAsync(
             workspace.Runtime.Name, "v1", "Pod", "default", 10, cancellation.Token));

@@ -2,11 +2,17 @@ using System.Windows.Input;
 using FluentIcons.Common;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Kubernetes;
 using Swordfish.NET.Collections;
 
 namespace KubeUI.Avalonia.Shell.Navigation;
+
+/// <summary>One fixed cluster-level navigation link.</summary>
+/// <param name="Key">Stable key used in the link id and target resolution.</param>
+/// <param name="Name">Localized display name.</param>
+/// <param name="Order">Sort position relative to siblings.</param>
+/// <param name="Icon">Link icon.</param>
+internal sealed record NavigationTarget(string Key, string Name, int Order, Icon Icon);
 
 public static class NavigationTargets
 {
@@ -16,6 +22,19 @@ public static class NavigationTargets
     public const string Visualization = "visualization";
     public const string LoadYaml = "load-yaml";
     public const string LoadFolder = "load-folder";
+
+    /// <summary>Gets the fixed links every connected cluster shows above its sections.</summary>
+    internal static IReadOnlyList<NavigationTarget> FixedClusterLinks { get; } =
+    [
+        new(ClusterWorkspace, Assets.Resources.ClusterView_Title!, -500, Icon.Desktop),
+        new(Visualization, Assets.Resources.VisualizationView_Title!, -490, Icon.DataUsage),
+        new(ClusterSettings, Assets.Resources.ClusterSettingsView_Title!, -480, Icon.Settings),
+        new(LoadYaml, Assets.Resources.NavigationView_LoadYaml!, -470, Icon.ArrowUpload),
+        new(LoadFolder, Assets.Resources.NavigationView_LoadFolder!, -460, Icon.FolderAdd),
+    ];
+
+    internal static NavigationTarget Find(string key)
+        => FixedClusterLinks.First(target => string.Equals(target.Key, key, StringComparison.Ordinal));
 }
 
 public interface IExpandableNavigationNode
@@ -80,10 +99,6 @@ public partial class ClusterNavigationNode : NavigationItem, IDisposable
             OnPropertyChanged(nameof(ConnectionMenuHeader));
             OnPropertyChanged(nameof(ConnectionMenuIcon));
         }
-        else if (e.PropertyName == nameof(IClusterRuntime.Name))
-        {
-            AvaloniaScheduler.Instance.Invoke(() => UpdateNavigationName(Cluster.Runtime.Name));
-        }
     }
 
     [ObservableProperty]
@@ -139,51 +154,18 @@ public partial class ClusterNavigationNode : NavigationItem, IDisposable
             return;
         }
 
-        NavigationItems.Add(new NavigationLink
+        foreach (var target in NavigationTargets.FixedClusterLinks)
         {
-            Cluster = Cluster,
-            Id = $"{Cluster.Runtime.Name}-{NavigationTargets.ClusterWorkspace}",
-            Name = Assets.Resources.ClusterView_Title!,
-            ViewModelKey = NavigationTargets.ClusterWorkspace,
-            Order = -500,
-            FluentIcon = Icon.Desktop,
-        });
-        NavigationItems.Add(new NavigationLink
-        {
-            Cluster = Cluster,
-            Id = $"{Cluster.Runtime.Name}-{NavigationTargets.Visualization}",
-            Name = Assets.Resources.VisualizationView_Title!,
-            ViewModelKey = NavigationTargets.Visualization,
-            Order = -490,
-            FluentIcon = Icon.DataUsage,
-        });
-        NavigationItems.Add(new NavigationLink
-        {
-            Cluster = Cluster,
-            Id = $"{Cluster.Runtime.Name}-{NavigationTargets.ClusterSettings}",
-            Name = Assets.Resources.ClusterSettingsView_Title!,
-            ViewModelKey = NavigationTargets.ClusterSettings,
-            Order = -480,
-            FluentIcon = Icon.Settings,
-        });
-        NavigationItems.Add(new NavigationLink
-        {
-            Cluster = Cluster,
-            Id = $"{Cluster.Runtime.Name}-load-yaml",
-            Name = Assets.Resources.NavigationView_LoadYaml!,
-            ViewModelKey = NavigationTargets.LoadYaml,
-            Order = -470,
-            FluentIcon = Icon.ArrowUpload,
-        });
-        NavigationItems.Add(new NavigationLink
-        {
-            Cluster = Cluster,
-            Id = $"{Cluster.Runtime.Name}-load-folder",
-            Name = Assets.Resources.NavigationView_LoadFolder!,
-            ViewModelKey = NavigationTargets.LoadFolder,
-            Order = -460,
-            FluentIcon = Icon.FolderAdd,
-        });
+            NavigationItems.Add(new NavigationLink
+            {
+                Cluster = Cluster,
+                Id = $"{Cluster.Runtime.Name}-{target.Key}",
+                Name = target.Name,
+                ViewModelKey = target.Key,
+                Order = target.Order,
+                FluentIcon = target.Icon,
+            });
+        }
     }
 
     public void Dispose()
@@ -204,6 +186,9 @@ public partial class NavigationItem : ObservableObject, IExpandableNavigationNod
 
     [ObservableProperty]
     public partial string? SvgIcon { get; set; }
+
+    [ObservableProperty]
+    public partial string? SvgIconDark { get; set; }
 
     [ObservableProperty]
     public partial string? StyleIcon { get; set; }
@@ -231,15 +216,17 @@ public partial class NavigationLink : NavigationItem
 
     [ObservableProperty]
     public partial string? ViewModelKey { get; set; }
-}
 
-public partial class ResourceNavigationLink : NavigationLink
-{
+    [ObservableProperty]
+    public partial string? DocumentId { get; set; }
+
     [ObservableProperty]
     public partial GroupApiVersionKind? ResourceKind { get; set; }
 
     [ObservableProperty]
     public partial IObservable<int>? Count { get; set; }
+
+    internal GroupApiVersionKind? CountResourceKind { get; set; }
 
     [ObservableProperty]
     public partial ICommand? OpenCommand { get; set; }

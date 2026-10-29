@@ -1,18 +1,29 @@
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using k8s;
 using KubeUI.Kubernetes.Serialization;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace KubeUI.Kubernetes;
 
-public static class KubeUIKubernetesServiceCollectionExtensions
+public static partial class KubeUIKubernetesServiceCollectionExtensions
 {
-    private static readonly object _jsonConfigurationLock = new();
-    private static bool _isJsonConfigured;
-    private static ILogger? _jsonLogger;
-
-    public static IServiceCollection AddKubeUIKubernetesServices(this IServiceCollection services)
+    /// <summary>Adds KubeUI Kubernetes services and configures Kubernetes JSON serialization.</summary>
+    /// <param name="services">Service collection to configure.</param>
+    /// <param name="jsonAllowReflection">Whether Kubernetes JSON serialization may use reflection instead of generated metadata.</param>
+    /// <param name="yamlAllowReflection">Whether YAML serialization may inspect runtime model properties.</param>
+    /// <returns>The configured service collection.</returns>
+    public static IServiceCollection AddKubeUIKubernetesServices(
+        this IServiceCollection services,
+        bool jsonAllowReflection,
+        bool yamlAllowReflection)
     {
-        ConfigureKubeUIKubernetesJson();
+        EnsureJsonReflectionIsAvailable(jsonAllowReflection);
+        services.AddSingleton<IKubernetesJsonSerializer>(provider =>
+            new KubernetesJsonSerializer(CreateKubeUIKubernetesJsonOptions(
+                jsonAllowReflection, provider.GetService<ILoggerFactory>()?.CreateLogger("KubeUI.KubernetesJson"))));
         services.AddSingleton<IThreadDispatcher, ImmediateThreadDispatcher>();
         services.AddSingleton<IKubeConfigPathProvider, DefaultKubeConfigPathProvider>();
         services.AddSingleton<IKubeConfigDiscovery, KubeConfigDiscovery>();
@@ -20,64 +31,80 @@ public static class KubeUIKubernetesServiceCollectionExtensions
         services.AddSingleton<IPodLogStreamClient, PodLogStreamClient>();
         services.AddSingleton<KubernetesModelCatalog>();
         services.AddTransient<ClusterModelCatalog>();
-        services.AddSingleton<IKubernetesYamlSerializer, KubernetesYamlSerializer>();
+        services.AddSingleton<IKubernetesYamlSerializer>(_ => new KubernetesYamlSerializer(yamlAllowReflection));
         services.AddSingleton<IAksClusterService, AksClusterService>();
+        services.AddSingleton<IHelmClientFactory, HelmClientFactory>();
+        services.AddSingleton<IHelmService, HelmService>();
         services.AddTransient<Cluster>();
         services.AddTransient<IClusterRuntime>(sp => sp.GetRequiredService<Cluster>());
         services.AddSingleton<ClusterManager>();
         services.AddSingleton<IClusterRuntimeCatalog>(sp => sp.GetRequiredService<ClusterManager>());
         services.AddHostedService<ClusterManagerStartupService>();
+        services.AddOptions<ClusterAuthorizationOptions>();
         return services;
     }
 
-    private static void ConfigureKubeUIKubernetesJson()
+    private static JsonSerializerOptions CreateKubeUIKubernetesJsonOptions(bool allowReflection, ILogger? logger)
     {
-        lock (_jsonConfigurationLock)
+        var options = new KubernetesClientConfiguration().JsonSerializerOptions;
+        options.TypeInfoResolver = CreateKubeUIKubernetesJsonResolver(allowReflection, logger);
+        return options;
+    }
+
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2026",
+        Justification = "Reflection is retained as an explicit opt-in mode, guarded by JsonSerializer.IsReflectionEnabledByDefault; source-generated mode remains the default.")]
+    private static IJsonTypeInfoResolver CreateKubeUIKubernetesJsonResolver(bool allowReflection, ILogger? logger)
+    {
+        var reflectionResolver = new DefaultJsonTypeInfoResolver
         {
-            if (_isJsonConfigured)
+            Modifiers =
             {
-                return;
+                jsonTypeInfo =>
+                {
+                    if (jsonTypeInfo.OriginatingResolver is DefaultJsonTypeInfoResolver
+                        && logger is not null)
+                    {
+                        LogTypeSerializedUsingReflection(logger, jsonTypeInfo.Type);
+                    }
+                }
             }
+        };
 
-            KubernetesJson.AddJsonOptions(options =>
-            {
-                if (options.IsReadOnly)
-                {
-                    return;
-                }
+        return allowReflection
+            ? JsonTypeInfoResolver.Combine(
+                KubernetesJsonStaticContext.Default,
+                SourceGenerationContext.Default,
+                reflectionResolver)
+            : JsonTypeInfoResolver.Combine(
+                KubernetesJsonStaticContext.Default,
+                SourceGenerationContext.Default);
+    }
 
-                try
-                {
-                    options.TypeInfoResolver = JsonTypeInfoResolver.Combine(
-                        CustomSourceGenerationContext.Default,
-                        new DefaultJsonTypeInfoResolver
-                        {
-                            Modifiers =
-                            {
-                                jsonTypeInfo =>
-                                {
+    /// <summary>
+    /// Configures the logger used to report Kubernetes types that still fall back to
+    /// reflection-based serialization. Types covered by the generated metadata never reach
+    /// this path, so a reported type is one that still needs a source-generated registration.
+    /// </summary>
+    /// <param name="services">Application service provider.</param>
+    public static void ConfigureKubeUIKubernetesJsonLogging(this IServiceProvider services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        _ = services.GetService<IKubernetesJsonSerializer>();
+    }
 
-                                    if (jsonTypeInfo.OriginatingResolver is DefaultJsonTypeInfoResolver)
-                                    {
-                                        _jsonLogger?.LogCritical("Type is serialized using reflection: {Type}", jsonTypeInfo.Type);
-                                    }
-                                }
-                            }
-                        });
-                }
-                catch (InvalidOperationException) when (options.IsReadOnly)
-                {
-                    // KubernetesJson owns a process-wide options instance. It may have
-                    // been frozen by an earlier serialization before services are registered.
-                }
-            });
-
-            _isJsonConfigured = true;
+    internal static void EnsureJsonReflectionIsAvailable(bool allowReflection)
+    {
+        if (allowReflection && !JsonSerializer.IsReflectionEnabledByDefault)
+        {
+            throw new InvalidOperationException(
+                "Kubernetes JSON reflection cannot be enabled because reflection-based JSON serialization is unavailable.");
         }
     }
 
-    public static void ConfigureKubeUIKubernetesJsonLogging(this IServiceProvider services)
-    {
-        _jsonLogger ??= services.GetService<ILoggerFactory>()?.CreateLogger("KubeUI.KubernetesJson");
-    }
+    [LoggerMessage(
+        Level = LogLevel.Critical,
+        Message = "Type is serialized using reflection: {Type}")]
+    private static partial void LogTypeSerializedUsingReflection(ILogger logger, Type type);
 }
