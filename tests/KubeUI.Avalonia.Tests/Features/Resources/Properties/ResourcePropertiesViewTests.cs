@@ -11,6 +11,25 @@ namespace KubeUI.Avalonia.Tests.Features.Resources.Properties;
 public sealed class ResourcePropertiesViewTests
 {
     [AvaloniaFact]
+    public async Task reattached_view_observes_later_resource_changes()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        using var viewModel = Application.Current.GetRequiredTestService<ResourcePropertiesViewModel<V1Pod>>();
+        viewModel.Initialize(workspace, new V1Pod { Metadata = new V1ObjectMeta { Name = "first" } });
+        var view = new ResourcePropertiesView<V1Pod> { DataContext = viewModel };
+        using var window = Application.Current.CreateTestWindow(content: view);
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync();
+        window.Content = null;
+        window.Content = view;
+        await TestApplicationExtensions.WaitForUiAsync();
+        viewModel.ShowResource(workspace, new V1Pod { Metadata = new V1ObjectMeta { Name = "second" } });
+        await TestApplicationExtensions.WaitForUiAsync();
+        view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>()
+            .ShouldContain(item => item.Key == AppResources.ResourcePropertiesView_Name && Equals(item.Value, "second"));
+    }
+
+    [AvaloniaFact]
     public async Task namespaced_resource_shows_namespace_property_item()
     {
         var services = Application.Current.GetTestServices();

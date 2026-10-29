@@ -33,6 +33,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     protected INotificationManager _notificationManager = null!;
     protected IFactory _factory = null!;
     private IPodLogsLauncher _podLogsLauncher = null!;
+    private ResourcePropertiesCoordinator _propertiesCoordinator = null!;
 
     protected ResourceConfigBase()
     {
@@ -58,6 +59,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         _logger = serviceProvider.GetRequiredService<ILogger<ResourceConfigBase<T>>>();
         _dialogService = serviceProvider.GetRequiredService<IDialogService>();
         _factory = serviceProvider.GetRequiredService<IFactory>();
+        _propertiesCoordinator = new ResourcePropertiesCoordinator(_factory, serviceProvider);
         _podLogsLauncher = serviceProvider.GetRequiredService<IPodLogsLauncher>();
         _notificationManager = serviceProvider.GetRequiredService<INotificationManager>();
         ServiceProvider = serviceProvider;
@@ -485,17 +487,24 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     [RelayCommand(CanExecute = nameof(CanView))]
     public void View(IList items)
     {
-        var instance = ServiceProvider.GetRequiredService<ResourcePropertiesViewModel<T>>();
-        instance.Initialize(Cluster, (T)items[0]!);
-        instance.CanFloat = false;
-        instance.CanDockAsDocument = false;
-
-        _factory.AddToRight(instance);
+        _propertiesCoordinator.Open(Cluster, (T)items[0]!);
     }
 
     public bool CanView(IList? items)
     {
         return items?.Count == 1;
+    }
+
+    /// <summary>
+    /// Shows a single selected resource in the Properties view when one is already open (docked or auto-hidden); otherwise does nothing.
+    /// Keeping the Properties view open opts into following the list selection. It is never opened, expanded or focused here,
+    /// and multi-selection leaves it unchanged.
+    /// </summary>
+    /// <param name="items">The current selection.</param>
+    public void ShowInOpenProperties(IList? items)
+    {
+        if (items is { Count: 1 } && items[0] is T resource)
+            _propertiesCoordinator.Follow(Cluster, resource);
     }
 
     [RelayCommand(CanExecute = nameof(CanViewYaml))]

@@ -62,6 +62,7 @@ public partial class ResourcePropertiesView<T> : ViewBase<ResourcePropertiesView
     {
         base.OnAttachedToVisualTree(e);
         _isDetached = false;
+        SubscribeToViewModel();
         ReloadNowOrLater();
     }
 
