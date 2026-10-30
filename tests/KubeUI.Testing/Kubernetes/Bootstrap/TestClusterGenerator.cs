@@ -1,8 +1,8 @@
-using KubeUI.Kubernetes.Serialization;
 using System.Reflection;
 using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
+using KubeUI.Kubernetes.Serialization;
 using KubeUI.Testing.Kubernetes.Scenarios;
 using Microsoft.Extensions.DependencyInjection;
 

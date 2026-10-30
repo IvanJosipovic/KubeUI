@@ -1,7 +1,10 @@
+using System.Buffers;
+using System.IO.Pipelines;
 using System.Net;
 using System.Net.Sockets;
 using DynamicData.Kernel;
 using k8s.Models;
+using Microsoft.Extensions.Logging;
 
 #pragma warning disable RCS1075
 namespace KubeUI.Kubernetes;
@@ -11,6 +14,7 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
     private readonly IClusterRuntime _cluster;
     private readonly TcpListener _listener;
     private readonly IPortForwardSessionFactory _sessionFactory;
+    private readonly ILogger _logger;
     private readonly HashSet<Socket> _activeSockets = [];
     private readonly Lock _activeSocketsGate = new();
 
@@ -34,16 +38,17 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
     private bool _isDisposing;
 
     public PortForwarder(IClusterRuntime cluster, string @namespace, int localPort = 0)
-        : this(cluster, @namespace, localPort, null)
+        : this(cluster, @namespace, localPort, null, Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance)
     {
     }
 
-    public PortForwarder(IClusterRuntime cluster, string @namespace, int localPort, IPortForwardSessionFactory? sessionFactory)
+    public PortForwarder(IClusterRuntime cluster, string @namespace, int localPort, IPortForwardSessionFactory? sessionFactory, ILogger logger)
     {
         _cluster = cluster;
         Namespace = @namespace;
         LocalPort = localPort;
         _sessionFactory = sessionFactory ?? new KubernetesPortForwardSessionFactory(cluster);
+        _logger = logger;
 
         _listener = new TcpListener(IPAddress.Loopback, localPort);
     }
@@ -149,11 +154,13 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
                 _listener.BeginAcceptSocket(ClientConnected, null);
             }
         }
-        catch (ObjectDisposedException)
+        catch (ObjectDisposedException ex)
         {
+            _logger.LogDebug(ex, "Port forward listener disposed while accepting connection");
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException ex)
         {
+            _logger.LogDebug(ex, "Port forward listener invalid operation while accepting connection");
         }
     }
 
@@ -210,17 +217,15 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
             using var session = await _sessionFactory.CreateAsync(podName, Namespace, podPort).ConfigureAwait(false);
             var stream = session.Stream;
 
-            var read = Task.Run(() => CopySocketToStream(socket, stream));
-            var write = Task.Run(() => CopyStreamToSocket(socket, stream));
+            var read = CopySocketToStream(socket, session is IDuplexPortForwardSession duplex ? duplex.WriteStream : stream);
+            var write = CopyStreamToSocket(socket, stream);
 
             await Task.WhenAll(read, write).ConfigureAwait(false);
         }
-        catch
+        catch (Exception ex) when (!_isDisposing)
         {
-            if (!_isDisposing)
-            {
-                Status = "Port forward failed";
-            }
+            _logger.LogDebug(ex, "Port forward connection failed for {Type} {Namespace}/{Name}:{Port}", Type, Namespace, Name, Port);
+            Status = "Port forward failed";
         }
         finally
         {
@@ -352,83 +357,194 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
         return true;
     }
 
-    private static void CopySocketToStream(Socket socket, Stream stream)
+    private static async Task CopySocketToStream(Socket socket, Stream stream)
     {
-        var buffer = new byte[4096];
+        var pipe = new Pipe();
+        var writeTask = FillPipeFromSocket(socket, pipe.Writer);
+        var readTask = ReadPipeToStream(pipe.Reader, stream);
 
-        while (true)
+        await Task.WhenAll(writeTask, readTask).ConfigureAwait(false);
+    }
+
+    private static async Task FillPipeFromSocket(Socket socket, PipeWriter writer)
+    {
+        const int BufferSize = 4096;
+        try
         {
-            int bytesReceived;
-            try
+            while (true)
             {
-                bytesReceived = socket.Receive(buffer);
-            }
-            catch (ObjectDisposedException)
-            {
-                return;
-            }
-            catch (SocketException)
-            {
-                return;
-            }
+                Memory<byte> memory = writer.GetMemory(BufferSize);
+                int bytesReceived;
+                try
+                {
+                    bytesReceived = await socket.ReceiveAsync(memory, SocketFlags.None).ConfigureAwait(false);
+                }
+                catch (ObjectDisposedException)
+                {
+                    break;
+                }
+                catch (SocketException)
+                {
+                    break;
+                }
 
-            if (bytesReceived <= 0)
-            {
-                return;
-            }
+                if (bytesReceived <= 0)
+                {
+                    break;
+                }
 
-            try
-            {
-                stream.Write(buffer, 0, bytesReceived);
+                writer.Advance(bytesReceived);
+
+                var result = await writer.FlushAsync().ConfigureAwait(false);
+                if (result.IsCompleted || result.IsCanceled)
+                {
+                    break;
+                }
             }
-            catch (IOException)
-            {
-                return;
-            }
-            catch (ObjectDisposedException)
-            {
-                return;
-            }
+        }
+        catch (Exception)
+        {
+            // Ignore errors during copy
+        }
+        finally
+        {
+            await writer.CompleteAsync().ConfigureAwait(false);
         }
     }
 
-    private static void CopyStreamToSocket(Socket socket, Stream stream)
+    private static async Task ReadPipeToStream(PipeReader reader, Stream stream)
     {
-        var buffer = new byte[4096];
-
-        while (true)
+        try
         {
-            int bytesReceived;
-            try
+            while (true)
             {
-                bytesReceived = stream.Read(buffer, 0, buffer.Length);
-            }
-            catch (ObjectDisposedException)
-            {
-                return;
-            }
-            catch (IOException)
-            {
-                return;
-            }
+                var result = await reader.ReadAsync().ConfigureAwait(false);
+                var buffer = result.Buffer;
 
-            if (bytesReceived <= 0)
-            {
-                return;
-            }
+                if (buffer.Length > 0)
+                {
+                    foreach (var segment in buffer)
+                    {
+                        await stream.WriteAsync(segment).ConfigureAwait(false);
+                    }
+                }
 
-            try
-            {
-                socket.Send(buffer, 0, bytesReceived, SocketFlags.None);
+                reader.AdvanceTo(buffer.End);
+
+                if (result.IsCompleted || result.IsCanceled)
+                {
+                    break;
+                }
             }
-            catch (ObjectDisposedException)
+        }
+        catch (Exception)
+        {
+            // Ignore errors during copy
+        }
+        finally
+        {
+            await reader.CompleteAsync().ConfigureAwait(false);
+        }
+    }
+
+    private static async Task CopyStreamToSocket(Socket socket, Stream stream)
+    {
+        var pipe = new Pipe();
+        var readTask = FillPipeFromStream(stream, pipe.Writer);
+        var writeTask = ReadPipeToSocket(pipe.Reader, socket);
+
+        await Task.WhenAll(readTask, writeTask).ConfigureAwait(false);
+    }
+
+    private static async Task FillPipeFromStream(Stream stream, PipeWriter writer)
+    {
+        const int BufferSize = 4096;
+        try
+        {
+            while (true)
             {
-                return;
+                Memory<byte> memory = writer.GetMemory(BufferSize);
+                int bytesRead;
+                try
+                {
+                    bytesRead = await stream.ReadAsync(memory).ConfigureAwait(false);
+                }
+                catch (ObjectDisposedException)
+                {
+                    break;
+                }
+                catch (IOException)
+                {
+                    break;
+                }
+
+                if (bytesRead <= 0)
+                {
+                    break;
+                }
+
+                writer.Advance(bytesRead);
+
+                var result = await writer.FlushAsync().ConfigureAwait(false);
+                if (result.IsCompleted || result.IsCanceled)
+                {
+                    break;
+                }
             }
-            catch (SocketException)
+        }
+        catch (Exception)
+        {
+            // Ignore errors during copy
+        }
+        finally
+        {
+            await writer.CompleteAsync().ConfigureAwait(false);
+        }
+    }
+
+    private static async Task ReadPipeToSocket(PipeReader reader, Socket socket)
+    {
+        try
+        {
+            while (true)
             {
-                return;
+                var result = await reader.ReadAsync().ConfigureAwait(false);
+                var buffer = result.Buffer;
+
+                if (buffer.Length > 0)
+                {
+                    foreach (var segment in buffer)
+                    {
+                        try
+                        {
+                            socket.Send(segment.Span, SocketFlags.None);
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                            return;
+                        }
+                        catch (SocketException)
+                        {
+                            return;
+                        }
+                    }
+                }
+
+                reader.AdvanceTo(buffer.End);
+
+                if (result.IsCompleted || result.IsCanceled)
+                {
+                    break;
+                }
             }
+        }
+        catch (Exception)
+        {
+            // Ignore errors during copy
+        }
+        finally
+        {
+            await reader.CompleteAsync().ConfigureAwait(false);
         }
     }
 
@@ -453,7 +569,7 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
 
     public override int GetHashCode()
     {
-        throw new NotImplementedException();
+        return HashCode.Combine(Name, Namespace, Port, Type);
     }
 }
 #pragma warning restore RCS1075

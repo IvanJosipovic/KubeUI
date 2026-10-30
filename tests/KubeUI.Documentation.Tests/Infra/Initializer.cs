@@ -25,6 +25,8 @@ public static class DocumentationTestAppBuilder
 
 public sealed class DocumentationTestApp : TestApp
 {
+    protected override TimeProvider CreateTimeProvider() => TimeProvider.System;
+
     public DocumentationTestApp()
         : base(ConfigureServices)
     {
@@ -32,6 +34,7 @@ public sealed class DocumentationTestApp : TestApp
 
     private static void ConfigureServices(IServiceCollection services)
     {
+        services.Replace(ServiceDescriptor.Singleton<IPrometheusQueryClient, WalkthroughPrometheusQueryClient>());
         HelmWalkthroughService.ConfigureHelmRepositoryPaths();
         services.AddSingleton<HelmService>();
         services.Replace(ServiceDescriptor.Singleton(provider =>

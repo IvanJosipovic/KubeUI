@@ -57,6 +57,6 @@ public sealed class InProcessViewLocatorBenchmarkConfig : ManualConfig
 {
     public InProcessViewLocatorBenchmarkConfig()
     {
-        AddJob(Job.MediumRun.WithToolchain(InProcessNoEmitToolchain.Instance));
+        AddJob(Job.MediumRun.WithToolchain(InProcessNoEmitToolchain.Default));
     }
 }

@@ -18,4 +18,6 @@ public interface IClusterSettingsStore
     void RemoveKubeConfigPath(string path);
 
     IReadOnlyCollection<string> GetClusterNamespaces(IClusterRuntime cluster);
+
+    ClusterMetricsSettings GetClusterMetricsSettings(IClusterRuntime cluster);
 }

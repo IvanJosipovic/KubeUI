@@ -167,7 +167,7 @@ public sealed class PortForwarderTests
         var factory = new Mock<IPortForwardSessionFactory>(MockBehavior.Strict);
         factory.Setup(x => x.CreateAsync("pod-1", "default", 8080)).ReturnsAsync(session.Object);
 
-        using var sut = new PortForwarder(cluster, "default", localPort: 0, sessionFactory: factory.Object);
+        using var sut = new PortForwarder(cluster, "default", localPort: 0, sessionFactory: factory.Object, logger: Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance);
         sut.SetPod("pod-1", 8080);
         sut.Start();
 
@@ -186,6 +186,50 @@ public sealed class PortForwarderTests
         factory.Verify(x => x.CreateAsync("pod-1", "default", 8080), Times.Once);
         session.VerifyGet(x => x.Stream, Times.AtLeastOnce);
         stream.WrittenBytes.ShouldBe(payload);
+    }
+
+    [Fact]
+    public async Task Port_forward_relays_response_without_client_closing_send_side()
+    {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(5));
+        await using var harness = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), timeout.Token);
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        try
+        {
+            using var upstream = new TcpClient();
+            await upstream.ConnectAsync(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndpoint).Port, timeout.Token);
+            using var server = await listener.AcceptTcpClientAsync(timeout.Token);
+            var session = new Mock<IPortForwardSession>(MockBehavior.Strict);
+            session.SetupGet(x => x.Stream).Returns(upstream.GetStream());
+            session.Setup(x => x.Dispose());
+            var factory = new Mock<IPortForwardSessionFactory>(MockBehavior.Strict);
+            factory.Setup(x => x.CreateAsync("pod-1", "default", 8080)).ReturnsAsync(session.Object);
+            using var forwarder = new PortForwarder(harness.Cluster, "default", localPort: 0, sessionFactory: factory.Object, logger: Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance);
+            forwarder.SetPod("pod-1", 8080);
+            forwarder.Start();
+            using var client = new TcpClient();
+            await client.ConnectAsync(IPAddress.Loopback, forwarder.LocalPort, timeout.Token);
+            await client.GetStream().WriteAsync("ping"u8.ToArray(), timeout.Token);
+            var request = new byte[4];
+            await server.GetStream().ReadExactlyAsync(request, timeout.Token);
+            await server.GetStream().WriteAsync("pong"u8.ToArray(), timeout.Token);
+            var response = new byte[4];
+            await client.GetStream().ReadExactlyAsync(response, timeout.Token);
+            Encoding.UTF8.GetString(request).ShouldBe("ping");
+            Encoding.UTF8.GetString(response).ShouldBe("pong");
+            await client.GetStream().WriteAsync("next"u8.ToArray(), timeout.Token);
+            await server.GetStream().ReadExactlyAsync(request, timeout.Token);
+            await server.GetStream().WriteAsync("done"u8.ToArray(), timeout.Token);
+            await client.GetStream().ReadExactlyAsync(response, timeout.Token);
+            Encoding.UTF8.GetString(request).ShouldBe("next");
+            Encoding.UTF8.GetString(response).ShouldBe("done");
+        }
+        finally
+        {
+            listener.Stop();
+        }
     }
 
     [Theory, KubernetesBackendData]
@@ -280,7 +324,7 @@ public sealed class PortForwarderTests
         var factory = new Mock<IPortForwardSessionFactory>(MockBehavior.Strict);
         factory.Setup(x => x.CreateAsync("prometheus-0", "default", 4245)).ReturnsAsync(session.Object);
 
-        using var sut = new PortForwarder(cluster, "default", localPort: 0, sessionFactory: factory.Object);
+        using var sut = new PortForwarder(cluster, "default", localPort: 0, sessionFactory: factory.Object, logger: Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance);
         sut.SetService("prometheus", 80);
         sut.Start();
         await ConnectAsync(sut.LocalPort, TestContext.Current.CancellationToken);
@@ -496,7 +540,7 @@ public sealed class PortForwarderTests
         var factory = new Mock<IPortForwardSessionFactory>(MockBehavior.Strict);
         factory.Setup(x => x.CreateAsync("prometheus-0", "default", 9090)).ReturnsAsync(session.Object);
 
-        using var sut = new PortForwarder(cluster, "default", localPort: 0, sessionFactory: factory.Object);
+        using var sut = new PortForwarder(cluster, "default", localPort: 0, sessionFactory: factory.Object, logger: Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance);
         sut.SetService("prometheus", 9090);
         sut.Start();
 

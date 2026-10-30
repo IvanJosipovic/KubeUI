@@ -1,4 +1,3 @@
-using KubeUI.Kubernetes.Serialization;
 using System.Globalization;
 using System.Text.Json;
 using Avalonia.Controls;
@@ -15,6 +14,7 @@ using KubeUI.Avalonia.Features.Helm;
 using KubeUI.Avalonia.Features.Helm.Releases;
 using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Kubernetes;
+using KubeUI.Kubernetes.Serialization;
 using Moq;
 using Shouldly;
 
@@ -111,7 +111,7 @@ public sealed class HelmReleasesViewModelTests : IDisposable
         yaml.YamlDocument.Text.ShouldContain("enabled: true");
         yaml.YamlDocument.Text.ShouldContain("replicas: 2");
         yaml.YamlDocument.Text.TrimStart().ShouldNotStartWith("{");
-        var parsed = Kubernetes.Serialization.KubernetesYaml.Deserialize<Dictionary<string, object>>(yaml.YamlDocument.Text);
+        var parsed = KubernetesYaml.Deserialize<Dictionary<string, object>>(yaml.YamlDocument.Text);
         parsed.ShouldContainKey("server");
         parsed.ShouldContainKey("unset");
         parsed["enabled"].ShouldBe(true);

@@ -26,6 +26,7 @@ const sidebars: SidebarsConfig = {
         'resource-visualization',
         'workload-tools',
         'pod-logs',
+        'monitoring',
       ],
     },
     'features',

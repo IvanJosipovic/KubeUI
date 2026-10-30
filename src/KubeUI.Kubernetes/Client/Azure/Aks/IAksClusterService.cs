@@ -54,18 +54,6 @@ public sealed record AksClusterCredentials
 }
 
 /// <summary>
-/// Describes the available Azure sign-in status for AKS discovery.
-/// </summary>
-public sealed record AksAuthenticationStatus
-{
-    public bool AzureCliSignedIn { get; init; }
-
-    public string? AzureCliUsername { get; init; }
-
-    public string? AzureCliTenantId { get; init; }
-}
-
-/// <summary>
 /// Discovers AKS subscriptions, clusters, and cluster credentials.
 /// </summary>
 public interface IAksClusterService
@@ -73,7 +61,7 @@ public interface IAksClusterService
     /// <summary>
     /// Returns the current Azure sign-in status for AKS discovery.
     /// </summary>
-    Task<AksAuthenticationStatus> GetAuthenticationStatusAsync(CancellationToken cancellationToken = default);
+    Task<AzureAuthenticationStatus> GetAuthenticationStatusAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the Azure subscriptions that can be used for AKS discovery.

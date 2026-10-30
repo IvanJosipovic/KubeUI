@@ -1,5 +1,5 @@
-using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Features.Resources.Properties.Controls;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 
 namespace KubeUI.Avalonia.Features.Cilium.Hubble;
 
