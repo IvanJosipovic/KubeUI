@@ -411,7 +411,6 @@ public sealed class NavigationViewTests
         clusterMenu.Items.OfType<MenuItem>()
             .Select(menuItem => menuItem.Header?.ToString())
             .ShouldBe([
-                Assets.Resources.NavigationView_ContextMenu_Collapse,
                 Assets.Resources.NavigationView_ContextMenu_Connect,
                 Assets.Resources.NavigationView_ContextMenu_Settings
             ]);
