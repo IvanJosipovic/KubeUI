@@ -137,7 +137,7 @@ public sealed partial class PrometheusQueryClient : IPrometheusQueryClient, IDis
                 {
                     await cluster.SeedResource<k8s.Models.V1Service>(true, cancellationToken).ConfigureAwait(false);
                     await EnsureServiceAvailableAsync(cluster, endpoint, cancellationToken).ConfigureAwait(false);
-                    PrepareServicePortForwardTransport(cluster, endpoint, _httpClientFactory);
+                    PrepareServicePortForwardTransport(cluster, endpoint);
                 }
 
                 if (_httpClient is not null

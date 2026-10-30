@@ -18,7 +18,7 @@ Open **Cluster Settings** beneath the cluster in the navigation pane and find **
 
 | Metrics service | Behavior |
 | --- | --- |
-| **Auto** (default) | Try Prometheus first; use Kubernetes Metrics Server if Prometheus cannot initialize. |
+| **Auto** (default) | Discover an in-cluster Prometheus Operator or OpenShift service; use Kubernetes Metrics Server if neither can initialize. Saved Prometheus provider and connection settings are ignored but retained. |
 | **Disabled** | Do not connect to a metrics backend. |
 | **Kubernetes Metrics Server** | Use the cluster's `metrics.k8s.io` API for Pod and Node usage. |
 | **Prometheus** | Use the chosen Prometheus provider. Selecting this explicitly does not fall back to Metrics Server. |

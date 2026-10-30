@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls.Primitives;
 using k8s;
 using k8s.Models;
@@ -155,6 +156,7 @@ public partial class ResourcePropertiesView<T> : ViewBase<ResourcePropertiesView
         Dispatcher.UIThread.Post(AttachAndReload, DispatcherPriority.Background);
     }
 
+    [RequiresUnreferencedCode("Calls KubeUI.Avalonia.Features.Resources.Properties.Controls.ResourcePropertyBindingExtensions.BindValue<TResource>(ResourcePropertiesViewModel<TResource>, Func<TResource, Object>)")]
     private void ReloadProperties()
     {
         if (_isDetached)

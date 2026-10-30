@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Metrics.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties;
@@ -7,6 +8,7 @@ namespace KubeUI.Avalonia.Resources.Storage.v1.PersistentVolumeClaim;
 
 public sealed class PropertiesView : ViewBase<ResourcePropertiesViewModel<V1PersistentVolumeClaim>>
 {
+    [RequiresUnreferencedCode()]
     protected override object Build(ResourcePropertiesViewModel<V1PersistentVolumeClaim> vm)
     {
         ArgumentNullException.ThrowIfNull(vm);

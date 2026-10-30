@@ -101,6 +101,29 @@ public sealed class PrometheusQueryClientTests
     }
 
     [Fact]
+    public async Task QueryRangeAsync_service_forward_ignores_general_http_client_factory()
+    {
+        using var kubernetesHandler = new RecordingHandler(_ => { }, ServiceListResponseBody);
+        using var queryHandler = new RecordingHandler(_ => { });
+        using var services = new ServiceCollection().AddHttpClient().BuildServiceProvider();
+        var fixture = CreateCluster("microk8s", kubernetesHandler);
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
+        await using var client = new PrometheusQueryClient(
+            NullLogger<PrometheusQueryClient>.Instance, null, services.GetRequiredService<IHttpClientFactory>(), () => queryHandler);
+        var endpoint = new ResolvedPrometheusEndpoint(
+            PrometheusProviderKind.Operator, "Prometheus Operator", false,
+            "monitoring", "prometheus-operated", 9090, null, false, string.Empty, null);
+
+        var result = await client.QueryRangeAsync(cluster, endpoint, "up", DateTimeOffset.UnixEpoch,
+            DateTimeOffset.UnixEpoch.AddMinutes(1), 60, TestContext.Current.CancellationToken);
+
+        result.ShouldNotBeNull();
+        result.Status.ShouldBe("success");
+        queryHandler.RequestUris.Count.ShouldBe(1);
+    }
+
+    [Fact]
     public async Task PrepareAsync_with_same_service_proxy_endpoint_logs_transport_once()
     {
         var logger = new TestLogger<PrometheusQueryClient>();

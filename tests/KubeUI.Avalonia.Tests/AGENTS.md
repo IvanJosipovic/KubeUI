@@ -41,6 +41,10 @@ Tests using Avalonia capabilities should use `[AvaloniaFact]`. Pure model, seria
 - Cover selected external cluster grants, the empty-scope all-clusters behavior, credential revocation, Secret approval, cancellation, request/output limits, native Settings validation, and ACP credential lifecycle.
 - Use controllable `TimeProvider` and explicit task gates for rate-limit and concurrency tests; do not use sleeps.
 
+## Opt-in live properties metrics validation
+- `LivePropertiesMetricsTests` opens a real Pod properties view and verifies a visible chart with Prometheus data. Set `KUBEUI_LIVE_CONTEXT`, `KUBEUI_LIVE_METRICS_POD`, and optionally `KUBEUI_LIVE_METRICS_NAMESPACE` (defaults to `default`); use a running Pod with scraped metrics.
+- Run the filtered test only against a cluster the user has authorized; the test is read-only.
+
 ## Opt-in live Helm visualization validation
 - `LiveHelmVisualizationTests` is opt-in and read-only: it checks an existing `authentik` release in namespace `authentik` through the production workspace and visualization pipeline. It must not create, update, or delete cluster resources.
 - Mark live-cluster tests with `[LiveClusterFact]`, not `Explicit = true`. An explicit test is reported as `NotRunnable` in the TRX file and the CI test reporter counts it as a failure; `[LiveClusterFact]` skips the test when `KUBEUI_LIVE_CONTEXT` is unset so it is reported as `NotExecuted` and counted as skipped.

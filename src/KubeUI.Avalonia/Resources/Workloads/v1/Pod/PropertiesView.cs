@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls.Templates;
 using Avalonia.LogicalTree;
 using Avalonia.VisualTree;
@@ -18,6 +19,7 @@ public sealed class PropertiesView : ViewBase<ResourcePropertiesViewModel<V1Pod>
     private ItemsControl _ephemeralContainers = null!;
     private ItemsControl _containers = null!;
 
+    [RequiresUnreferencedCode()]
     protected override object Build(ResourcePropertiesViewModel<V1Pod> vm)
     {
         ArgumentNullException.ThrowIfNull(vm);

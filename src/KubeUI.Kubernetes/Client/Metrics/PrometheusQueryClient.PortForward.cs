@@ -38,7 +38,7 @@ public sealed partial class PrometheusQueryClient
         cluster.GetResourceSourceCache<k8s.Models.V1Service>().Edit(updater => updater.AddOrUpdate(service));
     }
 
-    private void PrepareServicePortForwardTransport(Cluster cluster, ResolvedPrometheusEndpoint endpoint, IHttpClientFactory? factory)
+    private void PrepareServicePortForwardTransport(Cluster cluster, ResolvedPrometheusEndpoint endpoint)
     {
         if (string.IsNullOrWhiteSpace(endpoint.Namespace)
             || string.IsNullOrWhiteSpace(endpoint.ServiceName)
@@ -58,14 +58,13 @@ public sealed partial class PrometheusQueryClient
             throw new InvalidOperationException($"Could not start Prometheus service port-forward: {status}.");
         }
 
-        _httpClient = CreateServicePortForwardHttpClient(endpoint, portForwarder.LocalPort, _directHandlerFactory?.Invoke(), factory);
+        _httpClient = CreateServicePortForwardHttpClient(endpoint, portForwarder.LocalPort, _directHandlerFactory?.Invoke());
     }
 
     private static HttpClient CreateServicePortForwardHttpClient(
         ResolvedPrometheusEndpoint endpoint,
         int localPort,
-        HttpMessageHandler? handler,
-        IHttpClientFactory? factory)
+        HttpMessageHandler? handler)
     {
         var scheme = endpoint.UseHttps ? Uri.UriSchemeHttps : Uri.UriSchemeHttp;
         var host = $"{endpoint.ServiceName}.{endpoint.Namespace}.svc";
@@ -73,12 +72,7 @@ public sealed partial class PrometheusQueryClient
         var baseAddress = new UriBuilder(scheme, host, localPort, pathPrefix).Uri;
 
         HttpClient client;
-        if (factory is not null)
-        {
-            client = factory.CreateClient();
-            client.BaseAddress = baseAddress;
-        }
-        else if (handler is null)
+        if (handler is null)
         {
 #pragma warning disable CA2000 // HttpClient owns the handler and disposes it when the client is disposed.
             client = new HttpClient(new SocketsHttpHandler

@@ -217,7 +217,7 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
             using var session = await _sessionFactory.CreateAsync(podName, Namespace, podPort).ConfigureAwait(false);
             var stream = session.Stream;
 
-            var read = CopySocketToStream(socket, stream);
+            var read = CopySocketToStream(socket, session is IDuplexPortForwardSession duplex ? duplex.WriteStream : stream);
             var write = CopyStreamToSocket(socket, stream);
 
             await Task.WhenAll(read, write).ConfigureAwait(false);
@@ -377,7 +377,7 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
                 int bytesReceived;
                 try
                 {
-                    bytesReceived = socket.Receive(memory.Span);
+                    bytesReceived = await socket.ReceiveAsync(memory, SocketFlags.None).ConfigureAwait(false);
                 }
                 catch (ObjectDisposedException)
                 {

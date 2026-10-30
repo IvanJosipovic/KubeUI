@@ -2,10 +2,13 @@
 
 ## Current Behavior
 - Cluster settings are initialized from a selected cluster workspace.
+- The cluster title uses the shared title typography on the page background, without a boxed header.
 - This screen is the current destination when namespace list permission is missing.
 - Metrics service and Prometheus provider settings are rendered through C# Avalonia views.
 - Metrics settings changes persist through `ISettingsService` and update conditional Prometheus fields.
+- Auto metrics discovers in-cluster Prometheus Operator or OpenShift independently of saved Prometheus settings, then falls back to Metrics Server; explicit Prometheus selection retains those settings.
 - The active metrics backend is displayed separately from configured settings and updates from runtime notifications.
+- Azure Monitor discovery status and refresh action follow the subscription and workspace selectors, aligned with their controls; status text wraps within the settings column.
 
 ## Validation
 - Keep rendered metrics selectors and conditional Prometheus fields covered by Avalonia headless tests.

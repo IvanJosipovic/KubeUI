@@ -113,7 +113,8 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
         if (configuredType is MetricsServiceType.Prometheus or MetricsServiceType.Auto)
         {
             _logger.LogInformation("Cluster {Name} will attempt Prometheus metrics initialization.", cluster.Name);
-            var promReady = await TryStartPrometheusAsync(cluster, kube, settings).ConfigureAwait(false);
+            var discoverySettings = configuredType == MetricsServiceType.Auto ? new ClusterMetricsSettings() : settings;
+            var promReady = await TryStartPrometheusAsync(cluster, kube, discoverySettings, configuredType == MetricsServiceType.Auto).ConfigureAwait(false);
             if (promReady)
             {
                 return;
@@ -193,7 +194,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
             cancellationToken);
     }
 
-    private async Task<bool> TryStartPrometheusAsync(Cluster cluster, k8s.Kubernetes kube, ClusterMetricsSettings settings)
+    private async Task<bool> TryStartPrometheusAsync(Cluster cluster, k8s.Kubernetes kube, ClusterMetricsSettings settings, bool autoDiscoverOnly)
     {
         try
         {
@@ -201,7 +202,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
                 "Resolving Prometheus endpoint for cluster {Name}. Configured provider: {Provider}.",
                 cluster.Name,
                 settings.PrometheusProviderKind?.ToString() ?? "auto");
-            var resolved = await ResolvePrometheusEndpointAsync(kube, settings, _lifecycleCancellationTokenSource?.Token ?? CancellationToken.None).ConfigureAwait(false);
+            var resolved = await ResolvePrometheusEndpointAsync(kube, settings, autoDiscoverOnly, _lifecycleCancellationTokenSource?.Token ?? CancellationToken.None).ConfigureAwait(false);
             if (resolved.Endpoint == null || resolved.Provider == null)
             {
                 _logger.LogInformation("No Prometheus endpoint could be resolved for cluster {Name}.", cluster.Name);
@@ -284,6 +285,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
     private async Task<(ResolvedPrometheusEndpoint? Endpoint, IPrometheusProvider? Provider)> ResolvePrometheusEndpointAsync(
         k8s.Kubernetes kube,
         ClusterMetricsSettings settings,
+        bool autoDiscoverOnly,
         CancellationToken cancellationToken)
     {
         if (settings.PrometheusProviderKind != null)
@@ -302,6 +304,11 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
 
         foreach (var provider in GetProviderResolutionOrder())
         {
+            if (autoDiscoverOnly && provider.Kind is not (PrometheusProviderKind.Operator or PrometheusProviderKind.OpenShift))
+            {
+                continue;
+            }
+
             try
             {
                 _logger.LogDebug("Trying Prometheus provider {Provider} for cluster {Name}.", provider.Kind, _cluster?.Name);

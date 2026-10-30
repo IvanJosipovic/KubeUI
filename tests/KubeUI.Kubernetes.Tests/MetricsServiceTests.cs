@@ -219,6 +219,80 @@ public sealed class MetricsServiceTests
         service.ActiveMetricsBackend.ShouldBe(ActiveMetricsBackend.None);
     }
 
+    [Theory]
+    [InlineData(PrometheusProviderKind.AzureMonitor)]
+    [InlineData(PrometheusProviderKind.External)]
+    [InlineData(PrometheusProviderKind.Manual)]
+    [InlineData(PrometheusProviderKind.Operator)]
+    [InlineData(PrometheusProviderKind.OpenShift)]
+    public async Task InitializeAsync_auto_discovers_operator_without_using_saved_prometheus_settings(PrometheusProviderKind savedProvider)
+    {
+        using var api = new FakeKubernetesHttpApi();
+        api.Add(new V1Service
+        {
+            Metadata = new V1ObjectMeta { Name = "prometheus-operated", NamespaceProperty = "monitoring", Labels = new Dictionary<string, string> { ["operated-prometheus"] = "true" } },
+            Spec = new V1ServiceSpec { Ports = [new V1ServicePort { Port = 9090 }] },
+        });
+        var saved = new ClusterMetricsSettings
+        {
+            MetricsServiceType = MetricsServiceType.Auto,
+            PrometheusProviderKind = savedProvider,
+            PrometheusServiceName = "other",
+            PrometheusServiceNamespace = "other",
+            PrometheusServicePort = 1234,
+            PrometheusDirectUrl = "https://example.invalid",
+            PrometheusPathPrefix = "/custom",
+            PrometheusUseHttps = true,
+            PrometheusBearerToken = "token",
+            AzureMonitorWorkspaceId = "workspace",
+            AzureMonitorQueryEndpoint = "https://example.invalid",
+        };
+        var settings = new TestClusterSettingsStore(saved);
+        var queryClient = new FakePrometheusQueryClient();
+        using var service = CreateMetricsService(settings, queryClient);
+        using var client = CreateFakeClient(api);
+        await using var cluster = CreateCluster("auto-metrics-cluster", service, settings, client);
+
+        await service.InitializeAsync(cluster);
+
+        service.ActiveMetricsBackend.ShouldBe(ActiveMetricsBackend.Prometheus(PrometheusProviderKind.Operator));
+        queryClient.PreparedEndpoint!.Namespace.ShouldBe("monitoring");
+        queryClient.PreparedEndpoint.ServiceName.ShouldBe("prometheus-operated");
+        queryClient.PreparedEndpoint.ServicePort.ShouldBe(9090);
+        queryClient.PreparedEndpoint.DirectUrl.ShouldBeNull();
+        queryClient.PreparedEndpoint.UseHttps.ShouldBeFalse();
+        queryClient.PreparedEndpoint.BearerToken.ShouldBeNull();
+        saved.PrometheusProviderKind.ShouldBe(savedProvider);
+        saved.PrometheusDirectUrl.ShouldBe("https://example.invalid");
+    }
+
+    [Fact]
+    public async Task InitializeAsync_auto_discovers_openshift_without_using_saved_prometheus_settings()
+    {
+        using var api = new FakeKubernetesHttpApi();
+        api.Add(new V1Service
+        {
+            Metadata = new V1ObjectMeta { Name = "prometheus-k8s", NamespaceProperty = "openshift-monitoring" },
+            Spec = new V1ServiceSpec { Ports = [new V1ServicePort { Port = 9091 }] },
+        });
+        var settings = new TestClusterSettingsStore(new ClusterMetricsSettings
+        {
+            MetricsServiceType = MetricsServiceType.Auto,
+            PrometheusProviderKind = PrometheusProviderKind.External,
+            PrometheusDirectUrl = "https://example.invalid",
+        });
+        var queryClient = new FakePrometheusQueryClient();
+        using var service = CreateMetricsService(settings, queryClient);
+        using var client = CreateFakeClient(api);
+        await using var cluster = CreateCluster("auto-openshift-cluster", service, settings, client);
+
+        await service.InitializeAsync(cluster);
+
+        service.ActiveMetricsBackend.ShouldBe(ActiveMetricsBackend.Prometheus(PrometheusProviderKind.OpenShift));
+        queryClient.PreparedEndpoint!.ServiceName.ShouldBe("prometheus-k8s");
+        queryClient.PreparedEndpoint.DirectUrl.ShouldBeNull();
+    }
+
     [Fact]
     public async Task InitializeAsync_auto_falls_back_to_available_metrics_server_when_prometheus_is_unavailable()
     {
@@ -226,6 +300,10 @@ public sealed class MetricsServiceTests
         var settings = new TestClusterSettingsStore(new ClusterMetricsSettings
         {
             MetricsServiceType = MetricsServiceType.Auto,
+            PrometheusProviderKind = PrometheusProviderKind.AzureMonitor,
+            AzureMonitorWorkspaceId = "workspace",
+            AzureMonitorQueryEndpoint = "https://example.invalid",
+            PrometheusDirectUrl = "https://example.invalid",
         });
         using var service = CreateMetricsService(settings, new FakePrometheusQueryClient());
         using var client = CreateFakeClient(api);

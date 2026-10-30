@@ -373,6 +373,88 @@ public sealed class MetricsControlTests
     }
 
     [AvaloniaFact]
+    public async Task switching_from_failed_cpu_to_successful_memory_clears_failure_status()
+    {
+        var timestamp = DateTimeOffset.UtcNow.AddMinutes(-1);
+        var queryClient = new FakePrometheusQueryClient
+        {
+            ResponseFactory = query => query.Contains("container_cpu_usage_seconds_total", StringComparison.Ordinal)
+                ? new PrometheusClientQueryRangeResponse { Status = "error" }
+                : query.Contains("container_memory_working_set_bytes", StringComparison.Ordinal)
+                    ? CreateSuccessResponse(timestamp, 1.25, 2.5)
+                    : CreateEmptyResponse(),
+        };
+        await using var fixture = await MetricsControlFixture.CreateAsync(initializePrometheus: true, queryClient);
+        var control = fixture.CreateControl(CreatePod());
+        using var window = Application.Current.CreateTestWindow(content: control);
+        window.Show();
+        fixture.Initialize(control);
+        await TestWait.UntilAsync(() => control.StatusText == AppResources.MetricsControl_LoadFailed,
+            15000, TestContext.Current.CancellationToken, beforePoll: () => Dispatcher.UIThread.RunJobs());
+        var memory = control.GetVisualDescendants().OfType<ToggleButton>()
+            .Single(button => Equals(ToolTip.GetTip(button), "Memory"));
+        memory.Command!.Execute(null);
+        await TestWait.UntilAsync(() => control.SelectedPanel?.Series.Count > 0,
+            15000, TestContext.Current.CancellationToken, beforePoll: () => Dispatcher.UIThread.RunJobs());
+        control.ShowStatus.ShouldBeFalse();
+        control.StatusText.ShouldBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task selecting_cached_memory_clears_cpu_failure_even_while_cpu_refresh_is_pending()
+    {
+        var blockCpu = false;
+        var cpuStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseCpu = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var timestamp = DateTimeOffset.UtcNow.AddMinutes(-1);
+        var queryClient = new FakePrometheusQueryClient
+        {
+            AsyncResponseFactory = async (query, cancellationToken) =>
+            {
+                if (query.Contains("container_cpu_usage_seconds_total", StringComparison.Ordinal))
+                {
+                    if (blockCpu)
+                    {
+                        cpuStarted.TrySetResult();
+                        await releaseCpu.Task.WaitAsync(cancellationToken);
+                    }
+                    return new PrometheusClientQueryRangeResponse { Status = "error" };
+                }
+                return query.Contains("container_memory_working_set_bytes", StringComparison.Ordinal)
+                    ? CreateSuccessResponse(timestamp, 1.25, 2.5)
+                    : CreateEmptyResponse();
+            },
+        };
+        await using var fixture = await MetricsControlFixture.CreateAsync(initializePrometheus: true, queryClient);
+        var control = fixture.CreateControl(CreatePod());
+        using var window = Application.Current.CreateTestWindow(content: control);
+        window.Show();
+        fixture.Initialize(control);
+        await TestWait.UntilAsync(() => control.StatusText == AppResources.MetricsControl_LoadFailed,
+            15000, TestContext.Current.CancellationToken, beforePoll: () => Dispatcher.UIThread.RunJobs());
+        var buttons = control.GetVisualDescendants().OfType<ToggleButton>().Where(button => button.Command != null).ToArray();
+        var cpu = buttons.Single(button => Equals(ToolTip.GetTip(button), "CPU"));
+        var memory = buttons.Single(button => Equals(ToolTip.GetTip(button), "Memory"));
+        memory.Command!.Execute(null);
+        await TestWait.UntilAsync(() => control.SelectedPanel?.Series.Count > 0,
+            15000, TestContext.Current.CancellationToken, beforePoll: () => Dispatcher.UIThread.RunJobs());
+        blockCpu = true;
+        cpu.Command!.Execute(null);
+        await cpuStarted.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        memory.Command!.Execute(null);
+        try
+        {
+            control.SelectedPanel!.Series.ShouldNotBeEmpty();
+            control.ShowStatus.ShouldBeFalse();
+            control.StatusText.ShouldBeNull();
+        }
+        finally
+        {
+            releaseCpu.TrySetResult();
+        }
+    }
+
+    [AvaloniaFact]
     public async Task metrics_control_renders_prometheus_series_and_preserves_sample_dates()
     {
         var firstTimestamp = DateTimeOffset.Parse("2026-01-02T03:04:05+00:00");
@@ -902,6 +984,8 @@ public sealed class MetricsControlTests
 
         public Func<string, PrometheusClientQueryRangeResponse?>? ResponseFactory { get; set; }
 
+        public Func<string, CancellationToken, Task<PrometheusClientQueryRangeResponse?>>? AsyncResponseFactory { get; set; }
+
         public Task PrepareAsync(Cluster cluster, ResolvedPrometheusEndpoint endpoint, CancellationToken cancellationToken = default)
             => Task.CompletedTask;
 
@@ -926,7 +1010,9 @@ public sealed class MetricsControlTests
                 throw ExceptionToThrow;
             }
 
-            return ResponseFactory?.Invoke(query);
+            return AsyncResponseFactory is null
+                ? ResponseFactory?.Invoke(query)
+                : await AsyncResponseFactory(query, cancellationToken);
         }
 
         public Task ResetAsync()

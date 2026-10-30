@@ -38,6 +38,26 @@ public sealed class ClusterSettingsViewModelTests
     }
 
     [AvaloniaFact]
+    public async Task cluster_settings_title_renders_without_a_background_box()
+    {
+        var services = Application.Current.GetTestServices();
+        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        using var viewModel = services.GetRequiredService<ClusterSettingsViewModel>();
+        viewModel.Initialize(workspace);
+
+        var view = new ClusterSettingsView { ViewModel = viewModel };
+        using var window = Application.Current.CreateTestWindow(content: view);
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
+
+        var title = view.GetVisualDescendants().OfType<TextBlock>()
+            .Single(text => text.Text == string.Format(AppResources.ClusterSettingsView_TitleFormat!, workspace.Runtime.Name));
+        title.Parent.ShouldBeOfType<StackPanel>();
+        title.FontWeight.ShouldBe(global::Avalonia.Media.FontWeight.Normal);
+        title.Margin.ShouldBe(new Thickness(0, 0, 0, 12));
+    }
+
+    [AvaloniaFact]
     public async Task cluster_settings_view_renders_metrics_selectors()
     {
         var services = Application.Current.GetTestServices();
@@ -115,6 +135,37 @@ public sealed class ClusterSettingsViewModelTests
         view.GetVisualDescendants()
             .OfType<Button>()
             .ShouldContain(button => Equals(button.Content, AppResources.ClusterSettingsView_AzureMonitorRefresh));
+    }
+
+    [AvaloniaFact]
+    public async Task azure_monitor_status_and_refresh_align_with_settings_controls()
+    {
+        var services = Application.Current.GetTestServices();
+        var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+        using var viewModel = services.GetRequiredService<ClusterSettingsViewModel>();
+        viewModel.Initialize(workspace);
+        viewModel.ClusterSettings.MetricsSettings.MetricsServiceType = MetricsServiceType.Prometheus;
+        viewModel.ClusterSettings.MetricsSettings.PrometheusProviderKind = PrometheusProviderKind.AzureMonitor;
+        viewModel.AzureMonitorStatusText = "No workspaces found.";
+
+        var view = new ClusterSettingsView { ViewModel = viewModel };
+        using var window = Application.Current.CreateTestWindow(content: view);
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
+
+        var status = view.GetVisualDescendants().OfType<TextBlock>()
+            .Single(text => text.Text == viewModel.AzureMonitorStatusText);
+        var refresh = view.GetVisualDescendants().OfType<Button>()
+            .Single(button => Equals(button.Content, AppResources.ClusterSettingsView_AzureMonitorRefresh));
+        status.Parent.ShouldBeOfType<Grid>();
+        refresh.Parent.ShouldBeOfType<Grid>();
+        Grid.GetColumn(status).ShouldBe(1);
+        Grid.GetColumn(refresh).ShouldBe(1);
+        status.TextWrapping.ShouldBe(global::Avalonia.Media.TextWrapping.Wrap);
+        refresh.IsEnabled.ShouldBeTrue();
+        viewModel.IsAzureMonitorBusy = true;
+        await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
+        refresh.IsEnabled.ShouldBeFalse();
     }
 
     [AvaloniaFact]

@@ -90,6 +90,11 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             OnPropertyChanged(nameof(SelectedTab));
             SyncTabSelection();
             SelectedPanel = _selectedTab?.Panels.FirstOrDefault();
+            if (SelectedPanel?.Series.Count > 0)
+            {
+                ShowStatus = false;
+                StatusText = null;
+            }
             if (!_suppressSelectedTabRefresh)
             {
                 QueueRefresh();
@@ -693,6 +698,10 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             tab.Icon = tabDefinition.Icon;
             tab.MergePanels(loadedSnapshot?.Panels ?? [], hadExistingContent && snapshot.HadRequestFailures);
             SyncSelectedPanel();
+            if (!ReferenceEquals(tab, SelectedTab))
+            {
+                return;
+            }
 
             ShowTabs = Tabs.Count > 0;
             ShowTimeRangeSelector = ShowTabs;
@@ -868,6 +877,10 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
 
             tab.MergePanels(snapshot.Snapshot?.Panels ?? [], hadExistingContent && snapshot.HadRequestFailures);
             SyncSelectedPanel();
+            if (!ReferenceEquals(tab, SelectedTab))
+            {
+                return;
+            }
             ShowTabs = Tabs.Count > 0;
             ShowTimeRangeSelector = ShowTabs;
             ShowStatus = false;

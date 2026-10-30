@@ -45,20 +45,13 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
                         CreateMetricsSettings(vm)));
     }
 
-    private static Border CreateClusterHeading(ClusterSettingsViewModel vm)
+    private static TextBlock CreateClusterHeading(ClusterSettingsViewModel vm)
     {
-        return new Border()
-            .MinHeight(28)
-            .Padding(8, 0, 8, 0)
-            .Margin(0, 6, 0, 6)
-            .Background(new DynamicResourceExtension("SystemAltHighColor"))
-            .Child(
-                new TextBlock()
-                    .FontSize(new DynamicResourceExtension(Typography.TitleFontSizeResourceKey))
-                    .Text(vm, x => x.Cluster.Runtime.Name, BindingMode.OneWay, Converters.Converters.StringFormat(Assets.Resources.ClusterSettingsView_TitleFormat))
-                    .VerticalAlignment(VerticalAlignment.Center)
-                    .Foreground(new DynamicResourceExtension("SystemBaseHighBrush"))
-                    .FontWeight(FontWeight.Bold));
+        return new TextBlock()
+            .Margin(0, 0, 0, 12)
+            .FontSize(new DynamicResourceExtension(Typography.TitleFontSizeResourceKey))
+            .Text(vm, x => x.Cluster.Runtime.Name, BindingMode.OneWay, Converters.Converters.StringFormat(Assets.Resources.ClusterSettingsView_TitleFormat))
+            .TextWrapping(TextWrapping.Wrap);
     }
 
     private static Grid CreateNamespacesRow(ClusterSettingsViewModel vm)
@@ -229,12 +222,6 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
             .Spacing(6)
             .IsVisible(vm, x => x.ShowAzureMonitorSettings)
             .Children(
-                new TextBlock()
-                    .Text(vm, x => x.AzureMonitorStatusText),
-                new Button()
-                    .Content(Assets.Resources.ClusterSettingsView_AzureMonitorRefresh)
-                    .Command(vm, x => x.RefreshAzureMonitorCommand)
-                    .IsEnabled(vm, x => !x.IsAzureMonitorBusy),
                 new Grid()
                     .Cols("*,2*")
                     .Children(
@@ -257,7 +244,23 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
                             .ItemsSource(vm, x => x.AzureMonitorWorkspaces)
                             .SelectedItem(vm, x => x.SelectedAzureMonitorWorkspace, BindingMode.TwoWay)
                             .ItemTemplate(new FuncDataTemplate<AzureMonitorWorkspaceInfo>((workspace, _) =>
-                                new TextBlock().Text(workspace is null ? string.Empty : $"{workspace.Name} ({workspace.Location})")))));
+                                new TextBlock().Text(workspace is null ? string.Empty : $"{workspace.Name} ({workspace.Location})")))),
+                new Grid()
+                    .Cols("*,2*")
+                    .Children(
+                        new TextBlock()
+                            .Col(1)
+                            .TextWrapping(TextWrapping.Wrap)
+                            .Text(vm, x => x.AzureMonitorStatusText)),
+                new Grid()
+                    .Cols("*,2*")
+                    .Children(
+                        new Button()
+                            .Col(1)
+                            .HorizontalAlignment(HorizontalAlignment.Left)
+                            .Content(Assets.Resources.ClusterSettingsView_AzureMonitorRefresh)
+                            .Command(vm, x => x.RefreshAzureMonitorCommand)
+                            .IsEnabled(vm, x => !x.IsAzureMonitorBusy)));
     }
 
     private static Grid CreatePrometheusServiceNameRow(ClusterSettingsViewModel vm)

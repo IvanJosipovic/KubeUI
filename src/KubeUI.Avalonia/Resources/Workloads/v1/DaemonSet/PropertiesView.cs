@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Metrics.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties;
@@ -7,6 +8,7 @@ namespace KubeUI.Avalonia.Resources.Workloads.v1.DaemonSet;
 
 public sealed class PropertiesView : ViewBase<ResourcePropertiesViewModel<V1DaemonSet>>
 {
+    [RequiresUnreferencedCode()]
     protected override object Build(ResourcePropertiesViewModel<V1DaemonSet> vm)
     {
         ArgumentNullException.ThrowIfNull(vm);
