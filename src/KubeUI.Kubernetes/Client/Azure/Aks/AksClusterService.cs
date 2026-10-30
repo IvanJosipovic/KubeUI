@@ -1,4 +1,3 @@
-using KubeUI.Kubernetes.Serialization;
 using System.Text;
 using System.Text.Json;
 using Azure.Core;
@@ -7,6 +6,7 @@ using Azure.ResourceManager;
 using Azure.ResourceManager.ContainerService;
 using Azure.ResourceManager.ContainerService.Models;
 using k8s.KubeConfigModels;
+using KubeUI.Kubernetes.Serialization;
 
 namespace KubeUI.Kubernetes;
 

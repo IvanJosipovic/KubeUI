@@ -17,6 +17,9 @@ public sealed partial class ResourcePropertiesViewModel<T> : ViewModelBase, IVie
     public GroupApiVersionKind Kind { get; private set; }
 
     private T? _object;
+    private Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? _changeHandler;
+    private object? _subscription;
+    private long _selectionGeneration;
 
     public T? Object
     {
@@ -45,11 +48,34 @@ public sealed partial class ResourcePropertiesViewModel<T> : ViewModelBase, IVie
 
     public void Initialize(ClusterWorkspace cluster, T resource)
     {
-        Cluster = cluster;
-        Object = resource;
+        ShowResource(cluster, resource);
+    }
+
+    /// <summary>
+    /// Shows <paramref name="resource"/> in this view, moving the live-update subscription when the cluster changes.
+    /// </summary>
+    /// <param name="cluster">The cluster workspace that owns the resource.</param>
+    /// <param name="resource">The resource to show.</param>
+    public void ShowResource(ClusterWorkspace cluster, T resource)
+    {
+        ArgumentNullException.ThrowIfNull(cluster);
+        ArgumentNullException.ThrowIfNull(resource);
+
+        Interlocked.Increment(ref _selectionGeneration);
+        if (!ReferenceEquals(Cluster, cluster))
+        {
+            if (Cluster is not null && _changeHandler is not null)
+                Cluster.Runtime.OnChange -= _changeHandler;
+            Cluster = cluster;
+            var subscription = new object();
+            _subscription = subscription;
+            _changeHandler = (eventType, kind, changed) => OnClusterChange(cluster, changed, subscription);
+            cluster.Runtime.OnChange += _changeHandler;
+        }
+
         Kind = resource.GetResourceKind(cluster.Runtime.ModelCatalog);
-        ResourceConfig = Cluster.GetResourceConfig<T>(Kind);
-        Cluster.Runtime.OnChange += Cluster_OnChange;
+        ResourceConfig = cluster.GetResourceConfig<T>(Kind);
+        Object = resource;
     }
 
     partial void OnResourceConfigChanged(ResourceConfigBase<T> value)
@@ -65,20 +91,46 @@ public sealed partial class ResourcePropertiesViewModel<T> : ViewModelBase, IVie
         OnPropertyChanged(nameof(Actions));
     }
 
-    public void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)
+    internal void OnClusterChange(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource)
+        => OnClusterChange(cluster, resource, _subscription);
+
+    private void OnClusterChange(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> resource, object? subscription)
     {
-        if (Object != null
+        var generation = Interlocked.Read(ref _selectionGeneration);
+        if (!ReferenceEquals(_subscription, subscription) || !ReferenceEquals(Cluster, cluster) || !IsShown(resource))
+        {
+            return;
+        }
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            // The view may have been retargeted (or moved to another cluster) before this runs.
+            if (generation == Interlocked.Read(ref _selectionGeneration)
+                && ReferenceEquals(_subscription, subscription)
+                && ReferenceEquals(Cluster, cluster) && IsShown(resource))
+            {
+                Object = (T)resource;
+            }
+        });
+    }
+
+    private bool IsShown(IKubernetesObject<V1ObjectMeta> resource)
+    {
+        return Object != null
             && Object.Kind == resource.Kind
             && Object.ApiVersion == resource.ApiVersion
             && Object.Metadata.Name == resource.Metadata.Name
-            && Object.Metadata.NamespaceProperty == resource.Metadata.NamespaceProperty)
-        {
-            Dispatcher.UIThread.Post(() => Object = (T)resource);
-        }
+            && Object.Metadata.NamespaceProperty == resource.Metadata.NamespaceProperty
+            && Object.Metadata.Uid == resource.Metadata.Uid;
     }
 
     public void Dispose()
     {
-        Cluster?.Runtime.OnChange -= Cluster_OnChange;
+        if (Cluster is not null && _changeHandler is not null)
+            Cluster.Runtime.OnChange -= _changeHandler;
+        _changeHandler = null;
+        _subscription = null;
+        Interlocked.Increment(ref _selectionGeneration);
+        Cluster = null;
     }
 }

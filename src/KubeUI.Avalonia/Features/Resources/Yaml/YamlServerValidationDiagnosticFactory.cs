@@ -1,9 +1,9 @@
 using System.Text.Json;
-using KubeUI.Kubernetes.Serialization;
 using k8s;
 using k8s.Autorest;
 using k8s.Models;
 using KubeUI.Avalonia.Infrastructure;
+using KubeUI.Kubernetes.Serialization;
 using YamlDotNet.RepresentationModel;
 
 namespace KubeUI.Avalonia.Features.Resources.Yaml;

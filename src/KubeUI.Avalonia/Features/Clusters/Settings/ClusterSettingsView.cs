@@ -3,9 +3,9 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
-using KubeUI.Kubernetes;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Styles;
+using KubeUI.Kubernetes;
 
 
 namespace KubeUI.Avalonia.Features.Clusters.Settings;

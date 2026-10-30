@@ -3096,12 +3096,6 @@
   <data name="SettingsView_AutoDiscovery_ToolTip" xml:space="preserve">
     <value>Automatically discover kubeconfig files in the default kubeconfig directory.</value>
   </data>
-  <data name="NavigationView_ContextMenu_Expand" xml:space="preserve">
-    <value>Expand</value>
-  </data>
-  <data name="NavigationView_ContextMenu_Collapse" xml:space="preserve">
-    <value>Collapse</value>
-  </data>
   <data name="SettingsView_McpClients_Description" xml:space="preserve">
     <value>Create a separate bearer token for each trusted host app. KubeUI stores only token verifiers. ConfigMaps, custom resources, and pod logs may contain credentials; Secret reads still require approval.</value>
     <comment/>

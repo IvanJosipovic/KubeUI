@@ -1,4 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -26,6 +25,7 @@ using KubeUI.Avalonia.Infrastructure.Platform;
 using KubeUI.Avalonia.Shell.Documents.About;
 using KubeUI.Avalonia.Shell.Main;
 using KubeUI.Kubernetes.Serialization;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using KubernetesJson = k8s.KubernetesJson;
 

@@ -16,7 +16,7 @@ public sealed class ResourcePropertiesViewTests
     [AvaloniaFact]
     public async Task metrics_resource_views_refresh_values_and_keep_metrics_instances()
     {
-        await AssertMetricsViewRefreshesInPlace(
+        await AssertMetricsViewRefreshesInPlaceAsync(
             new Avalonia.Resources.Core.v1.Namespace.PropertiesView
             {
                 DataContext = CreatePropertiesViewModel(new V1Namespace
@@ -31,7 +31,7 @@ public sealed class ResourcePropertiesViewTests
                 Status = new V1NamespaceStatus { Phase = "Active" },
             },
             (AppResources.Shared_Phase!, "Active"));
-        await AssertMetricsViewRefreshesInPlace(
+        await AssertMetricsViewRefreshesInPlaceAsync(
             new Avalonia.Resources.Core.v1.Node.PropertiesView
             {
                 DataContext = CreatePropertiesViewModel(new V1Node
@@ -46,7 +46,7 @@ public sealed class ResourcePropertiesViewTests
                 Status = new V1NodeStatus { NodeInfo = new V1NodeSystemInfo { OperatingSystem = "new-os" } },
             },
             (AppResources.NodePropertiesView_Operating_System!, "new-os"));
-        await AssertMetricsViewRefreshesInPlace(
+        await AssertMetricsViewRefreshesInPlaceAsync(
             new Avalonia.Resources.Storage.v1.PersistentVolumeClaim.PropertiesView
             {
                 DataContext = CreatePropertiesViewModel(new V1PersistentVolumeClaim
@@ -61,7 +61,7 @@ public sealed class ResourcePropertiesViewTests
                 Status = new V1PersistentVolumeClaimStatus { Phase = "Bound" },
             },
             (AppResources.Shared_Phase!, "Bound"));
-        await AssertMetricsViewRefreshesInPlace(
+        await AssertMetricsViewRefreshesInPlaceAsync(
             new Avalonia.Resources.Network.v1.Ingress.PropertiesView
             {
                 DataContext = CreatePropertiesViewModel(new V1Ingress
@@ -76,7 +76,7 @@ public sealed class ResourcePropertiesViewTests
                 Spec = new V1IngressSpec { IngressClassName = "new-class" },
             },
             (AppResources.IngressPropertiesView_Ingress_Class!, "new-class"));
-        await AssertMetricsViewRefreshesInPlace(
+        await AssertMetricsViewRefreshesInPlaceAsync(
             new Avalonia.Resources.Workloads.v1.Job.PropertiesView
             {
                 DataContext = CreatePropertiesViewModel(new V1Job
@@ -95,7 +95,7 @@ public sealed class ResourcePropertiesViewTests
                 },
             },
             (AppResources.JobPropertiesView_Backoff_Limit!, 3));
-        await AssertMetricsViewRefreshesInPlace(
+        await AssertMetricsViewRefreshesInPlaceAsync(
             new Avalonia.Resources.Workloads.v1.ReplicaSet.PropertiesView
             {
                 DataContext = CreatePropertiesViewModel(new V1ReplicaSet
@@ -110,7 +110,7 @@ public sealed class ResourcePropertiesViewTests
                 Spec = new V1ReplicaSetSpec { Replicas = 4 },
             },
             (AppResources.Shared_Desired_Replicas!, 4));
-        await AssertMetricsViewRefreshesInPlace(
+        await AssertMetricsViewRefreshesInPlaceAsync(
             new Avalonia.Resources.Workloads.v1.Deployment.PropertiesView
             {
                 DataContext = CreatePropertiesViewModel(new V1Deployment
@@ -128,7 +128,7 @@ public sealed class ResourcePropertiesViewTests
                 },
             },
             (AppResources.Shared_Replicas!, 4));
-        await AssertMetricsViewRefreshesInPlace(
+        await AssertMetricsViewRefreshesInPlaceAsync(
             new Avalonia.Resources.Workloads.v1.DaemonSet.PropertiesView
             {
                 DataContext = CreatePropertiesViewModel(new V1DaemonSet
@@ -143,7 +143,7 @@ public sealed class ResourcePropertiesViewTests
                 Status = new V1DaemonSetStatus { NumberReady = 3 },
             },
             (AppResources.DaemonSetPropertiesView_Ready!, 3));
-        await AssertMetricsViewRefreshesInPlace(
+        await AssertMetricsViewRefreshesInPlaceAsync(
             new Avalonia.Resources.Workloads.v1.StatefulSet.PropertiesView
             {
                 DataContext = CreatePropertiesViewModel(new V1StatefulSet
@@ -158,6 +158,25 @@ public sealed class ResourcePropertiesViewTests
                 Spec = new V1StatefulSetSpec { ServiceName = "new-service" },
             },
             (AppResources.StatefulSetPropertiesView_Service_Name!, "new-service"));
+    }
+
+    [AvaloniaFact]
+    public async Task reattached_view_observes_later_resource_changes()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        using var viewModel = Application.Current.GetRequiredTestService<ResourcePropertiesViewModel<V1Pod>>();
+        viewModel.Initialize(workspace, new V1Pod { Metadata = new V1ObjectMeta { Name = "first" } });
+        var view = new ResourcePropertiesView<V1Pod> { DataContext = viewModel };
+        using var window = Application.Current.CreateTestWindow(content: view);
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync();
+        window.Content = null;
+        window.Content = view;
+        await TestApplicationExtensions.WaitForUiAsync();
+        viewModel.ShowResource(workspace, new V1Pod { Metadata = new V1ObjectMeta { Name = "second" } });
+        await TestApplicationExtensions.WaitForUiAsync();
+        view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>()
+            .ShouldContain(item => item.Key == AppResources.ResourcePropertiesView_Name && Equals(item.Value, "second"));
     }
 
     [AvaloniaFact]
@@ -666,7 +685,7 @@ public sealed class ResourcePropertiesViewTests
         await TestApplicationExtensions.WaitForUiAsync();
     }
 
-    private static async Task AssertMetricsViewRefreshesInPlace<TResource, TPropertiesView>(
+    private static async Task AssertMetricsViewRefreshesInPlaceAsync<TResource, TPropertiesView>(
         TPropertiesView view,
         TResource updatedResource,
         params (string Key, object? Value)[] expectedValues)

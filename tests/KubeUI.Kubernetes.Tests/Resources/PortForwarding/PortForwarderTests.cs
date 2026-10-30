@@ -328,6 +328,11 @@ public sealed class PortForwarderTests
                 },
             ],
         });
+        await ClusterRuntimeAssertions.WaitForResourceAsync<V1Service>(
+            cluster,
+            "default",
+            "prometheus",
+            cancellationToken: TestContext.Current.CancellationToken);
         await ClusterRuntimeAssertions.WaitForResourceAsync<V1EndpointSlice>(
             cluster,
             "default",
@@ -397,6 +402,11 @@ public sealed class PortForwarderTests
                 },
             ],
         });
+        await ClusterRuntimeAssertions.WaitForResourceAsync<V1Service>(
+            cluster,
+            "default",
+            "prometheus",
+            cancellationToken: TestContext.Current.CancellationToken);
         await ClusterRuntimeAssertions.WaitForResourceAsync<V1EndpointSlice>(
             cluster,
             "default",

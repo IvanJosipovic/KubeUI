@@ -1,4 +1,3 @@
-using KubeUI.Kubernetes.Serialization;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Dock.Model.Core;
@@ -10,6 +9,7 @@ using KubeUI.Avalonia.Features.Helm;
 using KubeUI.Avalonia.Features.Helm.Releases;
 using KubeUI.Avalonia.Features.Helm.Repositories;
 using KubeUI.Kubernetes;
+using KubeUI.Kubernetes.Serialization;
 using Moq;
 using Shouldly;
 

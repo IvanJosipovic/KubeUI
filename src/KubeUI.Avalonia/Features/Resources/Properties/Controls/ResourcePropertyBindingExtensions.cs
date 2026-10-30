@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Data.Converters;
 using k8s;
 using k8s.Models;
@@ -6,6 +7,7 @@ namespace KubeUI.Avalonia.Features.Resources.Properties.Controls;
 
 internal static class ResourcePropertyBindingExtensions
 {
+    [RequiresUnreferencedCode("Calls Avalonia.Data.Binding.Binding(String)")]
     internal static PropertyItem BindValue<TResource>(
         this PropertyItem item,
         ResourcePropertiesViewModel<TResource> viewModel,
@@ -27,6 +29,7 @@ internal static class ResourcePropertyBindingExtensions
         return item;
     }
 
+    [RequiresUnreferencedCode("Calls Avalonia.Data.Binding.Binding(String)")]
     internal static CollectionItem BindValue<TResource>(
         this CollectionItem item,
         ResourcePropertiesViewModel<TResource> viewModel,

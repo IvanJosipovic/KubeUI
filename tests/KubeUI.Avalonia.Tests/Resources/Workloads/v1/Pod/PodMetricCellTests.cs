@@ -1647,8 +1647,8 @@ public sealed class PodMetricCellTests
                 settings,
                 services,
                 new ImmediateThreadDispatcher(),
-                services.GetRequiredService<KubeUI.Kubernetes.Serialization.IKubernetesJsonSerializer>(),
-                services.GetRequiredService<KubeUI.Kubernetes.Serialization.IKubernetesYamlSerializer>(),
+                services.GetRequiredService<Kubernetes.Serialization.IKubernetesJsonSerializer>(),
+                services.GetRequiredService<Kubernetes.Serialization.IKubernetesYamlSerializer>(),
                 metricsService)
             {
                 Name = "metrics-cell-cluster",

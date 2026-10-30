@@ -1,4 +1,3 @@
-using KubeUI.Kubernetes.Serialization;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
@@ -15,6 +14,7 @@ using KubeUI.Avalonia.Features.Helm.Releases;
 using KubeUI.Avalonia.Features.Helm.Repositories;
 using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
 using KubeUI.Kubernetes;
+using KubeUI.Kubernetes.Serialization;
 using Moq;
 using Shouldly;
 

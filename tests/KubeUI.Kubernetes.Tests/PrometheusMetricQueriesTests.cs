@@ -135,8 +135,8 @@ public sealed class PrometheusMetricQueriesTests
         new NoopClusterSettingsStore(),
         new ServiceCollection().BuildServiceProvider(),
         new ImmediateThreadDispatcher(),
-        new KubeUI.Kubernetes.Serialization.KubernetesJsonSerializer(new System.Text.Json.JsonSerializerOptions(KubeUI.Kubernetes.Serialization.KubernetesJsonStaticContext.Default.Options) { TypeInfoResolver = KubeUI.Kubernetes.Serialization.KubernetesJsonStaticContext.Default }),
-        Moq.Mock.Of<KubeUI.Kubernetes.Serialization.IKubernetesYamlSerializer>(),
+        new Serialization.KubernetesJsonSerializer(new System.Text.Json.JsonSerializerOptions(Serialization.KubernetesJsonStaticContext.Default.Options) { TypeInfoResolver = Serialization.KubernetesJsonStaticContext.Default }),
+        Moq.Mock.Of<Serialization.IKubernetesYamlSerializer>(),
         new NoopMetricsService())
     {
         Name = "prom-cluster",

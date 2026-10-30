@@ -1,8 +1,8 @@
 using k8s;
 using k8s.Models;
+using KubeUI.Kubernetes.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
-using KubeUI.Kubernetes.Serialization;
 
 namespace KubeUI.Kubernetes.Tests.Configuration;
 
