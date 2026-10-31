@@ -407,6 +407,8 @@ packed
 .testagent
 .netcoredbg-mcp.pid
 
+# Local debugger MCP configuration
+.debugmcp.json
 
 # APM dependencies
 apm_modules/

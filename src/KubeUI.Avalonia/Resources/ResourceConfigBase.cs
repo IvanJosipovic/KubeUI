@@ -12,6 +12,7 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Clusters.Workspace;
 using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Avalonia.Features.Resources.Editor;
 using KubeUI.Avalonia.Features.Resources.List.Controls;
 using KubeUI.Avalonia.Features.Resources.Properties;
 using KubeUI.Avalonia.Features.Resources.Visualization;
@@ -312,12 +313,36 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         },
         new()
         {
+            Title = Assets.Resources.ResourceConfigBase_MenuItem_Edit,
+            Command = EditResourceCommand,
+            CommandParameter = selectedItems?.ToList(),
+            FluentIcon = Icon.Edit,
+        },
+        new()
+        {
             Title = Assets.Resources.ResourceConfigBase_MenuItem_Delete,
             Command = DeleteCommand,
             CommandParameter = selectedItems?.ToList(),
             FluentIcon = Icon.Delete,
         }
     ];
+
+    [RelayCommand(CanExecute = nameof(CanEditResource))]
+    private async Task EditResource(IList items)
+    {
+        if (items.Count != 1 || items[0] is not T resource)
+            return;
+
+        await ServiceProvider.GetRequiredService<IResourceEditorLauncher>().Open(Cluster, resource);
+    }
+
+    private bool CanEditResource(IList? items)
+    {
+        if (items is null || items.Count != 1 || items[0] is not T resource)
+            return false;
+
+        return Cluster.Runtime.Permissions.CanI(Kind, Verb.Update, resource.Namespace());
+    }
 
     public IList<(Verb verb, string? subResource)> DefaultPermissions() => [
         (Verb.Create, null),
@@ -393,8 +418,16 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         vm.Initialize(Cluster, resource);
         vm.EditMode = true;
 
-        _factory.AddToBottom(vm);
+        _factory.AddToDocuments(vm);
     }
+
+    [RelayCommand(CanExecute = nameof(CanNewResource))]
+    public async Task NewResourceUiEditor()
+    {
+        await ServiceProvider.GetRequiredService<IResourceEditorLauncher>().OpenForCreate(Cluster, CreateNewResource());
+    }
+
+    IRelayCommand IResourceConfig.NewResourceUiEditorCommand => NewResourceUiEditorCommand;
 
     internal virtual T CreateNewResource()
     {

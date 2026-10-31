@@ -783,6 +783,43 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             AddOrUpdateResource,
             "Error importing Yaml").ConfigureAwait(false);
 
+    /// <summary>
+    /// Creates or replaces a single resource and returns the object the server accepted.
+    /// </summary>
+    /// <typeparam name="T">The resource type.</typeparam>
+    /// <param name="item">The resource to apply.</param>
+    /// <returns>The resource as the server stored it, including the assigned UID and resource version.</returns>
+    public async Task<T> ApplyResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        ArgumentNullException.ThrowIfNull(item);
+
+        var kind = item.GetResourceKind(ModelCatalog);
+        using var client = Client.GetGenericClient(kind);
+        var isNamespaced = IsResourceNamespaced(kind);
+
+        if (isNamespaced && string.IsNullOrEmpty(item.Namespace()))
+        {
+            item.Metadata.NamespaceProperty = "default";
+        }
+
+        T result;
+        if (string.IsNullOrEmpty(item.Namespace()))
+        {
+            result = item.Metadata.Uid is null
+                ? await client.CreateAsync(item).ConfigureAwait(false)
+                : await client.ReplaceAsync(item, item.Name()).ConfigureAwait(false);
+        }
+        else
+        {
+            result = item.Metadata.Uid is null
+                ? await client.CreateNamespacedAsync(item, item.Namespace()).ConfigureAwait(false)
+                : await client.ReplaceNamespacedAsync(item, item.Namespace(), item.Name()).ConfigureAwait(false);
+        }
+
+        item.Metadata = result.Metadata;
+        return item;
+    }
+
     private async Task ProcessYamlResourcesAsync(
         Stream stream,
         Func<GenericKubernetesObject, Task> operation,
