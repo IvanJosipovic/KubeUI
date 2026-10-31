@@ -1,11 +1,11 @@
 #nullable enable
 
 using BenchmarkDotNet.Attributes;
-using Microsoft.Extensions.DependencyInjection;
-using KubeUI.Kubernetes.Serialization;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Kubernetes;
+using KubeUI.Kubernetes.Serialization;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Benchmarks;
 

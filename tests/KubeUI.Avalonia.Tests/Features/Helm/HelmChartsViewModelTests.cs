@@ -1,4 +1,3 @@
-using KubeUI.Kubernetes.Serialization;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Layout;
@@ -13,6 +12,7 @@ using KubeUI.Avalonia.Features.Helm.Releases;
 using KubeUI.Avalonia.Features.Helm.Repositories;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Kubernetes;
+using KubeUI.Kubernetes.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Shouldly;

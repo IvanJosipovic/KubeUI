@@ -2,7 +2,6 @@ using Avalonia.Controls.Chrome;
 using Avalonia.Controls.Primitives.PopupPositioning;
 using Avalonia.Data.Converters;
 using Avalonia.Input;
-using Path = Avalonia.Controls.Shapes.Path;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using FluentIcons.Avalonia;
 using FluentIcons.Avalonia.Internals;
@@ -10,6 +9,7 @@ using FluentIcons.Common;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Styles;
 using static KubeUI.Avalonia.Shell.Main.DecorationsMarkup;
+using Path = Avalonia.Controls.Shapes.Path;
 
 namespace KubeUI.Avalonia.Shell.Main;
 

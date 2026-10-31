@@ -1,7 +1,7 @@
-using KubeUI.Kubernetes.Serialization;
 using System.Reactive.Concurrency;
 using k8s;
 using k8s.KubeConfigModels;
+using KubeUI.Kubernetes.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
@@ -202,7 +202,7 @@ public class ClusterManagerTests
 
         File.Delete(discoveredPath);
 
-        await KubeUI.Testing.Utilities.TestWait.UntilAsync(
+        await TestWait.UntilAsync(
             () => scope.Manager.GetCluster("dev-context") is null,
             TimeSpan.FromSeconds(3), cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: scope.Dispatcher.Drain);

@@ -1,5 +1,4 @@
 using System.Text.Json;
-using KubeUI.Kubernetes.Serialization;
 using Avalonia.Controls.Notifications;
 using Avalonia.Input;
 using Avalonia.Xaml.Interactivity;
@@ -7,6 +6,7 @@ using k8s;
 using k8s.Autorest;
 using k8s.Models;
 using KubeUI.Kubernetes;
+using KubeUI.Kubernetes.Serialization;
 
 namespace KubeUI.Avalonia.Infrastructure;
 

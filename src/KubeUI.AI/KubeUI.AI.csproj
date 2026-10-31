@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="SvcSystems.AI.AgentClientProtocol" Version="1.0.0-alpha.5" />
+    <PackageReference Include="SvcSystems.AI.AgentClientProtocol" Version="1.0.0-alpha.7" />
     <PackageReference Include="ModelContextProtocol" Version="2.3.0" />
   </ItemGroup>
 </Project>

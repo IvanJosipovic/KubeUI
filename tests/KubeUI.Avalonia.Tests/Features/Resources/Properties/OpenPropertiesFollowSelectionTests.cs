@@ -1,5 +1,5 @@
-using Avalonia.Headless.XUnit;
 using Avalonia.Controls;
+using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Dock.Model.Controls;
 using Dock.Model.Core;
