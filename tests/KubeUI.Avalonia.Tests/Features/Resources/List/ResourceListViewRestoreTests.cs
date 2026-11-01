@@ -4,7 +4,6 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DynamicData;
 using k8s.Models;
-using SvcSystems.Avalonia.DynamicTableView;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.List;
 

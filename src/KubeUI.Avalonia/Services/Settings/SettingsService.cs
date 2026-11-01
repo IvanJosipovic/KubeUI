@@ -23,8 +23,24 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
                 return _settings;
             }
 
-            _settings = _persistence.Load().Settings;
+            var persistenceData = _persistence.Load();
+            _settings = persistenceData.Settings;
+            var removedPersistedPrometheusToken = false;
+            foreach (var clusterSettings in _settings.ClusterSettings.Values)
+            {
+                if (clusterSettings.MetricsSettings.PrometheusBearerToken is not null)
+                {
+                    clusterSettings.MetricsSettings.PrometheusBearerToken = null;
+                    removedPersistedPrometheusToken = true;
+                }
+            }
+
             HookSettings(_settings);
+            if (removedPersistedPrometheusToken)
+            {
+                _persistence.Save(persistenceData);
+            }
+
             return _settings;
         }
         set
@@ -92,6 +108,11 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
     public IReadOnlyCollection<string> GetClusterNamespaces(IClusterRuntime cluster)
     {
         return Settings.GetClusterSettings(cluster).Namespaces ?? [];
+    }
+
+    public ClusterMetricsSettings GetClusterMetricsSettings(IClusterRuntime cluster)
+    {
+        return Settings.GetClusterSettings(cluster).MetricsSettings;
     }
 
     public virtual void SaveSettings()

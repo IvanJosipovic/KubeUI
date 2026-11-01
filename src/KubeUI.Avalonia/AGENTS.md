@@ -15,6 +15,7 @@ References:
 
 ### Views and styling
 - Use C# for layout and visuals;
+- When constructing Avalonia controls in C#, prefer fluent property/collection methods over object initializers. Use initializers only for properties without a fluent API.
 - Views resolved by `ViewLocator` inherit `KubeUIView<TViewModel>`; `ServiceScan.SourceGenerator` discovers these mappings. Keep special runtime view factories on `IViewModelViewFactory`.
 - Prefer `StaticResource` for immutable resources and `DynamicResource` when runtime updates are required.
 - Use `Typography.TitleFontSizeResourceKey` for view and document titles so headers match the shared type scale.
@@ -85,7 +86,15 @@ References:
 - Pod log views must enable resource-name prefixes by default when logs from multiple pods or containers are displayed.
 - Launching logs from a workload must seed pods and any intermediate owner resources required to resolve its descendant pods.
 
-## 9) Code conventions
+## 9) Threading and dispatching
+
+- `AvaloniaScheduler` implements `IThreadDispatcher` and is the dispatcher registered in the Avalonia layer. The `KubeUI.Kubernetes` layer uses `ImmediateThreadDispatcher` by default.
+- `IThreadDispatcher.Invoke` **blocks** the calling thread until the dispatcher has run the action. Use it only when the caller genuinely has to wait for the work to complete.
+- `IThreadDispatcher.Post` **queues** the action without waiting. Use it for work that must run on the dispatcher thread but whose caller must never block on the dispatcher — for example mutations of an `ObservableCollection` that is bound from the UI, or work that runs during application shutdown.
+- Never call the blocking `Invoke` from a background thread during shutdown or from a headless host: the Avalonia dispatcher is not pumping in those situations, so the call waits forever and deadlocks the process.
+- Keep Avalonia control state changes on the UI thread. Await without `ConfigureAwait(false)` in a continuation that touches control state.
+
+## 10) Code conventions
 
 - Keep this file focused on rules shared across Avalonia features. Create a nested `AGENTS.md` for feature-specific requirements when a feature has distinct architecture, UI, or testing rules, and update that file whenever the feature changes.
 - No code-behind event handlers.

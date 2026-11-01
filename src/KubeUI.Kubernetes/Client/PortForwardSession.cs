@@ -13,6 +13,11 @@ public interface IPortForwardSession : IDisposable
     Stream Stream { get; }
 }
 
+internal interface IDuplexPortForwardSession : IPortForwardSession
+{
+    Stream WriteStream { get; }
+}
+
 internal sealed class KubernetesPortForwardSessionFactory : IPortForwardSessionFactory
 {
     private readonly IClusterRuntime _cluster;
@@ -34,25 +39,31 @@ internal sealed class KubernetesPortForwardSessionFactory : IPortForwardSessionF
     }
 }
 
-internal sealed class KubernetesPortForwardSession : IPortForwardSession
+internal sealed class KubernetesPortForwardSession : IDuplexPortForwardSession
 {
     private readonly WebSocket _webSocket;
     private readonly StreamDemuxer _demux;
     private readonly Stream _stream;
+    private readonly Stream _writeStream;
 
     public KubernetesPortForwardSession(WebSocket webSocket)
     {
         _webSocket = webSocket;
         _demux = new StreamDemuxer(_webSocket, StreamType.PortForward);
         _demux.Start();
-        _stream = _demux.GetStream(0, (byte?)0);
+        // MuxedStream inherits Stream's serialized async operations; separate instances allow concurrent reads and writes.
+        _stream = _demux.GetStream((byte?)0, null);
+        _writeStream = _demux.GetStream(null, (byte?)0);
     }
 
     public Stream Stream => _stream;
 
+    public Stream WriteStream => _writeStream;
+
     public void Dispose()
     {
         _stream.Dispose();
+        _writeStream.Dispose();
         _demux.Dispose();
         _webSocket.Dispose();
     }

@@ -13,4 +13,11 @@ public sealed class ImmediateThreadDispatcher : IThreadDispatcher
         ArgumentNullException.ThrowIfNull(action);
         action();
     }
+
+    /// <inheritdoc />
+    public void Post(Action action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        action();
+    }
 }

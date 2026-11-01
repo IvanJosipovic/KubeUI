@@ -1,4 +1,3 @@
-using KubeUI.Avalonia.Infrastructure.Presentation;
 using System.Collections;
 using System.Windows.Input;
 using Avalonia.Controls;
@@ -14,6 +13,7 @@ using FluentIcons.Common;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Infrastructure.DependencyInjection;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Cilium.Hubble;
 using SvcSystems.Avalonia.DynamicTableView;
 using UrsaControls = Ursa.Controls;

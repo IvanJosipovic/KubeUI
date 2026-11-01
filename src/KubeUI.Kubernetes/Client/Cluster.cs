@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.Collections.Immutable;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Net;
 using System.Reactive.Linq;
@@ -43,6 +45,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     private IThreadDispatcher _dispatcher;
 
+    private readonly IMetricsService _metricsService;
+
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
     public event Action<IClusterRuntime>? NamespaceSelectionRequired;
     public event Action<IClusterRuntime, GroupApiVersionKind>? ResourceSeeded;
@@ -82,6 +86,30 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     [ObservableProperty]
     public partial IKubernetes? Client { get; set; }
 
+    public ObservableCollection<PodMetrics> PodMetrics => _metricsService.PodMetrics;
+
+    public ObservableCollection<NodeMetrics> NodeMetrics => _metricsService.NodeMetrics;
+
+    /// <inheritdoc />
+    public ImmutableArray<PodMetrics> GetPodMetricsSnapshot(string? namespaceName, string podName)
+        => _metricsService.GetPodMetricsSnapshot(namespaceName, podName);
+
+    /// <inheritdoc />
+    public ImmutableArray<NodeMetrics> GetNodeMetricsSnapshot(string nodeName)
+        => _metricsService.GetNodeMetricsSnapshot(nodeName);
+
+    /// <inheritdoc />
+    public ImmutableArray<PodMetrics> GetAllPodMetricsSnapshot()
+        => _metricsService.GetAllPodMetricsSnapshot();
+
+    /// <inheritdoc />
+    public ImmutableArray<NodeMetrics> GetAllNodeMetricsSnapshot()
+        => _metricsService.GetAllNodeMetricsSnapshot();
+
+    public bool IsMetricsAvailable => _metricsService.IsMetricsAvailable;
+
+    public ActiveMetricsBackend ActiveMetricsBackend => _metricsService.ActiveMetricsBackend;
+
     /// <summary>
     /// Creates the Kubernetes client used by <see cref="Connect"/>.
     /// </summary>
@@ -105,8 +133,9 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     /// <param name="settings">Cluster settings store.</param>
     /// <param name="serviceProvider">Application service provider.</param>
     /// <param name="dispatcher">Dispatcher used for UI-bound observable updates.</param>
+    /// <param name="metricsService">Metrics service owned by this runtime.</param>
     /// <param name="authorizationOptions">Authorization behavior options.</param>
-    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ClusterModelCatalog modelCatalog, IClusterSettingsStore settings, IServiceProvider serviceProvider, IThreadDispatcher dispatcher, IKubernetesJsonSerializer jsonSerializer, IKubernetesYamlSerializer yamlSerializer, IOptions<ClusterAuthorizationOptions>? authorizationOptions = null)
+    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ClusterModelCatalog modelCatalog, IClusterSettingsStore settings, IServiceProvider serviceProvider, IThreadDispatcher dispatcher, IKubernetesJsonSerializer jsonSerializer, IKubernetesYamlSerializer yamlSerializer, IMetricsService metricsService, IOptions<ClusterAuthorizationOptions>? authorizationOptions = null)
     {
         _loggerFactory = loggerFactory;
         _logger = logger;
@@ -120,6 +149,11 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         _settings = settings;
         _serviceProvider = serviceProvider;
         _dispatcher = dispatcher;
+        _metricsService = metricsService;
+        if (_metricsService is INotifyPropertyChanged notifyMetrics)
+        {
+            notifyMetrics.PropertyChanged += OnMetricsServicePropertyChanged;
+        }
         _authorizationOptions = authorizationOptions?.Value ?? new ClusterAuthorizationOptions();
     }
 
@@ -133,9 +167,27 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         }
 
         StopNamespaceSubscription();
+        await _metricsService.StopAsync().ConfigureAwait(false);
         await StopResourceInformersAsync().ConfigureAwait(false);
+        if (_metricsService is INotifyPropertyChanged notifyMetrics)
+        {
+            notifyMetrics.PropertyChanged -= OnMetricsServicePropertyChanged;
+        }
         _openApiSchemaLoader.Dispose();
         _connectionLimiter.Dispose();
+        if (_metricsService is MetricsService metricsService)
+        {
+            metricsService.ReleaseResources();
+        }
+    }
+
+    /// <summary>Releases the resources owned by the metrics service of this cluster.</summary>
+    internal void ReleaseMetricsResources()
+    {
+        if (_metricsService is MetricsService metricsService)
+        {
+            metricsService.ReleaseResources();
+        }
     }
 
     private Activity? StartClusterActivity(string activityName, ActivityKind activityKind = ActivityKind.Internal)
@@ -245,7 +297,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
                     _ = RefreshApiGroupDiscoveryListAsync();
                     _ = EnsureOpenApiSchemasAsync();
-                    _ = InitMetrics();
+                    await _metricsService.InitializeAsync(this).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -273,7 +325,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
         try
         {
-            StopMetrics();
+            await _metricsService.StopAsync().ConfigureAwait(false);
             StopPortForwarders();
             StopNamespaceSubscription();
 
@@ -306,6 +358,25 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         }
 
         _logger.LogInformation("Disconnected from {name}", Name);
+    }
+
+    public Task<MetricResultSet> RequestMetricsAsync(MetricRequest request, CancellationToken cancellationToken = default)
+        => _metricsService.RequestMetricsAsync(request, cancellationToken);
+
+    public Task<IReadOnlyList<MetricProviderInfo>> GetAvailablePrometheusProvidersAsync()
+        => _metricsService.GetAvailablePrometheusProvidersAsync();
+
+    private void OnMetricsServicePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        switch (e.PropertyName)
+        {
+            case nameof(IMetricsService.IsMetricsAvailable):
+                OnPropertyChanged(nameof(IsMetricsAvailable));
+                break;
+            case nameof(IMetricsService.ActiveMetricsBackend):
+                OnPropertyChanged(nameof(ActiveMetricsBackend));
+                break;
+        }
     }
 
     public Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -1013,20 +1084,6 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         {
             RemovePortForward(portForwarder);
         }
-    }
-
-    private void StopMetrics()
-    {
-        _metricsRefreshCancellationTokenSource?.Cancel();
-        _metricsRefreshCancellationTokenSource?.Dispose();
-        _metricsRefreshCancellationTokenSource = null;
-
-        _metricsRefreshTimer?.Dispose();
-        _metricsRefreshTimer = null;
-
-        NodeMetrics.Clear();
-        PodMetrics.Clear();
-        IsMetricsAvailable = false;
     }
 
     private void StopNamespaceSubscription()

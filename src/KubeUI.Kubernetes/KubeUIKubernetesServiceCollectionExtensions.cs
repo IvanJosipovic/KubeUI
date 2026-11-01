@@ -33,6 +33,14 @@ public static partial class KubeUIKubernetesServiceCollectionExtensions
         services.AddTransient<ClusterModelCatalog>();
         services.AddSingleton<IKubernetesYamlSerializer>(_ => new KubernetesYamlSerializer(yamlAllowReflection));
         services.AddSingleton<IAksClusterService, AksClusterService>();
+        services.AddSingleton<IAzureMonitorWorkspaceService, AzureMonitorWorkspaceService>();
+        services.AddTransient<IMetricsService, MetricsService>();
+        services.AddTransient<IPrometheusQueryClient, PrometheusQueryClient>();
+        services.AddSingleton<IPrometheusProvider, OperatorPrometheusProvider>();
+        services.AddSingleton<IPrometheusProvider, OpenShiftPrometheusProvider>();
+        services.AddSingleton<IPrometheusProvider, ManualPrometheusProvider>();
+        services.AddSingleton<IPrometheusProvider, ExternalPrometheusProvider>();
+        services.AddSingleton<IPrometheusProvider, AzureMonitorPrometheusProvider>();
         services.AddSingleton<IHelmClientFactory, HelmClientFactory>();
         services.AddSingleton<IHelmService, HelmService>();
         services.AddTransient<Cluster>();

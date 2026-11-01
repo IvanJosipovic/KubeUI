@@ -1,4 +1,3 @@
-using KubeUI.Kubernetes.Serialization;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using AvaloniaEdit;
@@ -13,6 +12,7 @@ using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Resources.Relationships;
+using KubeUI.Kubernetes.Serialization;
 using Moq;
 using Shouldly;
 

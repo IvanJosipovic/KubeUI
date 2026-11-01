@@ -1,4 +1,3 @@
-using KubeUI.Kubernetes.Serialization;
 using System.Collections;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
@@ -10,6 +9,7 @@ using KubeUI.Avalonia.Features.Helm;
 using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Kubernetes;
+using KubeUI.Kubernetes.Serialization;
 using YamlDotNet.Core;
 
 namespace KubeUI.Avalonia.Features.Helm.Releases;

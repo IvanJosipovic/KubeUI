@@ -1,4 +1,3 @@
-using KubeUI.Kubernetes.Serialization;
 using System.Collections.Specialized;
 using System.Globalization;
 using Avalonia.Controls.Selection;
@@ -23,6 +22,7 @@ using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Avalonia.Infrastructure.Threading;
 using KubeUI.Avalonia.Styles;
 using KubeUI.Kubernetes;
+using KubeUI.Kubernetes.Serialization;
 using Microsoft.Extensions.Logging;
 
 namespace KubeUI.Avalonia.Features.Helm.Releases;

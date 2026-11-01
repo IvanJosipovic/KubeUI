@@ -38,6 +38,25 @@ public sealed class AvaloniaScheduler : LocalScheduler, IThreadDispatcher
         Dispatcher.UIThread.Invoke(action);
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// The action is queued on the Avalonia dispatcher instead of being awaited. Awaiting the
+    /// dispatcher from a background thread deadlocks whenever the dispatcher is not pumping, which
+    /// is the case during application shutdown and in headless hosts.
+    /// </remarks>
+    public void Post(Action action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            action();
+            return;
+        }
+
+        Dispatcher.UIThread.Post(action, DispatcherPriority.Background);
+    }
+
     /// <summary>
     /// Initializes a new instance of the <see cref="AvaloniaScheduler"/> class.
     /// </summary>

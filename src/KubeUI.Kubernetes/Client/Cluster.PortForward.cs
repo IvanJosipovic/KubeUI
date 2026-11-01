@@ -10,7 +10,7 @@ public partial class Cluster
 #pragma warning disable CA2000 // PortForwarders owns forwarders after Add.
     public PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort)
     {
-        var pf = new PortForwarder(this, @namespace, localPort: 0, _portForwardSessionFactory);
+        var pf = new PortForwarder(this, @namespace, localPort: 0, _portForwardSessionFactory, _loggerFactory.CreateLogger<PortForwarder>());
         pf.SetPod(podName, containerPort);
 
         var existing = FindPortForwarder(pf);
@@ -27,22 +27,44 @@ public partial class Cluster
 
     public PortForwarder AddServicePortForward(string @namespace, string serviceName, int servicePort)
     {
-        var pf = new PortForwarder(this, @namespace, localPort: 0, _portForwardSessionFactory);
+        var pf = new PortForwarder(this, @namespace, localPort: 0, _portForwardSessionFactory, _loggerFactory.CreateLogger<PortForwarder>());
         pf.SetService(serviceName, servicePort);
 
-        var existing = FindPortForwarder(pf);
+        return AddOrReusePortForwarderOnDispatcher(pf);
+    }
+
+    private PortForwarder AddOrReusePortForwarderOnDispatcher(PortForwarder candidate)
+    {
+        PortForwarder? result = null;
+        _dispatcher.Invoke(() => result = AddOrReusePortForwarder(candidate));
+        return result!;
+    }
+
+    private PortForwarder AddOrReusePortForwarder(PortForwarder candidate)
+    {
+        var existing = FindPortForwarder(candidate);
         if (existing != null)
         {
-            pf.Dispose();
-            return existing;
+            if (string.Equals(existing.Status, "Active", StringComparison.Ordinal))
+            {
+                candidate.Dispose();
+                return existing;
+            }
+
+            RemovePortForwardCore(existing);
         }
 
-        PortForwarders.Add(pf);
-        pf.Start();
-        return pf;
+        PortForwarders.Add(candidate);
+        candidate.Start();
+        return candidate;
     }
 
     public void RemovePortForward(PortForwarder pf)
+    {
+        _dispatcher.Invoke(() => RemovePortForwardCore(pf));
+    }
+
+    private void RemovePortForwardCore(PortForwarder pf)
     {
         pf.Stop();
         PortForwarders.Remove(pf);

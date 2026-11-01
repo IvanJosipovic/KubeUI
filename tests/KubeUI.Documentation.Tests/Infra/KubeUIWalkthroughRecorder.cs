@@ -3,8 +3,10 @@ using System.Globalization;
 using System.Reflection;
 using System.Text.Json.Nodes;
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Chrome;
+using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Headless;
 using Avalonia.Input;
@@ -30,6 +32,7 @@ using KubeUI.Avalonia.Features.Helm.Releases;
 using KubeUI.Avalonia.Features.Helm.Repositories;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Avalonia.Features.Resources.List;
+using KubeUI.Avalonia.Features.Resources.Metrics.Controls;
 using KubeUI.Avalonia.Features.Resources.Visualization;
 using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
@@ -66,6 +69,7 @@ internal static class KubeUIWalkthroughRecorder
         string clipName,
         string clusterName,
         Action<TestClusterConfig>? configureFakeCluster,
+        Action<ClusterWorkspace>? configureWorkspace,
         WalkthroughStart start,
         WalkthroughIntro? intro,
         IReadOnlyList<WalkthroughStep> steps)
@@ -81,7 +85,8 @@ internal static class KubeUIWalkthroughRecorder
         var cluster = await CreateWorkspaceAsync(
             clusterName,
             connect: start.ConnectToCluster,
-            configureFakeCluster);
+            configureFakeCluster,
+            configureWorkspace);
         using var serviceScope = KubeUIWalkthroughServices.GetRequiredServices().CreateScope();
         var window = new MainWindow(useNativeChrome: false)
         {
@@ -149,7 +154,8 @@ internal static class KubeUIWalkthroughRecorder
         WalkthroughDemoResources DemoResources)> CreateWorkspaceAsync(
         string name,
         bool connect,
-        Action<TestClusterConfig>? configure)
+        Action<TestClusterConfig>? configure,
+        Action<ClusterWorkspace>? configureWorkspace)
     {
         var services = KubeUIWalkthroughServices.GetRequiredServices();
         var config = services.GetRequiredService<TestClusterConfig>();
@@ -166,6 +172,7 @@ internal static class KubeUIWalkthroughRecorder
             testCluster.RegisterWith(services.GetRequiredService<ClusterManager>());
             var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().GetCluster(testCluster.Cluster.Name)
                 ?? throw new InvalidOperationException("Test cluster workspace was not created.");
+            configureWorkspace?.Invoke(workspace);
             if (connect)
             {
                 var expectedPodMetrics = demoResources.Resources.OfType<V1Pod>().Count();
@@ -1460,6 +1467,25 @@ internal static class KubeUIWalkthroughRecorder
                 }
 
                 return (podRow, () => WaitForConditionAsync(() => podRow.IsSelected));
+            case "pod-metrics":
+                var metrics = await WaitForControlAsync<MetricsControl>(
+                    root,
+                    control => control.IsVisible && control.DataContext is V1Pod pod
+                        && pod.Metadata?.Name == PodName);
+                var section = metrics.GetVisualDescendants().OfType<Expander>().Single();
+                return (section, () => WaitForConditionAsync(() =>
+                    section.IsExpanded && metrics.ShowTabs && metrics.SelectedPanel?.Series.Count > 0));
+            case "pod-metric-tab":
+                var podMetrics = await WaitForControlAsync<MetricsControl>(
+                    root,
+                    control => control.IsVisible && control.DataContext is V1Pod pod
+                        && pod.Metadata?.Name == PodName && control.ShowTabs);
+                var tab = await WaitForControlAsync<ToggleButton>(
+                    podMetrics,
+                    button => button.IsVisible && AutomationProperties.GetName(button) == action.Value);
+                return (tab, () => WaitForConditionAsync(() =>
+                    podMetrics.SelectedTab?.Title == action.Value
+                    && podMetrics.SelectedPanel?.Series.Count > 0));
             case "helm-repository":
                 return await ResolveHelmRowAsync(
                     root,

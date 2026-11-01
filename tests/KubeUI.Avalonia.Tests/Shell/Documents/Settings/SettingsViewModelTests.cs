@@ -8,7 +8,6 @@ using KubeUI.AI.Agents;
 using KubeUI.Avalonia.Infrastructure.Mcp;
 using KubeUI.Avalonia.Options;
 using KubeUI.Avalonia.Shell.Documents.Settings;
-using KubeUI.Kubernetes;
 using Moq;
 using Shouldly;
 using AppSettings = KubeUI.Avalonia.Options.Settings;

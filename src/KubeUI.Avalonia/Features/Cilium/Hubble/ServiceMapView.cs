@@ -1,4 +1,3 @@
-using KubeUI.Avalonia.Infrastructure.Presentation;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls.Primitives;
@@ -10,6 +9,7 @@ using FluentIcons.Common;
 using k8s.Models;
 using KubeUI.Avalonia.Features.Cilium.Hubble.Controls;
 using KubeUI.Avalonia.Features.Resources.Common;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using KubeUI.Cilium.Hubble;
 using SvcSystems.Avalonia.DynamicTableView;
 using Westermo.GraphX.Common.Enums;

@@ -29,7 +29,7 @@ KubeUI is a desktop workspace for everyday Kubernetes exploration and operations
 
 - View pod logs and open a pod console where permitted.
 - Forward pod and service ports.
-- View pod CPU and memory metrics when the cluster provides metrics.
+- View Pod and Node CPU and memory metrics through Kubernetes Metrics Server or Prometheus; configure the provider per cluster.
 - Cordon, uncordon, or drain nodes.
 - Inspect certificates represented in Kubernetes secrets.
 
@@ -37,4 +37,4 @@ KubeUI is a desktop workspace for everyday Kubernetes exploration and operations
 
 KubeUI adapts resource navigation to the permissions available to the connected identity, including reduced-access and namespace-scoped environments.
 
-Follow the task guides for [clusters](./clusters-and-workspaces), [resource browsing](./resource-browsing), [YAML editing](./yaml-editor), [visualization](./resource-visualization), [workload tools](./workload-tools), and [Pod logs](./pod-logs).
+Follow the task guides for [clusters](./clusters-and-workspaces), [resource browsing](./resource-browsing), [YAML editing](./yaml-editor), [visualization](./resource-visualization), [workload tools](./workload-tools), [Pod logs](./pod-logs), and [monitoring](./monitoring).

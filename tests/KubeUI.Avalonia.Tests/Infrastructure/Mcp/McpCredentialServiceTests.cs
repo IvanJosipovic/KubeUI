@@ -1,6 +1,4 @@
 using KubeUI.Avalonia.Infrastructure.Mcp;
-using KubeUI.Avalonia.Options;
-using KubeUI.Avalonia.Services.Settings;
 using Moq;
 using Shouldly;
 

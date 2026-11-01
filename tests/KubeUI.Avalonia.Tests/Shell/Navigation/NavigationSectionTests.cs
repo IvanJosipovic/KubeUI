@@ -1,6 +1,3 @@
-using KubeUI.Avalonia.Services.Settings;
-using KubeUI.Desktop;
-using Microsoft.Extensions.Hosting;
 using Avalonia.Headless.XUnit;
 using FluentIcons.Common;
 using k8s;
@@ -13,10 +10,13 @@ using KubeUI.Avalonia.Features.Helm;
 using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Services.FeatureFlags;
 using KubeUI.Avalonia.Services.Icons;
+using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Avalonia.Shell.Navigation;
 using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Desktop;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Shouldly;
@@ -369,7 +369,7 @@ public sealed class NavigationSectionTests
                 [new NavigationGroup("gateway", "Gateway", 0, null)]),
         };
         workspace.AddResourceConfigForTest(resourceConfig);
-            var provider = new CrossplaneNavigationSectionProvider();
+        var provider = new CrossplaneNavigationSectionProvider();
         using var node = new ClusterNavigationNode(workspace);
         CreateBuilder(new NavigationSectionCatalog([])).Reconcile(node);
 
