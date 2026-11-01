@@ -532,7 +532,7 @@ public sealed class McpToolsTests
         var session = new Mock<IMcpClusterSession>(MockBehavior.Strict);
         var permission = new Mock<IAgentPermissionService>(MockBehavior.Strict);
         permission.Setup(x => x.RequestPermissionAsync(
-                It.Is<AgentPermissionRequest>(request => request.Action == "read_kubernetes_secret"),
+            It.Is<AgentPermissionRequest>(request => request.Action == "read_kubernetes_secret" && !request.IsDestructive),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(new AgentPermissionResult(false, "denied"));
         var tools = CreateTools(session, permission.Object);

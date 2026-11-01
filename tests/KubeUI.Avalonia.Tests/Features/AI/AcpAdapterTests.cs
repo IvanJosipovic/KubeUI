@@ -1,6 +1,7 @@
 using System.Text.Json;
 using KubeUI.AI.Acp;
 using KubeUI.AI.Agents;
+using KubeUI.AI.Diagnostics;
 using KubeUI.AI.Permissions;
 using Shouldly;
 using SvcSystems.AI.AgentClientProtocol;
@@ -18,6 +19,30 @@ namespace KubeUI.Avalonia.Tests.Features.AI;
 public sealed class AcpAdapterTests
 {
     private static readonly IReadOnlySet<string> s_trustedServers = new HashSet<string>(StringComparer.Ordinal) { "kubeui" };
+
+    [Fact]
+    public void permission_handler_diagnostics_report_tool_details_without_raw_input()
+    {
+        using var input = JsonDocument.Parse("""{"secret":"do-not-log"}""");
+        var request = CreateRequest(new ToolCallUpdate
+        {
+            ToolCallId = "call-1",
+            Name = "cua_repl.js",
+            Title = "Run JavaScript",
+            Kind = "execute",
+            RawInput = input.RootElement.Clone()
+        });
+
+        var diagnostics = PermissionHandler.GetDiagnostics(request);
+
+        diagnostics.Name.ShouldBe("cua_repl.js");
+        diagnostics.Title.ShouldBe("Run JavaScript");
+        diagnostics.Kind.ShouldBe("execute");
+        diagnostics.RawInputPresent.ShouldBeTrue();
+        diagnostics.RawInputKind.ShouldBe("Object");
+        diagnostics.RawInputLength.ShouldBe(input.RootElement.GetRawText().Length);
+        diagnostics.ToString().ShouldNotContain("do-not-log");
+    }
 
     [Fact]
     public void permission_mapper_describes_a_tool_by_its_title()

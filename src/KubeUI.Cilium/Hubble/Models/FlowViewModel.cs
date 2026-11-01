@@ -28,6 +28,7 @@ public sealed partial class FlowViewModel : ObservableObject
 
     public FlowViewModel() { }
 
+    [Obsolete]
     public FlowViewModel(Pb.Flow flow)
     {
         UpdateFrom(flow);

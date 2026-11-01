@@ -275,7 +275,7 @@ public sealed class McpTools(
     private async Task EnsureSecretPermissionAsync(string? @namespace, string name, CancellationToken cancellationToken)
     {
         var permission = await _permissionService.RequestPermissionAsync(
-            new AgentPermissionRequest("read_kubernetes_secret", $"{@namespace ?? "cluster-scoped"}/{name}", IsDestructive: true)
+            new AgentPermissionRequest("read_kubernetes_secret", $"{@namespace ?? "cluster-scoped"}/{name}")
             {
                 RequestingClient = _identityAccessor?.Current?.Name
             },
