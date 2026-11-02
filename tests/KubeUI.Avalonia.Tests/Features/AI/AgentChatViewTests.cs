@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Threading;
@@ -16,18 +17,19 @@ namespace KubeUI.Avalonia.Tests.Features.AI;
 public sealed class AgentChatViewTests
 {
     [AvaloniaFact]
-    public void prompt_editor_and_send_button_stay_at_bottom_of_chat_view()
+    public async Task prompt_editor_and_send_button_stay_at_bottom_of_chat_view()
     {
+        await using var vm = CreateViewModel(new AcpAgentRegistry([
+            new AcpAgentDefinition
+            {
+                Id = "test",
+                Name = "Test agent",
+                Executable = Environment.ProcessPath!
+            }
+        ]));
         var view = new AgentChatView
         {
-            DataContext = CreateViewModel(new AcpAgentRegistry([
-                new AcpAgentDefinition
-                {
-                    Id = "test",
-                    Name = "Test agent",
-                    Executable = Environment.ProcessPath!
-                }
-            ]))
+            DataContext = vm
         };
         using var window = Application.Current.CreateTestWindow(400, 600, view);
 
@@ -39,9 +41,28 @@ public sealed class AgentChatViewTests
         view.GetVisualDescendants().OfType<TextBlock>().ShouldContain(control => control.Text == "Test agent");
         prompt.ShouldNotBeNull();
         send.ShouldNotBeNull();
-        prompt!.AcceptsReturn.ShouldBeFalse();
-        prompt.KeyBindings.OfType<KeyBinding>().ShouldContain(binding =>
-            binding.Gesture.ShouldBeOfType<KeyGesture>().Key == Key.Enter);
+        prompt!.AcceptsReturn.ShouldBeTrue();
+        prompt.TextWrapping.ShouldBe(global::Avalonia.Media.TextWrapping.Wrap);
+        prompt.MaxHeight.ShouldBe(160);
+        var sendGesture = prompt.KeyBindings.OfType<KeyBinding>()
+            .Select(binding => binding.Gesture)
+            .OfType<KeyGesture>()
+            .Single();
+        sendGesture.Key.ShouldBe(Key.Enter);
+        sendGesture.KeyModifiers.ShouldBe(KeyModifiers.None);
+
+        prompt.Text = "First line";
+        prompt.CaretIndex = prompt.Text.Length;
+        prompt.Focus();
+        window.KeyPress(Key.Enter, RawInputModifiers.Control, PhysicalKey.Enter, null);
+        Dispatcher.UIThread.RunJobs();
+
+        prompt.Text.ShouldBe($"First line{Environment.NewLine}");
+        vm.Prompt.ShouldBe(prompt.Text);
+        vm.IsBusy.ShouldBeFalse();
+        prompt.Text = string.Join(Environment.NewLine, Enumerable.Repeat("Prompt line", 20));
+        Dispatcher.UIThread.RunJobs();
+        prompt.Bounds.Height.ShouldBeLessThanOrEqualTo(prompt.MaxHeight);
         var midpoint = view.Bounds.Height / 2;
 
         prompt!.TranslatePoint(new Point(0, 0), view)!.Value.Y.ShouldBeGreaterThan(midpoint);
