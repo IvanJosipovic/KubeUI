@@ -36,14 +36,10 @@ internal sealed class PermissionHandler(
         activity?.SetTag("agent.protocol", "acp");
         var diagnostics = GetDiagnostics(request);
         activity?.SetTag("acp.permission.tool_call.id_present", diagnostics.ToolCallIdPresent);
-        activity?.SetTag("acp.permission.tool_call.name", diagnostics.Name);
-        activity?.SetTag("acp.permission.tool_call.title", diagnostics.Title);
         activity?.SetTag("acp.permission.tool_call.kind", diagnostics.Kind);
         activity?.SetTag("acp.permission.tool_call.raw_input_present", diagnostics.RawInputPresent);
         activity?.SetTag("acp.permission.tool_call.raw_input_kind", diagnostics.RawInputKind);
         activity?.SetTag("acp.permission.tool_call.raw_input_length", diagnostics.RawInputLength);
-        activity?.SetTag("acp.permission.tool_call.metadata_keys", diagnostics.ToolCallMetadataKeys);
-        activity?.SetTag("acp.permission.request.metadata_keys", diagnostics.RequestMetadataKeys);
         var permissionRequest = _mapper.Map(request, trustedMcpServers);
         activity?.SetTag("permission.action", permissionRequest.Action);
         if (!permissionRequest.RequiresApproval)

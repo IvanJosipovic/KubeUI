@@ -42,6 +42,7 @@ public sealed class Agent : IAgent
             PermissionHandler = permission,
             SecurityPolicy = new AcpSecurityPolicy
             {
+                TerminalCommandAllowed = static (_, _) => true,
                 McpEndpointAllowed = static endpoint =>
                     endpoint.Scheme == Uri.UriSchemeHttp
                     && (endpoint.Host.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase)
