@@ -39,7 +39,15 @@ public sealed class Agent : IAgent
             ClientInfo = new Implementation { Name = "KubeUI", Version = "1.0" },
             FileSystemHandler = fileSystem,
             TerminalHandler = terminal,
-            PermissionHandler = permission
+            PermissionHandler = permission,
+            SecurityPolicy = new AcpSecurityPolicy
+            {
+                TerminalCommandAllowed = static (_, _) => true,
+                McpEndpointAllowed = static endpoint =>
+                    endpoint.Scheme == Uri.UriSchemeHttp
+                    && (endpoint.Host.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase)
+                        || endpoint.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase))
+            }
         };
         var environment = new Dictionary<string, string?>(_definition.Environment, StringComparer.Ordinal);
         foreach (var name in _definition.EnvironmentVariableNames)

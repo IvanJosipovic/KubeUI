@@ -1,8 +1,8 @@
-using Avalonia.Headless.XUnit;
-using KubeUI.Avalonia.Resources;
 using System.Text.Json;
+using Avalonia.Headless.XUnit;
 using k8s;
 using k8s.Models;
+using KubeUI.Avalonia.Resources;
 using KubeUI.Avalonia.Services.Settings;
 using KubeUI.Desktop;
 using KubeUI.Kubernetes.Serialization;
@@ -107,7 +107,7 @@ public sealed class SerializationFeatureTests
         yamlSerializer.Deserialize<V1Pod>(yamlSerializer.Serialize(pod)).Metadata.Name.ShouldBe("generated-pod");
         if (disableJsonReflection)
         {
-            Should.Throw<NotSupportedException>(() => KubeUI.Avalonia.Infrastructure.Utilities.CloneObject(resource, jsonSerializer));
+            Should.Throw<NotSupportedException>(() => Utilities.CloneObject(resource, jsonSerializer));
             Should.Throw<NotSupportedException>(() => jsonSerializer.Serialize(resource));
             Should.Throw<NotSupportedException>(() => jsonSerializer.Deserialize<ReflectionOnlyResource>(Json));
             Should.Throw<NotSupportedException>(() => KubernetesJson.Serialize(resource, clientConfiguration.JsonSerializerOptions));
@@ -115,7 +115,7 @@ public sealed class SerializationFeatureTests
         }
         else
         {
-            AssertResource(KubeUI.Avalonia.Infrastructure.Utilities.CloneObject(resource, jsonSerializer));
+            AssertResource(Utilities.CloneObject(resource, jsonSerializer));
             AssertResource(jsonSerializer.Deserialize<ReflectionOnlyResource>(jsonSerializer.Serialize(resource)));
             AssertResource(jsonSerializer.Deserialize<ReflectionOnlyResource>(Json));
             AssertResource(KubernetesJson.Deserialize<ReflectionOnlyResource>(

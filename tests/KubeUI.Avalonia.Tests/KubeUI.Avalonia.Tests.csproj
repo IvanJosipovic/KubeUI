@@ -11,7 +11,7 @@
     <PackageReference Include="Microsoft.Testing.Extensions.CrashDump" Version="2.5.2" />
     <PackageReference Include="Microsoft.Testing.Extensions.HangDump" Version="2.5.2" />
     <PackageReference Include="xunit.v3.mtp-v2" Version="3.2.2" />
-    <PackageReference Include="SvcSystems.AI.AgentClientProtocol" Version="1.0.0-alpha.5" PrivateAssets="all" />
+    <PackageReference Include="SvcSystems.AI.AgentClientProtocol" Version="1.0.0-alpha.7" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

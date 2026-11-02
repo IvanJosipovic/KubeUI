@@ -1,3 +1,4 @@
+using System.Text.Json;
 using KubeUI.AI.Diagnostics;
 using KubeUI.AI.Permissions;
 using SvcSystems.AI.AgentClientProtocol;
@@ -12,12 +13,33 @@ internal sealed class PermissionHandler(
 {
     private readonly PermissionMapper _mapper = new();
 
+    internal static AcpPermissionDiagnostics GetDiagnostics(RequestPermissionRequest request)
+    {
+        var toolCall = request.ToolCall;
+        return new AcpPermissionDiagnostics(
+            !string.IsNullOrWhiteSpace(toolCall.ToolCallId),
+            toolCall.Name,
+            toolCall.Title,
+            toolCall.Kind,
+            HasValue(toolCall.RawInput),
+            GetValueKind(toolCall.RawInput),
+            GetRawInputLength(toolCall.RawInput),
+            GetMetadataKeys(toolCall.Meta),
+            GetMetadataKeys(request.Meta));
+    }
+
     public async ValueTask<PermissionDecision> RequestPermissionAsync(
         RequestPermissionRequest request,
         CancellationToken cancellationToken = default)
     {
         using var activity = AgentActivitySource.Source.StartActivity("ai.permission.request");
         activity?.SetTag("agent.protocol", "acp");
+        var diagnostics = GetDiagnostics(request);
+        activity?.SetTag("acp.permission.tool_call.id_present", diagnostics.ToolCallIdPresent);
+        activity?.SetTag("acp.permission.tool_call.kind", diagnostics.Kind);
+        activity?.SetTag("acp.permission.tool_call.raw_input_present", diagnostics.RawInputPresent);
+        activity?.SetTag("acp.permission.tool_call.raw_input_kind", diagnostics.RawInputKind);
+        activity?.SetTag("acp.permission.tool_call.raw_input_length", diagnostics.RawInputLength);
         var permissionRequest = _mapper.Map(request, trustedMcpServers);
         activity?.SetTag("permission.action", permissionRequest.Action);
         if (!permissionRequest.RequiresApproval)
@@ -42,6 +64,20 @@ internal sealed class PermissionHandler(
         }
     }
 
+    private static bool HasValue(JsonElement? value)
+        => value is { ValueKind: not JsonValueKind.Undefined and not JsonValueKind.Null };
+
+    private static string? GetValueKind(JsonElement? value)
+        => HasValue(value) ? value!.Value.ValueKind.ToString() : null;
+
+    private static int? GetRawInputLength(JsonElement? value)
+        => HasValue(value) ? value!.Value.GetRawText().Length : null;
+
+    private static string? GetMetadataKeys(IReadOnlyDictionary<string, JsonElement>? metadata)
+        => metadata is null || metadata.Count == 0
+            ? null
+            : string.Join(",", metadata.Keys.Order(StringComparer.Ordinal));
+
     private static PermissionDecision SelectResponse(RequestPermissionRequest request, bool allowed)
     {
         var option = request.Options.FirstOrDefault(item => allowed
@@ -50,3 +86,14 @@ internal sealed class PermissionHandler(
         return option is null ? PermissionDecision.Cancel() : PermissionDecision.Select(option.OptionId);
     }
 }
+
+internal sealed record AcpPermissionDiagnostics(
+    bool ToolCallIdPresent,
+    string? Name,
+    string? Title,
+    string? Kind,
+    bool RawInputPresent,
+    string? RawInputKind,
+    int? RawInputLength,
+    string? ToolCallMetadataKeys,
+    string? RequestMetadataKeys);

@@ -50,7 +50,9 @@ public sealed class AgentChatView : KubeUIView<AgentChatViewModel>
                                     .Name("PromptEditor")
                                     .PlaceholderText(Assets.Resources.AgentChatView_PromptPlaceholder)
                                     .Text(vm, x => x.Prompt)
-                                    .AcceptsReturn(false)
+                                    .AcceptsReturn(true)
+                                    .TextWrapping(TextWrapping.Wrap)
+                                    .MaxHeight(160)
                                     .KeyBindings(new KeyBinding
                                     {
                                         Command = vm.SendCommand,
