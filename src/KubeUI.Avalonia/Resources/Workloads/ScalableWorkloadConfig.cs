@@ -38,7 +38,7 @@ public abstract partial class ScalableWorkloadConfig<T> : ResourceConfig<T>
         return new MenuItemViewModel
         {
             Title = Assets.Resources.ScalableWorkloadConfig_Scale,
-            FluentIcon = Icon.ArrowSync,
+            FluentIcon = Icon.Resize,
             Command = ScaleCommand,
             CommandParameter = selected,
         };

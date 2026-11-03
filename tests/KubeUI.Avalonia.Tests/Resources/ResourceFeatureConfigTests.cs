@@ -3,11 +3,15 @@ using System.Net;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using CommunityToolkit.Mvvm.Input;
+using Dock.Model.Controls;
+using Dock.Model.Core;
 using k8s;
 using k8s.Autorest;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Resources;
+using KubeUI.Avalonia.Features.Resources.Yaml;
+using KubeUI.Avalonia.Infrastructure.Docking;
 using KubeUI.Avalonia.Shell.Navigation;
 using Shouldly;
 using ClusterRoleBindingPropertiesView = KubeUI.Avalonia.Resources.AccessControl.v1.ClusterRoleBinding.PropertiesView;
@@ -131,6 +135,210 @@ public sealed class ResourceFeatureConfigTests
         deployment.GetCustomMenuItems(new[] { new V1Deployment() }).ShouldContain(item => item.Title == Assets.Resources.ScalableWorkloadConfig_Scale);
         statefulSet.GetCustomMenuItems(new[] { new V1StatefulSet() }).ShouldContain(item => item.Title == Assets.Resources.ScalableWorkloadConfig_Scale);
         replicaSet.GetCustomMenuItems(new[] { new V1ReplicaSet() }).ShouldContain(item => item.Title == Assets.Resources.ScalableWorkloadConfig_Scale);
+    }
+
+    [AvaloniaFact]
+    public void replicaset_context_menu_does_not_expose_restart()
+    {
+        var config = ResolveConfig<V1ReplicaSetConfig>();
+        var actions = config.GetCustomMenuItems(new[] { new V1ReplicaSet() }).ToArray();
+
+        actions.ShouldContain(item => item.Title == Assets.Resources.ScalableWorkloadConfig_Scale);
+        actions.ShouldNotContain(item => item.Title == Assets.Resources.V1DeploymentConfig_MenuItem_Restart);
+    }
+
+    [AvaloniaFact]
+    public void scale_and_restart_actions_use_distinct_icons()
+    {
+        var config = ResolveConfig<V1DeploymentConfig>();
+        var actions = config.GetCustomMenuItems(new[] { new V1Deployment() });
+        var scale = actions.Single(item => item.Title == Assets.Resources.ScalableWorkloadConfig_Scale);
+        var restart = actions.Single(item => item.Title == Assets.Resources.V1DeploymentConfig_MenuItem_Restart);
+
+        scale.FluentIcon.ShouldNotBe(restart.FluentIcon);
+    }
+
+    [AvaloniaFact]
+    public async Task statefulset_on_delete_restart_action_is_disabled()
+    {
+        var statefulSet = new V1StatefulSet
+        {
+            Metadata = new V1ObjectMeta { Name = "on-delete-statefulset", NamespaceProperty = "default" },
+            Spec = new V1StatefulSetSpec
+            {
+                UpdateStrategy = new V1StatefulSetUpdateStrategy { Type = "OnDelete" },
+            },
+        };
+
+        await AssertOnDeleteRestartDisabledAsync<V1StatefulSetConfig, V1StatefulSet>(
+            statefulSet,
+            Assets.Resources.V1StatefulSetConfig_MenuItem_Restart);
+    }
+
+    [AvaloniaFact]
+    public async Task daemonset_on_delete_restart_action_is_disabled()
+    {
+        var daemonSet = new V1DaemonSet
+        {
+            Metadata = new V1ObjectMeta { Name = "on-delete-daemonset", NamespaceProperty = "default" },
+            Spec = new V1DaemonSetSpec
+            {
+                UpdateStrategy = new V1DaemonSetUpdateStrategy { Type = "OnDelete" },
+            },
+        };
+
+        await AssertOnDeleteRestartDisabledAsync<V1DaemonSetConfig, V1DaemonSet>(
+            daemonSet,
+            Assets.Resources.V1DaemonSetConfig_MenuItem_Restart);
+    }
+
+    [AvaloniaFact]
+    public async Task statefulset_restart_skips_on_delete_items_in_mixed_selection()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        var manual = CreateStatefulSet("restart-manual", "OnDelete");
+        var rolling = CreateStatefulSet("restart-rolling", "RollingUpdate");
+        await workspace.Runtime.Client!.AppsV1.CreateNamespacedStatefulSetAsync(
+            manual, "default", cancellationToken: TestContext.Current.CancellationToken);
+        await workspace.Runtime.Client.AppsV1.CreateNamespacedStatefulSetAsync(
+            rolling, "default", cancellationToken: TestContext.Current.CancellationToken);
+        await workspace.Runtime.Permissions.UpdateCanI<V1StatefulSet>(Verb.Patch, "default");
+        var config = (V1StatefulSetConfig)workspace.GetResourceConfig(GroupApiVersionKind.From<V1StatefulSet>());
+        var action = config.GetCustomMenuItems(new[] { manual, rolling })
+            .Single(item => item.Title == Assets.Resources.V1StatefulSetConfig_MenuItem_Restart);
+        var command = action.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
+        command.CanExecute(action.CommandParameter).ShouldBeTrue();
+
+        await command.ExecuteAsync(action.CommandParameter).WaitAsync(TestContext.Current.CancellationToken);
+
+        var updatedManual = await workspace.Runtime.Client.AppsV1.ReadNamespacedStatefulSetAsync(
+            manual.Name(), manual.Namespace(), cancellationToken: TestContext.Current.CancellationToken);
+        var updatedRolling = await workspace.Runtime.Client.AppsV1.ReadNamespacedStatefulSetAsync(
+            rolling.Name(), rolling.Namespace(), cancellationToken: TestContext.Current.CancellationToken);
+        updatedManual.Spec.Template.Metadata.Annotations.ShouldBeNull();
+        updatedRolling.Spec.Template.Metadata.Annotations.ShouldContainKey("kubectl.kubernetes.io/restartedAt");
+        ((TestApp)Application.Current!).Notification.ShouldBeNull();
+    }
+
+    private static V1StatefulSet CreateStatefulSet(string name, string updateStrategyType)
+    {
+        var labels = new Dictionary<string, string> { ["app"] = name };
+        return new V1StatefulSet
+        {
+            Metadata = new V1ObjectMeta { Name = name, NamespaceProperty = "default" },
+            Spec = new V1StatefulSetSpec
+            {
+                Selector = new V1LabelSelector { MatchLabels = labels },
+                Template = new V1PodTemplateSpec
+                {
+                    Metadata = new V1ObjectMeta { Labels = labels },
+                    Spec = new V1PodSpec
+                    {
+                        Containers = [new V1Container { Name = "app", Image = "example:latest" }],
+                    },
+                },
+                UpdateStrategy = new V1StatefulSetUpdateStrategy { Type = updateStrategyType },
+            },
+        };
+    }
+
+    private static async Task AssertOnDeleteRestartDisabledAsync<TConfig, TResource>(TResource resource, string? restartTitle)
+        where TConfig : ResourceConfigBase<TResource>
+        where TResource : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        await workspace.Runtime.Permissions.UpdateCanI<TResource>(Verb.Patch, "default");
+        var config = (TConfig)workspace.GetResourceConfig(GroupApiVersionKind.From<TResource>());
+        var action = config.GetCustomMenuItems(new[] { resource }).Single(item => item.Title == restartTitle);
+        var command = action.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
+        var parameters = action.CommandParameter.ShouldBeAssignableTo<IList>();
+        string? dialogContent = null;
+        ((TestApp)Application.Current!).ConfigureContentDialog = settings => dialogContent = settings.Content?.ToString();
+
+        try
+        {
+            command.CanExecute(parameters).ShouldBeFalse();
+            await command.ExecuteAsync(parameters).WaitAsync(TestContext.Current.CancellationToken);
+        }
+        finally
+        {
+            ((TestApp)Application.Current!).ConfigureContentDialog = null;
+        }
+
+        dialogContent.ShouldBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task resource_menu_edit_yaml_opens_resource_in_edit_mode()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        await workspace.Runtime.Permissions.UpdateCanI<V1Pod>(Verb.Update, "default");
+        var config = (V1PodConfig)workspace.GetResourceConfig(GroupApiVersionKind.From<V1Pod>());
+        var pod = new V1Pod { Metadata = new V1ObjectMeta { Name = "edit-test", NamespaceProperty = "default" } };
+        var action = config.GetDefaultMenuItems(new[] { pod })
+            .Single(item => item.Title == Assets.Resources.ResourceConfigBase_MenuItem_Edit);
+        var command = action.Command.ShouldBeAssignableTo<IRelayCommand>();
+        command.CanExecute(action.CommandParameter).ShouldBeTrue();
+        command.CanExecute(new List<V1Pod> { pod, pod }).ShouldBeFalse();
+
+        command.Execute(action.CommandParameter);
+
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var bottomDock = factory.GetDockable<IToolDock>("BottomDock").ShouldNotBeNull();
+        var yamlViewModel = bottomDock.VisibleDockables!.OfType<ResourceYamlViewModel>()
+            .Single(viewModel => viewModel.Object?.Metadata?.Name == pod.Metadata.Name);
+        try
+        {
+            yamlViewModel.EditMode.ShouldBeTrue();
+        }
+        finally
+        {
+            factory.CloseDockable(yamlViewModel);
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task resource_menu_edit_yaml_promotes_existing_yaml_document()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        await workspace.Runtime.Permissions.UpdateCanI<V1Pod>(Verb.Update, "default");
+        var config = (V1PodConfig)workspace.GetResourceConfig(GroupApiVersionKind.From<V1Pod>());
+        var pod = new V1Pod { Metadata = new V1ObjectMeta { Name = "edit-existing", NamespaceProperty = "default" } };
+        var defaultActions = config.GetDefaultMenuItems(new[] { pod }).ToArray();
+        defaultActions.Single(item => item.Title == Assets.Resources.ResourceConfigBase_MenuItem_ViewYaml)
+            .Command.ShouldBeAssignableTo<IRelayCommand>().Execute(defaultActions.Single(item => item.Title == Assets.Resources.ResourceConfigBase_MenuItem_ViewYaml).CommandParameter);
+
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var bottomDock = factory.GetDockable<IToolDock>("BottomDock").ShouldNotBeNull();
+        var yamlViewModel = bottomDock.VisibleDockables!.OfType<ResourceYamlViewModel>()
+            .Single(viewModel => viewModel.Object?.Metadata?.Name == pod.Metadata.Name);
+        try
+        {
+            defaultActions.Single(item => item.Title == Assets.Resources.ResourceConfigBase_MenuItem_Edit)
+                .Command.ShouldBeAssignableTo<IRelayCommand>().Execute(
+                    defaultActions.Single(item => item.Title == Assets.Resources.ResourceConfigBase_MenuItem_Edit).CommandParameter);
+
+            bottomDock.VisibleDockables!.OfType<ResourceYamlViewModel>()
+                .Count(viewModel => viewModel.Object?.Metadata?.Name == pod.Metadata.Name).ShouldBe(1);
+            yamlViewModel.EditMode.ShouldBeTrue();
+        }
+        finally
+        {
+            factory.CloseDockable(yamlViewModel);
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task resource_menu_edit_yaml_requires_update_permission()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        var config = Application.Current.GetRequiredTestService<V1PodConfig>();
+        config.Initialize(workspace);
+        var pod = new V1Pod { Metadata = new V1ObjectMeta { Name = "edit-denied", NamespaceProperty = "default" } };
+        var action = config.GetDefaultMenuItems(new[] { pod })
+            .Single(item => item.Title == Assets.Resources.ResourceConfigBase_MenuItem_Edit);
+
+        action.Command.ShouldBeAssignableTo<IRelayCommand>().CanExecute(action.CommandParameter).ShouldBeFalse();
     }
 
     [AvaloniaFact]
