@@ -6,44 +6,26 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Headless.XUnit" />
-    <PackageReference Include="Helm.NET" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
     <PackageReference Include="Microsoft.Testing.Extensions.CrashDump" />
     <PackageReference Include="Microsoft.Testing.Extensions.HangDump" />
     <PackageReference Include="xunit.v3.mtp-v2" />
-    <PackageReference Include="SvcSystems.AI.AgentClientProtocol" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\KubeUI.App\KubeUI.App.csproj" />
     <ProjectReference Include="..\..\src\KubeUI.Controls\KubeUI.Controls.csproj" />
-    <ProjectReference Include="..\..\src\KubeUI.Features.AI\KubeUI.Features.AI.csproj" />
-    <ProjectReference Include="..\..\src\KubeUI.Features.Clusters\KubeUI.Features.Clusters.csproj" />
-    <ProjectReference Include="..\..\src\KubeUI.Features.Resources\KubeUI.Features.Resources.csproj" />
-    <ProjectReference Include="..\..\src\KubeUI.Features.Cilium\KubeUI.Features.Cilium.csproj" />
-    <ProjectReference Include="..\..\src\KubeUI.Features.Crossplane\KubeUI.Features.Crossplane.csproj" />
-    <ProjectReference Include="..\..\src\KubeUI.Features.GatewayApi\KubeUI.Features.GatewayApi.csproj" />
-    <ProjectReference Include="..\..\src\KubeUI.Features.Helm\KubeUI.Features.Helm.csproj" />
     <ProjectReference Include="..\..\src\KubeUI.Desktop\KubeUI.Desktop.csproj" />
     <ProjectReference Include="..\..\src\KubeUI.Kubernetes\KubeUI.Kubernetes.csproj" />
     <ProjectReference Include="..\KubeUI.Testing\KubeUI.Testing.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="KubeUI.Benchmarks" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Using Include="Xunit" />
     <Using Include="KubeUI.App" />
     <Using Include="KubeUI.Avalonia.Assets" Alias="Assets" />
-    <Using Include="KubeUI.Avalonia.Assets" Alias="SharedAssets" />
-    <Using Include="KubeUI.Features.AI.Assets" Alias="AIAssets" />
     <Using Include="KubeUI.Features.Cilium.Assets" Alias="CiliumAssets" />
     <Using Include="KubeUI.Features.Clusters.Assets" Alias="ClusterAssets" />
-    <Using Include="KubeUI.Features.Crossplane.Assets" Alias="CrossplaneAssets" />
-    <Using Include="KubeUI.Features.Helm.Assets" Alias="HelmAssets" />
-    <Using Include="KubeUI.Features.Resources.Assets" Alias="ResourceAssets" />
     <Using Include="KubeUI.Controls.Converters" />
     <Using Include="KubeUI.Controls.Presentation" />
     <Using Include="KubeUI.Controls.DependencyInjection" />

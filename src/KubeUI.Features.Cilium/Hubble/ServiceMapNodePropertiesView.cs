@@ -1,4 +1,3 @@
-using KubeUI.Features.Resources.Properties.Controls;
 using KubeUI.Controls.Presentation;
 
 namespace KubeUI.Features.Cilium.Hubble;

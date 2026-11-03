@@ -143,7 +143,7 @@ public class ClusterWorkspaceTests
         using var workspace = await Application.Current.CreateClusterAsync(
             config => config.Type = backend);
         await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
-        var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
+        var crd = TestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
 
         await workspace.Runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
 
@@ -175,7 +175,7 @@ public class ClusterWorkspaceTests
     {
         using var workspace = await Application.Current.CreateClusterAsync(config => config.Type = backend);
         await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
-        var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("replays.kubeui.com", "replays", "value");
+        var crd = TestCustomResourceDefinitionFactory.Create("replays.kubeui.com", "replays", "value");
         await workspace.Runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
 
         var originalConfig = await TestWait.UntilValueAsync(
@@ -218,7 +218,7 @@ public class ClusterWorkspaceTests
                 processedConfig.TrySetResult(workspace.GetResourceConfig(resourceConfig.Kind));
             }
         };
-        var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
+        var crd = TestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
 
         await workspace.Runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
 
@@ -246,7 +246,7 @@ public class ClusterWorkspaceTests
                 observedConfigs.Enqueue(workspace.GetResourceConfig(resourceConfig.Kind));
             }
         };
-        var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("events.kubeui.com", "events", "value");
+        var crd = TestCustomResourceDefinitionFactory.Create("events.kubeui.com", "events", "value");
 
         await workspace.Runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
 
@@ -271,7 +271,7 @@ public class ClusterWorkspaceTests
         var workspace = await Application.Current.CreateClusterAsync(
             config => config.Type = backend);
         await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
-        var originalCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
+        var originalCrd = TestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
         originalCrd.Metadata.Generation = 1;
 
         await workspace.Runtime.CreateAsync(originalCrd, TestContext.Current.CancellationToken);
@@ -292,7 +292,7 @@ public class ClusterWorkspaceTests
             beforePoll: () => Dispatcher.UIThread.RunJobs());
         originalResourceConfig.ShouldNotBeNull();
 
-        var updatedCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "otherString");
+        var updatedCrd = TestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "otherString");
         var currentCrd = workspace.Runtime.GetResource<V1CustomResourceDefinition>(null, originalCrd.Name()).ShouldNotBeNull();
         updatedCrd.Metadata.Uid = currentCrd.Metadata.Uid;
         updatedCrd.Metadata.ResourceVersion = currentCrd.Metadata.ResourceVersion;
@@ -334,7 +334,7 @@ public class ClusterWorkspaceTests
         var workspace = await Application.Current.CreateClusterAsync(
             config => config.Type = backend);
         await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
-        var originalCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
+        var originalCrd = TestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
         originalCrd.Metadata.Generation = 1;
 
         await workspace.Runtime.CreateAsync(originalCrd, TestContext.Current.CancellationToken);
@@ -364,7 +364,7 @@ public class ClusterWorkspaceTests
             }
         };
 
-        var updatedCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
+        var updatedCrd = TestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
         updatedCrd.Metadata.Uid = workspace.Runtime.GetResource<V1CustomResourceDefinition>(null, originalCrd.Name()).ShouldNotBeNull().Metadata.Uid;
         updatedCrd.Metadata.Generation = 1;
         updatedCrd.Metadata.Annotations = new Dictionary<string, string>
@@ -443,7 +443,7 @@ public class ClusterWorkspaceTests
         var workspace = await Application.Current.CreateClusterAsync(
             config => config.Type = backend);
         await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
-        var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
+        var crd = TestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
 
         await workspace.Runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
 
@@ -481,7 +481,7 @@ public class ClusterWorkspaceTests
     {
         var workspace = await Application.Current.CreateClusterAsync();
         await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
-        var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
+        var crd = TestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
         crd.Metadata.Generation = 1;
 
         await workspace.Runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
@@ -497,7 +497,7 @@ public class ClusterWorkspaceTests
         GroupApiVersionKind? removedKind = null;
         workspace.CustomResourceDefinitionRemoved += (_, kind) => removedKind = kind;
 
-        var invalidCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
+        var invalidCrd = TestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
         var currentCrd = workspace.Runtime.GetResource<V1CustomResourceDefinition>(null, crd.Name()).ShouldNotBeNull();
         invalidCrd.Metadata.Uid = currentCrd.Metadata.Uid;
         invalidCrd.Metadata.Generation = 2;
@@ -636,7 +636,7 @@ public class ClusterWorkspaceTests
         var workspace = await Application.Current.CreateClusterAsync(
             config => config.Type = backend);
         await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
-        var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
+        var crd = TestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
 
         await workspace.Runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
 
@@ -702,7 +702,7 @@ public class ClusterWorkspaceTests
         var workspace = await Application.Current.CreateClusterAsync(
             config => config.Type = backend);
 
-        var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
+        var crd = TestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
         await workspace.Runtime.AddOrUpdateResource(crd);
 
         var resourceKind = await WaitForRegisteredCustomResourceKindAsync(workspace.Runtime, crd);
@@ -1009,152 +1009,5 @@ public class ClusterWorkspaceTests
     {
         return (IList<IResourceInformerRegistration>)(container.GetType().GetProperty("InformerRegistrations")?.GetValue(container)
             ?? throw new InvalidOperationException("Container does not expose InformerRegistrations."));
-    }
-}
-
-internal sealed class BlockingPodPermissionResourceConfig : IResourceConfig
-{
-    private readonly Task _releaseTask;
-
-    public BlockingPodPermissionResourceConfig(Task releaseTask)
-    {
-        _releaseTask = releaseTask;
-    }
-
-    public ClusterWorkspace? Cluster { get; private set; }
-    public bool IsNamespaced => true;
-    public bool CanListAndWatch { get; private set; }
-    public bool PermissionsLoaded { get; private set; }
-    public bool ShowNewResource => true;
-    public GroupApiVersionKind Kind => GroupApiVersionKind.From(Type);
-    public NavigationPlacement Navigation => NavigationPlacement.Root;
-    public IList<IResourceListColumn> Columns() => [];
-    public IEnumerable<MenuItemViewModel> GetDefaultMenuItems(IEnumerable? selectedItems) => [];
-    public IEnumerable<MenuItemViewModel> GetCustomMenuItems(IEnumerable? selectedItems) => [];
-    public int Order => 0;
-    public string Name => "Pods";
-    public ResourceOrigin Origin => ResourceOrigin.BuiltIn;
-    public Style[] ListStyle() => [];
-    public Type Type { get; } = typeof(V1Pod);
-    public IRelayCommand NewResourceCommand => throw new NotImplementedException();
-    public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
-    public IAsyncRelayCommand<IList> DeleteCommand => throw new NotImplementedException();
-    public IEnumerable<(Verb verb, string? subresource)> Permissions() => [(Verb.List, null), (Verb.Watch, null), (Verb.Create, "portforward")];
-
-    public async Task EvaluateListWatchAccessAsync()
-    {
-        await _releaseTask.ConfigureAwait(false);
-        CanListAndWatch = true;
-        PermissionsLoaded = true;
-    }
-
-    public Task SeedResource(bool waitForReady = false) => Task.CompletedTask;
-
-    public void Initialize(ClusterWorkspace cluster)
-    {
-        Cluster = cluster;
-    }
-}
-
-internal sealed class ImmediatePermissionResourceConfig : IResourceConfig
-{
-    private readonly TaskCompletionSource<object?> _completion;
-
-    public ImmediatePermissionResourceConfig(Type type, string name, TaskCompletionSource<object?> completion)
-    {
-        Type = type;
-        Name = name;
-        _completion = completion;
-    }
-
-    public ClusterWorkspace? Cluster { get; private set; }
-    public bool IsNamespaced => true;
-    public bool CanListAndWatch { get; private set; }
-    public bool PermissionsLoaded { get; private set; }
-    public bool ShowNewResource => true;
-    public GroupApiVersionKind Kind => GroupApiVersionKind.From(Type);
-    public NavigationPlacement Navigation => NavigationPlacement.Root;
-    public IList<IResourceListColumn> Columns() => [];
-    public IEnumerable<MenuItemViewModel> GetDefaultMenuItems(IEnumerable? selectedItems) => [];
-    public IEnumerable<MenuItemViewModel> GetCustomMenuItems(IEnumerable? selectedItems) => [];
-    public int Order => 0;
-    public string Name { get; }
-    public ResourceOrigin Origin => ResourceOrigin.BuiltIn;
-    public Style[] ListStyle() => [];
-    public Type Type { get; }
-    public IRelayCommand NewResourceCommand => throw new NotImplementedException();
-    public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
-    public IAsyncRelayCommand<IList> DeleteCommand => throw new NotImplementedException();
-    public IEnumerable<(Verb verb, string? subresource)> Permissions() => [(Verb.List, null), (Verb.Watch, null)];
-
-    public Task EvaluateListWatchAccessAsync()
-    {
-        CanListAndWatch = true;
-        PermissionsLoaded = true;
-        _completion.TrySetResult(null);
-        return Task.CompletedTask;
-    }
-
-    public Task SeedResource(bool waitForReady = false) => Task.CompletedTask;
-
-    public void Initialize(ClusterWorkspace cluster)
-    {
-        Cluster = cluster;
-    }
-}
-
-internal static class ClusterWorkspaceTestCustomResourceDefinitionFactory
-{
-    public static V1CustomResourceDefinition Create(string name, string plural, string schemaProperty)
-    {
-        return new V1CustomResourceDefinition
-        {
-            Metadata = new()
-            {
-                Name = name
-            },
-            Spec = new()
-            {
-                Group = "kubeui.com",
-                Scope = "Namespaced",
-                Names = new()
-                {
-                    Plural = plural,
-                    Singular = "test",
-                    Kind = "Test",
-                    ListKind = "TestList"
-                },
-                Versions =
-                [
-                    new()
-                    {
-                        Name = "v1beta1",
-                        Served = true,
-                        Storage = true,
-                        Schema = new()
-                        {
-                            OpenAPIV3Schema = new()
-                            {
-                                Type = "object",
-                                Properties = new Dictionary<string, V1JSONSchemaProps>
-                                {
-                                    ["apiVersion"] = new() { Type = "string" },
-                                    ["kind"] = new() { Type = "string" },
-                                    ["metadata"] = new() { Type = "object" },
-                                    ["spec"] = new()
-                                    {
-                                        Type = "object",
-                                        Properties = new Dictionary<string, V1JSONSchemaProps>
-                                        {
-                                            [schemaProperty] = new() { Type = "string" }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                ]
-            }
-        };
     }
 }

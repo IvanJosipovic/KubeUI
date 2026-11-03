@@ -13,12 +13,14 @@
     <Using Include="Avalonia.Markup.Declarative" />
     <Using Include="Avalonia.Styling" />
     <Using Include="Dock.Model.Mvvm.Controls" />
+    <Using Include="PropertyGenerator.Avalonia" />
     <Using Include="System.Collections" />
   </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="KubeUI.App" />
     <InternalsVisibleTo Include="KubeUI.Avalonia.Tests" />
+    <InternalsVisibleTo Include="KubeUI.Features.Resources.Tests" />
     <InternalsVisibleTo Include="KubeUI.Benchmarks" />
     <ProjectReference Include="..\KubeUI.Avalonia\KubeUI.Avalonia.csproj" />
   </ItemGroup>
@@ -26,6 +28,9 @@
   <ItemGroup>
     <PackageReference Include="Avalonia.Markup.Declarative" />
     <PackageReference Include="Dock.Model.Mvvm" />
+    <PackageReference Include="PropertyGenerator.Avalonia">
+      <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Svg.Controls.Skia.Avalonia" />
   </ItemGroup>
 </Project>

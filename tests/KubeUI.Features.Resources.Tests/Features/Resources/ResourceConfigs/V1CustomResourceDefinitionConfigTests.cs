@@ -6,7 +6,6 @@ using k8s.Models;
 using KubeUI.Features.Resources.Common;
 using KubeUI.Features.Resources;
 using KubeUI.App.Shell.Navigation;
-using KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
 using KubeUI.Kubernetes.Serialization;
 using Shouldly;
 
@@ -22,7 +21,7 @@ public class V1CustomResourceDefinitionConfigTests
         var config = ActivatorUtilities.CreateInstance<V1CustomResourceDefinitionConfig>(services);
         config.Initialize(cluster);
 
-        var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("example.com", "examples", "someString");
+        var crd = TestCustomResourceDefinitionFactory.Create("example.com", "examples", "someString");
 
         Should.NotThrow(() =>
         {
@@ -48,7 +47,7 @@ public class V1CustomResourceDefinitionConfigTests
         var cluster = await Application.Current.CreateClusterAsync();
         var config = ActivatorUtilities.CreateInstance<CustomResourceConfig>(services);
         config.Initialize(cluster);
-        config.Configure(ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("example.com", "examples", "someString"));
+        config.Configure(TestCustomResourceDefinitionFactory.Create("example.com", "examples", "someString"));
         cluster.AddResourceConfigForTest(config);
         cluster.Runtime.ModelCatalog.RegisterCustomResourceDefinition(config.Kind);
 
@@ -73,7 +72,7 @@ public class V1CustomResourceDefinitionConfigTests
               value: hello
             """;
         var config = new TestKubeUiCustomResourceConfig(services, template, configurePresentation: false);
-        config.Configure(ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("kubeui.com", "widgets", "value"));
+        config.Configure(TestCustomResourceDefinitionFactory.Create("kubeui.com", "widgets", "value"));
 
         var first = config.CreateNewResource();
         var second = config.CreateNewResource();
@@ -93,7 +92,7 @@ public class V1CustomResourceDefinitionConfigTests
         var services = Application.Current.GetTestServices();
         var fallback = ActivatorUtilities.CreateInstance<CustomResourceConfig>(services);
         var specialized = new TestKubeUiCustomResourceConfig(services, "", configurePresentation: false);
-        var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("kubeui.com", "widgets", "value");
+        var crd = TestCustomResourceDefinitionFactory.Create("kubeui.com", "widgets", "value");
 
         CustomResourceConfig.Select(crd, [fallback, specialized]).ShouldBeSameAs(specialized);
         specialized.ApiGroup.ShouldBe("kubeui.com");
@@ -105,7 +104,7 @@ public class V1CustomResourceDefinitionConfigTests
         var unavailableVersion = new CustomResourceConfig(services, "kubeui.com", "Test", "v9");
         CustomResourceConfig.Select(crd, [fallback, unavailableVersion]).ShouldBeSameAs(fallback);
 
-        var otherCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("kubeui.com", "widgets", "value");
+        var otherCrd = TestCustomResourceDefinitionFactory.Create("kubeui.com", "widgets", "value");
         otherCrd.Spec.Group = "other.com";
         CustomResourceConfig.Select(otherCrd, [fallback, specialized]).ShouldBeSameAs(fallback);
     }
@@ -117,7 +116,7 @@ public class V1CustomResourceDefinitionConfigTests
         var fallback = ActivatorUtilities.CreateInstance<CustomResourceConfig>(services);
         var first = new TestKubeUiCustomResourceConfig(services, "", configurePresentation: false);
         var second = new DuplicateTestKubeUiCustomResourceConfig(services);
-        var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("kubeui.com", "widgets", "value");
+        var crd = TestCustomResourceDefinitionFactory.Create("kubeui.com", "widgets", "value");
 
         Should.Throw<InvalidOperationException>(() => CustomResourceConfig.Select(crd, [fallback, first, second]));
     }
@@ -127,7 +126,7 @@ public class V1CustomResourceDefinitionConfigTests
     {
         var services = Application.Current.GetTestServices();
         var config = ActivatorUtilities.CreateInstance<CustomResourceConfig>(services);
-        var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("kubeui.com", "widgets", "value");
+        var crd = TestCustomResourceDefinitionFactory.Create("kubeui.com", "widgets", "value");
 
         // A definition whose storage version is not served cannot be listed or watched. The
         // failure must be reported explicitly instead of surfacing as an unhandled
@@ -149,7 +148,7 @@ public class V1CustomResourceDefinitionConfigTests
             Field = _ => "value",
         };
         var config = new TestKubeUiCustomResourceConfig(services, "", configurePresentation: true, customColumn);
-        var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("kubeui.com", "widgets", "value");
+        var crd = TestCustomResourceDefinitionFactory.Create("kubeui.com", "widgets", "value");
         crd.Spec.Versions[0].AdditionalPrinterColumns =
         [
             new V1CustomResourceColumnDefinition { Name = "Printer", JsonPath = ".spec.value", Type = "string" },
@@ -506,7 +505,7 @@ public class V1CustomResourceDefinitionConfigTests
     {
         var services = Application.Current.GetTestServices();
         var config = ActivatorUtilities.CreateInstance<CustomResourceConfig>(services);
-        var crd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("example.com", "examples", "someString");
+        var crd = TestCustomResourceDefinitionFactory.Create("example.com", "examples", "someString");
         config.Configure(crd);
 
         IResourceConfig resource = config;

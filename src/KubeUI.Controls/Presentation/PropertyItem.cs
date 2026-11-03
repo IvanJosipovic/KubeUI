@@ -2,20 +2,24 @@
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using KubeUI.Controls.Converters;
 
-namespace KubeUI.Features.Resources.Properties.Controls;
+namespace KubeUI.Controls.Presentation;
 
+/// <summary>Displays a key and selectable value row for property panels.</summary>
 public partial class PropertyItem : UserControl, IDeclarativeViewBase
 {
     private static readonly PropertyItemValueConverter ValueConverter = new();
     private static readonly StringNotNullOrEmptyConverter StringNotNullOrEmptyConverter = new();
     private static readonly StringNullOrWhiteSpaceConverter StringNullOrWhiteSpaceConverter = new();
 
+    /// <summary>Gets or sets the displayed property name.</summary>
     [GeneratedDirectProperty]
     public partial string Key { get; set; }
 
+    /// <summary>Gets or sets the displayed property value.</summary>
     [GeneratedDirectProperty]
     public partial object? Value { get; set; }
 
+    /// <summary>Creates a property row.</summary>
     public PropertyItem()
     {
         HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -86,4 +90,3 @@ public partial class PropertyItem : UserControl, IDeclarativeViewBase
                     .TextWrapping(TextWrapping.Wrap));
     }
 }
-

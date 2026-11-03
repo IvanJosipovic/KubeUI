@@ -24,6 +24,13 @@
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="tests/KubeUI.Avalonia.Tests/KubeUI.Avalonia.Tests.csproj" />
+    <Project Path="tests/KubeUI.Features.AI.Tests/KubeUI.Features.AI.Tests.csproj" />
+    <Project Path="tests/KubeUI.Features.Cilium.Tests/KubeUI.Features.Cilium.Tests.csproj" />
+    <Project Path="tests/KubeUI.Features.Clusters.Tests/KubeUI.Features.Clusters.Tests.csproj" />
+    <Project Path="tests/KubeUI.Features.Crossplane.Tests/KubeUI.Features.Crossplane.Tests.csproj" />
+    <Project Path="tests/KubeUI.Features.GatewayApi.Tests/KubeUI.Features.GatewayApi.Tests.csproj" />
+    <Project Path="tests/KubeUI.Features.Helm.Tests/KubeUI.Features.Helm.Tests.csproj" />
+    <Project Path="tests/KubeUI.Features.Resources.Tests/KubeUI.Features.Resources.Tests.csproj" />
     <Project Path="tests/KubeUI.Documentation.Tests/KubeUI.Documentation.Tests.csproj" />
     <Project Path="tests/KubeUI.Kubernetes.Tests/KubeUI.Kubernetes.Tests.csproj" />
     <Project Path="tests/KubeUI.Testing/KubeUI.Testing.csproj" />

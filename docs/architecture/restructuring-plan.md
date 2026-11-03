@@ -1,6 +1,6 @@
 # KubeUI Restructuring Plan
 
-**Status:** **Phase 1 Complete; Phase 2 Active** — based on architectural review of current state vs. `avalonia-project-structure-plan.md`
+**Status:** **Phase 1 Complete; Phase 2 Active; Phase 3 Complete** — based on architectural review of current state vs. `avalonia-project-structure-plan.md`
 
 ---
 
@@ -14,7 +14,7 @@ The project structure largely matches the target architecture, but **9 structura
 
 | ID | Title | Severity | Category | Status |
 |----|-------|----------|----------|--------|
-| R-01 | Test project references all 11 source projects | High | Test Architecture | ⏳ Pending |
+| R-01 | Test project references all 11 source projects | High | Test Architecture | ✅ Reviewed; retain shared test host |
 | R-02 | App.csproj leaks 30+ feature-internal namespaces via `Using` | High | Encapsulation | ✅ Done |
 | R-03 | Cross-feature `Using` creates compile-time coupling | High | Dependency Hygiene | 🟡 In Progress |
 | R-04 | Desktop references Kubernetes directly (bypasses App) | Medium | Layering | ✅ Done |
@@ -30,42 +30,18 @@ The project structure largely matches the target architecture, but **9 structura
 
 ### R-01: Reduce Test Project Coupling
 
-**Problem:** `KubeUI.Avalonia.Tests` references all 11 projects + `KubeUI.Testing` + `KubeUI.Desktop`. This increases rebuild scope and exposes unrelated internals to one test assembly.
+**Problem:** `KubeUI.Avalonia.Tests` references all 11 source projects + `KubeUI.Testing` + `KubeUI.Desktop`. This increases rebuild scope and exposes unrelated internals to one test assembly.
 
-**Constraint:** `tests/KubeUI.Avalonia.Tests/AGENTS.md` says not to add test assemblies without a distinct runtime or host. Do not split assemblies just to reduce project references. First identify which references and tests can be removed or isolated without breaking shared headless setup; revise this issue if no safe reduction exists.
+**Decision:** Split feature tests into projects matching `src/KubeUI.Features.*`, while keeping cross-feature and App-shell tests in `KubeUI.Avalonia.Tests`. Share common build and test setup; avoid copying test infrastructure.
 
 This can cause:
 - Full rebuild on any change
 - Tests can reach internals of any project
 - No isolation for feature test runs
 
-**Candidate target state (subject to the constraint above):**
-```
-tests/
-├── KubeUI.Avalonia.Tests/          # Foundation + Controls + App shell tests
-│   ├── Foundation/                 # Typography, resources, styles
-│   ├── Controls/                   # Shared control behavior
-│   ├── App/                        # Navigation, docking, shell
-│   └── Infra/                      # Shared test infrastructure
-├── KubeUI.Features.AI.Tests/       # AI feature tests (optional separate assembly)
-├── KubeUI.Features.Resources.Tests/ # Resources feature tests
-├── KubeUI.Features.Helm.Tests/     # Helm feature tests
-├── KubeUI.Features.Cilium.Tests/   # Cilium feature tests
-├── KubeUI.Kubernetes.Tests/        # Existing - keep
-└── KubeUI.Testing/                 # Existing - keep (shared test infra)
-```
+**Implementation:** Move feature tests into matching test projects. Keep reusable headless and Kubernetes fixtures in shared test support. Keep App-shell and cross-feature integration tests in `KubeUI.Avalonia.Tests`.
 
-**Implementation, only if separate hosts prove necessary:**
-1. Create `Directory.Build.props` in `tests/` to share common properties
-2. For each feature test project:
-   - Reference only: `KubeUI.Controls`, `KubeUI.Kubernetes`, `KubeUI.Testing`, the feature project, `Avalonia.Headless.XUnit`
-   - Do NOT reference other features or App
-3. Move existing feature tests from `KubeUI.Avalonia.Tests/Features/<Feature>/` to new projects
-4. Keep `KubeUI.Avalonia.Tests` for: Foundation, Controls, App shell, cross-feature integration tests
-5. Update CI to run test projects in parallel
-
-**Effort:** Medium (1-2 days)
-**Risk:** Low — tests are already organized by feature folder
+**Status:** In progress.
 
 ---
 
@@ -110,10 +86,10 @@ tests/
 
 | Consumer | Imports (Internal) | Should Use |
 |----------|-------------------|------------|
-| Cilium | `Resources.Visualization`, `.Properties.Controls`, `.Infrastructure`, `.Icons`, `.Common` | `IResourceVisualizationService`, `IResourceIconService` |
-| Resources | `Clusters.Workspace`, `.Presentation` | `IClusterWorkspace`, `IClusterCatalog` |
-| Crossplane | `Resources.Infrastructure` | `IResourceConfigRegistry` |
-| Helm | `Resources.Visualization`, `.Infrastructure` | `IVisualizationService`, `IResourceConfigRegistry` |
+| Cilium | `Resources.Visualization`, `.Icons`, `.Properties.Controls`, `.Common`; cluster lifecycle contract | Icon contract; shared controls; graph-style ownership decision |
+| Resources | `Clusters.Workspace`, `.Presentation` | Cluster workspace/runtime operations and navigation composition; scope requires consumer-level contract design |
+| Crossplane | Cluster resource-config contract | Already consumes `IClusterResourceConfig`; no Resources registry contract needed |
+| Helm | Resources visualization contract and `IResourceConfig` navigation signature | Visualization contract exists; navigation contract ownership remains coupled to Resources |
 
 **Target State:** Each feature exposes a **single public contract assembly** (or namespace) containing only:
 - Service registration extensions
@@ -130,7 +106,11 @@ tests/
 **Progress:**
 - ✅ Moved `IResourceIconService` into `KubeUI.Features.Resources.Contracts`; Cilium now consumes the contract namespace.
 - ✅ Added `IResourceVisualizationService`; Helm now uses it instead of constructing the Resources visualization ViewModel and Dock document.
-- ⏳ Remaining: extract cluster-workspace and resource-config boundaries; remove Cilium's remaining file-level imports of Resources implementation namespaces.
+- ✅ Mapped Cilium's remaining imports to concrete use: graph styling, icon rendering, generic property rows, shared context-menu items, and cluster initialization/runtime access. Removed an unused `Resources.Common` import from `ServiceMapView`.
+- ✅ Moved generic `PropertyItem` into `KubeUI.Controls.Presentation`; Resources and Cilium now share the control without a feature-to-feature UI dependency.
+- ⚠️ Do not remove remaining Cilium imports mechanically. `MenuItemViewModel` is a reusable presentation primitive; graph styles are coupled to the Resources GraphX model and need an explicit shared graph owner first.
+- ⏳ Remaining: design cluster/workspace contracts around consumer operations rather than passing `ClusterWorkspace`; keep `IClusterResourceConfig` as the existing cluster-owned registry contract; separate Helm's navigation-provider signature from Resources if the dependency can then be removed; move `MenuItemViewModel` only if Controls becomes its actual shared owner; decide graph-style ownership.
+- ⏳ R-03 stays open. Contract work is incomplete until project references and implementation imports are removed or documented as intentional, with focused tests.
 
 **Effort:** Medium (1-2 days per feature pair)
 **Risk:** Medium — requires API design for contracts
@@ -288,8 +268,8 @@ Phase 2 (Encapsulation - depends on Phase 1): 🟡 IN PROGRESS
   ├─ R-08: App package ownership 🟡
   └─ R-03: Cross-feature contracts 🟡 (icon and visualization contracts moved; cluster/resource boundaries remain)
 
-Phase 3 (Tests - depends on Phase 2):
-  └─ R-01: Test project split ⏳
+Phase 3 (Test project split):
+  └─ R-01: Feature test projects ⏳
 ```
 
 ---

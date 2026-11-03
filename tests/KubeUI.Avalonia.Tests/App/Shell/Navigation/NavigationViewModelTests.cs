@@ -18,7 +18,6 @@ using KubeUI.Features.Resources.Visualization;
 using KubeUI.Features.Resources;
 using KubeUI.Features.Resources.Contracts;
 using KubeUI.App.Shell.Navigation;
-using KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
@@ -1946,7 +1945,7 @@ public class NavigationViewModelTests
         await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
         await TestApplicationExtensions.WaitForUiAsync();
 
-        var originalCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
+        var originalCrd = TestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
         await workspace.Runtime.AddOrUpdateResource(originalCrd);
 
         var originalKind = GetCustomResourceKind(originalCrd);
@@ -1966,7 +1965,7 @@ public class NavigationViewModelTests
         staleLink.ShouldNotBeNull();
         staleLink.ResourceKind.ShouldBe(originalKind);
 
-        var updatedCrd = ClusterWorkspaceTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "otherString");
+        var updatedCrd = TestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "otherString");
         var currentCrd = workspace.Runtime.GetResource<V1CustomResourceDefinition>(null, originalCrd.Name()).ShouldNotBeNull();
         updatedCrd.Metadata.Uid = currentCrd.Metadata.Uid;
         updatedCrd.Metadata.ResourceVersion = currentCrd.Metadata.ResourceVersion;

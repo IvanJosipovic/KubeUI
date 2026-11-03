@@ -20,6 +20,8 @@
   <ItemGroup>
     <InternalsVisibleTo Include="KubeUI.Kubernetes.Tests" />
     <InternalsVisibleTo Include="KubeUI.Avalonia.Tests" />
+    <InternalsVisibleTo Include="KubeUI.Features.Resources.Tests" />
+    <InternalsVisibleTo Include="KubeUI.Features.Helm.Tests" />
     <InternalsVisibleTo Include="KubeUI.Testing" />
   </ItemGroup>
 

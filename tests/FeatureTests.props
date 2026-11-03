@@ -1,0 +1,47 @@
+<Project>
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Headless.XUnit" />
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
+    <PackageReference Include="Microsoft.Testing.Extensions.CrashDump" />
+    <PackageReference Include="Microsoft.Testing.Extensions.HangDump" />
+    <PackageReference Include="xunit.v3.mtp-v2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\KubeUI.Avalonia.Tests\Infra\TestApp.cs" Link="Infra\TestApp.cs" />
+    <Compile Include="..\KubeUI.Avalonia.Tests\Infra\TestApplicationExtensions.cs" Link="Infra\TestApplicationExtensions.cs" />
+    <Compile Include="..\KubeUI.Avalonia.Tests\Infra\TestSettingsService.cs" Link="Infra\TestSettingsService.cs" />
+    <Compile Include="..\KubeUI.Avalonia.Tests\Infra\TestFeatureClient.cs" Link="Infra\TestFeatureClient.cs" />
+    <Compile Include="..\KubeUI.Avalonia.Tests\Infra\Initializer.cs" Link="Infra\Initializer.cs" />
+    <Compile Include="..\KubeUI.Avalonia.Tests\Infra\LiveClusterFactAttribute.cs" Link="Infra\LiveClusterFactAttribute.cs" />
+    <Compile Include="..\KubeUI.Avalonia.Tests\GlobalUsings.cs" Link="GlobalUsings.cs" />
+    <Compile Include="..\KubeUI.Avalonia.Tests\GlobalUsings.GenericKubernetesObject.cs" Link="GlobalUsings.GenericKubernetesObject.cs" />
+    <Using Include="Xunit" />
+    <Using Include="KubeUI.Controls.Converters" />
+    <Using Include="KubeUI.Controls.Presentation" />
+    <Using Include="KubeUI.Controls.DependencyInjection" />
+    <Using Include="KubeUI.Controls.Docking" />
+    <Using Include="KubeUI.Controls.Platform" />
+    <Using Include="KubeUI.Controls.Threading" />
+    <Using Include="KubeUI.Avalonia.Styles" />
+    <Using Include="KubeUI.Kubernetes.Client" />
+    <Using Include="KubeUI.Kubernetes" />
+    <Using Include="KubernetesClient.Informer.Client" />
+    <Using Include="KubeUI.Avalonia.Assets" Alias="Assets" />
+    <Using Include="KubeUI.Avalonia.Assets" Alias="SharedAssets" />
+    <Using Include="KubeUI.Features.AI.Assets" Alias="AIAssets" />
+    <Using Include="KubeUI.Features.Cilium.Assets" Alias="CiliumAssets" />
+    <Using Include="KubeUI.Features.Clusters.Assets" Alias="ClusterAssets" />
+    <Using Include="KubeUI.Features.Crossplane.Assets" Alias="CrossplaneAssets" />
+    <Using Include="KubeUI.Features.Helm.Assets" Alias="HelmAssets" />
+    <Using Include="KubeUI.Features.Resources.Assets" Alias="ResourceAssets" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectCapability Include="Avalonia" />
+  </ItemGroup>
+</Project>

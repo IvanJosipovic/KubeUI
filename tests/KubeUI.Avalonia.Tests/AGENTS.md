@@ -2,7 +2,7 @@
 
 ## Structure
 - Keep tests in this shared headless test assembly, grouped by owner: `App/`, `Controls/`, `Foundation/`, and `Features/<Feature>/`.
-- Keep each feature's tests under its matching `Features/<Feature>/` directory. Do not create another test assembly unless it needs a distinct runtime or test host.
+- Keep each feature's tests in a matching `KubeUI.Features.<Feature>.Tests` project under `tests/`, with test files grouped by feature. Use shared test infrastructure rather than copying setup across projects.
 - Keep shared Avalonia test setup in `Infra/`.
 - Shared Kubernetes test helpers are imported from `KubeUI.Testing.Kubernetes.Scenarios`, `KubeUI.Testing.Kubernetes.Transport`, and `KubeUI.Testing.Kubernetes.Infrastructure`; polling helpers are in `KubeUI.Testing.Utilities`.
 - Use the DI-registered `TestClusterGenerator` with `TestClusterConfig` for Kubernetes-backed tests. It creates the production `KubeUI.Kubernetes.Cluster` with the real Kubernetes client and fake HTTP/WebSocket transport.
