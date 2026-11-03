@@ -32,7 +32,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)' == 'Debug'">
-    <PackageReference Include="Declarative.Avalonia.AgentTools" Version="12.1.1" />
+    <PackageReference Include="Declarative.Avalonia.AgentTools" Version="12.2.0" />
   </ItemGroup>
 
   <ItemGroup>
