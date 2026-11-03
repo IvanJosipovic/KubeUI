@@ -81,8 +81,6 @@
     <PackageReference Include="FluentIcons.Avalonia" />
     <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia" />
     <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia.Fluent" />
-    <PackageReference Include="Irihi.Ursa" />
-    <PackageReference Include="Irihi.Ursa.Themes.Semi" />
     <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" />
     <PackageReference Include="LiveMarkdown.Avalonia" />
     <PackageReference Include="ModelContextProtocol" />
@@ -91,9 +89,7 @@
     <PackageReference Include="roslynator.analyzers" PrivateAssets="all" />
     <PackageReference Include="Semi.Avalonia" />
     <PackageReference Include="ServiceScan.SourceGenerator" PrivateAssets="all" />
-    <PackageReference Include="Svg.Controls.Skia.Avalonia" />
     <PackageReference Include="Velopack" />
-    <PackageReference Include="Xaml.Behaviors.Avalonia" />
   </ItemGroup>
 
 </Project>

@@ -6,6 +6,7 @@ using DynamicData.Binding;
 using k8s;
 using k8s.Models;
 using KubeUI.Features.Clusters.Workspace;
+using KubeUI.Features.Resources.Infrastructure;
 using KubeUI.Controls.Presentation;
 using KubeUI.Controls.Threading;
 using KubeUI.Kubernetes;

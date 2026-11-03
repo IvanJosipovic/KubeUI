@@ -2,6 +2,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Svg.Skia;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Features.Resources.Contracts;
 using KubeUI.Features.Resources.Icons;
 using Shouldly;
 

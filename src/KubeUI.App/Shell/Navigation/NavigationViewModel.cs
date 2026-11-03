@@ -15,7 +15,7 @@ using KubeUI.App.Infrastructure.Docking;
 using KubeUI.App.Infrastructure.Platform;
 using KubeUI.App.Infrastructure.Presentation;
 using KubeUI.Features.Resources;
-using KubeUI.Features.Resources.Icons;
+using KubeUI.Features.Resources.Contracts;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.App.Shell.Navigation;

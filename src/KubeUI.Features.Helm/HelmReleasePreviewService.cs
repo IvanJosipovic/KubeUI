@@ -1,10 +1,9 @@
-using Dock.Model.Core;
+using KubeUI.Features.Helm.Helm;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Features.Clusters.Workspace;
-using KubeUI.Features.Resources.Visualization;
-using KubeUI.Controls.Docking;
+using KubeUI.Features.Resources.Contracts;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Resources.Relationships;
 using KubeUI.Kubernetes.Serialization;
@@ -16,27 +15,22 @@ public sealed class HelmReleasePreviewService : IHelmReleasePreviewService
 {
     private readonly IKubernetesYamlSerializer _yamlSerializer;
     private readonly IHelmService _helmService;
-    private readonly Func<VisualizationViewModel> _createVisualization;
-    private readonly IFactory _factory;
+    private readonly IResourceVisualizationService _visualizationService;
 
     /// <summary>Creates the Helm release preview service.</summary>
     /// <param name="yamlSerializer">Application serializer for preview manifests.</param>
     /// <param name="helmService">The Helm client abstraction used for chart rendering.</param>
-    /// <param name="createVisualization">Creates the visualization document model.</param>
-    /// <param name="factory">Application dock factory used to open visualization documents.</param>
+    /// <param name="visualizationService">Resources feature service that opens visualization documents.</param>
     public HelmReleasePreviewService(
         IHelmService helmService,
         IKubernetesYamlSerializer yamlSerializer,
-        Func<VisualizationViewModel> createVisualization,
-        IFactory factory)
+        IResourceVisualizationService visualizationService)
     {
         ArgumentNullException.ThrowIfNull(helmService);
-        ArgumentNullException.ThrowIfNull(createVisualization);
-        ArgumentNullException.ThrowIfNull(factory);
+        ArgumentNullException.ThrowIfNull(visualizationService);
         _helmService = helmService;
         _yamlSerializer = yamlSerializer;
-        _createVisualization = createVisualization;
-        _factory = factory;
+        _visualizationService = visualizationService;
     }
 
     /// <inheritdoc />
@@ -55,8 +49,7 @@ public sealed class HelmReleasePreviewService : IHelmReleasePreviewService
         ArgumentNullException.ThrowIfNull(cluster);
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseName);
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseNamespace);
-        var viewModel = _createVisualization();
-        viewModel.InitializeScope(cluster, new VisualizationScope(
+        _visualizationService.OpenScope(cluster, new VisualizationScope(
             releaseNamespace,
             string.Format(Assets.Resources.HelmReleasePreviewService_ReleaseTitle!, releaseName, releaseNamespace),
             new ResourceAnnotationSelector(new Dictionary<string, string>
@@ -65,7 +58,6 @@ public sealed class HelmReleasePreviewService : IHelmReleasePreviewService
                 ["meta.helm.sh/release-namespace"] = releaseNamespace
             }),
             IsNamespaceReadOnly: true));
-        _factory.AddToDocuments(viewModel);
     }
 
     /// <inheritdoc />
@@ -109,8 +101,6 @@ public sealed class HelmReleasePreviewService : IHelmReleasePreviewService
             throw new InvalidOperationException(Assets.Resources.HelmReleasePreviewService_NoResources!);
         }
 
-        var viewModel = _createVisualization();
-        viewModel.InitializePreview(cluster, releaseName, resources);
-        _factory.AddToDocuments(viewModel);
+        _visualizationService.OpenPreview(cluster, releaseName, resources);
     }
 }

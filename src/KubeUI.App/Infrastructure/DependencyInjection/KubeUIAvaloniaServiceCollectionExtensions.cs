@@ -24,6 +24,9 @@ namespace KubeUI.App.Infrastructure.DependencyInjection;
 
 public static class KubeUIAvaloniaServiceCollectionExtensions
 {
+    /// <summary>Activity source name emitted by the Kubernetes runtime for application telemetry.</summary>
+    public const string KubernetesActivitySourceName = "com.KubeUI.Kubernetes";
+
     /// <summary>Registers application services with serialization policies captured from Settings.</summary>
     /// <param name="services">Service collection to configure.</param>
     /// <param name="features">Preview feature settings for this application instance.</param>

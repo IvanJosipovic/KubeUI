@@ -1,3 +1,4 @@
+using KubeUI.Features.Resources.Infrastructure;
 ﻿using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using AvaloniaEdit.Document;

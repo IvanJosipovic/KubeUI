@@ -35,14 +35,10 @@
     <Using Include="KubeUI.Controls.Presentation" />
     <Using Include="KubeUI.Controls.Threading" />
     <Using Include="KubeUI.Controls.Styles" />
-    <Using Include="KubeUI.Features.Clusters.Workspace" />
     <Using Include="KubeUI.Features.Helm.Assets" Alias="Assets" />
     <Using Include="KubeUI.Features.Resources" />
     <Using Include="KubeUI.Features.Resources.Assets" Alias="ResourceAssets" />
-    <Using Include="KubeUI.Features.Resources.Infrastructure" />
-    <Using Include="KubeUI.Features.Resources.Visualization" />
     <Using Include="KubeUI.Kubernetes" />
-    <Using Include="KubeUI.Features.Helm.Helm" />
     <Using Include="Microsoft.Extensions.DependencyInjection" />
     <Using Include="Microsoft.Extensions.Logging" />
     <Using Include="NuGet.Versioning" />

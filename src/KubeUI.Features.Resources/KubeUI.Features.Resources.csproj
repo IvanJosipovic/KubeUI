@@ -28,13 +28,8 @@
     <Using Include="KubeUI.Controls.Docking" />
     <Using Include="KubeUI.Controls.Platform" />
     <Using Include="KubeUI.Controls.Threading" />
-    <Using Include="KubeUI.Features.Clusters.Workspace" />
-    <Using Include="KubeUI.Features.Clusters.Presentation" />
     <Using Include="KubeUI.Features.Resources.Assets" Alias="Assets" />
-    <Using Include="KubeUI.Features.Resources.Icons" />
-    <Using Include="KubeUI.Features.Resources.Infrastructure" />
-    <Using Include="KubeUI.Features.Resources.Settings" />
-    <Using Include="KubeUI.Features.Resources.Converters" />
+    <Using Include="KubeUI.Features.Resources.Contracts" />
     <Using Include="KubeUI.Kubernetes" />
     <Using Include="Microsoft.Extensions.DependencyInjection" />
     <Using Include="Microsoft.Extensions.Logging" />

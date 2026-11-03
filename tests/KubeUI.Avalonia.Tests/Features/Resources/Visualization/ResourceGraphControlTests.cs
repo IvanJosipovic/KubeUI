@@ -15,6 +15,7 @@ using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Features.Resources.Visualization;
+using KubeUI.Features.Resources.Contracts;
 using KubeUI.Features.Resources.Icons;
 using KubeUI.Kubernetes.Resources.Relationships;
 using Shouldly;

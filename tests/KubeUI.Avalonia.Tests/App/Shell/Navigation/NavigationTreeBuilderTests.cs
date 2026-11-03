@@ -4,7 +4,7 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources;
-using KubeUI.Features.Resources.Icons;
+using KubeUI.Features.Resources.Contracts;
 using KubeUI.App.Shell.Navigation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;

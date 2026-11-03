@@ -1,4 +1,5 @@
 ﻿using KubeUI.Features.Clusters.Workspace;
+using KubeUI.Features.Resources.Icons;
 using KubeUI.Features.Resources.List;
 using KubeUI.Features.Resources.List.Controls;
 using KubeUI.Features.Resources.Properties;
@@ -18,6 +19,7 @@ public static partial class KubeUIResourcesFeatureServiceCollectionExtensions
         services.AddSingleton<IClusterCustomResourceConfigFactory, CustomResourceConfigFactory>();
         services.AddSingleton<ResourceIconService>();
         services.AddSingleton<IResourceIconService>(sp => sp.GetRequiredService<ResourceIconService>());
+        services.AddSingleton<IResourceVisualizationService, ResourceVisualizationService>();
         services.AddSingleton<IYamlValidationService, YamlSyntaxValidationService>();
         services.AddTransient(typeof(ResourceListViewModel<>));
         services.AddTransient<Func<VisualizationViewModel>>(sp => () => sp.GetRequiredService<VisualizationViewModel>());

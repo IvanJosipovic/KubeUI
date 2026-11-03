@@ -1,3 +1,4 @@
+using KubeUI.Features.Helm.Helm;
 using Dock.Model.Core;
 using Helm.NET;
 using KubeUI.Features.Clusters.Workspace;

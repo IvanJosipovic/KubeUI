@@ -5,7 +5,7 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources;
-using KubeUI.Features.Resources.Icons;
+using KubeUI.Features.Resources.Contracts;
 using KubeUI.Features.Resources.Assets;
 using KubeUI.App.Infrastructure.Threading;
 using KubeUI.Kubernetes;

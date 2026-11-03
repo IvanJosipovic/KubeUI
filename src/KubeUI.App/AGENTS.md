@@ -4,8 +4,8 @@ This guide supplements the repository root `AGENTS.md` and defines the Avalonia-
 
 ## 1) Folder structure
 
-- `Features/<FeatureName>/` and `Shell/<Area>/` must each follow the same internal structure when they contain UI code:
-- Keep shared, cross-feature UI helpers out of feature folders only when they are truly shared across multiple areas.
+- Keep feature UI under `Features/<FeatureName>/` and shell UI under `Shell/<Area>/`.
+- Put helpers in shared infrastructure only when multiple areas own the behavior.
 
 ## 2) Avalonia UI best practices
 
@@ -81,10 +81,6 @@ References:
 - UI tests must use Avalonia Headless and follow the headless testing guidance and helpers for input simulation.
 - Unit-test ViewModels and UI-facing services.
 - UI tests should validate navigation flows, docking, and editor behaviors.
-- Pod log tests must cover connect, disposal/disconnect races, transient HTTP open/read failures, pod add/remove, terminal failure, and container restart behavior.
-- Pod log views must enable resource-name prefixes by default when logs from multiple pods or containers are displayed.
-- Launching logs from a workload must seed pods and any intermediate owner resources required to resolve its descendant pods.
-
 ## 9) Code conventions
 
 - Keep this file focused on rules shared across Avalonia features. Create a nested `AGENTS.md` for feature-specific requirements when a feature has distinct architecture, UI, or testing rules, and update that file whenever the feature changes.

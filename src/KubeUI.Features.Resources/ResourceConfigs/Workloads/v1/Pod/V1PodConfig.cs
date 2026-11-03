@@ -1,3 +1,4 @@
+using KubeUI.Features.Clusters.Workspace;
 ﻿using Avalonia.Collections;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;

@@ -48,7 +48,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\KubeUI.App\KubeUI.App.csproj" />
-    <ProjectReference Include="..\KubeUI.Kubernetes\KubeUI.Kubernetes.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -16,7 +16,7 @@ using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Features.Resources.Visualization;
 using KubeUI.Features.Resources;
-using KubeUI.Features.Resources.Icons;
+using KubeUI.Features.Resources.Contracts;
 using KubeUI.App.Shell.Navigation;
 using KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
 using Microsoft.Extensions.Logging;

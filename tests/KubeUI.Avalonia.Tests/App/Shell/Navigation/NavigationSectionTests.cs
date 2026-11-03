@@ -8,7 +8,7 @@ using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Crossplane;
 using KubeUI.Features.Helm;
 using KubeUI.Features.Resources;
-using KubeUI.Features.Resources.Icons;
+using KubeUI.Features.Resources.Contracts;
 using KubeUI.App.Services.Settings;
 using KubeUI.App.Shell.Navigation;
 using KubeUI.Avalonia.Tests.Infra;

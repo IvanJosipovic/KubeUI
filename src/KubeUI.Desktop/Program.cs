@@ -20,7 +20,6 @@ using KubeUI.App.Infrastructure.Mcp;
 using KubeUI.App.Infrastructure.Platform;
 using KubeUI.App.Options;
 using KubeUI.App.Services.Settings;
-using KubeUI.Kubernetes.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -317,7 +316,7 @@ internal static class Program
                 tracingProvider
                     .AddSource(Source.Name)
                     .AddSource(AgentActivitySource.SourceName)
-                    .AddSource(Kubernetes.Client.KubeInstrumentation.SourceName)
+                    .AddSource(KubeUIAvaloniaServiceCollectionExtensions.KubernetesActivitySourceName)
                     .AddSource(Instrumentation.SourceName)
                     .AddHttpClientInstrumentation()
                     .AddOtlpExporter(e =>

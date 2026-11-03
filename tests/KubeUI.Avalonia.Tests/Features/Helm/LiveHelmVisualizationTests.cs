@@ -6,6 +6,7 @@ using k8s;
 using k8s.Models;
 using KubeUI.Features.Helm;
 using KubeUI.Features.Helm.Helm;
+using KubeUI.Features.Resources.Contracts;
 using KubeUI.Features.Resources.Visualization;
 using KubeUI.App.Infrastructure.Docking;
 using KubeUI.Avalonia.Tests.Infra;
@@ -84,7 +85,7 @@ public sealed class LiveHelmVisualizationTests : IDisposable
         var documents = new DocumentDock { VisibleDockables = [] };
         factory.Setup(item => item.GetDockable<IDocumentDock>("Documents")).Returns(documents);
         factory.Setup(item => item.InsertDockable(documents, It.IsAny<IDockable>(), It.IsAny<int>()));
-        var service = new HelmReleasePreviewService(Mock.Of<IHelmService>(), _yamlSerializer, () => viewModel, factory.Object);
+        var service = new HelmReleasePreviewService(Mock.Of<IHelmService>(), _yamlSerializer, new ResourceVisualizationService(() => viewModel, factory.Object));
         service.VisualizeRelease(cluster, "authentik", "authentik");
         using var window = Application.Current.CreateTestWindow(content: new VisualizationView { DataContext = viewModel });
         try

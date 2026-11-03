@@ -11,6 +11,7 @@ using KubernetesClient.Informer.Client;
 using KubeUI.Features.Resources.Visualization;
 using KubeUI.Controls.DependencyInjection;
 using KubeUI.Controls.Presentation;
+using KubeUI.Features.Resources.Contracts;
 using KubeUI.Features.Resources.Icons;
 using KubeUI.Features.Cilium.Hubble;
 using QuikGraph;

@@ -1,3 +1,4 @@
+using KubeUI.Features.Resources.Infrastructure;
 ﻿using System.Text;
 using Avalonia.Controls.Primitives;
 using Avalonia.VisualTree;

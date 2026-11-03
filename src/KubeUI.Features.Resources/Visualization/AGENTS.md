@@ -1,6 +1,6 @@
 # Resource Visualization
 ## Presentation
-- Resource Visualization and Hubble service-map nodes share `Infrastructure.Presentation.ResourceGraphNodeContent`: centered 128×128 icon/kind/name stack with 64px icons. Keep feature-specific details outside shared node content; preserve them in each feature's tooltips and properties views.
+- Resource Visualization and Hubble service-map nodes share `KubeUI.Controls.Presentation.ResourceGraphNodeContent`: centered 128×128 icon/kind/name stack with 64px icons. Keep feature-specific details outside shared node content; preserve them in each feature's tooltips and properties views.
 
 ## Expected View Model Logic
 - Build the visualization graph through `IResourceRelationshipBuilder`; do not duplicate relationship or resource-discovery logic in the view.

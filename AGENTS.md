@@ -5,9 +5,9 @@ caveman mode
 
 This document defines the repository-wide architectural and coding rules. For Avalonia app guidance, see `src/KubeUI.App/AGENTS.md`; feature-specific guidance lives with each feature.
 
-## 0) Pre-requisites
-.Net Core SDK installed based on `global.json`
-Docker
+## 0) Prerequisites
+- Install the .NET SDK pinned by `global.json`.
+- Docker is required only for Kind-backed tests.
 
 ## 1) Core principles
 

@@ -9,6 +9,7 @@ using k8s.Models;
 using KubeUI.Features.Helm;
 using KubeUI.Features.Helm.Helm;
 using KubeUI.Features.Helm.Releases;
+using KubeUI.Features.Resources.Contracts;
 using KubeUI.Features.Resources.Visualization;
 using KubeUI.App.Infrastructure.Docking;
 using KubeUI.Kubernetes;
@@ -36,7 +37,7 @@ public sealed class HelmReleasePreviewServiceTests : IDisposable
         helm.Setup(service => service.TemplateVersionAsync(connection, "web", "repo/web", "2.0", values,
             It.IsAny<CancellationToken>())).ReturnsAsync("apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: preview\n");
         var factory = CreateFactory();
-        var service = new HelmReleasePreviewService(helm.Object, _yamlSerializer, () => viewModel, factory.Object);
+        var service = new HelmReleasePreviewService(helm.Object, _yamlSerializer, new ResourceVisualizationService(() => viewModel, factory.Object));
 
         await service.PreviewVersionAsync(cluster, connection, "web", "repo/web", "2.0", values,
             TestContext.Current.CancellationToken);
@@ -54,7 +55,7 @@ public sealed class HelmReleasePreviewServiceTests : IDisposable
         using var viewModel = new VisualizationViewModel();
         var helm = new Mock<IHelmService>(MockBehavior.Strict);
         var factory = CreateFactory();
-        var sut = new HelmReleasePreviewService(helm.Object, _yamlSerializer, () => viewModel, factory.Object);
+        var sut = new HelmReleasePreviewService(helm.Object, _yamlSerializer, new ResourceVisualizationService(() => viewModel, factory.Object));
 
         await cluster.Runtime.AddOrUpdateResource(new V1Namespace
         {
@@ -136,7 +137,7 @@ public sealed class HelmReleasePreviewServiceTests : IDisposable
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(manifest);
         var factory = CreateFactory(dockable => openedViewModel = dockable as VisualizationViewModel);
-        var sut = new HelmReleasePreviewService(helmService.Object, _yamlSerializer, static () => new VisualizationViewModel(), factory.Object);
+        var sut = new HelmReleasePreviewService(helmService.Object, _yamlSerializer, new ResourceVisualizationService(static () => new VisualizationViewModel(), factory.Object));
 
         await sut.PreviewAsync(
             cluster,
@@ -199,7 +200,7 @@ public sealed class HelmReleasePreviewServiceTests : IDisposable
                 It.IsAny<IReadOnlyDictionary<string, object?>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(manifest);
         var factory = CreateFactory(dockable => openedVisualization = dockable as VisualizationViewModel);
-        var previewService = new HelmReleasePreviewService(helm.Object, _yamlSerializer, static () => new VisualizationViewModel(), factory.Object);
+        var previewService = new HelmReleasePreviewService(helm.Object, _yamlSerializer, new ResourceVisualizationService(static () => new VisualizationViewModel(), factory.Object));
         var editor = new HelmReleaseEditorViewModel(
             helm.Object, _yamlSerializer,
             Mock.Of<IFactory>(),
@@ -274,7 +275,7 @@ public sealed class HelmReleasePreviewServiceTests : IDisposable
             .ReturnsAsync((HelmConnection _, string _, string _, string _, IReadOnlyDictionary<string, object?> values, CancellationToken _) =>
                 $"apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: preview\ndata:\n  replicas: \"{values["replicas"]}\"\n");
         var factory = CreateFactory(dockable => openedVisualization = dockable as VisualizationViewModel);
-        var previewService = new HelmReleasePreviewService(helm.Object, _yamlSerializer, static () => new VisualizationViewModel(), factory.Object);
+        var previewService = new HelmReleasePreviewService(helm.Object, _yamlSerializer, new ResourceVisualizationService(static () => new VisualizationViewModel(), factory.Object));
         var editor = new HelmReleaseEditorViewModel(
             helm.Object, _yamlSerializer,
             Mock.Of<IFactory>(),
@@ -342,7 +343,7 @@ public sealed class HelmReleasePreviewServiceTests : IDisposable
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(string.Empty);
         var factory = CreateFactory();
-        var sut = new HelmReleasePreviewService(helmService.Object, _yamlSerializer, static () => new VisualizationViewModel(), factory.Object);
+        var sut = new HelmReleasePreviewService(helmService.Object, _yamlSerializer, new ResourceVisualizationService(static () => new VisualizationViewModel(), factory.Object));
 
         await Should.ThrowAsync<InvalidOperationException>(() => sut.PreviewAsync(
             cluster,

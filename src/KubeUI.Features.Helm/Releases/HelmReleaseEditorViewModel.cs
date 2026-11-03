@@ -1,3 +1,4 @@
+using KubeUI.Features.Helm.Helm;
 using System.Collections;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;

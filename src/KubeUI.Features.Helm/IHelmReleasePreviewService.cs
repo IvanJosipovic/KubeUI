@@ -1,3 +1,4 @@
+using KubeUI.Features.Helm.Helm;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Kubernetes;
 

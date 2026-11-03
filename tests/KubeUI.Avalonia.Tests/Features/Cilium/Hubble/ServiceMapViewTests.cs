@@ -14,6 +14,7 @@ using KubernetesClient.Informer.Client;
 using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Features.Cilium.Hubble.Controls;
 using KubeUI.Features.Resources.Properties.Controls;
+using KubeUI.Features.Resources.Contracts;
 using KubeUI.Features.Resources.Icons;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Features.Cilium.Hubble;

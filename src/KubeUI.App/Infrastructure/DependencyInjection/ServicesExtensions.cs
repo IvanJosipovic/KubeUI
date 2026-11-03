@@ -34,7 +34,7 @@ using KubeUI.Features.Resources.Workloads.v1.Pod.Services;
 using KubeUI.Features.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.App.Services.FeatureFlags;
 using KubeUI.App.Services.AI;
-using KubeUI.Features.Resources.Icons;
+using KubeUI.Features.Resources.Contracts;
 using KubeUI.App.Services.Settings;
 using KubeUI.App.Shell.Main;
 using KubeUI.App.Shell.Navigation;

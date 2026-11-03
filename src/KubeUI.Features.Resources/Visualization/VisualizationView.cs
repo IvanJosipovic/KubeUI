@@ -8,6 +8,7 @@ using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using k8s.Models;
 using KubeUI.Features.Resources.Common;
+using KubeUI.Features.Clusters.Presentation;
 using KubeUI.Controls.DependencyInjection;
 using KubeUI.Controls.Presentation;
 namespace KubeUI.Features.Resources.Visualization;
