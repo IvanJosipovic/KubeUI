@@ -1,6 +1,6 @@
 # Avalonia project structure plan
 
-**Status:** Structure implemented; Debug and Release builds and the Linux x64 Release trimmed publish pass. Feature tests are split into dedicated projects; local MTP runs currently time out before reporting results.
+**Status:** Structure implemented; Debug and Release builds, the Linux x64 Release trimmed publish, and the full local MTP suite pass. On Linux, test coverage uses dynamic instrumentation with static instrumentation disabled to avoid the slow pre-launch scan of the large test output folders.
 
 ## Goal
 
@@ -193,7 +193,7 @@ When assets move, update `avares://` assembly URIs and resource registration. Mo
 5. [x] Keep the shell and cross-feature UI composition in `KubeUI.App`; keep `KubeUI.Desktop` focused on the executable host and desktop output.
 6. [x] Update solution references, namespaces, asset URIs, and resource ownership. Remove duplicate package references and keep feature dependencies acyclic.
 7. [x] Split feature tests into matching test projects; keep common setup in `KubeUI.Testing` and `FeatureTests.props`, and App-shell/cross-feature tests in `KubeUI.Avalonia.Tests`.
-8. [x] Verify full solution Debug and Release builds and a Linux x64 Release desktop publish with trimming. Focused MTP tests currently time out locally before reporting results.
+8. [x] Verify full solution Debug and Release builds, a Linux x64 Release desktop publish with trimming, and the full MTP suite (1,589 passed, 10 skipped).
 
 ## Completion checks
 
@@ -204,4 +204,4 @@ When assets move, update `avares://` assembly URIs and resource registration. Mo
 - `KubeUI.App` owns the main UI shell; `KubeUI.Desktop` owns desktop output and platform startup.
 - Each Avalonia framework extension has one public provider; each external control assembly has one public generation owner.
 - Feature tests use dedicated test projects; shared Avalonia shell and cross-feature tests remain in `KubeUI.Avalonia.Tests`.
-- The full solution Debug and Release builds and Linux x64 Release trimmed publish pass. Local MTP test execution remains blocked before results are reported.
+- The full solution Debug and Release builds, Linux x64 Release trimmed publish, and local MTP suite pass (1,589 passed, 10 skipped).

@@ -41,7 +41,7 @@ This can cause:
 
 **Implementation:** Move feature tests into matching test projects. Keep reusable headless and Kubernetes fixtures in shared test support. Keep App-shell and cross-feature integration tests in `KubeUI.Avalonia.Tests`.
 
-**Status:** Split complete; local MTP test execution still times out before reporting results, so CI must confirm the latest test fixes.
+**Status:** Split complete; full local MTP suite passes with dynamic-only code coverage. CI should confirm the same configuration on the PR runner.
 
 Seven feature test projects now cover AI, Cilium, Clusters, Crossplane, Gateway API, Helm, and Resources. Shared headless/Kubernetes setup is imported from `tests/FeatureTests.props`; App-shell, Controls, Desktop startup, and cross-feature tests remain in `KubeUI.Avalonia.Tests`. All new projects are included in `KubeUI.slnx` and CI's solution-level test run.
 
@@ -114,7 +114,7 @@ Removed seven direct feature project references and two feature-only package ref
 - ✅ Documented the remaining Cilium, Resources, Crossplane, Gateway API, and Helm references as intentional, with ownership rationale above.
 - ✅ Kept `IClusterResourceConfig` as the cluster-owned registry contract; a `ClusterWorkspace` wrapper would duplicate a broad runtime/configuration/navigation surface without reducing coupling.
 - ✅ Kept Helm's Resources reference because Helm consumes the Resources-owned visualization service and shared resource UI.
-- ⏳ Focused tests exist for the moved contracts and feature behavior; local test execution is blocked before discovery by HangDump startup timeout.
+- ✅ Focused contract regressions pass; full MTP run passes 1,589 tests with 10 expected skips using dynamic coverage and static instrumentation disabled.
 
 **Effort:** Medium (1-2 days per feature pair)
 **Risk:** Medium — requires API design for contracts
@@ -274,7 +274,7 @@ Phase 2 (Encapsulation - depends on Phase 1): ✅ COMPLETE
   └─ R-03: Cross-feature contracts ✅ (accidental coupling removed; remaining dependencies documented as intentional)
 
 Phase 3 (Test project split):
-  └─ R-01: Feature test projects ✅ (build passes; local test host times out before discovery)
+  └─ R-01: Feature test projects ✅ (build and full MTP suite pass with dynamic-only coverage)
 ```
 
 ---
@@ -283,7 +283,7 @@ Phase 3 (Test project split):
 
 After each phase, verify:
 - [x] Debug and Release solution builds pass with `--tl:off -clp:ErrorsOnly`
-- [ ] `dotnet test --no-build` passes for affected tests; local MTP runs time out before reporting test results
+- [x] Full `dotnet test --no-build --timeout 60m` passes: 1,589 passed, 10 skipped, 0 failed; dynamic coverage produced Cobertura output
 - [x] No `CS0103` / `CS0246` errors from removed `Using`
 - [x] Linux x64 self-contained Release trimmed desktop publish succeeds without linker warnings (SDK preview notices only)
 - [x] Dependency graph matches `avalonia-project-structure-plan.md` after correcting the stale test-split and Desktop edges
