@@ -13,7 +13,6 @@ using FluentIcons.Common;
 using k8s.Models;
 using KubeUI.Controls.DependencyInjection;
 using KubeUI.Controls.Presentation;
-using KubeUI.Features.Resources.Common;
 using KubeUI.Features.Cilium.Hubble;
 using SvcSystems.Avalonia.DynamicTableView;
 using UrsaControls = Ursa.Controls;

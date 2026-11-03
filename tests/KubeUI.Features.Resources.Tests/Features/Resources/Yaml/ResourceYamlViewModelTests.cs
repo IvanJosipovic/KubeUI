@@ -3838,8 +3838,9 @@ public class ResourceYamlViewModelTests
               containers:
                 - name: app
                   image: nginx
-            """.ReplaceLineEndings("\n");
+        """.ReplaceLineEndings("\n");
         await TestApplicationExtensions.WaitForUiAsync();
+        await WaitForValidationDebounceAsync(() => vm.ValidationDiagnostics.Count == 0);
 
         vm.DryRunCommand.CanExecute(null).ShouldBeTrue();
 

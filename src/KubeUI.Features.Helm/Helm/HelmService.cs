@@ -2,6 +2,7 @@ using KubeUI.Features.Helm.Helm;
 using System.Text.Json;
 using System.Threading;
 using Helm.NET;
+using KubeUI.Kubernetes.Serialization;
 
 namespace KubeUI.Features.Helm.Helm;
 
@@ -12,6 +13,7 @@ namespace KubeUI.Features.Helm.Helm;
 public sealed class HelmService : IHelmService, IDisposable
 {
     private readonly IHelmClientFactory _clientFactory;
+    private readonly IKubernetesJsonSerializer _jsonSerializer;
     private readonly ReaderWriterLockSlim _nativeGate = new(LockRecursionPolicy.NoRecursion);
     private readonly CancellationTokenSource _disposeCancellation = new();
     private int _disposed;
@@ -23,10 +25,12 @@ public sealed class HelmService : IHelmService, IDisposable
     /// Initializes a Helm service.
     /// </summary>
     /// <param name="clientFactory">Factory creating the Helm client for each operation.</param>
-    public HelmService(IHelmClientFactory clientFactory)
+    public HelmService(IHelmClientFactory clientFactory, IKubernetesJsonSerializer jsonSerializer)
     {
         ArgumentNullException.ThrowIfNull(clientFactory);
+        ArgumentNullException.ThrowIfNull(jsonSerializer);
         _clientFactory = clientFactory;
+        _jsonSerializer = jsonSerializer;
     }
 
     /// <inheritdoc />
@@ -285,7 +289,7 @@ public sealed class HelmService : IHelmService, IDisposable
             return null;
         }
 
-        using var document = JsonDocument.Parse(JsonSerializer.Serialize(values, (JsonSerializerOptions?)null));
+        using var document = JsonDocument.Parse(_jsonSerializer.Serialize(values));
         return document.RootElement.Clone();
     }
 

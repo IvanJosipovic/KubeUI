@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Helm.NET;
 using KubeUI.Features.Helm.Helm;
+using KubeUI.Kubernetes.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
@@ -16,7 +17,7 @@ public sealed class HelmServiceTests : IDisposable
     {
         var client = new FakeHelmClient { ChartValuesResult = "replicas: 2\n" };
         using var factory = new FakeHelmClientFactory(client);
-        using var service = new HelmService(factory);
+        using var service = CreateService(factory);
 
         var result = await service.GetChartValuesAsync(new HelmConnection("config", "context", "apps"), "oci://registry.test/charts/web", "1.2.3", TestContext.Current.CancellationToken);
 
@@ -30,7 +31,7 @@ public sealed class HelmServiceTests : IDisposable
         var client = new FakeHelmClient { TemplateResult = "kind: ConfigMap" };
         client.Charts.Add(new("cilium/cilium", "cilium", "1.20.3"));
         using var factory = new FakeHelmClientFactory(client);
-        using var service = new HelmService(factory);
+        using var service = CreateService(factory);
         var token = TestContext.Current.CancellationToken;
         var connection = CreateConnection();
         var charts = await service.ListChartsAsync(connection, "cilium", token);
@@ -52,7 +53,7 @@ public sealed class HelmServiceTests : IDisposable
     public async Task Alpha10_operations_reject_invalid_names_revisions_and_versions()
     {
         using var factory = new FakeHelmClientFactory(new FakeHelmClient());
-        using var service = new HelmService(factory);
+        using var service = CreateService(factory);
         var connection = CreateConnection();
         await Should.ThrowAsync<ArgumentException>(() => service.GetManifestAsync(connection, " "));
         await Should.ThrowAsync<ArgumentOutOfRangeException>(() => service.GetManifestAsync(connection, "web", -1));
@@ -79,7 +80,8 @@ public sealed class HelmServiceTests : IDisposable
 
     private static HelmConnection CreateConnection() => new("/home/user/.kube/config", "kind-test", "apps");
 
-    private HelmService CreateService(FakeHelmClientFactory factory) => new(factory);
+    private HelmService CreateService(FakeHelmClientFactory factory)
+        => new(factory, _services.GetRequiredService<IKubernetesJsonSerializer>());
 
     [Fact]
     public async Task ListRepositoriesAsync_returns_repositories_from_client()

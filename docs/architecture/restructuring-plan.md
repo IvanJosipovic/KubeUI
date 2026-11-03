@@ -1,6 +1,6 @@
 # KubeUI Restructuring Plan
 
-**Status:** **Phase 1 Complete; Phase 2 Active; Phase 3 Split Complete** — based on architectural review of current state vs. `avalonia-project-structure-plan.md`
+**Status:** **Phase 1 Complete; Phase 2 Complete; Phase 3 Split Complete** — based on architectural review of current state vs. `avalonia-project-structure-plan.md`
 
 ---
 
@@ -16,12 +16,12 @@ The project structure largely matches the target architecture, but **9 structura
 |----|-------|----------|----------|--------|
 | R-01 | Feature tests share one test project | High | Test Architecture | ✅ Split into feature test projects |
 | R-02 | App.csproj leaks 30+ feature-internal namespaces via `Using` | High | Encapsulation | ✅ Done |
-| R-03 | Cross-feature `Using` creates compile-time coupling | High | Dependency Hygiene | 🟡 In Progress |
+| R-03 | Cross-feature `Using` creates compile-time coupling | High | Dependency Hygiene | ✅ Intentional dependencies documented |
 | R-04 | Desktop references Kubernetes directly (bypasses App) | Medium | Layering | ✅ Done |
 | R-05 | Helm.NET package in Kubernetes (shared runtime) | Medium | Layering | ✅ Done |
 | R-06 | No central package version management | Medium | Build Hygiene | ✅ Done |
 | R-07 | Feature projects export implementation namespaces | Medium | Encapsulation | ✅ Done |
-| R-08 | App owns feature-specific packages | Medium | Ownership | 🟡 In Progress |
+| R-08 | App owns feature-specific packages | Medium | Ownership | ✅ Done |
 | R-09 | Test project declares AvaloniaResources | Low | Test Hygiene | ✅ Done |
 
 ---
@@ -90,21 +90,18 @@ Removed seven direct feature project references and two feature-only package ref
 
 | Consumer | Imports (Internal) | Should Use |
 |----------|-------------------|------------|
-| Cilium | `Resources.Visualization`, `.Icons`, `.Properties.Controls`, `.Common`; cluster lifecycle contract | Icon contract; shared controls; graph-style ownership decision |
-| Resources | `Clusters.Workspace`, `.Presentation` | Cluster workspace/runtime operations and navigation composition; scope requires consumer-level contract design |
-| Crossplane | Cluster resource-config contract | Already consumes `IClusterResourceConfig`; no Resources registry contract needed |
-| Helm | Resources visualization contract and `IResourceConfig` navigation signature | Visualization contract exists; navigation contract ownership remains coupled to Resources |
+| Cilium | Resources graph styles/content, icon contract/implementation fallback, `AvaloniaScheduler`, resource placement, and cluster lifecycle | Intentional reuse of Resources graph/icon APIs; Controls owns shared presentation primitives; Clusters owns workspace lifecycle |
+| Resources | `Clusters.Workspace` and `Clusters.Presentation.DesignTimePreview` | Intentional: resource screens/configs operate on cluster runtime, permissions, resource registries, and workspace events |
+| Crossplane | Cluster resource-config contract, Resources resource placement and YAML view | Intentional: cluster registry stays cluster-owned; Crossplane resource configs and YAML actions extend Resources-owned behavior |
+| Gateway API | Resources resource-config infrastructure | Intentional: Gateway API kind configs extend the Resources custom-resource config contract |
+| Helm | Resources visualization service, YAML/list/property UI, and `IResourceConfig` navigation signature | Intentional reuse of Resources-owned UI/services; visualization contract is required, so removing the project reference is not viable |
 
-**Target State:** Each feature exposes a **single public contract assembly** (or namespace) containing only:
-- Service registration extensions
-- Public interfaces for cross-feature consumption
-- Navigation section providers
-- Public view models / views needed for composition
+**Target State:** Prefer narrow public contracts for cross-feature consumption. Keep direct references where a feature extends or reuses another feature's owned API; document why the dependency belongs there.
 
 **Implementation:**
 1. For each feature, create `Contracts/` or `Public/` folder with public interfaces
-2. Move cross-feature dependencies to reference contracts only
-3. Update `Using` statements in csprojs to reference only contract namespaces
+2. Move accidental dependencies to narrow contracts or shared Controls APIs
+3. Keep justified feature dependencies explicit and document their ownership
 4. Use `InternalsVisibleTo` for test projects only
 
 **Progress:**
@@ -112,9 +109,12 @@ Removed seven direct feature project references and two feature-only package ref
 - ✅ Added `IResourceVisualizationService`; Helm now uses it instead of constructing the Resources visualization ViewModel and Dock document.
 - ✅ Mapped Cilium's remaining imports to concrete use: graph styling, icon rendering, generic property rows, shared context-menu items, and cluster initialization/runtime access. Removed an unused `Resources.Common` import from `ServiceMapView`.
 - ✅ Moved generic `PropertyItem` into `KubeUI.Controls.Presentation`; Resources and Cilium now share the control without a feature-to-feature UI dependency.
-- ⚠️ Do not remove remaining Cilium imports mechanically. `MenuItemViewModel` is a reusable presentation primitive; graph styles are coupled to the Resources GraphX model and need an explicit shared graph owner first.
-- ⏳ Remaining: design cluster/workspace contracts around consumer operations rather than passing `ClusterWorkspace`; keep `IClusterResourceConfig` as the existing cluster-owned registry contract; separate Helm's navigation-provider signature from Resources if the dependency can then be removed; move `MenuItemViewModel` only if Controls becomes its actual shared owner; decide graph-style ownership.
-- ⏳ R-03 stays open. Contract work is incomplete until project references and implementation imports are removed or documented as intentional, with focused tests.
+- ✅ Moved generic `MenuItemViewModel` into `KubeUI.Controls.Presentation`; Resources and Cilium now share the menu contract, with behavior tests under `KubeUI.Avalonia.Tests/Controls/Presentation`.
+- ✅ Removed stale Cilium `Resources.Common` imports after moving `MenuItemViewModel` to Controls, and an unused `Resources.Infrastructure` import from `FlowListViewModel`.
+- ✅ Documented the remaining Cilium, Resources, Crossplane, Gateway API, and Helm references as intentional, with ownership rationale above.
+- ✅ Kept `IClusterResourceConfig` as the cluster-owned registry contract; a `ClusterWorkspace` wrapper would duplicate a broad runtime/configuration/navigation surface without reducing coupling.
+- ✅ Kept Helm's Resources reference because Helm consumes the Resources-owned visualization service and shared resource UI.
+- ⏳ Focused tests exist for the moved contracts and feature behavior; local test execution is blocked before discovery by HangDump startup timeout.
 
 **Effort:** Medium (1-2 days per feature pair)
 **Risk:** Medium — requires API design for contracts
@@ -134,7 +134,8 @@ Removed seven direct feature project references and two feature-only package ref
 1. Moved `ConfigureKubeUIKubernetesJsonLogging()` to `KubeUI.App.Infrastructure.DependencyInjection.KubeUIAvaloniaServiceCollectionExtensions`.
 2. Exposed the Kubernetes activity source name through the App composition API; Desktop no longer imports Kubernetes runtime types.
 3. Removed the direct `KubeUI.Kubernetes` project reference from Desktop.
-4. Verified with `dotnet build --tl:off -clp:ErrorsOnly`.
+4. Kept App's Kubernetes project reference transitive so Desktop receives runtime dependencies such as `KubernetesClient.Informer`.
+5. Verified with `dotnet build --tl:off -clp:ErrorsOnly` and confirmed `KubernetesClient.Informer.dll` is present in Desktop output and its `.deps.json`.
 
 **Effort:** Low (few hours)
 **Risk:** Low
@@ -266,11 +267,11 @@ Phase 1 (Foundation - no deps): ✅ COMPLETE
   ├─ R-04: Desktop → Kubernetes reference ✅ (telemetry source name exposed by App)
   └─ R-05: Helm.NET move ✅
 
-Phase 2 (Encapsulation - depends on Phase 1): 🟡 IN PROGRESS
+Phase 2 (Encapsulation - depends on Phase 1): ✅ COMPLETE
   ├─ R-02: App.csproj Using cleanup ✅
   ├─ R-07: Feature Using exports ✅
-  ├─ R-08: App package ownership 🟡
-  └─ R-03: Cross-feature contracts 🟡 (icon and visualization contracts moved; cluster/resource boundaries remain)
+  ├─ R-08: App package ownership ✅
+  └─ R-03: Cross-feature contracts ✅ (accidental coupling removed; remaining dependencies documented as intentional)
 
 Phase 3 (Test project split):
   └─ R-01: Feature test projects ✅ (build passes; local test host times out before discovery)

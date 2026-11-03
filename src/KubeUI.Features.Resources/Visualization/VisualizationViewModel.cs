@@ -1045,7 +1045,19 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         var resourceConfig = cluster.GetResourceConfigs().FirstOrDefault(config => config.Kind == resourceKind);
         if (resourceConfig is { PermissionsLoaded: true, CanListAndWatch: true })
         {
-            _ = SeedResourceOffUiThreadAsync(resourceConfig);
+            _ = SeedRequiredResourceOffUiThreadAsync(resourceConfig);
+        }
+    }
+
+    private async Task SeedRequiredResourceOffUiThreadAsync(IClusterResourceConfig resourceConfig)
+    {
+        try
+        {
+            await Task.Run(() => resourceConfig.SeedResource()).ConfigureAwait(false);
+            RequestResourceRebuild();
+        }
+        catch (OperationCanceledException)
+        {
         }
     }
 
