@@ -29,6 +29,8 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Velopack;
 
+[assembly: GenerateMarkupExtensionsForAvalonia(false)]
+
 namespace KubeUI.Desktop;
 
 internal static class Program
