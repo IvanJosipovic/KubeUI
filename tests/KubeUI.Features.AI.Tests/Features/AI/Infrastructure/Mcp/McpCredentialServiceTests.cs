@@ -1,7 +1,7 @@
-using KubeUI.Features.AI.Mcp;
 using KubeUI.App.Infrastructure.Mcp;
 using KubeUI.App.Options;
 using KubeUI.App.Services.Settings;
+using KubeUI.Features.AI.Mcp;
 using Moq;
 using Shouldly;
 

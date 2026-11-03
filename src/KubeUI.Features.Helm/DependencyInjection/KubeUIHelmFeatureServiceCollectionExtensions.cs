@@ -22,11 +22,11 @@ public static partial class KubeUIHelmFeatureServiceCollectionExtensions
         services.AddTransient<Func<HelmReleaseEditorViewModel>>(sp => () => sp.GetRequiredService<HelmReleaseEditorViewModel>());
         services.AddTransient<Func<HelmRepositoryEditorViewModel>>(sp => () => sp.GetRequiredService<HelmRepositoryEditorViewModel>());
         services.AddTransient<IHelmReleasePreviewService, HelmReleasePreviewService>();
-        
+
         // Helm service infrastructure
         services.AddSingleton<IHelmClientFactory, HelmClientFactory>();
         services.AddSingleton<IHelmService, HelmService>();
-        
+
         return services.AddKubeUIHelmGeneratedServices();
     }
 

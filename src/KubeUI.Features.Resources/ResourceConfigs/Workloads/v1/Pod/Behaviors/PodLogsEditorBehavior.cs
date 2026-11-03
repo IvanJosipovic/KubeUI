@@ -1,5 +1,4 @@
-using KubeUI.Features.Resources.Infrastructure;
-﻿using System.Text;
+using System.Text;
 using Avalonia.Controls.Primitives;
 using Avalonia.VisualTree;
 using Avalonia.Xaml.Interactivity;
@@ -7,6 +6,7 @@ using AvaloniaEdit;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Search;
 using KubeUI.Controls.Platform;
+using KubeUI.Features.Resources.Infrastructure;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
 

@@ -72,10 +72,7 @@
                 "test",
                 "--no-restore",
                 "--tl:off",
-                "-clp:ErrorsOnly",
-                "--hangdump",
-                "--hangdump-timeout",
-                "5m"
+                "-clp:ErrorsOnly"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"

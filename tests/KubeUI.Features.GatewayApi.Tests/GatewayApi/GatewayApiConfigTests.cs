@@ -1,9 +1,9 @@
 using System.Text.Json;
 using Avalonia.Headless.XUnit;
 using k8s.Models;
+using KubeUI.App.Shell.Navigation;
 using KubeUI.Features.GatewayApi;
 using KubeUI.Features.Resources;
-using KubeUI.App.Shell.Navigation;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 

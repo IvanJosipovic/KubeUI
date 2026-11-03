@@ -125,7 +125,7 @@ public class KubernetesYamlTests : IDisposable
     }
 
     [Fact]
-    public void JsonContext_KnowsEveryYamlApiModelExceptListsAndWatchEvents()
+    public void JsonContexts_KnowEveryYamlApiModelExceptListsAndWatchEvents()
     {
         var yamlContext = new KubernetesYamlStaticContext();
         var modelTypes = typeof(V1Pod).Assembly.GetTypes()
@@ -135,7 +135,8 @@ public class KubernetesYamlTests : IDisposable
             .ToArray();
 
         var missingModelTypes = modelTypes
-            .Where(modelType => KubernetesJsonStaticContext.Default.GetTypeInfo(modelType) is null)
+            .Where(modelType => KubernetesJsonStaticContext.Default.GetTypeInfo(modelType) is null
+                && k8s.SourceGenerationContext.Default.GetTypeInfo(modelType) is null)
             .Select(modelType => modelType.FullName)
             .ToArray();
 

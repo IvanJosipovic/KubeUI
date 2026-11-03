@@ -5,12 +5,12 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
 using Avalonia.Markup.Xaml.MarkupExtensions;
-using KubeUI.Features.AI.Agents;
-using KubeUI.Features.AI.Mcp;
-using KubeUI.Features.Resources.Properties.Controls;
 using KubeUI.App.Infrastructure.Presentation;
 using KubeUI.App.Options;
+using KubeUI.Features.AI.Agents;
+using KubeUI.Features.AI.Mcp;
 using KubeUI.Features.Clusters.Presentation;
+using KubeUI.Features.Resources.Properties.Controls;
 
 
 namespace KubeUI.App.Shell.Documents.Settings;

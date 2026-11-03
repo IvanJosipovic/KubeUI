@@ -3,9 +3,9 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Xaml.Interactions.Core;
 using AvaloniaEdit;
-using KubeUI.Features.Resources.Yaml.Behaviors;
 using KubeUI.Controls.Presentation;
 using KubeUI.Controls.Styles;
+using KubeUI.Features.Resources.Yaml.Behaviors;
 
 namespace KubeUI.Features.Helm.Releases;
 

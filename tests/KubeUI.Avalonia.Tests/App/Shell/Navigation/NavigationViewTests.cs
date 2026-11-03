@@ -13,10 +13,10 @@ using Avalonia.Xaml.Interactivity;
 using Dock.Model.Controls;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Features.Resources.List;
 using KubeUI.App.Shell.Documents.About;
 using KubeUI.App.Shell.Main;
 using KubeUI.App.Shell.Navigation;
+using KubeUI.Features.Resources.List;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.App.Shell;

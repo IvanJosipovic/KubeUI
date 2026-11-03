@@ -1,8 +1,8 @@
 ﻿using FluentIcons.Common;
 using k8s.Models;
+using KubeUI.Controls.Docking;
 using KubeUI.Features.Resources.Common;
 using KubeUI.Features.Resources.List;
-using KubeUI.Controls.Docking;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Features.Resources.CustomResourceDefinition;

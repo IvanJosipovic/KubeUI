@@ -1,29 +1,46 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Avalonia.Headless.XUnit;
 using k8s;
 using k8s.Models;
-using KubeUI.Features.Resources;
 using KubeUI.App.Services.Settings;
 using KubeUI.Desktop;
+using KubeUI.Features.Resources;
 using KubeUI.Kubernetes.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Shouldly;
+using YamlDotNet.Serialization;
 
 namespace KubeUI.Avalonia.Tests.App.Infrastructure;
 
 public sealed class SerializationFeatureTests
 {
     [AvaloniaFact]
-    public async Task generated_json_metadata_covers_all_registered_resource_types()
+    public async Task generated_serialization_metadata_covers_all_registered_resource_types()
     {
         using var workspace = await Application.Current.CreateClusterAsync();
         using var host = CreateHost(disableJsonReflection: true, disableYamlReflection: true);
         var serializer = host.Services.GetRequiredService<IKubernetesJsonSerializer>();
+        var yamlContext = new KubernetesYamlStaticContext();
+        var yamlRootTypes = GetYamlSerializableRootTypes();
+        var duplicateYamlRootTypes = yamlRootTypes
+            .GroupBy(type => type)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key.FullName ?? group.Key.Name)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+        duplicateYamlRootTypes.ShouldBeEmpty(string.Join(Environment.NewLine, duplicateYamlRootTypes));
+
         KubernetesClientConfiguration configuration = new();
         serializer.ConfigureClient(configuration);
         var resources = workspace.GetResourceConfigs();
         resources.ShouldNotBeEmpty();
+        var nestedKubernetesTypes = new HashSet<Type>();
+        nestedKubernetesTypes.Add(typeof(GenericKubernetesObject));
+        nestedKubernetesTypes.Add(typeof(KubernetesObject));
+        AddNestedKubernetesModelTypes(typeof(k8s.KubeConfigModels.K8SConfiguration), nestedKubernetesTypes);
+        AddNestedKubernetesModelTypes(typeof(V1PodTemplate), nestedKubernetesTypes);
         foreach (var registered in Application.Current.GetRequiredTestService<IEnumerable<IResourceConfig>>())
         {
             if (!registered.IsCustomResource)
@@ -36,6 +53,23 @@ public sealed class SerializationFeatureTests
         {
             workspace.Runtime.ModelCatalog.TryGetResourceType(resource.Kind, out var modelType)
                 .ShouldBeTrue($"No resource model registered for {resource.Kind}.");
+            yamlRootTypes.ShouldContain(modelType);
+            yamlContext.IsKnownType(modelType)
+                .ShouldBeTrue($"No generated YAML metadata for {modelType} (resource kind {resource.Kind}).");
+            AddNestedKubernetesModelTypes(modelType, nestedKubernetesTypes);
+
+            var watchEventType = typeof(Watcher<>).GetNestedType("WatchEvent")!.MakeGenericType(modelType);
+            var hasGeneratedWatchMetadata = KubernetesJsonStaticContext.Default.GetTypeInfo(watchEventType) is not null
+                || SourceGenerationContext.Default.GetTypeInfo(watchEventType) is not null;
+            hasGeneratedWatchMetadata.ShouldBeTrue(
+                $"No generated JSON metadata for {watchEventType} (resource kind {resource.Kind}).");
+
+            var listType = typeof(KubernetesList<>).MakeGenericType(modelType);
+            var hasGeneratedListMetadata = KubernetesJsonStaticContext.Default.GetTypeInfo(listType) is not null
+                || SourceGenerationContext.Default.GetTypeInfo(listType) is not null;
+            hasGeneratedListMetadata.ShouldBeTrue(
+                $"No generated JSON metadata for {listType} (resource kind {resource.Kind}).");
+
             var metadata = configuration.JsonSerializerOptions.GetTypeInfo(modelType);
             var model = JsonSerializer.Deserialize("{}", metadata)
                 .ShouldBeAssignableTo<IKubernetesObject<V1ObjectMeta>>();
@@ -50,6 +84,100 @@ public sealed class SerializationFeatureTests
             restored.ApiVersion.ShouldBe(model.ApiVersion);
             restored.Kind.ShouldBe(model.Kind);
             restored.Metadata.Name.ShouldBe(model.Metadata.Name);
+        }
+
+        var missingNestedTypes = nestedKubernetesTypes
+            .Where(type => !yamlContext.IsKnownType(type)
+                && KubernetesJsonStaticContext.Default.GetTypeInfo(type) is null)
+            .Select(type => type.FullName ?? type.Name)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+        missingNestedTypes.ShouldBeEmpty(string.Join(Environment.NewLine, missingNestedTypes));
+
+        var missingYamlRootTypes = nestedKubernetesTypes
+            .Where(type => !yamlRootTypes.Contains(type))
+            .Select(type => type.FullName ?? type.Name)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+        missingYamlRootTypes.ShouldBeEmpty(string.Join(Environment.NewLine, missingYamlRootTypes));
+
+        var unusedYamlRootTypes = yamlRootTypes
+            .Where(type => !nestedKubernetesTypes.Contains(type))
+            .Select(type => type.FullName ?? type.Name)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+        unusedYamlRootTypes.ShouldBeEmpty(string.Join(Environment.NewLine, unusedYamlRootTypes));
+    }
+
+    [Fact]
+    public void generated_json_contexts_do_not_register_duplicate_root_types()
+    {
+        var kubeUiTypes = GetJsonSerializableRootTypes(typeof(KubernetesJsonStaticContext));
+        var kubernetesClientTypes = GetJsonSerializableRootTypes(typeof(SourceGenerationContext));
+        var duplicateTypes = kubeUiTypes
+            .Intersect(kubernetesClientTypes)
+            .Select(type => type.FullName ?? type.Name)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+
+        duplicateTypes.ShouldBeEmpty(string.Join(Environment.NewLine, duplicateTypes));
+    }
+
+    private static Type[] GetJsonSerializableRootTypes(Type contextType)
+    {
+        return contextType.GetCustomAttributesData()
+            .Where(attribute => attribute.AttributeType == typeof(JsonSerializableAttribute))
+            .Select(attribute => attribute.ConstructorArguments[0].Value)
+            .OfType<Type>()
+            .ToArray();
+    }
+
+    private static Type[] GetYamlSerializableRootTypes()
+    {
+        return typeof(KubernetesYamlStaticContext).GetCustomAttributesData()
+            .Where(attribute => attribute.AttributeType == typeof(YamlSerializableAttribute))
+            .Select(attribute => attribute.ConstructorArguments[0].Value)
+            .OfType<Type>()
+            .ToArray();
+    }
+
+    private static void AddNestedKubernetesModelTypes(Type type, HashSet<Type> modelTypes)
+    {
+        if (type == typeof(ResourceQuantity)
+            || type == typeof(k8s.KubeConfigModels.NamedExtension)
+            || type == typeof(V1ContainerRestartRuleOnExitCodes)
+            || type == typeof(V1LinuxContainerUser)
+            || type == typeof(V1ListMeta)
+            || type == typeof(V1PodDisruptionBudgetStatus)
+            || type == typeof(V1PodSecurityContext))
+        {
+            return;
+        }
+
+        if (type.IsArray)
+        {
+            AddNestedKubernetesModelTypes(type.GetElementType()!, modelTypes);
+            return;
+        }
+
+        if (type.IsGenericType)
+        {
+            foreach (var argument in type.GetGenericArguments())
+            {
+                AddNestedKubernetesModelTypes(argument, modelTypes);
+            }
+        }
+
+        if (type.Assembly != typeof(V1Pod).Assembly
+            || type.Namespace is not ("k8s.Models" or "k8s.KubeConfigModels" or "k8s")
+            || !modelTypes.Add(type))
+        {
+            return;
+        }
+
+        foreach (var property in type.GetProperties(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public))
+        {
+            AddNestedKubernetesModelTypes(property.PropertyType, modelTypes);
         }
     }
 

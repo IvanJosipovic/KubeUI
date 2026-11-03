@@ -7,13 +7,13 @@ using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubernetesClient.Informer.Client;
-using KubeUI.Features.Clusters.Error;
-using KubeUI.Features.Clusters.Settings;
-using KubeUI.Features.Clusters.Workspace;
-using KubeUI.Features.Clusters.Assets;
 using KubeUI.App.Infrastructure.Docking;
 using KubeUI.App.Infrastructure.Platform;
 using KubeUI.App.Infrastructure.Presentation;
+using KubeUI.Features.Clusters.Assets;
+using KubeUI.Features.Clusters.Error;
+using KubeUI.Features.Clusters.Settings;
+using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources;
 using KubeUI.Features.Resources.Contracts;
 using KubeUI.Kubernetes;
@@ -216,9 +216,9 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
         var settings = new ContentDialogSettings
         {
-            Title = ClusterAssets.Resources.Cluster_Missing_Namespace_Permission_Title,
-            Content = ClusterAssets.Resources.Cluster_Missing_Namespace_Permission_Content,
-            PrimaryButtonText = ClusterAssets.Resources.Cluster_Missing_Namespace_Permission_Primary,
+            Title = Resources.Cluster_Missing_Namespace_Permission_Title,
+            Content = Resources.Cluster_Missing_Namespace_Permission_Content,
+            PrimaryButtonText = Resources.Cluster_Missing_Namespace_Permission_Primary,
             DefaultButton = FAContentDialogButton.Primary
         };
 

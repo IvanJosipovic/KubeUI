@@ -1,11 +1,11 @@
-using KubeUI.Features.Helm.Helm;
 using Dock.Model.Core;
 using Helm.NET;
+using KubeUI.Controls.Docking;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Helm.Charts;
+using KubeUI.Features.Helm.Helm;
 using KubeUI.Features.Helm.Releases;
 using KubeUI.Features.Helm.Repositories;
-using KubeUI.Controls.Docking;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Features.Helm;

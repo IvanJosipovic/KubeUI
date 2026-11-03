@@ -1,11 +1,11 @@
 using Avalonia.VisualTree;
 using Dock.Model.Controls;
+using KubeUI.App.Shell.Main;
+using KubeUI.Documentation.Tests.Infra;
 using KubeUI.Features.Helm.Charts;
 using KubeUI.Features.Helm.Releases;
 using KubeUI.Features.Helm.Repositories;
 using KubeUI.Features.Resources.Visualization;
-using KubeUI.App.Shell.Main;
-using KubeUI.Documentation.Tests.Infra;
 
 namespace KubeUI.Documentation.Tests.Features.Helm;
 

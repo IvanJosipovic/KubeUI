@@ -1,7 +1,7 @@
 using k8s.Models;
+using KubeUI.App.Infrastructure.Presentation;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources.List;
-using KubeUI.App.Infrastructure.Presentation;
 using LiveChartsCore.Defaults;
 using LiveChartsCore.Kernel;
 

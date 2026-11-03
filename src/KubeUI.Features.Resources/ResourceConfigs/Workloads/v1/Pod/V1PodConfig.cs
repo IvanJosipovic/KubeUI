@@ -1,15 +1,15 @@
-using KubeUI.Features.Clusters.Workspace;
-﻿using Avalonia.Collections;
+using Avalonia.Collections;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
-using k8s;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using k8s;
 using k8s.Models;
-using KubeUI.Features.Resources.Common;
-using KubeUI.Features.Clusters.Settings;
 using KubeUI.Controls.Docking;
 using KubeUI.Controls.Platform;
+using KubeUI.Features.Clusters.Settings;
+using KubeUI.Features.Clusters.Workspace;
+using KubeUI.Features.Resources.Common;
 using KubeUI.Features.Resources.Infrastructure;
 using KubeUI.Kubernetes;
 

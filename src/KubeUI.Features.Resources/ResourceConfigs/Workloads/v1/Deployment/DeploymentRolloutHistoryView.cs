@@ -19,12 +19,12 @@ public sealed class DeploymentRolloutHistoryView : KubeUIView<DeploymentRolloutH
                     .ItemTemplate<DeploymentRevision>(revision =>
                         new TextBlock()
                             .Text(revision.Display)
-                            .TextWrapping(global::Avalonia.Media.TextWrapping.Wrap)
+                            .TextWrapping(TextWrapping.Wrap)
                             .Margin(6)),
                 new TextBlock()
                     .Row(1)
                     .Text(vm, x => x.StatusMessage)
-                    .TextWrapping(global::Avalonia.Media.TextWrapping.Wrap)
+                    .TextWrapping(TextWrapping.Wrap)
                     .Margin(0, 8),
                 new Button()
                     .Row(2)

@@ -2,8 +2,8 @@
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Controls.DependencyInjection;
+using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources.Icons;
 using KubeUI.Kubernetes.Resources.Relationships;
 using QuikGraph;

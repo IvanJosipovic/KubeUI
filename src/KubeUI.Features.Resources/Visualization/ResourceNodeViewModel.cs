@@ -1,9 +1,9 @@
 ﻿using k8s;
 using k8s.Models;
-using KubeUI.Features.Clusters.Workspace;
-using KubeUI.Features.Resources.Common;
 using KubeUI.Controls.Presentation;
+using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources;
+using KubeUI.Features.Resources.Common;
 
 namespace KubeUI.Features.Resources.Visualization;
 

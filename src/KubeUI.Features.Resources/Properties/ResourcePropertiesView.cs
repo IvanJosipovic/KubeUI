@@ -2,11 +2,11 @@ using Avalonia.Controls.Primitives;
 using Avalonia.LogicalTree;
 using k8s;
 using k8s.Models;
+using KubeUI.Controls.Presentation;
 using KubeUI.Features.Clusters.Workspace;
+using KubeUI.Features.Resources;
 using KubeUI.Features.Resources.Common;
 using KubeUI.Features.Resources.Properties.Controls;
-using KubeUI.Controls.Presentation;
-using KubeUI.Features.Resources;
 
 namespace KubeUI.Features.Resources.Properties;
 

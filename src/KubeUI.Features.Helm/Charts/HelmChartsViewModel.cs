@@ -1,10 +1,10 @@
-using KubeUI.Features.Helm.Helm;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using DynamicData;
 using Helm.NET;
-using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Controls.Presentation;
+using KubeUI.Features.Clusters.Workspace;
+using KubeUI.Features.Helm.Helm;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.Logging;
 using NuGet.Versioning;

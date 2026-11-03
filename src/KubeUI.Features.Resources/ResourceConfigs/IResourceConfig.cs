@@ -1,6 +1,6 @@
 ﻿using k8s.Models;
-using KubeUI.Features.Resources.Common;
 using KubeUI.Features.Clusters.Workspace;
+using KubeUI.Features.Resources.Common;
 
 namespace KubeUI.Features.Resources
 {
@@ -14,15 +14,18 @@ namespace KubeUI.Features.Resources
         /// <summary>Gets where this kind's model comes from.</summary>
         ResourceOrigin Origin { get; }
 
-        /// <summary>Gets the defining CRD for a discovered kind, or null for a built-in kind.</summary>
-        V1CustomResourceDefinition? CustomResourceDefinition => null;
+        new
+
+                /// <summary>Gets the defining CRD for a discovered kind, or null for a built-in kind.</summary>
+                V1CustomResourceDefinition? CustomResourceDefinition => null;
 
         /// <summary>Gets the canonical location of this kind in cluster navigation.</summary>
         NavigationPlacement Navigation { get; }
         IList<IResourceListColumn> Columns();
         IEnumerable<MenuItemViewModel> GetDefaultMenuItems(IEnumerable? selectedItems);
         IEnumerable<MenuItemViewModel> GetCustomMenuItems(IEnumerable? selectedItems);
-        string Name { get; }
+
+        new string Name { get; }
         Style[] ListStyle();
         IRelayCommand NewResourceCommand { get; }
         IRelayCommand<IList> ViewCommand { get; }

@@ -7,8 +7,8 @@ using FluentIcons.Common;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Controls.Presentation;
+using KubeUI.Features.Clusters.Workspace;
 using SharedConverters = KubeUI.Controls.Converters.Converters;
 
 namespace KubeUI.Features.Resources.Properties.Controls;

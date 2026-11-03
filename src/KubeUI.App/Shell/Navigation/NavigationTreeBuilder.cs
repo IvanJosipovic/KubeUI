@@ -3,11 +3,11 @@ using System.Windows.Input;
 using FluentIcons.Common;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.App.Infrastructure.Threading;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources;
-using KubeUI.Features.Resources.Contracts;
 using KubeUI.Features.Resources.Assets;
-using KubeUI.App.Infrastructure.Threading;
+using KubeUI.Features.Resources.Contracts;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.App.Shell.Navigation;
@@ -225,7 +225,7 @@ internal sealed class NavigationTreeBuilder
             target,
             cluster,
             id,
-            ResourceAssets.Resources.PortForwarderListView_Title!,
+            Resources.PortForwarderListView_Title!,
             -450,
             Icon.CloudFlow,
             resource: null,
@@ -339,7 +339,7 @@ internal sealed class NavigationTreeBuilder
             && container is IResourceContainer { IsSeeded: true })
         {
             link.Count = cluster.Runtime.GetResourceCount(kind)
-                .Sample(TimeSpan.FromMilliseconds(100), KubeUI.App.Infrastructure.Threading.AvaloniaScheduler.Instance);
+                .Sample(TimeSpan.FromMilliseconds(100), AvaloniaScheduler.Instance);
             link.CountResourceKind = kind;
         }
     }

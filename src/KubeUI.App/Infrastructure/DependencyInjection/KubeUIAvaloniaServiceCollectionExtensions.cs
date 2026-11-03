@@ -3,22 +3,22 @@ using Dock.Model.Core;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
-using KubeUI.Features.AI.Mcp;
-using KubeUI.Features.Clusters.Workspace;
 using KubeUI.App.Infrastructure.Dialogs;
 using KubeUI.App.Infrastructure.Docking;
 using KubeUI.App.Infrastructure.Mcp;
 using KubeUI.App.Infrastructure.Platform;
 using KubeUI.App.Infrastructure.Threading;
+using KubeUI.App.Infrastructure.Threading;
 using KubeUI.App.Options;
 using KubeUI.App.Shell.Navigation;
+using KubeUI.Features.AI.Mcp;
 using KubeUI.Features.Cilium;
+using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Resources.Relationships;
+using KubeUI.Kubernetes.Serialization;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
-using KubeUI.Kubernetes.Serialization;
-using KubeUI.App.Infrastructure.Threading;
 
 namespace KubeUI.App.Infrastructure.DependencyInjection;
 

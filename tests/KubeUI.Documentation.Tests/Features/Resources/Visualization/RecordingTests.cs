@@ -1,7 +1,7 @@
 using Avalonia.VisualTree;
 using k8s.Models;
-using KubeUI.Features.Resources.Visualization;
 using KubeUI.Documentation.Tests.Infra;
+using KubeUI.Features.Resources.Visualization;
 
 namespace KubeUI.Documentation.Tests.Features.Resources.Visualization;
 

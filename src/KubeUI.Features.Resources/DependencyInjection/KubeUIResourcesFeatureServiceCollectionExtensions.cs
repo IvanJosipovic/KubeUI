@@ -4,8 +4,8 @@ using KubeUI.Features.Resources.List;
 using KubeUI.Features.Resources.List.Controls;
 using KubeUI.Features.Resources.Properties;
 using KubeUI.Features.Resources.Visualization;
-using KubeUI.Features.Resources.Yaml;
 using KubeUI.Features.Resources.Workloads.v1.Pod.Services;
+using KubeUI.Features.Resources.Yaml;
 using ServiceScan.SourceGenerator;
 
 namespace KubeUI.Features.Resources.DependencyInjection;

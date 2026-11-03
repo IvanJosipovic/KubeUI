@@ -1,10 +1,10 @@
-﻿using k8s;
-using FluentIcons.Common;
+﻿using FluentIcons.Common;
+using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Features.Resources.Common;
-using KubeUI.Kubernetes;
 using KubeUI.Features.Resources.Workloads;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Features.Resources.Workloads.v1.ReplicaSet;
 

@@ -1,9 +1,9 @@
 using Avalonia.Headless.XUnit;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Features.Resources.Common;
-using KubeUI.Features.Resources;
 using KubeUI.App.Shell.Navigation;
+using KubeUI.Features.Resources;
+using KubeUI.Features.Resources.Common;
 using KubeUI.Kubernetes;
 using Shouldly;
 

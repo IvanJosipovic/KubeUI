@@ -16,5 +16,16 @@
     <TestingPlatformShowTestsFailure>true</TestingPlatformShowTestsFailure>
 
     <TestingPlatformCommandLineArguments>$(TestingPlatformCommandLineArguments) --config-file $(MSBuildThisFileDirectory)testconfig.json</TestingPlatformCommandLineArguments>
+
+    <!-- Preserve analyzer enforcement on CI while skipping local analyzer execution. -->
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <RunAnalyzers Condition="'$(ContinuousIntegrationBuild)' != 'true'">false</RunAnalyzers>
+
+    <!-- Use static project graph evaluation for NuGet restore. -->
+    <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
+
+    <!-- Prefer hardlinks for immutable build outputs when source and destination share a volume. -->
+    <CreateHardLinksForCopyFilesToOutputDirectoryIfPossible>true</CreateHardLinksForCopyFilesToOutputDirectoryIfPossible>
+    <CreateHardLinksForCopyLocalIfPossible>true</CreateHardLinksForCopyLocalIfPossible>
   </PropertyGroup>
 </Project>

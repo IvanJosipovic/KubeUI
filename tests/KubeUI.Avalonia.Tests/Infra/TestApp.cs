@@ -6,12 +6,12 @@ using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
-using KubeUI.Features.Clusters.Workspace;
-using KubeUI.Features.Resources.Settings;
 using KubeUI.App.Infrastructure.Docking;
 using KubeUI.App.Infrastructure.Platform;
 using KubeUI.App.Services.Settings;
 using KubeUI.Desktop;
+using KubeUI.Features.Clusters.Workspace;
+using KubeUI.Features.Resources.Settings;
 using KubeUI.Kubernetes;
 using KubeUI.Testing.Kubernetes.Bootstrap;
 using KubeUI.Testing.Kubernetes.Infrastructure;
@@ -108,7 +108,7 @@ public class TestApp : KubeUIApplication, IDisposable
         {
             services.AddKubernetesTestRuntime();
             services.Replace(ServiceDescriptor.Singleton<ISettingsService, TestSettingsService>());
-            services.Replace(ServiceDescriptor.Singleton<IResourceAppearanceSettings>(sp =>
+            services.Replace(ServiceDescriptor.Singleton(sp =>
                 (IResourceAppearanceSettings)sp.GetRequiredService<ISettingsService>()));
             services.Replace(ServiceDescriptor.Singleton<ISettingsPersistence, TestSettingsPersistence>());
             services.Replace(ServiceDescriptor.Singleton<IPlatformServices, TestPlatformServices>());

@@ -1,8 +1,8 @@
 ﻿using Dock.Model.Core;
 using k8s;
 using k8s.Models;
-using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Controls.Docking;
+using KubeUI.Features.Clusters.Workspace;
 
 namespace KubeUI.Features.Resources.Properties;
 

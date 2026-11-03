@@ -73,7 +73,7 @@ public abstract partial class ScalableWorkloadConfig<T> : ResourceConfig<T>
             content.Children.Add(new TextBlock
             {
                 Text = string.Format(CultureInfo.CurrentCulture, Assets.Resources.ScalableWorkloadConfig_BulkPrompt!, selected.Count),
-                TextWrapping = global::Avalonia.Media.TextWrapping.Wrap,
+                TextWrapping = TextWrapping.Wrap,
             });
         }
         content.Children.Add(new TextBlock { Text = Assets.Resources.ScalableWorkloadConfig_ReplicaCount });

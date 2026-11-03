@@ -1,11 +1,11 @@
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using KubernetesClient.Informer.Client;
-using KubeUI.Features.Clusters.Workspace;
-using KubeUI.Features.Resources.List;
 using KubeUI.App.Infrastructure.Docking;
 using KubeUI.App.Infrastructure.Presentation;
+using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources;
+using KubeUI.Features.Resources.List;
 
 namespace KubeUI.App.Shell.Navigation;
 

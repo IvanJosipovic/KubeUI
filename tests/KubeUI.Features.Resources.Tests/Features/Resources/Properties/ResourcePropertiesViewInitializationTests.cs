@@ -5,9 +5,9 @@ using Dock.Model.Core;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Features.Resources.Properties.Controls;
 using KubeUI.App.Infrastructure.Presentation;
 using KubeUI.Features.Resources;
+using KubeUI.Features.Resources.Properties.Controls;
 using Shouldly;
 
 

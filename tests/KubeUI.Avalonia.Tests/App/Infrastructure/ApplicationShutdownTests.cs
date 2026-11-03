@@ -20,7 +20,7 @@ public sealed class ApplicationShutdownTests
             .BuildServiceProvider();
         var shutdownRequested = false;
 
-        global::KubeUI.Desktop.Program.RegisterAvaloniaShutdown(services, () =>
+        KubeUI.Desktop.Program.RegisterAvaloniaShutdown(services, () =>
         {
             shutdownRequested = true;
         });

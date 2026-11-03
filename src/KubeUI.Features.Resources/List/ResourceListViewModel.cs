@@ -7,12 +7,12 @@ using Humanizer;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Controls.Presentation;
 using KubeUI.Features.AI.Agents;
 using KubeUI.Features.AI.Chat;
 using KubeUI.Features.Clusters.Workspace;
-using KubeUI.Features.Resources.Common;
-using KubeUI.Controls.Presentation;
 using KubeUI.Features.Resources;
+using KubeUI.Features.Resources.Common;
 using KubeUI.Kubernetes;
 using SortDirection = KubeUI.Features.Resources.SortDirection;
 

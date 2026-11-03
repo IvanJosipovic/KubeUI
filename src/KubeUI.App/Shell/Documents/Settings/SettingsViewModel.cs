@@ -1,9 +1,9 @@
-using KubeUI.Features.AI.Agents;
-using KubeUI.Features.AI.Mcp;
 using KubeUI.App.Infrastructure.Mcp;
 using KubeUI.App.Infrastructure.Presentation;
 using KubeUI.App.Options;
 using KubeUI.App.Services.Settings;
+using KubeUI.Features.AI.Agents;
+using KubeUI.Features.AI.Mcp;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.App.Shell.Documents.Settings;

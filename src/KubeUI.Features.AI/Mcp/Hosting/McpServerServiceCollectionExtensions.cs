@@ -123,7 +123,7 @@ public static class McpServerServiceCollectionExtensions
                 ValueTask.FromResult(new ListResourceTemplatesResult { ResourceTemplates = [] }))
             .WithTools<TTools>(toolSerializerOptions)
             .WithRequestFilters(McpToolAuditFilter.Configure);
-        services.AddSingleton<IHostedService>(serviceProvider =>
+        services.AddSingleton(serviceProvider =>
             createHostedService(serviceProvider, port));
 
         return services;

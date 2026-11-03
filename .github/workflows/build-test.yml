@@ -24,8 +24,14 @@ jobs:
             restore-keys: |
               ${{ runner.os }}-nuget-
 
+      - name: Restore
+        run: dotnet restore
+
       - name: Build
-        run: dotnet build --configuration Release --tl:off -clp:ErrorsOnly
+        env:
+          CI: 'true'
+          MSBUILDUSESERVER: '1'
+        run: dotnet build --configuration Release --no-restore --graphBuild --isolateProjects -m --tl:off -clp:ErrorsOnly
 
       - name: Test
         run: |

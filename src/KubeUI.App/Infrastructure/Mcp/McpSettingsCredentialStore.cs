@@ -1,5 +1,5 @@
-using KubeUI.Features.AI.Mcp;
 using KubeUI.App.Services.Settings;
+using KubeUI.Features.AI.Mcp;
 
 namespace KubeUI.App.Infrastructure.Mcp;
 

@@ -8,8 +8,8 @@ using k8s;
 using k8s.Autorest;
 using k8s.Models;
 using KubeUI.Controls.Presentation;
-using KubeUI.Features.Resources.Workloads.v1.Pod.Services;
 using KubeUI.Features.Resources.Settings;
+using KubeUI.Features.Resources.Workloads.v1.Pod.Services;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Features.Resources.Workloads.v1.Pod.ViewModels;
