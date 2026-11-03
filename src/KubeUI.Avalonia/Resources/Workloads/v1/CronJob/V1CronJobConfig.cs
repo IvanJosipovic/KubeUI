@@ -98,7 +98,7 @@ public sealed partial class V1CronJobConfig : ResourceConfig<V1CronJob>
             new()
             {
                 Title = Assets.Resources.V1CronJobConfig_Resume,
-                FluentIcon = Icon.Play,
+                FluentIcon = Icon.ArrowRight,
                 Command = ResumeCommand,
                 CommandParameter = selectedItems?.ToList(),
             },

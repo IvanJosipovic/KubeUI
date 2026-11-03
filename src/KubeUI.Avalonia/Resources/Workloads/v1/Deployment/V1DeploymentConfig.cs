@@ -83,7 +83,7 @@ public sealed partial class V1DeploymentConfig : ScalableWorkloadConfig<V1Deploy
             new()
             {
                 Title = Assets.Resources.V1DeploymentConfig_Resume,
-                FluentIcon = Icon.Play,
+                FluentIcon = Icon.ArrowRight,
                 Command = ResumeCommand,
                 CommandParameter = selectedItems?.ToList(),
             },
