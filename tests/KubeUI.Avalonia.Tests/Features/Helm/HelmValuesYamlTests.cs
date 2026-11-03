@@ -1,5 +1,5 @@
 using System.Text.Json;
-using KubeUI.Avalonia.Features.Helm;
+using KubeUI.Features.Helm;
 using KubeUI.Kubernetes.Serialization;
 using Shouldly;
 using YamlDotNet.Core;

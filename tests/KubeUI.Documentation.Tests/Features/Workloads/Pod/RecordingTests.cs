@@ -3,8 +3,8 @@ using System.Text;
 using Avalonia.Controls;
 using Avalonia.VisualTree;
 using k8s.Models;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
-using KubeUI.Avalonia.Shell.Main;
+using KubeUI.Features.Resources.Workloads.v1.Pod.Views;
+using KubeUI.App.Shell.Main;
 using KubeUI.Documentation.Tests.Infra;
 using KubeUI.Testing.Kubernetes.Bootstrap;
 

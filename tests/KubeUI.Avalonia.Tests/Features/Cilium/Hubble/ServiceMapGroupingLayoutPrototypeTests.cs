@@ -5,7 +5,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Cilium.Hubble;
+using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Testing.Utilities;
 using QuikGraph;
 using Shouldly;

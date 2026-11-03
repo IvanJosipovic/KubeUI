@@ -9,10 +9,10 @@ using AvaloniaEdit.Folding;
 using Dock.Model.Core;
 using HanumanInstitute.MvvmDialogs;
 using Helm.NET;
-using KubeUI.Avalonia.Features.Helm;
-using KubeUI.Avalonia.Features.Helm.Releases;
-using KubeUI.Avalonia.Features.Helm.Repositories;
-using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
+using KubeUI.Features.Helm;
+using KubeUI.Features.Helm.Releases;
+using KubeUI.Features.Helm.Repositories;
+using KubeUI.Features.Resources.Yaml.Behaviors;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Serialization;
 using Moq;
@@ -166,7 +166,7 @@ public sealed class HelmEditorViewModelTests : IDisposable
         editor.IsLoading.ShouldBeFalse();
         GetFieldError(editor, nameof(HelmReleaseEditorViewModel.SelectedChart)).ShouldBe(scenario == "index-unavailable"
             ? "Repository index unavailable"
-            : Assets.Resources.HelmReleaseEditorView_ChooseChartReference);
+            : HelmAssets.Resources.HelmReleaseEditorView_ChooseChartReference);
         editor.Chart.ShouldBeEmpty();
         editor.SelectedRepository.ShouldBeNull();
         editor.SelectedChart.ShouldBeNull();
@@ -266,9 +266,9 @@ public sealed class HelmEditorViewModelTests : IDisposable
             await TestApplicationExtensions.WaitForUiAsync();
             var controls = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view).ToArray();
             var repositorySource = controls.OfType<RadioButton>()
-                .Single(control => Equals(control.Content, Assets.Resources.HelmReleaseEditorView_RepositorySource));
+                .Single(control => Equals(control.Content, HelmAssets.Resources.HelmReleaseEditorView_RepositorySource));
             var ociSource = controls.OfType<RadioButton>()
-                .Single(control => Equals(control.Content, Assets.Resources.HelmReleaseEditorView_OciSource));
+                .Single(control => Equals(control.Content, HelmAssets.Resources.HelmReleaseEditorView_OciSource));
             repositorySource.IsChecked.ShouldBe(true);
             var dropdowns = controls.OfType<ComboBox>().ToDictionary(control => control.Name!);
             var chartReference = controls.OfType<TextBox>().Single(control => control.Name == "ChartReference");
@@ -476,13 +476,13 @@ public sealed class HelmEditorViewModelTests : IDisposable
             var controls = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view).ToArray();
             var textEditor = controls.OfType<TextEditor>().Single();
             var namespaceLabel = controls.OfType<TextBlock>()
-                .Single(control => control.Text == Assets.Resources.HelmReleaseEditorView_Namespace);
+                .Single(control => control.Text == HelmAssets.Resources.HelmReleaseEditorView_Namespace);
             var createNamespace = controls.OfType<CheckBox>()
-                .Single(control => AutomationProperties.GetName(control) == Assets.Resources.HelmReleaseEditorView_CreateNamespace);
+                .Single(control => AutomationProperties.GetName(control) == HelmAssets.Resources.HelmReleaseEditorView_CreateNamespace);
             var createNamespaceLabel = controls.OfType<TextBlock>()
-                .Single(control => control.Text == Assets.Resources.HelmReleaseEditorView_CreateNamespace);
+                .Single(control => control.Text == HelmAssets.Resources.HelmReleaseEditorView_CreateNamespace);
             var timeoutLabel = controls.OfType<TextBlock>()
-                .Single(control => control.Text == Assets.Resources.HelmReleaseEditorView_Timeout);
+                .Single(control => control.Text == HelmAssets.Resources.HelmReleaseEditorView_Timeout);
             var namespaceInput = controls.OfType<TextBox>().Where(control => control.IsVisible).ElementAt(1);
             namespaceLabel.TranslatePoint(default, view)!.Value.Y.ShouldBeLessThan(createNamespace.TranslatePoint(default, view)!.Value.Y);
             createNamespaceLabel.TranslatePoint(default, view)!.Value.X.ShouldBe(namespaceLabel.TranslatePoint(default, view)!.Value.X);
@@ -803,12 +803,12 @@ public sealed class HelmEditorViewModelTests : IDisposable
 
         editor.SelectedRepository = "stable";
         GetFieldError(editor, nameof(HelmReleaseEditorViewModel.SelectedChart))
-            .ShouldBe(Assets.Resources.HelmReleaseEditorView_ChartRequired);
+            .ShouldBe(HelmAssets.Resources.HelmReleaseEditorView_ChartRequired);
         GetFieldError(editor, nameof(HelmReleaseEditorViewModel.SelectedVersion)).ShouldBeEmpty();
         editor.SelectedChart = "web";
 
         GetFieldError(editor, nameof(HelmReleaseEditorViewModel.SelectedVersion))
-            .ShouldBe(Assets.Resources.HelmReleaseEditorView_VersionRequired);
+            .ShouldBe(HelmAssets.Resources.HelmReleaseEditorView_VersionRequired);
         var view = new HelmReleaseEditorView { DataContext = editor };
         using var window = Application.Current.CreateTestWindow(content: view);
         try
@@ -819,7 +819,7 @@ public sealed class HelmEditorViewModelTests : IDisposable
                 .OfType<ComboBox>().Single(control => control.Name == "ChartVersion");
             DataValidationErrors.GetHasErrors(versionSelector).ShouldBeTrue();
             DataValidationErrors.GetErrors(versionSelector).Cast<string>()
-                .ShouldContain(Assets.Resources.HelmReleaseEditorView_VersionRequired);
+                .ShouldContain(HelmAssets.Resources.HelmReleaseEditorView_VersionRequired);
         }
         finally
         {

@@ -1,6 +1,6 @@
 using k8s;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Resources.Visualization;
+using KubeUI.Features.Resources.Visualization;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Visualization;

@@ -1,6 +1,6 @@
-using KubeUI.Avalonia.Features.Cilium.Hubble;
-using KubeUI.Cilium.Hubble;
-using KubeUI.Cilium.Hubble.Models;
+using KubeUI.Features.Cilium.Hubble;
+using KubeUI.Features.Cilium.Hubble;
+using KubeUI.Features.Cilium.Hubble.Models;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Cilium.Hubble;

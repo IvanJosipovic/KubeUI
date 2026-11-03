@@ -9,7 +9,7 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using DynamicData;
 using k8s.Models;
-using KubeUI.Avalonia.Shell.Documents.About;
+using KubeUI.App.Shell.Documents.About;
 using SvcSystems.Avalonia.DynamicTableView;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.List;

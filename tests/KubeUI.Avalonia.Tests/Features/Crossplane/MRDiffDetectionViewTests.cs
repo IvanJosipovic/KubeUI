@@ -1,7 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Dock.Model.Core;
-using KubeUI.Avalonia.Features.Crossplane.MRDiffDetection;
+using KubeUI.Features.Crossplane.MRDiffDetection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Shouldly;
@@ -71,7 +71,7 @@ public sealed class MRDiffDetectionViewTests
             .Cast<MenuItem>()
             .ShouldHaveSingleItem();
 
-        menuItem.Header.ShouldBe(Assets.Resources.ResourceConfigBase_MenuItem_ViewYaml);
+        menuItem.Header.ShouldBe(ResourceAssets.Resources.ResourceConfigBase_MenuItem_ViewYaml);
         menuItem.Command.ShouldBe(viewModel.ViewYamlCommand);
         menuItem.CommandParameter.ShouldBeSameAs(row);
         table.ContextMenuItemsFactory!([new object()])!.Cast<object>().ShouldBeEmpty();

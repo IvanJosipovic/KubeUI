@@ -5,11 +5,10 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using KubeUI.AI.Configuration;
-using KubeUI.Avalonia.Features.AI;
-using KubeUI.Avalonia.Infrastructure.Mcp;
+using KubeUI.Features.AI.Configuration;
+using KubeUI.Features.AI.Chat;
+using KubeUI.Features.AI.Mcp;
 using LiveMarkdown.Avalonia;
-using Moq;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.AI;
@@ -218,11 +217,9 @@ public sealed class AgentChatViewTests
 
     private static AgentChatViewModel CreateViewModel(AcpAgentRegistry registry)
     {
-        var settingsService = new Mock<ISettingsService>();
-        settingsService.SetupGet(service => service.Settings).Returns(new Settings());
         return new AgentChatViewModel(
             registry,
-            settingsService.Object,
+            new TestAgentChatSettings(new Settings()),
             new AgentContextService(),
             new McpServerState());
     }

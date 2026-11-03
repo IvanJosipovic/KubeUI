@@ -14,8 +14,8 @@ using Dock.Model.Core;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Features.Resources.Visualization;
-using KubeUI.Avalonia.Services.Icons;
+using KubeUI.Features.Resources.Visualization;
+using KubeUI.Features.Resources.Icons;
 using KubeUI.Kubernetes.Resources.Relationships;
 using Shouldly;
 
@@ -208,8 +208,8 @@ public sealed class ResourceGraphControlTests
             ((ResourceGraphVertex)control.Area.VertexList.Values.Single().DataContext!).Node.ContextMenuItems
                 .Select(item => item.Title)
                 .ShouldBe([
-                    Assets.Resources.ResourceConfigBase_MenuItem_View,
-                    Assets.Resources.ResourceConfigBase_MenuItem_ViewYaml,
+                    ResourceAssets.Resources.ResourceConfigBase_MenuItem_View,
+                    ResourceAssets.Resources.ResourceConfigBase_MenuItem_ViewYaml,
                 ]);
         }
         finally

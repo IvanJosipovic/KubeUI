@@ -7,8 +7,8 @@ using DynamicData;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Infrastructure.Docking;
-using KubeUI.Avalonia.Resources;
+using KubeUI.App.Infrastructure.Docking;
+using KubeUI.Features.Resources;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Properties;

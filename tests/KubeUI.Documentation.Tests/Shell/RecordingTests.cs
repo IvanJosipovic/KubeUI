@@ -1,4 +1,4 @@
-using KubeUI.Avalonia.Shell.Main;
+using KubeUI.App.Shell.Main;
 using KubeUI.Documentation.Tests.Infra;
 
 namespace KubeUI.Documentation.Tests.Shell;

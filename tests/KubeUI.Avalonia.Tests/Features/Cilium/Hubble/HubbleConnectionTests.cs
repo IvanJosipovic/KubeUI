@@ -1,4 +1,4 @@
-using KubeUI.Cilium.Hubble;
+using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;

@@ -2,7 +2,7 @@
 
 using BenchmarkDotNet.Attributes;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Features.Resources.Yaml;
+using KubeUI.Features.Resources.Yaml;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Serialization;
 using Microsoft.Extensions.DependencyInjection;

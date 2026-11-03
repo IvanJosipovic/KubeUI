@@ -20,10 +20,10 @@ using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
-using KubeUI.Avalonia.Infrastructure.Platform;
-using KubeUI.Avalonia.Shell.Documents.About;
-using KubeUI.Avalonia.Shell.Main;
+using KubeUI.Features.Resources.Yaml.Behaviors;
+using KubeUI.App.Infrastructure.Platform;
+using KubeUI.App.Shell.Documents.About;
+using KubeUI.App.Shell.Main;
 using KubeUI.Kubernetes.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
@@ -63,7 +63,7 @@ public class ResourceYamlViewModelTests
         viewModel.Initialize(cluster, resource);
         viewModel.IsReadOnlyLocked.ShouldBeFalse();
         viewModel.YamlDocument.Text.ShouldContain("kind: Pod");
-        viewModel.Title.ShouldBe(Assets.Resources.ResourceYamlView_Title);
+        viewModel.Title.ShouldBe(ResourceAssets.Resources.ResourceYamlView_Title);
     }
 
     [AvaloniaFact]

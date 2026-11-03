@@ -1,0 +1,60 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>embedded</DebugType>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="Avalonia" />
+    <Using Include="Avalonia.Controls" />
+    <Using Include="Avalonia.Data" />
+    <Using Include="Avalonia.Interactivity" />
+    <Using Include="Avalonia.Layout" />
+    <Using Include="Avalonia.Markup.Declarative" />
+    <Using Include="Avalonia.Media" />
+    <Using Include="Avalonia.Threading" />
+    <Using Include="CommunityToolkit.Mvvm.ComponentModel" />
+    <Using Include="CommunityToolkit.Mvvm.Input" />
+    <Using Include="KubeUI.Controls.Presentation" />
+    <Using Include="KubeUI.Controls.DependencyInjection" />
+    <Using Include="KubeUI.Controls.Platform" />
+    <Using Include="KubeUI.Avalonia.Styles" />
+    <Using Include="KubeUI.Features.Clusters.Assets" Alias="Assets" />
+    <Using Include="Microsoft.Extensions.DependencyInjection" />
+    <Using Include="Microsoft.Extensions.Logging" />
+    <Using Include="SvcSystems.Avalonia.DynamicTableView" />
+    <Using Include="System.Collections.ObjectModel" />
+    <Using Include="System.ComponentModel" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="KubeUI.Avalonia.Tests" />
+    <ProjectCapability Include="Avalonia" />
+    <ProjectReference Include="..\KubeUI.Controls\KubeUI.Controls.csproj" />
+    <ProjectReference Include="..\KubeUI.Kubernetes\KubeUI.Kubernetes.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(BaseIntermediateOutputPath)\Resources.Designer.cs" Condition="'$(DesignTimeBuild)' == 'true'" AutoGen="true" DesignTime="true" Visible="false" />
+    <EmbeddedResource Update="Assets\Resources.resx">
+      <PublicClass>true</PublicClass>
+      <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
+      <StronglyTypedNamespace>KubeUI.Features.Clusters.Assets</StronglyTypedNamespace>
+      <StronglyTypedClassName>Resources</StronglyTypedClassName>
+      <StronglyTypedFileName>$(BaseIntermediateOutputPath)\Resources.Designer.cs</StronglyTypedFileName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.5" />
+    <PackageReference Include="Avalonia.Markup.Declarative" Version="12.2.0" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="DynamicData" Version="9.5.0" />
+    <PackageReference Include="FluentAvaloniaUI" Version="3.1.0" />
+    <PackageReference Include="FluentIcons.Avalonia" Version="2.1.344" />
+    <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia.Fluent" Version="2.4.0" />
+    <PackageReference Include="ServiceScan.SourceGenerator" Version="3.2.2" PrivateAssets="all" />
+    <PackageReference Include="SvcSystems.Avalonia.DynamicTableView" Version="1.0.0-alpha.19" />
+    <PackageReference Include="Xaml.Behaviors.Avalonia" Version="12.0.7" />
+  </ItemGroup>
+</Project>

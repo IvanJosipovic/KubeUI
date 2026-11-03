@@ -19,7 +19,6 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Desktop" Version="12.1.5" />
-    <PackageReference Include="ModelContextProtocol.AspNetCore" Version="2.3.0" />
     <PackageReference Include="NReco.Logging.File" Version="1.4.0" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.20.1" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.20.1" />
@@ -48,7 +47,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\KubeUI.Avalonia\KubeUI.Avalonia.csproj" />
+    <ProjectReference Include="..\KubeUI.App\KubeUI.App.csproj" />
     <ProjectReference Include="..\KubeUI.Kubernetes\KubeUI.Kubernetes.csproj" />
   </ItemGroup>
 

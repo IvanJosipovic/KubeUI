@@ -1,7 +1,7 @@
 using Avalonia.Headless.XUnit;
 using k8s.Models;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Cilium;
+using KubeUI.Features.Cilium;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Cilium.Hubble;

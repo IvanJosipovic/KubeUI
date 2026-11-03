@@ -1,0 +1,444 @@
+using System.Collections.Concurrent;
+using Avalonia.Controls.Notifications;
+using Dock.Model.Controls;
+using Dock.Model.Core;
+using FluentAvalonia.UI.Controls;
+using FluentIcons.Common;
+using HanumanInstitute.MvvmDialogs;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using KubernetesClient.Informer.Client;
+using KubeUI.Features.Clusters.Error;
+using KubeUI.Features.Clusters.Settings;
+using KubeUI.Features.Clusters.Workspace;
+using KubeUI.App.Infrastructure.Docking;
+using KubeUI.App.Infrastructure.Platform;
+using KubeUI.App.Infrastructure.Presentation;
+using KubeUI.Features.Resources;
+using KubeUI.Features.Resources.Icons;
+using KubeUI.Kubernetes;
+
+namespace KubeUI.App.Shell.Navigation;
+
+public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
+{
+    private readonly ILogger<NavigationViewModel> _logger;
+    private readonly INotificationManager _notificationManager;
+    private readonly IServiceProvider _serviceProvider;
+    private readonly IDialogService _dialogService;
+    public new IFactory Factory => _serviceProvider.GetRequiredService<IFactory>();
+    private readonly IResourceNavigationService _documentService;
+    private readonly IPlatformServices _platformServices;
+    private readonly NavigationTreeBuilder _treeBuilder;
+    private readonly NavigationClusterCatalogSynchronizer _clusterNavigation;
+    private readonly NavigationSelectionHandler _selection;
+    private readonly ConcurrentDictionary<ClusterWorkspace, byte> _queuedReconciliations = new();
+
+    [ObservableProperty]
+    public partial ClusterWorkspaceCatalog ClusterCatalog { get; set; }
+
+    [ObservableProperty]
+    public partial ObservableCollection<ClusterNavigationNode> Clusters { get; set; } = [];
+
+    public NavigationViewModel(
+        ILogger<NavigationViewModel> logger,
+        INotificationManager notificationManager,
+        IDialogService dialogService,
+        ClusterWorkspaceCatalog clusterCatalog,
+        IServiceProvider serviceProvider,
+        IResourceNavigationService documentService,
+        NavigationSectionCatalog sectionCatalog,
+        IPlatformServices platformServices)
+    {
+        _logger = logger;
+        _notificationManager = notificationManager;
+        _serviceProvider = serviceProvider;
+        _platformServices = platformServices;
+        _dialogService = dialogService;
+        ClusterCatalog = clusterCatalog;
+        _documentService = documentService;
+        _treeBuilder = new NavigationTreeBuilder(
+            sectionCatalog,
+            _serviceProvider.GetRequiredService<IResourceIconService>(),
+            OpenResourceNavigationCommand,
+            OpenResourceNavigationInNewTabCommand,
+            logger);
+        _selection = new NavigationSelectionHandler(
+            _logger,
+            _notificationManager,
+            _serviceProvider,
+            sectionCatalog,
+            _platformServices,
+            dockable => Factory.AddToDocuments(dockable));
+        Title = Assets.Resources.NavigationView_Title!;
+        Id = nameof(NavigationViewModel);
+
+        _clusterNavigation = new NavigationClusterCatalogSynchronizer(
+            ClusterCatalog,
+            Clusters,
+            SubscribeCluster,
+            UnsubscribeCluster,
+            Reconcile,
+            ToggleClusterConnectionCommand,
+            OpenClusterSettingsCommand,
+            _serviceProvider.GetRequiredService<ILogger<NavigationClusterCatalogSynchronizer>>());
+        _clusterNavigation.Reload();
+    }
+
+    public void Dispose()
+    {
+        _clusterNavigation.Dispose();
+    }
+
+    [RelayCommand]
+    private Task ActivateNavigationItemAsync(object? item)
+    {
+        return TreeViewSelectionChangedAsync(item);
+    }
+
+    internal async Task TreeViewSelectionChangedAsync(object? item)
+    {
+        if (item is ClusterNavigationNode clusterNode)
+        {
+            await HandleClusterSelectionAsync(clusterNode).ConfigureAwait(false);
+        }
+        else if (item is NavigationLink link)
+        {
+            if (link.ResourceKind is not null)
+            {
+                _documentService.Open(link);
+            }
+            else
+            {
+                await _selection.SelectAsync(link).ConfigureAwait(true);
+            }
+        }
+
+        if (item is NavigationItem nav && nav.NavigationItems.Count > 0 && item is not ClusterNavigationNode)
+        {
+            nav.IsExpanded = !nav.IsExpanded;
+        }
+    }
+
+    private Task HandleClusterSelectionAsync(ClusterNavigationNode clusterNode)
+    {
+        var cluster = clusterNode.Cluster;
+
+        if (cluster.Runtime.Connected)
+        {
+            clusterNode.IsExpanded = !clusterNode.IsExpanded;
+            return Task.CompletedTask;
+        }
+
+        _ = ConnectClusterAsync(clusterNode);
+        return Task.CompletedTask;
+    }
+
+    [RelayCommand]
+    private async Task ToggleClusterConnectionAsync(ClusterNavigationNode? clusterNode)
+    {
+        if (clusterNode == null)
+        {
+            return;
+        }
+
+        var cluster = clusterNode.Cluster;
+        if (cluster.Runtime.Connected)
+        {
+            await cluster.Disconnect().ConfigureAwait(false);
+            return;
+        }
+
+        _ = ConnectClusterAsync(clusterNode);
+    }
+
+    private async Task ConnectClusterAsync(ClusterNavigationNode clusterNode)
+    {
+        await clusterNode.Cluster.Connect().ConfigureAwait(false);
+    }
+
+    [RelayCommand]
+    private Task OpenClusterSettingsAsync(ClusterNavigationNode? clusterNode)
+    {
+        if (clusterNode == null)
+        {
+            return Task.CompletedTask;
+        }
+
+        return _selection.SelectAsync(CreateNavigationLink(
+            clusterNode.Cluster,
+            NavigationTargets.ClusterSettings));
+    }
+
+    private static NavigationLink CreateNavigationLink(ClusterWorkspace cluster, string id)
+    {
+        var target = NavigationTargets.Find(id);
+        return new NavigationLink
+        {
+            Cluster = cluster,
+            Id = $"{cluster.Runtime.Name}-{target.Key}",
+            Name = target.Name,
+            ViewModelKey = target.Key,
+            Order = target.Order,
+            FluentIcon = target.Icon,
+        };
+    }
+
+    [RelayCommand]
+    private Task OpenResourceNavigationAsync(NavigationLink? resourceNavLink)
+    {
+        if (resourceNavLink == null)
+        {
+            return Task.CompletedTask;
+        }
+
+        _documentService.Open(resourceNavLink);
+        return Task.CompletedTask;
+    }
+
+    [RelayCommand]
+    private Task OpenResourceNavigationInNewTabAsync(NavigationLink? resourceNavLink)
+    {
+        if (resourceNavLink == null)
+        {
+            return Task.CompletedTask;
+        }
+
+        _documentService.Open(resourceNavLink, forceNewTab: true);
+        return Task.CompletedTask;
+    }
+
+    private async Task ShowMissingNamespacePermissionPromptAsync(ClusterWorkspace cluster)
+    {
+        var settingsVm = _serviceProvider.GetRequiredService<ClusterSettingsViewModel>();
+        settingsVm.Initialize(cluster);
+        Factory.AddToDocuments(settingsVm);
+
+        var settings = new ContentDialogSettings
+        {
+            Title = ClusterAssets.Resources.Cluster_Missing_Namespace_Permission_Title,
+            Content = ClusterAssets.Resources.Cluster_Missing_Namespace_Permission_Content,
+            PrimaryButtonText = ClusterAssets.Resources.Cluster_Missing_Namespace_Permission_Primary,
+            DefaultButton = FAContentDialogButton.Primary
+        };
+
+        await _dialogService.ShowContentDialogAsync(this, settings);
+    }
+
+    private void ShowClusterError(string? error)
+    {
+        const string id = "cluster-error";
+
+        if (Factory.FindDockableById(id) is ClusterErrorViewModel existing)
+        {
+            existing.Error = error;
+            Factory.SetActiveDockable(existing);
+            if (Factory.GetDockable<IDocumentDock>("Documents") is { } documents)
+            {
+                Factory.SetFocusedDockable(documents, existing);
+            }
+
+            return;
+        }
+
+        var vm = _serviceProvider.GetRequiredService<ClusterErrorViewModel>();
+        vm.Id = id;
+        vm.Error = error;
+        Factory.AddToDocuments(vm);
+    }
+
+    private void SubscribeCluster(ClusterWorkspace cluster)
+    {
+        cluster.ResourceConfigProcessed += OnClusterResourceConfigProcessed;
+        cluster.Runtime.ResourceSeeded += OnClusterResourceSeeded;
+        if (cluster.Runtime is INotifyPropertyChanged runtime)
+        {
+            runtime.PropertyChanged += OnClusterRuntimePropertyChanged;
+        }
+        cluster.Runtime.NamespaceSelectionRequired += OnNamespaceSelectionRequired;
+        cluster.CustomResourceDefinitionRemoved += OnClusterCustomResourceDefinitionRemoved;
+    }
+
+    private void UnsubscribeCluster(ClusterWorkspace cluster)
+    {
+        cluster.ResourceConfigProcessed -= OnClusterResourceConfigProcessed;
+        cluster.Runtime.ResourceSeeded -= OnClusterResourceSeeded;
+        if (cluster.Runtime is INotifyPropertyChanged runtime)
+        {
+            runtime.PropertyChanged -= OnClusterRuntimePropertyChanged;
+        }
+        cluster.Runtime.NamespaceSelectionRequired -= OnNamespaceSelectionRequired;
+        cluster.CustomResourceDefinitionRemoved -= OnClusterCustomResourceDefinitionRemoved;
+    }
+
+    private void OnClusterRuntimePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (sender is not IClusterRuntime runtime
+            || (e.PropertyName != nameof(IClusterRuntime.Status)
+                && e.PropertyName != nameof(IClusterRuntime.Connected)
+                && e.PropertyName != nameof(IClusterRuntime.Name)))
+        {
+            return;
+        }
+
+        _logger.LogDebug(
+            "Navigation runtime state event received for {ClusterName}: {PropertyName}; Connected={Connected}; Status={Status}",
+            runtime.Name,
+            e.PropertyName,
+            runtime.Connected,
+            runtime.Status);
+
+        if (e.PropertyName == nameof(IClusterRuntime.Name) && Dispatcher.UIThread.CheckAccess())
+        {
+            RenameCluster(runtime);
+            return;
+        }
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!_clusterNavigation.TryGetWorkspace(runtime, out var cluster))
+            {
+                _logger.LogDebug("Navigation runtime state event ignored for unknown runtime {ClusterName}", runtime.Name);
+                return;
+            }
+
+            if (!_clusterNavigation.TryGetNode(cluster, out var node))
+            {
+                _logger.LogDebug("Navigation runtime state event ignored because node is missing for {ClusterName}", runtime.Name);
+                return;
+            }
+
+            if (e.PropertyName == nameof(IClusterRuntime.Name))
+            {
+                RenameCluster(runtime);
+                return;
+            }
+
+            if (e.PropertyName == nameof(IClusterRuntime.Connected))
+            {
+                node.UpdateConnectionNavigation(runtime.Connected);
+
+                if (runtime.Connected)
+                {
+                    ApplyClusterExpansion(node);
+                }
+                else
+                {
+                    node.IsExpanded = false;
+                }
+            }
+
+            if (runtime.Connected && runtime.Status == ClusterStatus.Connected)
+            {
+                ApplyOnUiThread(cluster);
+            }
+
+            if (runtime.Status == ClusterStatus.Errored)
+            {
+                ShowClusterError(runtime.LastError);
+            }
+        });
+    }
+
+    private void RenameCluster(IClusterRuntime runtime)
+    {
+        if (!_clusterNavigation.TryGetWorkspace(runtime, out var cluster)
+            || !_clusterNavigation.TryGetNode(cluster, out var node))
+        {
+            return;
+        }
+
+        node.UpdateNavigationName(runtime.Name);
+        if (runtime.Connected && runtime.Status == ClusterStatus.Connected)
+        {
+            ApplyOnUiThread(cluster);
+        }
+    }
+
+    private static void ApplyClusterExpansion(ClusterNavigationNode clusterNode)
+    {
+        if (clusterNode.Cluster.Runtime.Connected)
+        {
+            clusterNode.IsExpanded = true;
+        }
+    }
+
+    private void OnNamespaceSelectionRequired(IClusterRuntime runtime)
+    {
+        if (_clusterNavigation.TryGetWorkspace(runtime, out var cluster))
+        {
+            Dispatcher.UIThread.Post(() => _ = ShowMissingNamespacePermissionPromptAsync(cluster));
+        }
+    }
+
+    private void OnClusterResourceConfigProcessed(ClusterWorkspace cluster, IClusterResourceConfig resourceConfig)
+    {
+        _logger.LogDebug(
+            "Navigation resource config event received for {ClusterName}: {ResourceKind}; PermissionsLoaded={PermissionsLoaded}; CanListAndWatch={CanListAndWatch}; Connected={Connected}; Status={Status}",
+            cluster.Runtime.Name,
+            resourceConfig.Kind,
+            resourceConfig.PermissionsLoaded,
+            resourceConfig.CanListAndWatch,
+            cluster.Runtime.Connected,
+            cluster.Runtime.Status);
+
+        ApplyOnUiThread(cluster);
+    }
+
+    private void ApplyOnUiThread(ClusterWorkspace cluster)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            Reconcile(cluster);
+            return;
+        }
+
+        if (!_queuedReconciliations.TryAdd(cluster, 0))
+        {
+            return;
+        }
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            _queuedReconciliations.TryRemove(cluster, out _);
+            Reconcile(cluster);
+        }, DispatcherPriority.Background);
+    }
+
+    private void Reconcile(ClusterWorkspace cluster)
+    {
+        if (!_clusterNavigation.TryGetNode(cluster, out var node))
+        {
+            return;
+        }
+
+        _treeBuilder.Reconcile(node);
+        _logger.LogDebug(
+            "Navigation reconciled for {ClusterName}: Items={Items}",
+            cluster.Runtime.Name,
+            node.NavigationItems.Count);
+    }
+
+    private void OnClusterCustomResourceDefinitionRemoved(ClusterWorkspace cluster, GroupApiVersionKind removedKind)
+    {
+        _logger.LogDebug(
+            "Navigation custom resource definition removal received for {ClusterName}: {ResourceKind}",
+            cluster.Runtime.Name,
+            removedKind);
+
+        ApplyOnUiThread(cluster);
+    }
+
+    private void OnClusterResourceSeeded(IClusterRuntime runtime, GroupApiVersionKind kind)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!_clusterNavigation.TryGetWorkspace(runtime, out var cluster)
+                || !_clusterNavigation.TryGetNode(cluster, out var node))
+            {
+                return;
+            }
+
+            _treeBuilder.AttachResourceCount(node, kind);
+        });
+    }
+}

@@ -1,10 +1,10 @@
 using Avalonia.VisualTree;
 using Dock.Model.Controls;
-using KubeUI.Avalonia.Features.Helm.Charts;
-using KubeUI.Avalonia.Features.Helm.Releases;
-using KubeUI.Avalonia.Features.Helm.Repositories;
-using KubeUI.Avalonia.Features.Resources.Visualization;
-using KubeUI.Avalonia.Shell.Main;
+using KubeUI.Features.Helm.Charts;
+using KubeUI.Features.Helm.Releases;
+using KubeUI.Features.Helm.Repositories;
+using KubeUI.Features.Resources.Visualization;
+using KubeUI.App.Shell.Main;
 using KubeUI.Documentation.Tests.Infra;
 
 namespace KubeUI.Documentation.Tests.Features.Helm;

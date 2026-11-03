@@ -1,6 +1,6 @@
 using Avalonia.VisualTree;
-using KubeUI.Avalonia.Features.Resources.Yaml;
-using KubeUI.Avalonia.Shell.Main;
+using KubeUI.Features.Resources.Yaml;
+using KubeUI.App.Shell.Main;
 using KubeUI.Documentation.Tests.Infra;
 
 namespace KubeUI.Documentation.Tests.Features.Resources.List;

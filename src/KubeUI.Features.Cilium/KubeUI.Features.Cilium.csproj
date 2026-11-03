@@ -1,0 +1,98 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <DebugType>embedded</DebugType>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="Avalonia" />
+    <Using Include="Avalonia.Controls" />
+    <Using Include="Avalonia.Controls.Primitives" />
+    <Using Include="Avalonia.Controls.Templates" />
+    <Using Include="Avalonia.Data" />
+    <Using Include="Avalonia.Layout" />
+    <Using Include="Avalonia.Markup.Declarative" />
+    <Using Include="Avalonia.Media" />
+    <Using Include="Avalonia.Styling" />
+    <Using Include="Avalonia.Threading" />
+    <Using Include="CommunityToolkit.Mvvm.ComponentModel" />
+    <Using Include="KubeUI.Features.Cilium" />
+    <Using Include="KubeUI.Avalonia.Styles" />
+    <Using Include="KubeUI.Controls.Converters" />
+    <Using Include="KubeUI.Controls.DependencyInjection" />
+    <Using Include="KubeUI.Controls.Docking" />
+    <Using Include="KubeUI.Controls.Platform" />
+    <Using Include="KubeUI.Controls.Presentation" />
+    <Using Include="KubeUI.Controls.Styles" />
+    <Using Include="KubeUI.Features.Clusters.Workspace" />
+    <Using Include="KubeUI.Features.Cilium.Assets" Alias="Assets" />
+    <Using Include="KubeUI.Features.Resources" />
+    <Using Include="KubeUI.Features.Resources.Assets" Alias="ResourceAssets" />
+    <Using Include="KubeUI.Features.Resources.Common" />
+    <Using Include="KubeUI.Features.Resources.Icons" />
+    <Using Include="KubeUI.Features.Resources.Infrastructure" />
+    <Using Include="KubeUI.Features.Resources.Properties.Controls" />
+    <Using Include="KubeUI.Features.Resources.Visualization" />
+    <Using Include="KubeUI.Kubernetes" />
+    <Using Include="Microsoft.Extensions.DependencyInjection" />
+    <Using Include="Microsoft.Extensions.Logging" />
+    <Using Include="System.Collections" />
+    <Using Include="System.Collections.ObjectModel" />
+    <Using Include="System.Linq" />
+    <Using Include="System.Reactive.Linq" />
+    <Using Include="System.Threading" />
+    <Using Include="SvcSystems.Avalonia.DynamicTableView" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="KubeUI.Features.Cilium.Tests" />
+    <InternalsVisibleTo Include="KubeUI.Avalonia.Tests" />
+    <InternalsVisibleTo Include="KubeUI.Testing" />
+    <ProjectCapability Include="Avalonia" />
+    <ProjectReference Include="..\KubeUI.Controls\KubeUI.Controls.csproj" />
+    <ProjectReference Include="..\KubeUI.Features.Clusters\KubeUI.Features.Clusters.csproj" />
+    <ProjectReference Include="..\KubeUI.Features.Resources\KubeUI.Features.Resources.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KubeUI.Kubernetes\KubeUI.Kubernetes.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(BaseIntermediateOutputPath)\Resources.Designer.cs" Condition="'$(DesignTimeBuild)' == 'true'" AutoGen="true" DesignTime="true" Visible="false" />
+    <EmbeddedResource Update="Assets\Resources.resx">
+      <PublicClass>true</PublicClass>
+      <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
+      <StronglyTypedNamespace>KubeUI.Features.Cilium.Assets</StronglyTypedNamespace>
+      <StronglyTypedClassName>Resources</StronglyTypedClassName>
+      <StronglyTypedFileName>$(BaseIntermediateOutputPath)\Resources.Designer.cs</StronglyTypedFileName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.5" />
+    <PackageReference Include="Avalonia.Markup.Declarative" Version="12.2.0" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" PrivateAssets="all" />
+    <PackageReference Include="DynamicData" Version="9.5.0" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.67.0" />
+    <PackageReference Include="Google.Protobuf" Version="3.28.3" />
+    <PackageReference Include="Grpc.Tools" Version="2.67.0" PrivateAssets="all" />
+    <PackageReference Include="System.Reactive" Version="6.1.0" />
+    <PackageReference Include="Dock.Model.Mvvm" Version="12.1.0.2" />
+    <PackageReference Include="FluentAvaloniaUI" Version="3.1.0" />
+    <PackageReference Include="FluentIcons.Avalonia" Version="2.1.344" />
+    <PackageReference Include="SvcSystems.Avalonia.DynamicTableView" Version="1.0.0-alpha.19" />
+    <PackageReference Include="Westermo.GraphX.Controls.Avalonia" Version="4.4.8" />
+    <PackageReference Include="Westermo.GraphX.Controls.Avalonia.Themes.Fluent" Version="4.2.0" />
+    <PackageReference Include="Westermo.GraphX.Logic" Version="4.4.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="Hubble/Models/flow.proto" GrpcServices="Client" ProtoRoot="Hubble/Models" />
+    <Protobuf Include="Hubble/Models/relay.proto" GrpcServices="Client" ProtoRoot="Hubble/Models" />
+    <Protobuf Include="Hubble/Models/observer.proto" GrpcServices="Client" ProtoRoot="Hubble/Models" />
+  </ItemGroup>
+
+</Project>

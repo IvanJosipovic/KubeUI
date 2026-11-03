@@ -1,6 +1,6 @@
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
-using KubeUI.Avalonia.Services.Settings;
+using KubeUI.App.Services.Settings;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Clusters.Workspace;
@@ -59,8 +59,8 @@ public sealed class ClusterWorkspacePreferencesTests
     {
         var services = Application.Current.GetTestServices();
         var runtime = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single().Runtime;
-        var settingsService = services.GetRequiredService<ISettingsService>();
-        var clusterSettings = settingsService.Settings.GetClusterSettings(runtime);
+        var settingsService = services.GetRequiredService<IClusterPreferenceStore>();
+        var clusterSettings = settingsService.GetClusterSettings(runtime);
         clusterSettings.Alias = "production";
         clusterSettings.Enabled = false;
         var preferences = new ClusterWorkspacePreferences(settingsService);
@@ -79,7 +79,7 @@ public sealed class ClusterWorkspacePreferencesTests
     {
         var services = Application.Current.GetTestServices();
         var runtime = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single().Runtime;
-        var settingsService = services.GetRequiredService<ISettingsService>();
+        var settingsService = services.GetRequiredService<IClusterPreferenceStore>();
         var preferences = new ClusterWorkspacePreferences(settingsService);
         using var workspace = ActivatorUtilities.CreateInstance<ClusterWorkspace>(services, runtime);
         preferences.Attach(workspace);
@@ -87,7 +87,7 @@ public sealed class ClusterWorkspacePreferencesTests
         workspace.Alias = "  staging  ";
         workspace.IsEnabled = false;
 
-        var stored = settingsService.Settings.FindClusterSettings(runtime);
+        var stored = settingsService.FindClusterSettings(runtime);
         stored.ShouldNotBeNull();
         stored!.Alias.ShouldBe("staging");
         stored.Enabled.ShouldBeFalse();

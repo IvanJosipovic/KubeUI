@@ -2,9 +2,9 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.VisualTree;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Resources.Properties.Controls;
+using KubeUI.Features.Resources.Properties.Controls;
 using Shouldly;
-using AppResources = KubeUI.Avalonia.Assets.Resources;
+
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Properties;
 
@@ -26,7 +26,7 @@ public sealed class ResourcePropertiesViewTests
         viewModel.ShowResource(workspace, new V1Pod { Metadata = new V1ObjectMeta { Name = "second" } });
         await TestApplicationExtensions.WaitForUiAsync();
         view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>()
-            .ShouldContain(item => item.Key == AppResources.ResourcePropertiesView_Name && Equals(item.Value, "second"));
+            .ShouldContain(item => item.Key == ResourceAssets.Resources.ResourcePropertiesView_Name && Equals(item.Value, "second"));
     }
 
     [AvaloniaFact]
@@ -61,7 +61,7 @@ public sealed class ResourcePropertiesViewTests
 
             var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
 
-            items.Any(x => x.Key == AppResources.ResourcePropertiesView_Namespace).ShouldBeTrue();
+            items.Any(x => x.Key == ResourceAssets.Resources.ResourcePropertiesView_Namespace).ShouldBeTrue();
         }
         finally
         {
@@ -155,7 +155,7 @@ public sealed class ResourcePropertiesViewTests
 
             var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
 
-            items.Any(x => x.Key == AppResources.ResourcePropertiesView_Namespace).ShouldBeFalse();
+            items.Any(x => x.Key == ResourceAssets.Resources.ResourcePropertiesView_Namespace).ShouldBeFalse();
         }
         finally
         {
@@ -186,7 +186,7 @@ public sealed class ResourcePropertiesViewTests
             },
         };
 
-        var view = new Avalonia.Resources.Workloads.v1.Pod.PropertiesView
+        var view = new KubeUI.Features.Resources.Workloads.v1.Pod.PropertiesView
         {
             DataContext = pod,
         };
@@ -204,7 +204,7 @@ public sealed class ResourcePropertiesViewTests
 
             var section = view.GetVisualDescendants()
                 .OfType<ExpandableSection>()
-                .Single(x => Equals(x.Header, AppResources.PodPropertiesView_EphemeralContainers));
+                .Single(x => Equals(x.Header, ResourceAssets.Resources.PodPropertiesView_EphemeralContainers));
 
             section.IsVisible.ShouldBeTrue();
         }

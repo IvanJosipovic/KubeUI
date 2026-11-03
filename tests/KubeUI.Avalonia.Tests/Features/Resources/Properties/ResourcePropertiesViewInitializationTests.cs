@@ -5,11 +5,11 @@ using Dock.Model.Core;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Features.Resources.Properties.Controls;
-using KubeUI.Avalonia.Infrastructure.Presentation;
-using KubeUI.Avalonia.Resources;
+using KubeUI.Features.Resources.Properties.Controls;
+using KubeUI.App.Infrastructure.Presentation;
+using KubeUI.Features.Resources;
 using Shouldly;
-using AppResources = KubeUI.Avalonia.Assets.Resources;
+
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Properties;
 
@@ -76,7 +76,7 @@ public sealed class ResourcePropertiesViewInitializationTests
             await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
 
             var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
-            var nameItem = items.Single(item => item.Key == AppResources.ResourcePropertiesView_Name);
+            var nameItem = items.Single(item => item.Key == ResourceAssets.Resources.ResourcePropertiesView_Name);
             nameItem.Value.ShouldBe("example-1");
         }
         finally
@@ -164,7 +164,7 @@ public sealed class ResourcePropertiesViewInitializationTests
             var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
 
             items.ShouldNotBeEmpty();
-            items.Any(x => x.Key == AppResources.ResourcePropertiesView_Name).ShouldBeTrue();
+            items.Any(x => x.Key == ResourceAssets.Resources.ResourcePropertiesView_Name).ShouldBeTrue();
         }
         finally
         {

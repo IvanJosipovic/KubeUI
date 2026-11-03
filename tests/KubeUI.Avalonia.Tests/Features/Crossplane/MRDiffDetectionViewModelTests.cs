@@ -9,10 +9,10 @@ using DynamicData;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Features.Crossplane.MRDiffDetection;
-using KubeUI.Avalonia.Infrastructure.Platform;
-using KubeUI.Avalonia.Resources;
-using KubeUI.Avalonia.Shell.Main;
+using KubeUI.Features.Crossplane.MRDiffDetection;
+using KubeUI.App.Infrastructure.Platform;
+using KubeUI.Features.Resources;
+using KubeUI.App.Shell.Main;
 using KubeUI.Kubernetes.Serialization;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -183,7 +183,7 @@ public sealed class MRDiffDetectionViewModelTests
         await WaitForAsync(() => viewModel.Providers.Count == 1);
         viewModel.SelectedProvider = viewModel.Providers.Single();
         await WaitForAsync(() => GetRows(viewModel).Length == 5);
-        await WaitForAsync(() => viewModel.Status == Assets.Resources.MRDiffDetectionView_TruncatedLog);
+        await WaitForAsync(() => viewModel.Status == CrossplaneAssets.Resources.MRDiffDetectionView_TruncatedLog);
         viewModel.SelectionModel.ShouldBeSameAs(viewModel.TableSource.SelectionModel);
         MRDiffDetectionViewModel.IsAvailable(cluster).ShouldBeTrue();
         var rows = GetRows(viewModel).ToDictionary(row => row.Uid, StringComparer.Ordinal);
@@ -297,7 +297,7 @@ public sealed class MRDiffDetectionViewModelTests
         await WaitForAsync(() => streamClient.OpenCount >= 1);
         await WaitForAsync(() => GetRows(viewModel).Length == 0);
         providerCache.Remove(provider);
-        await WaitForAsync(() => viewModel.Status == Assets.Resources.MRDiffDetectionView_SelectProvider);
+        await WaitForAsync(() => viewModel.Status == CrossplaneAssets.Resources.MRDiffDetectionView_SelectProvider);
         viewModel.SelectedProvider.ShouldBeNull();
         var seedingToken = await seedStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
@@ -346,7 +346,7 @@ public sealed class MRDiffDetectionViewModelTests
 
         viewModel.Initialize(cluster);
 
-        await WaitForAsync(() => viewModel.Status == Assets.Resources.MRDiffDetectionView_SelectProvider);
+        await WaitForAsync(() => viewModel.Status == CrossplaneAssets.Resources.MRDiffDetectionView_SelectProvider);
         viewModel.Providers.ShouldBeEmpty();
         viewModel.SelectedProvider.ShouldBeNull();
         MRDiffDetectionViewModel.IsAvailable(cluster).ShouldBeFalse();

@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>embedded</DebugType>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="Avalonia.Markup.Declarative" />
+    <Using Include="FluentIcons.Common" />
+    <Using Include="KubeUI.Features.GatewayApi.Assets" Alias="Assets" />
+    <Using Include="KubeUI.Features.Resources" />
+    <Using Include="KubeUI.Features.Resources.Assets" Alias="ResourceAssets" />
+    <Using Include="KubeUI.Kubernetes" />
+    <Using Include="Microsoft.Extensions.DependencyInjection" />
+    <Using Include="ServiceScan.SourceGenerator" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="KubeUI.Avalonia.Tests" />
+    <ProjectCapability Include="Avalonia" />
+    <ProjectReference Include="..\KubeUI.Controls\KubeUI.Controls.csproj" />
+    <ProjectReference Include="..\KubeUI.Features.Resources\KubeUI.Features.Resources.csproj" />
+    <ProjectReference Include="..\KubeUI.Kubernetes\KubeUI.Kubernetes.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(BaseIntermediateOutputPath)\Resources.Designer.cs" Condition="'$(DesignTimeBuild)' == 'true'" AutoGen="true" DesignTime="true" Visible="false" />
+    <EmbeddedResource Update="Assets\Resources.resx">
+      <PublicClass>true</PublicClass>
+      <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
+      <StronglyTypedNamespace>KubeUI.Features.GatewayApi.Assets</StronglyTypedNamespace>
+      <StronglyTypedClassName>Resources</StronglyTypedClassName>
+      <StronglyTypedFileName>$(BaseIntermediateOutputPath)\Resources.Designer.cs</StronglyTypedFileName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.5" />
+    <PackageReference Include="Avalonia.Markup.Declarative" Version="12.2.0" />
+    <PackageReference Include="FluentIcons.Avalonia" Version="2.1.344" />
+    <PackageReference Include="ServiceScan.SourceGenerator" Version="3.2.2" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

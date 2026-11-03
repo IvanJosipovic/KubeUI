@@ -12,11 +12,11 @@ using Avalonia.VisualTree;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Features.Resources.Properties.Controls;
+using KubeUI.Features.Resources.Properties.Controls;
 using Shouldly;
-using AppResources = KubeUI.Avalonia.Assets.Resources;
-using ConfigMapPropertiesView = KubeUI.Avalonia.Resources.Configuration.v1.ConfigMap.PropertiesView;
-using SecretPropertiesView = KubeUI.Avalonia.Resources.Configuration.v1.Secret.PropertiesView;
+
+using ConfigMapPropertiesView = KubeUI.Features.Resources.Configuration.v1.ConfigMap.PropertiesView;
+using SecretPropertiesView = KubeUI.Features.Resources.Configuration.v1.Secret.PropertiesView;
 
 namespace KubeUI.Avalonia.Tests.Features.Resources.Properties;
 
@@ -39,7 +39,7 @@ public sealed class DataDisplayTests
         GetDisplayedTexts(view).ShouldContain("remove-value");
         view.GetVisualDescendants()
             .OfType<ExpandableSection>()
-            .ShouldContain(section => Equals(section.Header, AppResources.Shared_Data));
+            .ShouldContain(section => Equals(section.Header, SharedAssets.Resources.Shared_Data));
     }
 
     [AvaloniaFact]
@@ -65,7 +65,7 @@ public sealed class DataDisplayTests
         GetDisplayedTexts(view).ShouldContain("secret-value");
         view.GetVisualDescendants()
             .OfType<ExpandableSection>()
-            .ShouldContain(section => Equals(section.Header, AppResources.SecretPropertiesView_Certificates));
+            .ShouldContain(section => Equals(section.Header, ResourceAssets.Resources.SecretPropertiesView_Certificates));
     }
 
     [AvaloniaFact]
@@ -144,7 +144,7 @@ public sealed class DataDisplayTests
         display.ViewModel.BeginEditCommand.CanExecute(null).ShouldBeFalse();
         display.GetVisualDescendants()
             .OfType<Button>()
-            .ShouldNotContain(button => button.IsVisible && Equals(ToolTip.GetTip(button), AppResources.DataDisplay_Edit));
+            .ShouldNotContain(button => button.IsVisible && Equals(ToolTip.GetTip(button), ResourceAssets.Resources.DataDisplay_Edit));
     }
 
     [AvaloniaFact]
@@ -194,7 +194,7 @@ public sealed class DataDisplayTests
 
         display.GetVisualDescendants()
             .OfType<Button>()
-            .ShouldContain(button => button.IsVisible && Equals(ToolTip.GetTip(button), AppResources.DataDisplay_Edit));
+            .ShouldContain(button => button.IsVisible && Equals(ToolTip.GetTip(button), ResourceAssets.Resources.DataDisplay_Edit));
 
         display.ViewModel.BeginEditCommand.Execute(null);
         await WaitForUiAsync();

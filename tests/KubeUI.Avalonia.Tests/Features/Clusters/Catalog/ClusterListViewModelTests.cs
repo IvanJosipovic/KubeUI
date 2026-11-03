@@ -2,8 +2,8 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using k8s;
 using k8s.KubeConfigModels;
-using KubeUI.Avalonia.Features.Clusters.Catalog;
-using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Features.Clusters.Catalog;
+using KubeUI.App.Services.Settings;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.Clusters.Catalog;

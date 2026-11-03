@@ -1,5 +1,5 @@
-using KubeUI.AI.Agents;
-using KubeUI.Avalonia.Features.AI;
+using KubeUI.Features.AI.Agents;
+using KubeUI.Features.AI.Chat;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.AI;

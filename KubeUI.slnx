@@ -13,7 +13,14 @@
     <File Path="testconfig.json" />
   </Folder>
   <Folder Name="/src/">
-    <Project Path="src/KubeUI.Cilium/KubeUI.Cilium.csproj" />
+    <Project Path="src/KubeUI.App/KubeUI.App.csproj" />
+    <Project Path="src/KubeUI.Features.Cilium/KubeUI.Features.Cilium.csproj" />
+    <Project Path="src/KubeUI.Features.Clusters/KubeUI.Features.Clusters.csproj" />
+    <Project Path="src/KubeUI.Features.Crossplane/KubeUI.Features.Crossplane.csproj" />
+    <Project Path="src/KubeUI.Features.GatewayApi/KubeUI.Features.GatewayApi.csproj" />
+    <Project Path="src/KubeUI.Features.Helm/KubeUI.Features.Helm.csproj" />
+    <Project Path="src/KubeUI.Features.Resources/KubeUI.Features.Resources.csproj" />
+    <Project Path="src/KubeUI.Controls/KubeUI.Controls.csproj" />
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="tests/KubeUI.Avalonia.Tests/KubeUI.Avalonia.Tests.csproj" />
@@ -21,7 +28,7 @@
     <Project Path="tests/KubeUI.Kubernetes.Tests/KubeUI.Kubernetes.Tests.csproj" />
     <Project Path="tests/KubeUI.Testing/KubeUI.Testing.csproj" />
   </Folder>
-  <Project Path="src/KubeUI.AI/KubeUI.AI.csproj" />
+  <Project Path="src/KubeUI.Features.AI/KubeUI.Features.AI.csproj" />
   <Project Path="src/KubeUI.Avalonia/KubeUI.Avalonia.csproj" />
   <Project Path="src/KubeUI.Desktop/KubeUI.Desktop.csproj" />
   <Project Path="src/KubeUI.Kubernetes/KubeUI.Kubernetes.csproj" />

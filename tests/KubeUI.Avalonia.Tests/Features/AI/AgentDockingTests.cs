@@ -1,7 +1,7 @@
 using Avalonia.Headless.XUnit;
 using Dock.Model.Controls;
 using Dock.Model.Core;
-using KubeUI.Avalonia.Features.AI;
+using KubeUI.Features.AI.Chat;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Features.AI;

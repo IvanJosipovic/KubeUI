@@ -6,10 +6,11 @@ using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
-using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Infrastructure.Docking;
-using KubeUI.Avalonia.Infrastructure.Platform;
-using KubeUI.Avalonia.Services.Settings;
+using KubeUI.Features.Clusters.Workspace;
+using KubeUI.Features.Resources.Settings;
+using KubeUI.App.Infrastructure.Docking;
+using KubeUI.App.Infrastructure.Platform;
+using KubeUI.App.Services.Settings;
 using KubeUI.Desktop;
 using KubeUI.Kubernetes;
 using KubeUI.Testing.Kubernetes.Bootstrap;
@@ -23,7 +24,7 @@ using Moq;
 
 namespace KubeUI.Avalonia.Tests.Infra;
 
-public class TestApp : App, IDisposable
+public class TestApp : KubeUIApplication, IDisposable
 {
     public Mock<IDialogManager>? DialogManager { get; private set; }
     public INotification? Notification { get; private set; }
@@ -107,6 +108,8 @@ public class TestApp : App, IDisposable
         {
             services.AddKubernetesTestRuntime();
             services.Replace(ServiceDescriptor.Singleton<ISettingsService, TestSettingsService>());
+            services.Replace(ServiceDescriptor.Singleton<IResourceAppearanceSettings>(sp =>
+                (IResourceAppearanceSettings)sp.GetRequiredService<ISettingsService>()));
             services.Replace(ServiceDescriptor.Singleton<ISettingsPersistence, TestSettingsPersistence>());
             services.Replace(ServiceDescriptor.Singleton<IPlatformServices, TestPlatformServices>());
             services.Replace(ServiceDescriptor.Singleton<TimeProvider>(new TestTimeProvider(DateTimeOffset.UnixEpoch)));

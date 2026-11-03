@@ -2,7 +2,7 @@ using Avalonia.Headless.XUnit;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Features.Resources.Visualization;
+using KubeUI.Features.Resources.Visualization;
 using KubeUI.Kubernetes.Resources.Relationships;
 using Shouldly;
 

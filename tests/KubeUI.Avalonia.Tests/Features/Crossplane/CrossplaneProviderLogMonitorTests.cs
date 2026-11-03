@@ -3,7 +3,7 @@ using System.Text;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Features.Crossplane.MRDiffDetection;
+using KubeUI.Features.Crossplane.MRDiffDetection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 

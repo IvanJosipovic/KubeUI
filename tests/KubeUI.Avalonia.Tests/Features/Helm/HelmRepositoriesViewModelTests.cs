@@ -5,9 +5,9 @@ using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using Helm.NET;
-using KubeUI.Avalonia.Features.Helm;
-using KubeUI.Avalonia.Features.Helm.Releases;
-using KubeUI.Avalonia.Features.Helm.Repositories;
+using KubeUI.Features.Helm;
+using KubeUI.Features.Helm.Releases;
+using KubeUI.Features.Helm.Repositories;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Serialization;
 using Moq;
@@ -104,7 +104,7 @@ public sealed class HelmRepositoriesViewModelTests : IDisposable
             It.Is<HelmConnection>(connection => connection.KubeConfigPath == workspace.Runtime.KubeConfigPath),
             It.IsAny<CancellationToken>()), Times.AtLeastOnce);
         helmService.Verify(service => service.UpdateRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()), Times.Once);
-        viewModel.Status.ShouldBe(Assets.Resources.HelmRepositoriesView_IndexesUpdated);
+        viewModel.Status.ShouldBe(HelmAssets.Resources.HelmRepositoriesView_IndexesUpdated);
     }
 
     [AvaloniaFact]

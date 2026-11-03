@@ -1,0 +1,129 @@
+﻿using Avalonia.Controls.Presenters;
+using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Templates;
+using Avalonia.Markup.Xaml.MarkupExtensions;
+using QuikGraph;
+using Westermo.GraphX.Common.Enums;
+using Westermo.GraphX.Controls.Behaviours;
+using Westermo.GraphX.Controls.Controls;
+using Westermo.GraphX.Controls.Controls.EdgeLabels;
+using Westermo.GraphX.Controls.Controls.EdgePointers;
+using Path = Avalonia.Controls.Shapes.Path;
+using Shape = Avalonia.Controls.Shapes.Shape;
+
+namespace KubeUI.Features.Resources.Visualization;
+
+/// <summary>Defines shared GraphX styles used by resource and Cilium visualizations.</summary>
+public static class ResourceGraphStyles
+{
+    internal static void Apply(GraphArea<ResourceGraphVertex, ResourceGraphEdge, BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge>> area)
+    {
+        area.Styles.Add(new Style<EdgeControl>(s => s.OfType<EdgeControl>())
+            .Setter(EdgeControl.StrokeThicknessProperty, 1d)
+            .Opacity(0.5d)
+            .Setter(
+                ToolTip.TipProperty,
+                CompiledBinding.Create<ResourceGraphEdge, string>(edge => edge.RelationshipName))
+            // GraphX exposes only a single ShowArrows switch. Its default template therefore renders
+            // arrows at both ends; use a target-only template for directed Kubernetes relationships.
+            .Template(CreateDirectedEdgeTemplate()));
+
+        AddRelationshipStyle(area, "RelationshipOwner", "VisualizationRelationshipOwnerBrush");
+        AddRelationshipStyle(area, "RelationshipReference", "VisualizationRelationshipReferenceBrush");
+        AddRelationshipStyle(area, "RelationshipSelector", "VisualizationRelationshipSelectorBrush");
+        AddRelationshipStyle(area, "RelationshipLabel", "VisualizationRelationshipLabelBrush");
+        AddRelationshipStyle(area, "RelationshipStorage", "VisualizationRelationshipStorageBrush");
+        AddRelationshipStyle(area, "RelationshipIdentity", "VisualizationRelationshipIdentityBrush");
+        AddRelationshipStyle(area, "RelationshipRbac", "VisualizationRelationshipRbacBrush");
+        AddRelationshipStyle(area, "RelationshipEvent", "VisualizationRelationshipEventBrush");
+        AddRelationshipStyle(area, "RelationshipGitOps", "VisualizationRelationshipGitOpsBrush");
+        AddRelationshipStyle(area, "RelationshipDefault", "VisualizationRelationshipDefaultBrush");
+
+        area.Styles.Add(new Style<VertexControl>(s => s.OfType<VertexControl>())
+            .Background(Brushes.Transparent)
+            .Padding(new Thickness(0))
+            .BorderBrush(Brushes.Transparent)
+            .BorderThickness(new Thickness(0))
+            .Setter(DragBehaviour.IsDragEnabledProperty, true)
+            .Setter(DragBehaviour.UpdateEdgesOnMoveProperty, true)
+            .Setter(VertexControlBase.VertexShapeProperty, VertexShape.Rectangle));
+
+        area.Styles.Add(new Style<AttachableEdgeLabelControl>(s => s.OfType<AttachableEdgeLabelControl>())
+            .Foreground(new DynamicResourceExtension("SystemBaseHighColor"))
+            .Setter(EdgeLabelControl.AlignToEdgeProperty, true)
+            .Template(new FuncControlTemplate<AttachableEdgeLabelControl>((label, _) => new Border
+            {
+                Background = Brushes.Transparent,
+                BorderBrush = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                CornerRadius = new CornerRadius(0),
+                Child = new ContentPresenter
+                {
+                    Content = label.AttachNode?.Edge,
+                    //Margin = new Thickness(3),
+                },
+            })));
+
+    }
+
+    private static void AddRelationshipStyle(
+        GraphArea<ResourceGraphVertex, ResourceGraphEdge, BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge>> area,
+        string className,
+        string resourceKey)
+    {
+        area.Styles.Add(new Style<EdgeControl>(s => s.OfType<EdgeControl>().Class(className))
+            .Foreground(new DynamicResourceExtension(resourceKey)));
+    }
+
+    /// <summary>Creates the directed GraphX edge template shared by graph features.</summary>
+    /// <param name="arrowSize">Arrow width and height in device-independent pixels.</param>
+    /// <param name="arrowOpacity">Arrow opacity from zero to one.</param>
+    /// <returns>Directed edge control template.</returns>
+    public static FuncControlTemplate<EdgeControl> CreateDirectedEdgeTemplate(double arrowSize = 10, double arrowOpacity = 1)
+    {
+        return new FuncControlTemplate<EdgeControl>((_, nameScope) =>
+        {
+            var edgePath = new Path().Name("PART_edgePath", nameScope);
+            edgePath.Bind(Shape.StrokeProperty, new TemplateBinding { Property = TemplatedControl.ForegroundProperty });
+            edgePath.Bind(Shape.StrokeThicknessProperty, new TemplateBinding { Property = EdgeControl.StrokeThicknessProperty });
+
+            Path targetArrow = new()
+            {
+                Data = Geometry.Parse("M0,0.5 L1,1 1,0"),
+                Stretch = Stretch.Uniform,
+                Width = arrowSize,
+                Height = arrowSize,
+                Opacity = arrowOpacity,
+            };
+            targetArrow.Bind(Shape.FillProperty, new TemplateBinding { Property = TemplatedControl.ForegroundProperty });
+
+            var selfLoop = new Path
+            {
+                Data = Geometry.Parse("F1 M 17.4167,32.25L 32.9107,32.25L 38,18L 43.0893,32.25L 58.5833,32.25L 45.6798,41.4944L 51.4583,56L 38,48.0833L 26.125,56L 30.5979,41.7104L 17.4167,32.25 Z"),
+                Stretch = Stretch.Uniform,
+                Width = arrowSize,
+                Height = arrowSize,
+            }.Name("PART_SelfLoopedEdge", nameScope);
+            selfLoop.Bind(Shape.FillProperty, new TemplateBinding { Property = TemplatedControl.ForegroundProperty });
+
+            var targetPointer = new DefaultEdgePointer
+            {
+                NeedRotation = true,
+                Content = targetArrow,
+                Width = arrowSize,
+                Height = arrowSize,
+                Opacity = arrowOpacity,
+            }.Name("PART_EdgePointerForTarget", nameScope);
+            targetPointer.Bind(Visual.IsVisibleProperty, new TemplateBinding { Property = EdgeControlBase.ShowArrowsProperty });
+            return new Canvas
+            {
+                Children =
+                {
+                    edgePath,
+                    targetPointer,
+                    selfLoop,
+                },
+            };
+        });
+    }
+}

@@ -24,7 +24,7 @@ Run commands from the repository root. KubeUI targets .NET 10 and opts into Micr
 ## CLI examples
 
 The examples use `KubeUI.Avalonia.Tests` as “project A”,
-`KubeUI.Avalonia.Tests.Converters.PropertyItemValueConverterTests` as “class A”,
+`KubeUI.Avalonia.Tests.Controls.Converters.PropertyItemValueConverterTests` as “class A”,
 and `converts_utc_datetime_to_local_time` as “test A”. Replace them with the
 real project, fully qualified class, and method names for the change.
 
@@ -45,7 +45,7 @@ dotnet test --no-restore --minimum-expected-tests 1
 Use the project target with a fully qualified class filter:
 
 ```text
-dotnet test --project tests/KubeUI.Avalonia.Tests/KubeUI.Avalonia.Tests.csproj --no-restore --filter-class KubeUI.Avalonia.Tests.Converters.PropertyItemValueConverterTests --minimum-expected-tests 1
+dotnet test --project tests/KubeUI.Avalonia.Tests/KubeUI.Avalonia.Tests.csproj --no-restore --filter-class KubeUI.Avalonia.Tests.Controls.Converters.PropertyItemValueConverterTests --minimum-expected-tests 1
 ```
 
 ### Test project A, test A
@@ -59,7 +59,7 @@ dotnet test --project tests/KubeUI.Avalonia.Tests/KubeUI.Avalonia.Tests.csproj -
 Use a fully qualified method filter:
 
 ```text
-dotnet test --project tests/KubeUI.Avalonia.Tests/KubeUI.Avalonia.Tests.csproj --no-restore --filter-method KubeUI.Avalonia.Tests.Converters.PropertyItemValueConverterTests.converts_utc_datetime_to_local_time --minimum-expected-tests 1
+dotnet test --project tests/KubeUI.Avalonia.Tests/KubeUI.Avalonia.Tests.csproj --no-restore --filter-method KubeUI.Avalonia.Tests.Controls.Converters.PropertyItemValueConverterTests.converts_utc_datetime_to_local_time --minimum-expected-tests 1
 ```
 
 Use the fully qualified class or method name returned by `--list-tests` when selecting another target.

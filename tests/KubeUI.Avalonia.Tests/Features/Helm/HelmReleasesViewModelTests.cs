@@ -10,9 +10,9 @@ using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using Helm.NET;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Helm;
-using KubeUI.Avalonia.Features.Helm.Releases;
-using KubeUI.Avalonia.Features.Resources.Yaml;
+using KubeUI.Features.Helm;
+using KubeUI.Features.Helm.Releases;
+using KubeUI.Features.Resources.Yaml;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Serialization;
 using Moq;
@@ -63,7 +63,7 @@ public sealed class HelmReleasesViewModelTests : IDisposable
 
         await viewModel.ViewValuesCommand.ExecuteAsync(new HelmRelease("web", "apps", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "web-1.0", ""));
 
-        viewModel.Status.ShouldBe(Assets.Resources.HelmReleasesView_ValuesFailed);
+        viewModel.Status.ShouldBe(HelmAssets.Resources.HelmReleasesView_ValuesFailed);
         createViewer.Verify(factory => factory(), Times.Never);
     }
 
@@ -215,7 +215,7 @@ public sealed class HelmReleasesViewModelTests : IDisposable
         viewModel.Initialize(workspace);
         viewModel.VisualizeReleaseCommand.Execute(new HelmRelease("cilium", "kube-system", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "cilium-1.20.3", ""));
 
-        viewModel.Status.ShouldBe(Assets.Resources.HelmReleasesView_VisualizeFailed);
+        viewModel.Status.ShouldBe(HelmAssets.Resources.HelmReleasesView_VisualizeFailed);
     }
 
     [AvaloniaFact]
@@ -335,7 +335,7 @@ public sealed class HelmReleasesViewModelTests : IDisposable
         viewModel.Initialize(workspace);
 
         await viewModel.ViewStatusCommand.ExecuteAsync(release).WaitAsync(TestContext.Current.CancellationToken);
-        viewModel.Status.ShouldBe(Assets.Resources.HelmReleasesView_StatusLoaded);
+        viewModel.Status.ShouldBe(HelmAssets.Resources.HelmReleasesView_StatusLoaded);
         await viewModel.ViewValuesCommand.ExecuteAsync(release).WaitAsync(TestContext.Current.CancellationToken);
         viewModel.Status.ShouldBeEmpty();
         yamlViewer.YamlDocument.Text.ShouldContain("{}");

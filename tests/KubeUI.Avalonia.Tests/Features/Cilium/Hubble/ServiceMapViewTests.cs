@@ -11,12 +11,12 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using FluentIcons.Avalonia;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Features.Cilium.Hubble;
-using KubeUI.Avalonia.Features.Cilium.Hubble.Controls;
-using KubeUI.Avalonia.Features.Resources.Properties.Controls;
-using KubeUI.Avalonia.Services.Icons;
+using KubeUI.Features.Cilium.Hubble;
+using KubeUI.Features.Cilium.Hubble.Controls;
+using KubeUI.Features.Resources.Properties.Controls;
+using KubeUI.Features.Resources.Icons;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Cilium.Hubble;
+using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Testing.Utilities;
 using Microsoft.Extensions.DependencyInjection;
 using QuikGraph;
@@ -275,7 +275,7 @@ public sealed class ServiceMapViewTests
             .Value;
         vertexControl.ContextMenu.ShouldNotBeNull();
         var viewItem = vertexControl.ContextMenu!.Items.OfType<MenuItem>().Single();
-        viewItem.Header.ShouldBe(Assets.Resources.ServiceMapGraphControl_View);
+        viewItem.Header.ShouldBe(CiliumAssets.Resources.ServiceMapGraphControl_View);
         viewItem.Command.ShouldNotBeNull();
         viewItem.Command!.CanExecute(viewItem.CommandParameter).ShouldBeTrue();
         viewItem.Command.Execute(viewItem.CommandParameter);
@@ -324,15 +324,15 @@ public sealed class ServiceMapViewTests
         var properties = view.GetVisualDescendants()
             .OfType<PropertyItem>()
             .ToDictionary(static item => item.Key, static item => item.Value?.ToString());
-        properties[Assets.Resources.ServiceMapNodePropertiesView_Id!].ShouldBe(node.Id);
-        properties[Assets.Resources.ServiceMapNodePropertiesView_Name!].ShouldBe(node.Name);
-        properties[Assets.Resources.ServiceMapNodePropertiesView_Namespace!].ShouldBe(node.Namespace);
-        properties[Assets.Resources.ServiceMapNodePropertiesView_WorkloadType!].ShouldBe(node.WorkloadType);
-        properties[Assets.Resources.ServiceMapNodePropertiesView_IngressFlows!].ShouldBe("3");
-        properties[Assets.Resources.ServiceMapNodePropertiesView_EgressFlows!].ShouldBe("5");
-        properties[Assets.Resources.ServiceMapNodePropertiesView_AllowedFlows!].ShouldBe("7");
-        properties[Assets.Resources.ServiceMapNodePropertiesView_DeniedFlows!].ShouldBe("1");
-        var accessPoints = properties[Assets.Resources.ServiceMapNodePropertiesView_AccessPoints!];
+        properties[CiliumAssets.Resources.ServiceMapNodePropertiesView_Id!].ShouldBe(node.Id);
+        properties[CiliumAssets.Resources.ServiceMapNodePropertiesView_Name!].ShouldBe(node.Name);
+        properties[CiliumAssets.Resources.ServiceMapNodePropertiesView_Namespace!].ShouldBe(node.Namespace);
+        properties[CiliumAssets.Resources.ServiceMapNodePropertiesView_WorkloadType!].ShouldBe(node.WorkloadType);
+        properties[CiliumAssets.Resources.ServiceMapNodePropertiesView_IngressFlows!].ShouldBe("3");
+        properties[CiliumAssets.Resources.ServiceMapNodePropertiesView_EgressFlows!].ShouldBe("5");
+        properties[CiliumAssets.Resources.ServiceMapNodePropertiesView_AllowedFlows!].ShouldBe("7");
+        properties[CiliumAssets.Resources.ServiceMapNodePropertiesView_DeniedFlows!].ShouldBe("1");
+        var accessPoints = properties[CiliumAssets.Resources.ServiceMapNodePropertiesView_AccessPoints!];
         accessPoints.ShouldContain("TCP:8080");
         accessPoints.ShouldContain("4 flows");
         accessPoints.ShouldContain("HTTP");
@@ -873,7 +873,7 @@ public sealed class ServiceMapViewTests
         ReferenceEquals(graphControl.Graph, viewModel.Graph).ShouldBeTrue();
         var emptyState = view.GetVisualDescendants()
             .OfType<TextBlock>()
-            .Single(textBlock => textBlock.Text == Assets.Resources.ServiceMapView_SelectNamespacePrompt);
+            .Single(textBlock => textBlock.Text == CiliumAssets.Resources.ServiceMapView_SelectNamespacePrompt);
         emptyState.IsVisible.ShouldBeTrue();
         var graphSummary = view.GetVisualDescendants()
             .OfType<TextBlock>()
@@ -939,7 +939,7 @@ public sealed class ServiceMapViewTests
             .Single(border => border.Classes.Contains("ServiceMapNode"));
         ToolTip.GetTip(serverNodeBorder)!.ToString().ShouldContain("TCP:8080");
         ToolTip.GetTip(graphControl.Area.GetVisualDescendants().OfType<EdgeControl>().Single())
-            .ShouldBe(Assets.Resources.ServiceMapGraphControl_EdgeTooltipFormat
+            .ShouldBe(CiliumAssets.Resources.ServiceMapGraphControl_EdgeTooltipFormat
                 .Replace("{0}", "2", StringComparison.Ordinal)
                 .Replace("{1}", "TCP 8080 (2)", StringComparison.Ordinal));
         emptyState.IsVisible.ShouldBeFalse();

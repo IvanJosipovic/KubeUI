@@ -2,7 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Svg.Skia;
 using Avalonia.Threading;
-using KubeUI.Avalonia.Infrastructure;
+using KubeUI.App.Infrastructure;
 using Shouldly;
 
 namespace KubeUI.Documentation.Tests.Infra;

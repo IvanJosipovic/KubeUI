@@ -1,6 +1,6 @@
 using Avalonia;
 using Avalonia.Headless;
-using KubeUI.Avalonia.Infrastructure;
+using KubeUI.App.Infrastructure;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;

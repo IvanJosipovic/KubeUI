@@ -2,9 +2,9 @@ using Avalonia;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Cilium.Hubble;
+using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Cilium.Hubble;
+using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Testing.Utilities;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -109,11 +109,11 @@ public sealed class FlowListViewModelTests
     public void Direction_column_displays_localized_text_without_an_icon_template()
     {
         FlowListViewModel.FormatDirection(FlowDirection.Ingress)
-            .ShouldBe(Assets.Resources.FlowDirection_Ingress);
+            .ShouldBe(CiliumAssets.Resources.FlowDirection_Ingress);
         FlowListViewModel.FormatDirection(FlowDirection.Egress)
-            .ShouldBe(Assets.Resources.FlowDirection_Egress);
+            .ShouldBe(CiliumAssets.Resources.FlowDirection_Egress);
         FlowListViewModel.FormatDirection(FlowDirection.Unknown)
-            .ShouldBe(Assets.Resources.FlowDirection_Unknown);
+            .ShouldBe(CiliumAssets.Resources.FlowDirection_Unknown);
 
         FlowListViewModel.CreateColumns()
             .Single(static column => column.Key == "Direction")
@@ -124,13 +124,13 @@ public sealed class FlowListViewModelTests
     public void Verdict_column_displays_localized_text_without_a_badge_template()
     {
         FlowListViewModel.FormatVerdict(FlowVerdict.Forwarded)
-            .ShouldBe(Assets.Resources.FlowVerdict_Allowed);
+            .ShouldBe(CiliumAssets.Resources.FlowVerdict_Allowed);
         FlowListViewModel.FormatVerdict(FlowVerdict.Dropped)
-            .ShouldBe(Assets.Resources.FlowVerdict_Dropped);
+            .ShouldBe(CiliumAssets.Resources.FlowVerdict_Dropped);
         FlowListViewModel.FormatVerdict(FlowVerdict.Error)
-            .ShouldBe(Assets.Resources.FlowVerdict_Error);
+            .ShouldBe(CiliumAssets.Resources.FlowVerdict_Error);
         FlowListViewModel.FormatVerdict(FlowVerdict.Unknown)
-            .ShouldBe(Assets.Resources.FlowVerdict_Unknown);
+            .ShouldBe(CiliumAssets.Resources.FlowVerdict_Unknown);
 
         FlowListViewModel.CreateColumns()
             .Single(static column => column.Key == "Verdict")

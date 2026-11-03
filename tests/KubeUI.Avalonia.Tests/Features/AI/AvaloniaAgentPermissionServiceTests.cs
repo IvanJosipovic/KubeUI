@@ -2,8 +2,8 @@ using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
-using KubeUI.AI.Agents;
-using KubeUI.Avalonia.Features.AI;
+using KubeUI.Features.AI.Agents;
+using KubeUI.Features.AI.Chat;
 using Moq;
 using Shouldly;
 

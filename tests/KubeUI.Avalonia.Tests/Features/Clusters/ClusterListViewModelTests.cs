@@ -1,5 +1,5 @@
 using Avalonia.Headless.XUnit;
-using KubeUI.Avalonia.Features.Clusters.Catalog;
+using KubeUI.Features.Clusters.Catalog;
 using Shouldly;
 using SvcSystems.Avalonia.DynamicTableView;
 

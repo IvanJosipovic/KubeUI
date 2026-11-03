@@ -6,10 +6,10 @@ using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
 using HanumanInstitute.MvvmDialogs;
 using Helm.NET;
-using KubeUI.Avalonia.Features.Helm;
-using KubeUI.Avalonia.Features.Helm.Charts;
-using KubeUI.Avalonia.Features.Helm.Releases;
-using KubeUI.Avalonia.Features.Helm.Repositories;
+using KubeUI.Features.Helm;
+using KubeUI.Features.Helm.Charts;
+using KubeUI.Features.Helm.Releases;
+using KubeUI.Features.Helm.Repositories;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Serialization;
@@ -93,7 +93,7 @@ public sealed class HelmChartsViewModelTests : IDisposable
             Metadata = new k8s.Models.V1ObjectMeta { Name = "apps" }
         });
         using var services = new ServiceCollection().AddSingleton(charts).BuildServiceProvider();
-        var navigation = new HelmNavigationSectionProvider(new TestFeatureClient(helm: true)).Documents
+        var navigation = new HelmNavigationSectionProvider(enabled: true).Documents
             .Single(document => document.Id == HelmNavigationSectionProvider.ChartsDocumentId);
         navigation.CreateDockable(services, workspace).ShouldBeSameAs(charts);
         await charts.RefreshCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
@@ -119,7 +119,7 @@ public sealed class HelmChartsViewModelTests : IDisposable
             await TestWait.UntilAsync(() => charts.ItemCount == 2,
                 TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
             var search = controls.OfType<TextBox>()
-                .Single(control => control.PlaceholderText == Assets.Resources.HelmChartsView_SearchPlaceholder);
+                .Single(control => control.PlaceholderText == HelmAssets.Resources.HelmChartsView_SearchPlaceholder);
             search.Height.ShouldBe(32);
             search.VerticalContentAlignment.ShouldBe(VerticalAlignment.Center);
             search.Text = "tools";
@@ -131,7 +131,7 @@ public sealed class HelmChartsViewModelTests : IDisposable
             var table = controls.OfType<DynamicTableView>().Single();
             var menu = table.ContextMenuItemsFactory!([new HelmChartSearchResult("second/web", "web", "3.0")])
                 .Cast<MenuItem>().Single();
-            menu.Header.ShouldBe(Assets.Resources.HelmChartsView_Install);
+            menu.Header.ShouldBe(HelmAssets.Resources.HelmChartsView_Install);
             menu.Command.ShouldBeSameAs(charts.InstallChartCommand);
             await charts.InstallChartCommand.ExecuteAsync(menu.CommandParameter).WaitAsync(TestContext.Current.CancellationToken);
             opened.ShouldNotBeNull();
@@ -146,7 +146,7 @@ public sealed class HelmChartsViewModelTests : IDisposable
             factory.Setup(item => item.InsertDockable(documents, It.IsAny<IDockable>(), 0))
                 .Throws(new InvalidOperationException("Cannot open document"));
             await charts.InstallChartCommand.ExecuteAsync(menu.CommandParameter).WaitAsync(TestContext.Current.CancellationToken);
-            charts.Status.ShouldBe(Assets.Resources.Shared_ErrorOccurred);
+            charts.Status.ShouldBe(SharedAssets.Resources.Shared_ErrorOccurred);
 
             charts.SelectedRepository = "first";
             await TestWait.UntilAsync(() => charts.ItemCount == 1,
@@ -191,7 +191,7 @@ public sealed class HelmChartsViewModelTests : IDisposable
         helm.Setup(service => service.ListRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("Repository configuration unavailable"));
         await charts.RefreshCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
-        charts.Status.ShouldBe(Assets.Resources.Shared_ErrorOccurred);
+        charts.Status.ShouldBe(SharedAssets.Resources.Shared_ErrorOccurred);
         await TestWait.UntilAsync(() => charts.ItemCount == 0,
             TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
     }
@@ -218,7 +218,7 @@ public sealed class HelmChartsViewModelTests : IDisposable
         using var charts = new HelmChartsViewModel(helm.Object, Mock.Of<IHelmDocumentOpener>());
         charts.Initialize(workspace);
         await charts.RefreshCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
-        charts.Status.ShouldBe(fails ? Assets.Resources.Shared_ErrorOccurred : Assets.Resources.Shared_NoCharts);
+        charts.Status.ShouldBe(fails ? SharedAssets.Resources.Shared_ErrorOccurred : SharedAssets.Resources.Shared_NoCharts);
         charts.ItemCount.ShouldBe(0);
         charts.IsLoading.ShouldBeFalse();
         await charts.InstallChartCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);

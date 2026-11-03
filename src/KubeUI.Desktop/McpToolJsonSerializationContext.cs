@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
-using KubeUI.Avalonia.Infrastructure.Mcp;
+using KubeUI.App.Infrastructure.Mcp;
 using KubeUI.Kubernetes.Serialization;
 
 namespace KubeUI.Desktop;

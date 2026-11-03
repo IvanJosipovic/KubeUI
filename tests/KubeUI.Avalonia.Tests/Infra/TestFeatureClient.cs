@@ -1,4 +1,4 @@
-using KubeUI.Avalonia.Services.FeatureFlags;
+using KubeUI.App.Services.FeatureFlags;
 
 namespace KubeUI.Avalonia.Tests.Infra;
 

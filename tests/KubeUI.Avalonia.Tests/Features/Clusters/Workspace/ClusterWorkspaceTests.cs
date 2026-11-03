@@ -10,8 +10,8 @@ using DynamicData;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Infrastructure.Platform;
-using KubeUI.Avalonia.Resources;
+using KubeUI.App.Infrastructure.Platform;
+using KubeUI.Features.Resources;
 using KubeUI.Testing.Kubernetes.Transport;
 using Microsoft.Extensions.Logging;
 using Shouldly;
@@ -209,7 +209,7 @@ public class ClusterWorkspaceTests
         var workspace = await Application.Current.CreateClusterAsync(
             config => config.Type = backend);
         await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
-        TaskCompletionSource<IResourceConfig> processedConfig =
+        TaskCompletionSource<IClusterResourceConfig> processedConfig =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
         workspace.ResourceConfigProcessed += (_, resourceConfig) =>
         {
@@ -238,7 +238,7 @@ public class ClusterWorkspaceTests
         var workspace = await Application.Current.CreateClusterAsync(
             config => config.Type = backend);
         await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
-        System.Collections.Concurrent.ConcurrentQueue<IResourceConfig> observedConfigs = new();
+        System.Collections.Concurrent.ConcurrentQueue<IClusterResourceConfig> observedConfigs = new();
         workspace.ResourceConfigProcessed += (_, resourceConfig) =>
         {
             if (resourceConfig.IsCustomResource)
@@ -972,7 +972,7 @@ public class ClusterWorkspaceTests
         return new GroupApiVersionKind(crd.Spec.Group, version, crd.Spec.Names.Kind, crd.Spec.Names.Plural);
     }
 
-    private static IResourceConfig? GetCustomResourceConfig(ClusterWorkspace workspace, V1CustomResourceDefinition crd)
+    private static IClusterResourceConfig? GetCustomResourceConfig(ClusterWorkspace workspace, V1CustomResourceDefinition crd)
     {
         var version = crd.Spec?.Versions?.FirstOrDefault(x => x.Served && x.Storage)?.Name;
         if (version == null)

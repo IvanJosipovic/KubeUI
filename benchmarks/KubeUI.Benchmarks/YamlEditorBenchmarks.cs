@@ -1,6 +1,6 @@
 using AvaloniaEdit.Document;
 using BenchmarkDotNet.Attributes;
-using KubeUI.Avalonia.Features.Resources.Yaml;
+using KubeUI.Features.Resources.Yaml;
 
 namespace KubeUI.Benchmarks;
 

@@ -3,7 +3,7 @@ caveman mode
 
 # Engineering Guide (AGENTS)
 
-This document defines the repository-wide architectural and coding rules. For Avalonia-specific UI guidance, see `src/KubeUI.Avalonia/AGENTS.md`.
+This document defines the repository-wide architectural and coding rules. For Avalonia app guidance, see `src/KubeUI.App/AGENTS.md`; feature-specific guidance lives with each feature.
 
 ## 0) Pre-requisites
 .Net Core SDK installed based on `global.json`
@@ -21,12 +21,18 @@ Docker
 ## 2) Architecture
 
 ### Layering
-- KubeUI.Kubernetes: all non-UI Kubernetes/runtime/shared contracts
-- KubeUI.Avalonia: all Avalonia UI, view models, resource configs, shell glue
-- KubeUI.Desktop: executable host and composition root
+- KubeUI.Kubernetes: non-UI Kubernetes/runtime/shared contracts
+- KubeUI.Avalonia: Avalonia framework dependencies, generated extensions, shared assets and theme foundation
+- KubeUI.Controls: reusable controls and shared UI contracts
+- KubeUI.Features.*: feature runtime and feature UI
+- KubeUI.App: main shell, cross-feature UI composition and application services
+- KubeUI.Desktop: desktop executable and platform startup
 
 ### Boundaries
-- KubeUI.Desktop depends on KubeUI.Avalonia depends on KubeUI.Kubernetes
+- KubeUI.Desktop depends on KubeUI.App
+- KubeUI.App and KubeUI.Features.* depend on KubeUI.Controls
+- KubeUI.Controls depends on KubeUI.Avalonia
+- Feature projects may depend on KubeUI.Kubernetes and acyclic feature capabilities
 
 ## 3) Dependency Injection
 
@@ -52,7 +58,7 @@ Docker
 
 - All production code must be covered by unit tests; xUnit is required for unit testing.
 - Use integration tests for parsing, IO, and docking layout persistence.
-- Avalonia UI tests and headless UI guidance live in `src/KubeUI.Avalonia/AGENTS.md`.
+- Avalonia UI tests and headless UI guidance live in `src/KubeUI.App/AGENTS.md`.
 - For bugs, write the failing regression test first, confirm the failure reproduces, then implement the fix and rerun the same test before widening scope.
 - Every requested new feature implies corresponding tests; implementation is incomplete until those tests are added or updated and pass.
 - Tests should not use Task.Sleep or Delay but wait for specific scenarios or use events
@@ -73,7 +79,7 @@ Docker
 - Desktop Release publishes use full trimming and must retain visible linker diagnostics.
 - Fix KubeUI-owned trim warnings with static registration, source generation, or correct annotations.
 - Keep a third-party assembly whole only when its used runtime feature depends on reflection or dynamic loading and a focused test covers that feature.
-- Release trim analysis is enabled for KubeUI libraries; analyzer warnings fail Release builds for KubeUI.AI and KubeUI.Kubernetes, and IL2091 fails KubeUI.Avalonia builds.
+- Release trim analysis is enabled for KubeUI libraries; analyzer warnings fail Release builds for KubeUI.Features.AI and KubeUI.Kubernetes, and IL2091 fails KubeUI.Avalonia builds.
 - Avalonia reflection warnings remain visible for features whose assemblies are rooted by Desktop; review new diagnostics and record the specific fix or assembly keep.
 - Do not suppress trim warnings project-wide.
 

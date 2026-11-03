@@ -1,0 +1,226 @@
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using Avalonia.Markup.Xaml.Styling;
+using Dock.Model.Controls;
+using Dock.Model.Core;
+using Dock.Settings;
+using k8s;
+using KubeUI.Features.Clusters.Error;
+using KubeUI.App.Infrastructure.DependencyInjection;
+using KubeUI.App.Infrastructure.Docking;
+using KubeUI.App.Infrastructure.Platform;
+using KubeUI.App.Infrastructure.Presentation;
+using KubeUI.App.Services.Settings;
+using KubeUI.App.Shell.Main;
+using KubeUI.App.Styles;
+using LiveChartsCore;
+using LiveChartsCore.SkiaSharpView;
+using LiveChartsCore.Themes;
+using Microsoft.Extensions.Hosting;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
+
+[assembly: GenerateMarkupExtensionsForAvalonia(false)]
+[assembly: GenerateMarkupExtensionsForAssembly(typeof(LiveChartsCore.SkiaSharpView.Avalonia.PieChart), true)]
+
+namespace KubeUI.App;
+
+public partial class App : Application, IServiceProviderHost
+{
+    public static TopLevel? TopLevel { get; private set; }
+
+    public IServiceProvider Services { get; private set; } = null!;
+    private ILogger<App> _logger = null!;
+    private IHostApplicationLifetime _hostApplicationLifetime = null!;
+    private int _shutdownRequested;
+    private const int TelemetryFlushTimeoutMilliseconds = 5000;
+
+    public App(IServiceProvider serviceProvider)
+    {
+        InitializeApplication(serviceProvider);
+    }
+
+    protected App()
+    {
+    }
+
+    protected void InitializeApplication(IServiceProvider serviceProvider)
+    {
+        Name = "KubeUI";
+
+        Services = serviceProvider;
+        _logger = Services.GetRequiredService<ILogger<App>>();
+        _hostApplicationLifetime = Services.GetRequiredService<IHostApplicationLifetime>();
+
+        DataTemplates.Add(Services.GetRequiredService<ViewLocator>());
+
+        AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+        Dispatcher.UIThread.UnhandledException += OnUnhandledException;
+        TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
+        KubernetesClientConfiguration.ExecStdError += KubernetesClientConfiguration_ExecStdError;
+    }
+
+    protected void DisposeApplication()
+    {
+        AppDomain.CurrentDomain.UnhandledException -= CurrentDomain_UnhandledException;
+        Dispatcher.UIThread.UnhandledException -= OnUnhandledException;
+        TaskScheduler.UnobservedTaskException -= TaskScheduler_UnobservedTaskException;
+        KubernetesClientConfiguration.ExecStdError -= KubernetesClientConfiguration_ExecStdError;
+    }
+
+    [RequiresUnreferencedCode("Application initialization loads Avalonia styles from runtime XAML resources.")]
+    public override void Initialize()
+    {
+        DockSettings.MinimumHorizontalDragDistance = 8;
+        DockSettings.MinimumVerticalDragDistance = 8;
+
+        // Gauge arcs (cluster CPU/memory/pods) use flat ends; the default theme rounds them.
+        LiveCharts.Configure(settings => settings.AddDefaultTheme(theme => theme.HasRuleForGaugeSeries(series => series.CornerRadius = 0)));
+
+        var fluent = new Fluent();
+        Styles.Add(fluent);
+        Resources.MergedDictionaries.Add(new ResourceInclude(new Uri("avares://LiveMarkdown.Avalonia/Defaults.axaml"))
+        {
+            Source = new Uri("avares://LiveMarkdown.Avalonia/Defaults.axaml")
+        });
+        Resources.MergedDictionaries.Add(fluent.CreateMarkdownResourceOverrides());
+
+        Services.GetRequiredService<Instrumentation>().AppOpened.Add(1);
+    }
+
+    public override void OnFrameworkInitializationCompleted()
+    {
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            _logger.LogInformation("Creating main window");
+            var mainWindow = Services.GetRequiredService<MainWindow>();
+            _logger.LogInformation("Main window created");
+            desktop.MainWindow = mainWindow;
+            var mainViewModel = Services.GetRequiredService<MainViewModel>();
+            mainWindow.DataContext = mainViewModel;
+            TopLevel = desktop.MainWindow;
+            mainWindow.Opened += (_, _) => _logger.LogInformation("Main window opened");
+            mainWindow.Closed += (_, _) => _logger.LogInformation("Main window closed");
+            desktop.ShutdownRequested += (_, _) =>
+            {
+                _logger.LogInformation("Avalonia shutdown requested");
+                mainViewModel.CloseLayoutCommand.Execute(null);
+                GracefulShutdown();
+            };
+
+            Dispatcher.UIThread.Post(mainViewModel.Initialize, DispatcherPriority.Background);
+        }
+        else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
+        {
+            singleViewPlatform.MainView = Services.GetRequiredService<MainView>();
+            TopLevel = TopLevel.GetTopLevel(singleViewPlatform.MainView)!;
+        }
+
+        Services.GetRequiredService<ISettingsService>().ApplySettings();
+
+        base.OnFrameworkInitializationCompleted();
+    }
+
+    internal void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+        RecordUnhandledException(e.ExceptionObject as Exception ?? new Exception(e.ExceptionObject?.ToString()), e.IsTerminating);
+    }
+
+    internal void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+    {
+        RecordUnhandledException(e.Exception, isTerminating: false);
+        e.SetObserved();
+    }
+
+    private void KubernetesClientConfiguration_ExecStdError(object? sender, DataReceivedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(e.Data))
+        {
+            _logger.LogTrace("Cluster ExecStdError: no data");
+            return;
+        }
+
+        _logger.LogWarning("Cluster ExecStdError: {Data}", e.Data);
+
+        Dispatcher.UIThread.Post(() => ShowClusterError(e.Data), DispatcherPriority.Background);
+    }
+
+    private void ShowClusterError(string error)
+    {
+        var factory = Services.GetRequiredService<IFactory>();
+        var documents = factory.GetDockable<IDocumentDock>("Documents");
+        if (documents == null)
+        {
+            return;
+        }
+
+        if (factory.FindDockableById("cluster-error") is ClusterErrorViewModel existing)
+        {
+            existing.Error = error;
+            factory.SetActiveDockable(existing);
+            factory.SetFocusedDockable(documents, existing);
+            return;
+        }
+
+        var vm = Services.GetRequiredService<ClusterErrorViewModel>();
+        vm.Id = "cluster-error";
+        vm.Error = error;
+        factory.AddDockable(documents, vm);
+        factory.SetActiveDockable(vm);
+        factory.SetFocusedDockable(documents, vm);
+    }
+
+    private void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+    {
+        HandleUiThreadException(e.Exception);
+        e.Handled = true;
+    }
+
+    internal void HandleUiThreadException(Exception exception)
+    {
+        RecordUnhandledException(exception, isTerminating: false);
+    }
+
+    internal void RecordUnhandledException(Exception exception, bool isTerminating)
+    {
+        _logger.LogCritical(exception, "Unhandled exception (terminating: {IsTerminating})", isTerminating);
+        TryFlushTelemetry();
+
+        if (isTerminating)
+        {
+            GracefulShutdown();
+        }
+    }
+
+    internal void GracefulShutdown()
+    {
+        if (Interlocked.Exchange(ref _shutdownRequested, 1) == 1)
+        {
+            return;
+        }
+
+        KubernetesClientConfiguration.ExecStdError -= KubernetesClientConfiguration_ExecStdError;
+        TryFlushTelemetry();
+        _hostApplicationLifetime.StopApplication();
+    }
+
+    private void TryFlushTelemetry()
+    {
+        try
+        {
+            FlushTelemetry();
+        }
+        catch (ObjectDisposedException)
+        {
+            // Late unobserved task exceptions can arrive after host teardown.
+        }
+    }
+
+    protected virtual void FlushTelemetry()
+    {
+        Services.GetService<LoggerProvider>()?.ForceFlush(TelemetryFlushTimeoutMilliseconds);
+        Services.GetService<MeterProvider>()?.ForceFlush(TelemetryFlushTimeoutMilliseconds);
+        Services.GetService<TracerProvider>()?.ForceFlush(TelemetryFlushTimeoutMilliseconds);
+    }
+}

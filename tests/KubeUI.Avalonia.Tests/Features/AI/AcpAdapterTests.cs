@@ -1,8 +1,8 @@
 using System.Text.Json;
-using KubeUI.AI.Acp;
-using KubeUI.AI.Agents;
-using KubeUI.AI.Diagnostics;
-using KubeUI.AI.Permissions;
+using KubeUI.Features.AI.Acp;
+using KubeUI.Features.AI.Agents;
+using KubeUI.Features.AI.Diagnostics;
+using KubeUI.Features.AI.Permissions;
 using Shouldly;
 using SvcSystems.AI.AgentClientProtocol;
 using SvcSystems.AI.AgentClientProtocol.Agent.Models;

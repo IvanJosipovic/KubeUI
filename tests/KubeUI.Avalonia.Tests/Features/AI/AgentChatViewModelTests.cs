@@ -1,8 +1,9 @@
 using System.Text.Json;
 using System.Threading.Channels;
-using KubeUI.AI.Agents;
-using KubeUI.Avalonia.Features.AI;
-using KubeUI.Avalonia.Infrastructure.Mcp;
+using KubeUI.Features.AI.Agents;
+using KubeUI.Features.AI.Mcp;
+using KubeUI.Features.AI.Chat;
+using KubeUI.App.Infrastructure.Mcp;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Shouldly;
@@ -239,9 +240,7 @@ public sealed class AgentChatViewModelTests
         var first = new TestAgent(firstSession, "first", "First");
         var second = new TestAgent(secondSession, "second", "Second");
         var settings = new Settings { SelectedAgentId = "second" };
-        var settingsService = new Mock<ISettingsService>();
-        settingsService.SetupGet(service => service.Settings).Returns(settings);
-        var vm = CreateViewModel(new TestRegistry(first, second), settingsService.Object);
+        var vm = CreateViewModel(new TestRegistry(first, second), new TestAgentChatSettings(settings));
 
         vm.SelectedAgent.ShouldBeSameAs(second);
         settings.SelectedAgentId = "first";
@@ -287,13 +286,11 @@ public sealed class AgentChatViewModelTests
         await using var session = new TestSession("session-bound-endpoint", []);
         var agent = new TestAgent(session);
         var settings = new Settings { McpServerEnabled = true, McpServerPort = 62888 };
-        var settingsService = new Mock<ISettingsService>();
-        settingsService.SetupGet(service => service.Settings).Returns(settings);
         var mcpServerState = new McpServerState();
         mcpServerState.SetBoundPort(54321);
         var vm = CreateViewModel(
             new TestRegistry(agent),
-            settingsService.Object,
+            new TestAgentChatSettings(settings),
             new AgentContextService(),
             mcpServerState,
             prompt: "List pods");
@@ -310,9 +307,7 @@ public sealed class AgentChatViewModelTests
         await using var session = new TestSession("session-disabled-endpoint", []);
         var agent = new TestAgent(session);
         var settings = new Settings { McpServerEnabled = false, McpServerPort = 62888 };
-        var settingsService = new Mock<ISettingsService>();
-        settingsService.SetupGet(service => service.Settings).Returns(settings);
-        var vm = CreateViewModel(new TestRegistry(agent), settingsService.Object, prompt: "List pods");
+        var vm = CreateViewModel(new TestRegistry(agent), new TestAgentChatSettings(settings), prompt: "List pods");
 
         await vm.SendCommand.ExecuteAsync(null);
 
@@ -328,12 +323,12 @@ public sealed class AgentChatViewModelTests
         var settings = new Settings { McpServerEnabled = true, McpServerPort = 62888 };
         var settingsService = new Mock<ISettingsService>();
         settingsService.SetupGet(service => service.Settings).Returns(settings);
-        var credentials = new McpCredentialService(settingsService.Object);
+        var credentials = new McpCredentialService(new McpSettingsCredentialStore(settingsService.Object));
         var serverState = new McpServerState();
         serverState.SetBoundPort(62888);
         var vm = new AgentChatViewModel(
             new TestRegistry(agent),
-            settingsService.Object,
+            new TestAgentChatSettings(settings),
             new AgentContextService(),
             serverState,
             credentials)
@@ -358,30 +353,23 @@ public sealed class AgentChatViewModelTests
 
     private static AgentChatViewModel CreateViewModel(
         IAgentRegistry registry,
-        ISettingsService? settingsService = null,
+        IAgentChatSettings? settings = null,
         IAgentContextService? contextService = null,
         IMcpServerState? mcpServerState = null,
         string? prompt = null,
         AgentContext? context = null,
         ILogger<AgentChatViewModel>? logger = null)
     {
-        settingsService ??= CreateSettingsService(new Settings());
+        settings ??= new TestAgentChatSettings(new Settings());
         var viewModel = new AgentChatViewModel(
             registry,
-            settingsService,
+            settings,
             contextService ?? new AgentContextService(),
             mcpServerState ?? new McpServerState(),
             logger: logger);
         viewModel.Prompt = prompt ?? string.Empty;
         viewModel.Context = context;
         return viewModel;
-    }
-
-    private static ISettingsService CreateSettingsService(Settings settings)
-    {
-        var settingsService = new Mock<ISettingsService>();
-        settingsService.SetupGet(service => service.Settings).Returns(settings);
-        return settingsService.Object;
     }
 
     private sealed class TestRegistry(params IAgent[] agents) : IAgentRegistry
