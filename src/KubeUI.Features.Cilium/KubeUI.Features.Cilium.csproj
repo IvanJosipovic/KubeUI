@@ -62,6 +62,7 @@
 
   <ItemGroup>
     <Compile Include="$(BaseIntermediateOutputPath)\Resources.Designer.cs" Condition="'$(DesignTimeBuild)' == 'true'" AutoGen="true" DesignTime="true" Visible="false" />
+    <AvaloniaResource Include="Assets\**\*.svg" />
     <EmbeddedResource Update="Assets\Resources.resx">
       <PublicClass>true</PublicClass>
       <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>

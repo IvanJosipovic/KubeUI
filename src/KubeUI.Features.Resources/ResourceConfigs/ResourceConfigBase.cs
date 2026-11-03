@@ -71,6 +71,9 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     public virtual ResourceOrigin Origin => ResourceOrigin.BuiltIn;
 
     /// <inheritdoc />
+    public bool IsCustomResource => Origin == ResourceOrigin.CustomResourceDefinition;
+
+    /// <inheritdoc />
     public virtual V1CustomResourceDefinition? CustomResourceDefinition => null;
 
     public ClusterWorkspace Cluster { get; private set; }
