@@ -1,6 +1,6 @@
 # Avalonia project structure plan
 
-**Status:** Structure implemented; Debug build and Release trimmed publish pass. Tests not run per request to limit long test runs.
+**Status:** Structure implemented; Debug and Release builds and the Linux x64 Release trimmed publish pass. Feature tests are split into dedicated projects; local MTP runs currently time out before reporting results.
 
 ## Goal
 
@@ -12,7 +12,7 @@ Feature projects should use reusable controls from `KubeUI.Controls` by default.
 
 The split is implemented. `KubeUI.Avalonia` owns shared framework packages, fonts, assets, resources, typography, and the public Avalonia extension provider. `KubeUI.Controls` owns reusable UI primitives. `KubeUI.App` owns the shell, cross-feature composition, and application theme composition. Feature views, view models, services, assets, and resources live in their matching `KubeUI.Features.*` projects. `KubeUI.AI` and `KubeUI.Cilium` were renamed to `KubeUI.Features.AI` and `KubeUI.Features.Cilium`.
 
-`KubeUI.Kubernetes` remains the shared Kubernetes runtime and contracts project. Feature tests remain in one Avalonia headless test assembly and are organized under the matching project owner; this preserves the shared test host without adding test-assembly setup or runtime.
+`KubeUI.Kubernetes` remains the shared Kubernetes runtime and contracts project. Feature tests live in dedicated test projects, with common setup shared through `KubeUI.Testing` and `tests/FeatureTests.props`. `KubeUI.Avalonia.Tests` retains App-shell, Controls, Desktop-startup, and cross-feature tests.
 
 ## Target projects
 
@@ -48,7 +48,6 @@ flowchart BT
     Kubernetes["KubeUI.Kubernetes<br/>shared runtime and contracts"]
 
     Desktop --> App
-    Desktop --> Kubernetes
     App --> Kubernetes
     App --> AI
     App --> Cilium
@@ -84,7 +83,7 @@ flowchart BT
     Controls --> Foundation
 ```
 
-`KubeUI.Avalonia` must not reference feature projects. `KubeUI.Controls` is the only project allowed to reference the foundation. App and feature projects do not add a project reference to the foundation; they keep direct NuGet references to Avalonia APIs and generators they compile against. Feature projects may reference `KubeUI.Kubernetes` when they use its runtime or contracts. A feature may reference another feature when it consumes an owned capability; keep those edges minimal and acyclic. `KubeUI.Features.Clusters` owns cluster-workspace contracts, and `KubeUI.Features.Resources` depends on Clusters to implement resource configuration. Clusters must not reference Resources.
+`KubeUI.Avalonia` must not reference feature projects. `KubeUI.Controls` is the only project allowed to reference the foundation. App and feature projects do not add a project reference to the foundation; they keep direct NuGet references to Avalonia APIs and generators they compile against. Desktop references App only; App owns the Kubernetes runtime reference. Feature projects may reference `KubeUI.Kubernetes` when they use its runtime or contracts. A feature may reference another feature when it consumes an owned capability; keep those edges minimal and acyclic. `KubeUI.Features.Clusters` owns cluster-workspace contracts, and `KubeUI.Features.Resources` depends on Clusters to implement resource configuration. Clusters must not reference Resources.
 
 ## Namespace conventions
 
@@ -138,7 +137,7 @@ Keep shared controls under `KubeUI.Controls.*`, foundation APIs under `KubeUI.Av
 ### `KubeUI.Desktop`
 
 - Own the desktop executable entry point, platform startup, and desktop output/deployment settings.
-- Reference `KubeUI.App` and desktop-specific runtime projects.
+- Reference `KubeUI.App` only.
 - Keep `Avalonia.Desktop` here. Keep `Avalonia.Headless.XUnit` in test projects.
 
 ## Markup extension generation
@@ -193,8 +192,8 @@ When assets move, update `avares://` assembly URIs and resource registration. Mo
 4. [x] Move feature source, packages, assets, resources, registrations, and markup extension declarations into `KubeUI.Features.*` projects.
 5. [x] Keep the shell and cross-feature UI composition in `KubeUI.App`; keep `KubeUI.Desktop` focused on the executable host and desktop output.
 6. [x] Update solution references, namespaces, asset URIs, and resource ownership. Remove duplicate package references and keep feature dependencies acyclic.
-7. [x] Organize the shared Avalonia test suite under `App/`, `Controls/`, `Foundation/`, and matching `Features/<Feature>/` folders. Keep common test-host setup in `Infra/`.
-8. [x] Verify the full solution Debug build and a Linux x64 Release desktop publish with trimming. UI tests were not run during this migration to avoid repeated long test runs; the test source compiled with the solution.
+7. [x] Split feature tests into matching test projects; keep common setup in `KubeUI.Testing` and `FeatureTests.props`, and App-shell/cross-feature tests in `KubeUI.Avalonia.Tests`.
+8. [x] Verify full solution Debug and Release builds and a Linux x64 Release desktop publish with trimming. Focused MTP tests currently time out locally before reporting results.
 
 ## Completion checks
 
@@ -204,5 +203,5 @@ When assets move, update `avares://` assembly URIs and resource registration. Mo
 - Each feature has one `KubeUI.Features.*` project containing its feature code and UI.
 - `KubeUI.App` owns the main UI shell; `KubeUI.Desktop` owns desktop output and platform startup.
 - Each Avalonia framework extension has one public provider; each external control assembly has one public generation owner.
-- Tests remain in the shared Avalonia headless test assembly and follow project ownership in the folder tree.
-- The full solution Debug build and Linux x64 Release trimmed publish pass. UI tests were compiled but not executed per the request to limit long test runs.
+- Feature tests use dedicated test projects; shared Avalonia shell and cross-feature tests remain in `KubeUI.Avalonia.Tests`.
+- The full solution Debug and Release builds and Linux x64 Release trimmed publish pass. Local MTP test execution remains blocked before results are reported.

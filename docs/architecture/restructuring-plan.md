@@ -41,7 +41,7 @@ This can cause:
 
 **Implementation:** Move feature tests into matching test projects. Keep reusable headless and Kubernetes fixtures in shared test support. Keep App-shell and cross-feature integration tests in `KubeUI.Avalonia.Tests`.
 
-**Status:** Split complete; local test execution remains blocked before test discovery by Microsoft.Testing.Extensions.HangDump startup timeout.
+**Status:** Split complete; local MTP test execution still times out before reporting results, so CI must confirm the latest test fixes.
 
 Seven feature test projects now cover AI, Cilium, Clusters, Crossplane, Gateway API, Helm, and Resources. Shared headless/Kubernetes setup is imported from `tests/FeatureTests.props`; App-shell, Controls, Desktop startup, and cross-feature tests remain in `KubeUI.Avalonia.Tests`. All new projects are included in `KubeUI.slnx` and CI's solution-level test run.
 
@@ -84,7 +84,7 @@ Removed seven direct feature project references and two feature-only package ref
 
 ---
 
-### R-03: Replace Cross-Feature `Using` with Narrow Public Contracts 🟡 In Progress
+### R-03: Replace Cross-Feature `Using` with Narrow Public Contracts ✅ Documented
 
 **Problem:** Features import other features' implementation namespaces:
 
@@ -282,11 +282,11 @@ Phase 3 (Test project split):
 ## Validation Checklist
 
 After each phase, verify:
-- [ ] `dotnet build --tl:off -clp:ErrorsOnly` passes
-- [ ] `dotnet test --no-build` passes (for affected tests)
-- [ ] No `CS0103` / `CS0246` errors from removed `Using`
-- [ ] Trim analysis: `dotnet publish -c Release -r linux-x64 --self-contained` shows no new warnings
-- [ ] Dependency graph matches `avalonia-project-structure-plan.md` Mermaid diagram
+- [x] Debug and Release solution builds pass with `--tl:off -clp:ErrorsOnly`
+- [ ] `dotnet test --no-build` passes for affected tests; local MTP runs time out before reporting test results
+- [x] No `CS0103` / `CS0246` errors from removed `Using`
+- [x] Linux x64 self-contained Release trimmed desktop publish succeeds without linker warnings (SDK preview notices only)
+- [x] Dependency graph matches `avalonia-project-structure-plan.md` after correcting the stale test-split and Desktop edges
 
 ## AGENTS.md Guidance Review
 

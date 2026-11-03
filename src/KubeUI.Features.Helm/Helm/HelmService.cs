@@ -25,6 +25,7 @@ public sealed class HelmService : IHelmService, IDisposable
     /// Initializes a Helm service.
     /// </summary>
     /// <param name="clientFactory">Factory creating the Helm client for each operation.</param>
+    /// <param name="jsonSerializer">Application-configured Kubernetes JSON serializer for Helm values.</param>
     public HelmService(IHelmClientFactory clientFactory, IKubernetesJsonSerializer jsonSerializer)
     {
         ArgumentNullException.ThrowIfNull(clientFactory);
