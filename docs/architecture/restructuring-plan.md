@@ -237,9 +237,7 @@ tests/
 | `Svg.Controls.Skia.Avalonia` | Resources, Controls? |
 | `Xaml.Behaviors.Avalonia` | Resources, Helm, AI |
 
-**Target State:** Each package lives in the feature(s) that use it. App only has:
-- Shell packages: `Avalonia`, `Avalonia.Themes.Fluent`, `Dock.*`, `CommunityToolkit.Mvvm`
-- Cross-cutting: `OpenTelemetry`, `Velopack`, `ServiceScan.SourceGenerator`
+**Target State:** Feature-only packages live with their owning features. App keeps direct package references for APIs used by App-owned shell, startup, infrastructure, and cluster-overview code.
 
 **Implementation:**
 1. Audit each package in App.csproj — determine actual usage (grep for types)
@@ -248,8 +246,9 @@ tests/
 4. Remove from App
 
 **Progress:**
-- ✅ Removed App references to `Irihi.Ursa`, `Irihi.Ursa.Themes.Semi`, `Svg.Controls.Skia.Avalonia`, and `Xaml.Behaviors.Avalonia`; owning features or Controls reference needed packages.
-- ⏳ Remaining: finish package-by-package App source audit and remove any unused feature-owned package references.
+- ✅ Removed App references to `Irihi.Ursa`, `Irihi.Ursa.Themes.Semi`, and `Xaml.Behaviors.Avalonia`; owning features reference those packages.
+- ✅ Audited every remaining `PackageReference` against App source. Retained each: App uses its APIs or analyzer/source-generator functionality, including SVG application icons, LiveCharts cluster overview, and Fluent theme integration.
+- ✅ No unused package references remain to remove from `KubeUI.App.csproj`.
 
 **Effort:** Medium (half day + verification)
 **Risk:** Low — build will catch missing references

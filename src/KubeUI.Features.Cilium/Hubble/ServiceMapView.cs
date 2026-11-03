@@ -8,7 +8,6 @@ using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using k8s.Models;
 using KubeUI.Features.Cilium.Hubble.Controls;
-using KubeUI.Features.Resources.Common;
 using KubeUI.Controls.Presentation;
 using KubeUI.Features.Cilium.Hubble;
 using SvcSystems.Avalonia.DynamicTableView;

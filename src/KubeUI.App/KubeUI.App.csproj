@@ -89,6 +89,7 @@
     <PackageReference Include="roslynator.analyzers" PrivateAssets="all" />
     <PackageReference Include="Semi.Avalonia" />
     <PackageReference Include="ServiceScan.SourceGenerator" PrivateAssets="all" />
+    <PackageReference Include="Svg.Controls.Skia.Avalonia" />
     <PackageReference Include="Velopack" />
   </ItemGroup>
 
