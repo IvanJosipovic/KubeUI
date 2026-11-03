@@ -1,4 +1,5 @@
 using Helm.NET;
+using KubeUI.Features.Helm.Helm;
 
 namespace KubeUI.Kubernetes.Tests.Helm;
 

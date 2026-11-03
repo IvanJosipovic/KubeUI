@@ -60,14 +60,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="12.1.5" />
-    <PackageReference Include="Avalonia.Markup.Declarative" Version="12.2.0" />
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-    <PackageReference Include="Dock.Model.Mvvm" Version="12.1.0.2" />
-    <PackageReference Include="DynamicData" Version="9.5.0" />
-    <PackageReference Include="FluentIcons.Avalonia" Version="2.1.344" />
-    <PackageReference Include="ServiceScan.SourceGenerator" Version="3.2.2" PrivateAssets="all" />
-    <PackageReference Include="System.Reactive" Version="6.1.0" />
-    <PackageReference Include="SvcSystems.Avalonia.DynamicTableView" Version="1.0.0-alpha.19" />
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Markup.Declarative" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Dock.Model.Mvvm" />
+    <PackageReference Include="DynamicData" />
+    <PackageReference Include="FluentIcons.Avalonia" />
+    <PackageReference Include="ServiceScan.SourceGenerator" PrivateAssets="all" />
+    <PackageReference Include="System.Reactive" />
+    <PackageReference Include="SvcSystems.Avalonia.DynamicTableView" />
   </ItemGroup>
 </Project>

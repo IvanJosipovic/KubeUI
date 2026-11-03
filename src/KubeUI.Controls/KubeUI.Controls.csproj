@@ -24,8 +24,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia.Markup.Declarative" Version="12.2.0" />
-    <PackageReference Include="Dock.Model.Mvvm" Version="12.1.0.2" />
-    <PackageReference Include="Svg.Controls.Skia.Avalonia" Version="12.0.0.17" />
+    <PackageReference Include="Avalonia.Markup.Declarative" />
+    <PackageReference Include="Dock.Model.Mvvm" />
+    <PackageReference Include="Svg.Controls.Skia.Avalonia" />
   </ItemGroup>
 </Project>

@@ -5,6 +5,7 @@ using Dock.Model.Mvvm.Controls;
 using k8s;
 using k8s.Models;
 using KubeUI.Features.Helm;
+using KubeUI.Features.Helm.Helm;
 using KubeUI.Features.Resources.Visualization;
 using KubeUI.App.Infrastructure.Docking;
 using KubeUI.Avalonia.Tests.Infra;

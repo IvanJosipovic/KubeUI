@@ -4,7 +4,7 @@ using System.Text.Json.Serialization.Metadata;
 using KubeUI.App.Infrastructure.Mcp;
 using KubeUI.Kubernetes.Serialization;
 
-namespace KubeUI.Desktop;
+namespace KubeUI.App.Infrastructure.Mcp;
 
 [JsonSourceGenerationOptions(JsonSerializerDefaults.Web, GenerationMode = JsonSourceGenerationMode.Metadata)]
 [JsonSerializable(typeof(IReadOnlyList<McpClusterInfo>))]
@@ -22,7 +22,7 @@ namespace KubeUI.Desktop;
 [JsonSerializable(typeof(int))]
 [JsonSerializable(typeof(int?))]
 [JsonSerializable(typeof(bool))]
-internal partial class McpToolJsonSerializationContext : JsonSerializerContext
+public partial class McpToolJsonSerializationContext : JsonSerializerContext
 {
     /// <summary>
     /// Creates the serializer options for MCP tool results and schemas. Tool results can embed
@@ -30,7 +30,7 @@ internal partial class McpToolJsonSerializationContext : JsonSerializerContext
     /// source-generated context contributes the additional model metadata.
     /// </summary>
     /// <returns>Options combining the MCP tool and Kubernetes generated metadata.</returns>
-    internal static JsonSerializerOptions CreateSerializerOptions()
+    public static JsonSerializerOptions CreateSerializerOptions()
         => new(Default.Options)
         {
             TypeInfoResolver = JsonTypeInfoResolver.Combine(

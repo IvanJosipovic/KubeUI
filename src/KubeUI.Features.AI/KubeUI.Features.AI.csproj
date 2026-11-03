@@ -39,14 +39,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="SvcSystems.AI.AgentClientProtocol" Version="1.0.0-alpha.7" />
-    <PackageReference Include="Avalonia.Markup.Declarative" Version="12.2.0" />
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-    <PackageReference Include="FluentAvaloniaUI" Version="3.1.0" />
-    <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia.Fluent" Version="2.4.0" />
-    <PackageReference Include="LiveMarkdown.Avalonia" Version="2.5.1" />
-    <PackageReference Include="ModelContextProtocol" Version="2.3.0" />
-    <PackageReference Include="ModelContextProtocol.AspNetCore" Version="2.3.0" />
+    <PackageReference Include="SvcSystems.AI.AgentClientProtocol" />
+    <PackageReference Include="Avalonia.Markup.Declarative" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="FluentAvaloniaUI" />
+    <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia.Fluent" />
+    <PackageReference Include="LiveMarkdown.Avalonia" />
+    <PackageReference Include="ModelContextProtocol" />
+    <PackageReference Include="ModelContextProtocol.AspNetCore" />
   </ItemGroup>
 
   <ItemGroup>

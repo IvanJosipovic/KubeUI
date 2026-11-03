@@ -3,6 +3,7 @@ using KubeUI.App.Infrastructure.DependencyInjection;
 using KubeUI.App.Infrastructure.Presentation;
 using KubeUI.App.Styles;
 using KubeUI.Kubernetes;
+using KubeUI.Features.Clusters.Presentation;
 
 
 namespace KubeUI.App.Shell.Documents.CloudClusters.Aks;

@@ -41,6 +41,7 @@ using KubeUI.App.Shell.Navigation;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.Http.Resilience;
 using ServiceScan.SourceGenerator;
+using KubeUI.Features.Resources.Settings;
 
 namespace KubeUI.App.Infrastructure.DependencyInjection;
 

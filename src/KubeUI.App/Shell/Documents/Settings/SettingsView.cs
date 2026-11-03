@@ -10,6 +10,7 @@ using KubeUI.Features.AI.Mcp;
 using KubeUI.Features.Resources.Properties.Controls;
 using KubeUI.App.Infrastructure.Presentation;
 using KubeUI.App.Options;
+using KubeUI.Features.Clusters.Presentation;
 
 
 namespace KubeUI.App.Shell.Documents.Settings;

@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+    <PackageReference Include="BenchmarkDotNet" />
   </ItemGroup>
 
   <ItemGroup>
@@ -22,7 +22,7 @@
     <Using Include="KubeUI.Features.Resources.Assets" Alias="ResourceAssets" />
     <Using Include="KubeUI.Controls.Converters" />
     <Using Include="KubeUI.App.App" Alias="KubeUIApplication" />
-    <PackageReference Include="Moq" Version="4.21.0" />
+    <PackageReference Include="Moq" />
     <Compile Include="..\..\tests\KubeUI.Avalonia.Tests\Infra\TestApp.cs" Link="TestApp.cs" />
     <Compile Include="..\..\tests\KubeUI.Avalonia.Tests\Infra\TestSettingsService.cs" Link="TestSettingsService.cs" />
   </ItemGroup>

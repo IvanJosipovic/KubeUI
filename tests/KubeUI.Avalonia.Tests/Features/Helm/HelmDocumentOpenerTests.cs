@@ -4,6 +4,7 @@ using Dock.Model.Core;
 using Helm.NET;
 using KubeUI.Features.Helm;
 using KubeUI.Features.Helm.Charts;
+using KubeUI.Features.Helm.Helm;
 using KubeUI.Kubernetes;
 using Moq;
 using Shouldly;

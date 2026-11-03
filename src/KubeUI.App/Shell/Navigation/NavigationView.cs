@@ -6,6 +6,7 @@ using Avalonia.Data.Converters;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using KubeUI.Features.Clusters.Catalog.Behaviors;
+using KubeUI.Features.Clusters.Presentation;
 using KubeUI.App.Infrastructure;
 using KubeUI.App.Infrastructure.DependencyInjection;
 using KubeUI.App.Infrastructure.Presentation;

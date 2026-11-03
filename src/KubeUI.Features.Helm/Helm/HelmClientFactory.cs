@@ -1,6 +1,6 @@
 using Helm.NET;
 
-namespace KubeUI.Kubernetes;
+namespace KubeUI.Features.Helm.Helm;
 
 /// <summary>
 /// Creates <see cref="HelmClient"/> instances from a <see cref="HelmConnection"/>.
@@ -24,7 +24,7 @@ public sealed class HelmClientFactory : IHelmClientFactory
     /// and <see cref="HelmClientOptions.DefaultNamespace"/> cannot be left unset. The connection namespace is
     /// therefore passed through when present, and Helm's own default is kept otherwise.
     /// </remarks>
-    internal static HelmClientOptions CreateOptions(HelmConnection connection)
+    public static HelmClientOptions CreateOptions(HelmConnection connection)
     {
         ArgumentNullException.ThrowIfNull(connection);
 

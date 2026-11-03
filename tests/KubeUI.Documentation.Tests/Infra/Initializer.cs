@@ -2,7 +2,7 @@ using Avalonia;
 using Avalonia.Headless;
 using KubeUI.App.Infrastructure;
 using KubeUI.Avalonia.Tests.Infra;
-using KubeUI.Kubernetes;
+using KubeUI.Features.Helm.Helm;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 

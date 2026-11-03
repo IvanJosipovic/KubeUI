@@ -4,9 +4,10 @@ using FluentIcons.Common;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Features.Clusters.Workspace;
-using KubeUI.App.Infrastructure.Threading;
 using KubeUI.Features.Resources;
 using KubeUI.Features.Resources.Icons;
+using KubeUI.Features.Resources.Assets;
+using KubeUI.App.Infrastructure.Threading;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.App.Shell.Navigation;
@@ -338,7 +339,7 @@ internal sealed class NavigationTreeBuilder
             && container is IResourceContainer { IsSeeded: true })
         {
             link.Count = cluster.Runtime.GetResourceCount(kind)
-                .Sample(TimeSpan.FromMilliseconds(100), AvaloniaScheduler.Instance);
+                .Sample(TimeSpan.FromMilliseconds(100), KubeUI.App.Infrastructure.Threading.AvaloniaScheduler.Instance);
             link.CountResourceKind = kind;
         }
     }

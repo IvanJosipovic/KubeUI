@@ -1,4 +1,4 @@
-namespace KubeUI.Kubernetes;
+namespace KubeUI.Features.Helm.Helm;
 
 /// <summary>
 /// Describes the Kubernetes connection a Helm operation runs against.

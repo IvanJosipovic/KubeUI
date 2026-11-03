@@ -1,6 +1,6 @@
 using Helm.NET;
 
-namespace KubeUI.Kubernetes;
+namespace KubeUI.Features.Helm.Helm;
 
 /// <summary>
 /// Creates <see cref="IHelmClient"/> instances bound to a Kubernetes connection.

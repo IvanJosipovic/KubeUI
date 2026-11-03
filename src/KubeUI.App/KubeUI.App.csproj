@@ -26,15 +26,10 @@
     <Using Include="KubeUI.Controls.Platform" />
     <Using Include="KubeUI.Controls.Threading" />
     <Using Include="KubeUI.Avalonia.Styles" />
-    <Using Include="KubeUI.Features.Clusters.Assets" Alias="ClusterAssets" />
-    <Using Include="KubeUI.Features.Resources.Assets" Alias="ResourceAssets" />
-    <Using Include="KubeUI.Features.Resources" />
-    <Using Include="KubeUI.Features.Clusters.Presentation" />
-    <Using Include="KubeUI.Features.Resources.Infrastructure" />
-    <Using Include="KubeUI.Features.Resources.Settings" />
     <Using Include="KubeUI.Controls.Converters" />
     <Using Include="KubeUI.Controls.Styles" />
-    <Using Include="KubeUI.Features.Resources.Icons" />
+    <Using Include="KubeUI.Features.Clusters.Assets" Alias="ClusterAssets" />
+    <Using Include="KubeUI.Features.Resources.Assets" Alias="ResourceAssets" />
     <Using Include="Microsoft.Extensions.DependencyInjection" />
     <Using Include="Microsoft.Extensions.Logging" />
     <Using Include="SvcSystems.Avalonia.DynamicTableView" />
@@ -71,34 +66,34 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="12.1.5" />
-    <PackageReference Include="Avalonia.AvaloniaEdit" Version="12.0.0" />
-    <PackageReference Include="Avalonia.Markup.Declarative" Version="12.2.0" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.5" />
-    <PackageReference Include="Westermo.GraphX.Controls.Avalonia.Themes.Fluent" Version="4.2.0" />
-    <PackageReference Include="SvcSystems.UI.Terminal" Version="2.3.0" />
-    <PackageReference Include="SvcSystems.Avalonia.DynamicTableView" Version="1.0.0-alpha.19" />
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-    <PackageReference Include="Dock.Avalonia" Version="12.1.0.2" />
-    <PackageReference Include="Dock.Avalonia.Themes.Fluent" Version="12.1.0.2" />
-    <PackageReference Include="Dock.Model.Mvvm" Version="12.1.0.2" />
-    <PackageReference Include="FluentAvaloniaUI" Version="3.1.0" />
-    <PackageReference Include="FluentIcons.Avalonia" Version="2.1.344" />
-    <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia" Version="2.4.0" />
-    <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia.Fluent" Version="2.4.0" />
-    <PackageReference Include="Irihi.Ursa" Version="2.2.0" />
-    <PackageReference Include="Irihi.Ursa.Themes.Semi" Version="2.2.0" />
-    <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.1.0-dev-798" />
-    <PackageReference Include="LiveMarkdown.Avalonia" Version="2.5.1" />
-    <PackageReference Include="ModelContextProtocol" Version="2.3.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="11.0.0-rc.3.26522.148" />
-    <PackageReference Include="OpenTelemetry" Version="1.20.1" />
-    <PackageReference Include="roslynator.analyzers" Version="5.0.1" PrivateAssets="all" />
-    <PackageReference Include="Semi.Avalonia" Version="12.1.0.1" />
-    <PackageReference Include="ServiceScan.SourceGenerator" Version="3.2.2" PrivateAssets="all" />
-    <PackageReference Include="Svg.Controls.Skia.Avalonia" Version="12.0.0.17" />
-    <PackageReference Include="Velopack" Version="1.2.161" />
-    <PackageReference Include="Xaml.Behaviors.Avalonia" Version="12.0.7" />
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.AvaloniaEdit" />
+    <PackageReference Include="Avalonia.Markup.Declarative" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Westermo.GraphX.Controls.Avalonia.Themes.Fluent" />
+    <PackageReference Include="SvcSystems.UI.Terminal" />
+    <PackageReference Include="SvcSystems.Avalonia.DynamicTableView" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Dock.Avalonia" />
+    <PackageReference Include="Dock.Avalonia.Themes.Fluent" />
+    <PackageReference Include="Dock.Model.Mvvm" />
+    <PackageReference Include="FluentAvaloniaUI" />
+    <PackageReference Include="FluentIcons.Avalonia" />
+    <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia" />
+    <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia.Fluent" />
+    <PackageReference Include="Irihi.Ursa" />
+    <PackageReference Include="Irihi.Ursa.Themes.Semi" />
+    <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" />
+    <PackageReference Include="LiveMarkdown.Avalonia" />
+    <PackageReference Include="ModelContextProtocol" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry" />
+    <PackageReference Include="roslynator.analyzers" PrivateAssets="all" />
+    <PackageReference Include="Semi.Avalonia" />
+    <PackageReference Include="ServiceScan.SourceGenerator" PrivateAssets="all" />
+    <PackageReference Include="Svg.Controls.Skia.Avalonia" />
+    <PackageReference Include="Velopack" />
+    <PackageReference Include="Xaml.Behaviors.Avalonia" />
   </ItemGroup>
 
 </Project>

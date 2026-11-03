@@ -6,6 +6,7 @@ using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using Helm.NET;
 using KubeUI.Features.Helm;
+using KubeUI.Features.Helm.Helm;
 using KubeUI.Features.Helm.Releases;
 using KubeUI.Features.Helm.Repositories;
 using KubeUI.Kubernetes;

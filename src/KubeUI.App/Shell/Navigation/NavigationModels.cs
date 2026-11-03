@@ -3,6 +3,8 @@ using FluentIcons.Common;
 using KubernetesClient.Informer.Client;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Kubernetes;
+using KubeUI.Features.Clusters.Assets;
+using KubeUI.Features.Resources.Assets;
 using Swordfish.NET.Collections;
 
 namespace KubeUI.App.Shell.Navigation;

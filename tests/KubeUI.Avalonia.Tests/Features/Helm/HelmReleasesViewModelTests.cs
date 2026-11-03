@@ -11,6 +11,7 @@ using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using Helm.NET;
 using k8s.Models;
 using KubeUI.Features.Helm;
+using KubeUI.Features.Helm.Helm;
 using KubeUI.Features.Helm.Releases;
 using KubeUI.Features.Resources.Yaml;
 using KubeUI.Kubernetes;

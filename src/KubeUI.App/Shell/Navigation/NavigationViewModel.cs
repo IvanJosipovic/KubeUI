@@ -10,6 +10,7 @@ using KubernetesClient.Informer.Client;
 using KubeUI.Features.Clusters.Error;
 using KubeUI.Features.Clusters.Settings;
 using KubeUI.Features.Clusters.Workspace;
+using KubeUI.Features.Clusters.Assets;
 using KubeUI.App.Infrastructure.Docking;
 using KubeUI.App.Infrastructure.Platform;
 using KubeUI.App.Infrastructure.Presentation;

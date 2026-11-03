@@ -4,6 +4,7 @@ using Dock.Avalonia.Controls;
 using KubeUI.App.Infrastructure;
 using KubeUI.App.Infrastructure.DependencyInjection;
 using KubeUI.App.Infrastructure.Presentation;
+using KubeUI.Features.Clusters.Presentation;
 
 
 namespace KubeUI.App.Shell.Main;

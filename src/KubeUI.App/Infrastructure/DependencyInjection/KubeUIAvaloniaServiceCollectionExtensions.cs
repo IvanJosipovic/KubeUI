@@ -16,6 +16,9 @@ using KubeUI.Features.Cilium;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Resources.Relationships;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
+using KubeUI.Kubernetes.Serialization;
+using KubeUI.App.Infrastructure.Threading;
 
 namespace KubeUI.App.Infrastructure.DependencyInjection;
 
@@ -55,6 +58,18 @@ public static class KubeUIAvaloniaServiceCollectionExtensions
         configureOverrides?.Invoke(services);
 
         return services;
+    }
+
+    /// <summary>
+    /// Configures the logger used to report Kubernetes types that still fall back to
+    /// reflection-based serialization. This forces the <see cref="IKubernetesJsonSerializer"/>
+    /// to be instantiated so any reflection-based serialization warnings get logged.
+    /// </summary>
+    /// <param name="services">Application service provider.</param>
+    public static void ConfigureKubeUIKubernetesJsonLogging(this IServiceProvider services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        _ = services.GetService<IKubernetesJsonSerializer>();
     }
 
     public static IServiceCollection AddKubeUIDialogServices(this IServiceCollection services)

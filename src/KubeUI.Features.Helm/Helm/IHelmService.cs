@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Helm.NET;
 
-namespace KubeUI.Kubernetes;
+namespace KubeUI.Features.Helm.Helm;
 
 /// <summary>
 /// Runs Helm operations asynchronously against a Kubernetes connection.

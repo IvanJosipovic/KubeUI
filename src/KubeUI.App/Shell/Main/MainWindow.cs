@@ -2,6 +2,7 @@ using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Platform;
 using KubeUI.App.Infrastructure.DependencyInjection;
 using KubeUI.App.Styles;
+using KubeUI.Features.Clusters.Presentation;
 
 namespace KubeUI.App.Shell.Main;
 

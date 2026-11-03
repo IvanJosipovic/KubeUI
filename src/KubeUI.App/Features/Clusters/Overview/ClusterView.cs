@@ -5,6 +5,7 @@ using KubeUI.Features.Resources.List;
 using KubeUI.App.Infrastructure.DependencyInjection;
 using KubeUI.App.Infrastructure.Presentation;
 using KubeUI.App.Styles;
+using KubeUI.Features.Clusters.Presentation;
 using LiveChartsCore;
 using LiveChartsCore.Kernel;
 using LiveChartsCore.Measure;

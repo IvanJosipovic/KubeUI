@@ -36,9 +36,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="12.1.5" />
-    <PackageReference Include="Avalonia.Markup.Declarative" Version="12.2.0" />
-    <PackageReference Include="FluentIcons.Avalonia" Version="2.1.344" />
-    <PackageReference Include="ServiceScan.SourceGenerator" Version="3.2.2" PrivateAssets="all" />
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Markup.Declarative" />
+    <PackageReference Include="FluentIcons.Avalonia" />
+    <PackageReference Include="ServiceScan.SourceGenerator" PrivateAssets="all" />
   </ItemGroup>
 </Project>
