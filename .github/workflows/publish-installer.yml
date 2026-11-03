@@ -80,7 +80,7 @@ jobs:
       - name: Install Velopack
         shell: pwsh
         run: |
-          $csprojPath = "src/KubeUI.Avalonia/KubeUI.Avalonia.csproj"
+          $csprojPath = "src/KubeUI.App/KubeUI.App.csproj"
 
           [xml]$csprojXml = Get-Content -Path $csprojPath
 
