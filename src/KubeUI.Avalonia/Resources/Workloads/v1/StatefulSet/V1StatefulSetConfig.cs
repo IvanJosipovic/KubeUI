@@ -56,6 +56,9 @@ public sealed partial class V1StatefulSetConfig : ScalableWorkloadConfig<V1State
         ];
     }
 
+    protected override bool IsRestartable(V1StatefulSet resource) =>
+        !string.Equals(resource.Spec?.UpdateStrategy?.Type, "OnDelete", StringComparison.Ordinal);
+
     /// <summary>Requests permission to read pod logs for stateful set workloads.</summary>
     public override IEnumerable<AuthorizationRequest> AuthorizationRequests()
     {

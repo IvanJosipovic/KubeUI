@@ -60,13 +60,6 @@ public sealed partial class V1ReplicaSetConfig : ScalableWorkloadConfig<V1Replic
         return [
             CreatePodLogsMenuItem(selectedItems),
             CreateScaleMenuItem(selectedItems),
-            new()
-            {
-                Title = Assets.Resources.V1ReplicaSetConfig_MenuItem_Restart,
-                FluentIcon = Icon.ArrowSync,
-                Command = RestartCommand,
-                CommandParameter = selectedItems?.ToList(),
-            },
         ];
     }
 

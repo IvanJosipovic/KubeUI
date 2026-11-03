@@ -6,3 +6,4 @@
 
 ## Constraints
 - Keep resource-kind logic out of shared cross-resource views unless it is truly generic.
+- The resource-menu Edit action opens the selected resource in YAML edit mode and requires Update permission.

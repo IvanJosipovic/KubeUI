@@ -2552,6 +2552,10 @@
     <value>View</value>
     <comment/>
   </data>
+  <data name="ResourceConfigBase_MenuItem_Edit" xml:space="preserve">
+    <value>Edit</value>
+    <comment/>
+  </data>
   <data name="ResourceConfigBase_MenuItem_ViewYaml" xml:space="preserve">
     <value>View YAML</value>
     <comment/>
@@ -2589,10 +2593,6 @@
     <comment/>
   </data>
   <data name="V1DeploymentConfig_MenuItem_Restart" xml:space="preserve">
-    <value>Restart</value>
-    <comment/>
-  </data>
-  <data name="V1ReplicaSetConfig_MenuItem_Restart" xml:space="preserve">
     <value>Restart</value>
     <comment/>
   </data>

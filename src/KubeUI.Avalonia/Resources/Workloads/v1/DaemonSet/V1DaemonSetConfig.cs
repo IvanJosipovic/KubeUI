@@ -54,6 +54,9 @@ public sealed partial class V1DaemonSetConfig : ResourceConfig<V1DaemonSet>
         ];
     }
 
+    protected override bool IsRestartable(V1DaemonSet resource) =>
+        !string.Equals(resource.Spec?.UpdateStrategy?.Type, "OnDelete", StringComparison.Ordinal);
+
     /// <summary>Requests permission to read pod logs for daemon set workloads.</summary>
     public override IEnumerable<AuthorizationRequest> AuthorizationRequests()
     {

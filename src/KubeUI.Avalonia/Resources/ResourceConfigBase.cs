@@ -298,6 +298,13 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         },
         new()
         {
+            Title = Assets.Resources.ResourceConfigBase_MenuItem_Edit,
+            Command = EditYamlCommand,
+            CommandParameter = selectedItems?.ToList(),
+            FluentIcon = Icon.DocumentEdit,
+        },
+        new()
+        {
             Title = Assets.Resources.ResourceConfigBase_MenuItem_ViewYaml,
             Command = ViewYamlCommand,
             CommandParameter = selectedItems?.ToList(),
@@ -522,6 +529,37 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         return items?.Count == 1;
     }
 
+    [RelayCommand(CanExecute = nameof(CanEditYaml))]
+    private void EditYaml(IList items)
+    {
+        if (!CanEditYaml(items) || items[0] is not T resource)
+        {
+            return;
+        }
+
+        var candidate = ServiceProvider.GetRequiredService<ResourceYamlViewModel>();
+        candidate.Initialize(Cluster, resource);
+        candidate.EditMode = true;
+
+        if (_factory.FindDockableById(candidate.Id) is ResourceYamlViewModel existing)
+        {
+            candidate.Dispose();
+            existing.EditMode = true;
+            _factory.AddToBottom(existing);
+            return;
+        }
+
+        _factory.AddToBottom(candidate);
+    }
+
+    private bool CanEditYaml(IList? items)
+    {
+        return items is { Count: 1 }
+            && items[0] is T resource
+            && Cluster is not null
+            && Cluster.Runtime.Permissions.CanI(Kind, Verb.Update, resource.Metadata?.NamespaceProperty);
+    }
+
     [RelayCommand(CanExecute = nameof(CanVisualize))]
     public void Visualize(IList items)
     {
@@ -536,10 +574,16 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     [RelayCommand(CanExecute = nameof(CanRestart))]
     private async Task Restart(IList items)
     {
+        if (!CanRestart(items))
+        {
+            return;
+        }
+
+        var restartableItems = GetRestartableItems(items);
         ContentDialogSettings settings = new()
         {
             Title = Assets.Resources.ResourceListView_Restart_Title,
-            Content = string.Format(Assets.Resources.ResourceListView_Restart_Content, items.Count),
+            Content = string.Format(Assets.Resources.ResourceListView_Restart_Content, restartableItems.Count),
             PrimaryButtonText = Assets.Resources.ResourceListView_Restart_Primary,
             SecondaryButtonText = Assets.Resources.ResourceListView_Restart_Secondary,
             DefaultButton = FAContentDialogButton.Secondary
@@ -563,9 +607,15 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
         if (result == FAContentDialogResult.Primary)
         {
+            if (!CanRestart(items))
+            {
+                return;
+            }
+
+            restartableItems = GetRestartableItems(items);
             var exceptions = new List<Exception>();
 
-            foreach (var item in items.Cast<T>().ToList())
+            foreach (var item in restartableItems)
             {
                 try
                 {
@@ -593,12 +643,13 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
 
     private bool CanRestart(IList? items)
     {
-        if (items == null || items.Count == 0)
+        var restartableItems = GetRestartableItems(items);
+        if (restartableItems.Count == 0)
         {
             return false;
         }
 
-        foreach (var item in items.Cast<T>().ToList().GroupBy(x => x.Namespace()))
+        foreach (var item in restartableItems.GroupBy(x => x.Namespace()))
         {
             if (!Cluster.Runtime.Permissions.CanI(Kind, Verb.Patch, item.Key))
             {
@@ -607,6 +658,13 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
         }
 
         return true;
+    }
+
+    protected virtual bool IsRestartable(T resource) => true;
+
+    private List<T> GetRestartableItems(IList? items)
+    {
+        return items?.Cast<T>().Where(IsRestartable).ToList() ?? [];
     }
 
     #endregion
