@@ -72,12 +72,17 @@ KubeUI provides a cluster workspace for exploring and operating Kubernetes resou
 - Pod port forwarding
 - Service port forwarding
 - Pod CPU and memory usage when metrics are available
+- Deployment, StatefulSet, and ReplicaSet scaling
+- Deployment pause/resume, rollout history, and revision undo
+- CronJob suspend/resume and Pod eviction
 
 ### Resource-Specific Actions
 
 - Node cordon
 - Node uncordon
 - Node drain
+- Workload scale and rollout controls
+- CronJob suspend/resume and Pod eviction
 - Secret certificate inspection, including certificate detail views such as expiry
 
 ### Security and RBAC

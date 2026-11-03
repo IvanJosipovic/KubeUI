@@ -1052,6 +1052,170 @@
     <value>Error Starting CronJob</value>
     <comment/>
   </data>
+  <data name="ScalableWorkloadConfig_Scale" xml:space="preserve">
+    <value>Scale</value>
+    <comment/>
+  </data>
+  <data name="ScalableWorkloadConfig_ScaleTitle" xml:space="preserve">
+    <value>Scale Workload</value>
+    <comment/>
+  </data>
+  <data name="ScalableWorkloadConfig_BulkPrompt" xml:space="preserve">
+    <value>Set the same desired replica count for all {0} selected workloads.</value>
+    <comment/>
+  </data>
+  <data name="ScalableWorkloadConfig_ReplicaCount" xml:space="preserve">
+    <value>Desired replicas</value>
+    <comment/>
+  </data>
+  <data name="ScalableWorkloadConfig_Apply" xml:space="preserve">
+    <value>Apply</value>
+    <comment/>
+  </data>
+  <data name="ScalableWorkloadConfig_ScaleError" xml:space="preserve">
+    <value>Error scaling {0}/{1}</value>
+    <comment/>
+  </data>
+  <data name="V1CronJobConfig_Suspend" xml:space="preserve">
+    <value>Suspend</value>
+    <comment/>
+  </data>
+  <data name="V1CronJobConfig_Resume" xml:space="preserve">
+    <value>Resume</value>
+    <comment/>
+  </data>
+  <data name="V1CronJobConfig_SuspendTitle" xml:space="preserve">
+    <value>Suspend CronJobs?</value>
+    <comment/>
+  </data>
+  <data name="V1CronJobConfig_ResumeTitle" xml:space="preserve">
+    <value>Resume CronJobs?</value>
+    <comment/>
+  </data>
+  <data name="V1CronJobConfig_SuspendContent" xml:space="preserve">
+    <value>This will suspend scheduling for {0} CronJobs. Existing Jobs continue running.</value>
+    <comment/>
+  </data>
+  <data name="V1CronJobConfig_ResumeContent" xml:space="preserve">
+    <value>This will resume scheduling for {0} CronJobs.</value>
+    <comment/>
+  </data>
+  <data name="V1CronJobConfig_SuspendError" xml:space="preserve">
+    <value>Error suspending CronJob {0}/{1}</value>
+    <comment/>
+  </data>
+  <data name="V1CronJobConfig_ResumeError" xml:space="preserve">
+    <value>Error resuming CronJob {0}/{1}</value>
+    <comment/>
+  </data>
+  <data name="V1PodConfig_Evict" xml:space="preserve">
+    <value>Evict</value>
+    <comment/>
+  </data>
+  <data name="V1PodConfig_EvictTitle" xml:space="preserve">
+    <value>Evict Pods?</value>
+    <comment/>
+  </data>
+  <data name="V1PodConfig_EvictContent" xml:space="preserve">
+    <value>This will request eviction for {0} Pods. Pod disruption budgets or admission policies can deny eviction.</value>
+    <comment/>
+  </data>
+  <data name="V1PodConfig_EvictError" xml:space="preserve">
+    <value>Error evicting Pod {0}/{1}</value>
+    <comment/>
+  </data>
+  <data name="V1DeploymentConfig_Pause" xml:space="preserve">
+    <value>Pause</value>
+    <comment/>
+  </data>
+  <data name="V1DeploymentConfig_Resume" xml:space="preserve">
+    <value>Resume</value>
+    <comment/>
+  </data>
+  <data name="V1DeploymentConfig_PauseTitle" xml:space="preserve">
+    <value>Pause {0} Deployment(s)?</value>
+    <comment/>
+  </data>
+  <data name="V1DeploymentConfig_ResumeTitle" xml:space="preserve">
+    <value>Resume {0} Deployment(s)?</value>
+    <comment/>
+  </data>
+  <data name="V1DeploymentConfig_PauseContent" xml:space="preserve">
+    <value>Pausing a Deployment stops new rollouts. Existing Pods keep running.</value>
+    <comment/>
+  </data>
+  <data name="V1DeploymentConfig_ResumeContent" xml:space="preserve">
+    <value>Resuming a Deployment allows rollouts to continue.</value>
+    <comment/>
+  </data>
+  <data name="V1DeploymentConfig_PauseError" xml:space="preserve">
+    <value>Error pausing Deployment {0}/{1}</value>
+    <comment/>
+  </data>
+  <data name="V1DeploymentConfig_ResumeError" xml:space="preserve">
+    <value>Error resuming Deployment {0}/{1}</value>
+    <comment/>
+  </data>
+  <data name="V1DeploymentConfig_RolloutHistory" xml:space="preserve">
+    <value>Rollout History</value>
+    <comment/>
+  </data>
+  <data name="DeploymentRolloutHistoryViewModel_Title" xml:space="preserve">
+    <value>Rollout History</value>
+    <comment/>
+  </data>
+  <data name="DeploymentRolloutHistoryViewModel_TitleFormat" xml:space="preserve">
+    <value>{0} Rollout History</value>
+    <comment/>
+  </data>
+  <data name="DeploymentRolloutHistoryViewModel_RevisionFormat" xml:space="preserve">
+    <value>Revision {0} — {1} — Ready {2}/{3} — {4} — {5} {6}</value>
+    <comment/>
+  </data>
+  <data name="DeploymentRolloutHistoryViewModel_UnknownRevision" xml:space="preserve">
+    <value>Unknown</value>
+    <comment/>
+  </data>
+  <data name="DeploymentRolloutHistoryViewModel_UnknownValue" xml:space="preserve">
+    <value>—</value>
+    <comment/>
+  </data>
+  <data name="DeploymentRolloutHistoryViewModel_Current" xml:space="preserve">
+    <value>(current)</value>
+    <comment/>
+  </data>
+  <data name="DeploymentRolloutHistoryViewModel_NoHistory" xml:space="preserve">
+    <value>No rollout history found.</value>
+    <comment/>
+  </data>
+  <data name="DeploymentRolloutHistoryViewModel_LoadError" xml:space="preserve">
+    <value>Could not load rollout history.</value>
+    <comment/>
+  </data>
+  <data name="DeploymentRolloutHistoryViewModel_UndoTitle" xml:space="preserve">
+    <value>Undo Deployment Rollout?</value>
+    <comment/>
+  </data>
+  <data name="DeploymentRolloutHistoryViewModel_UndoContent" xml:space="preserve">
+    <value>Restore the Pod template for Deployment {0} from revision {1} ({2})?</value>
+    <comment/>
+  </data>
+  <data name="DeploymentRolloutHistoryViewModel_Undo" xml:space="preserve">
+    <value>Undo</value>
+    <comment/>
+  </data>
+  <data name="DeploymentRolloutHistoryViewModel_StaleRevision" xml:space="preserve">
+    <value>Selected revision is no longer available. Refresh history and choose another revision.</value>
+    <comment/>
+  </data>
+  <data name="DeploymentRolloutHistoryViewModel_UndoComplete" xml:space="preserve">
+    <value>Deployment Pod template restored. A new rollout may start.</value>
+    <comment/>
+  </data>
+  <data name="DeploymentRolloutHistoryViewModel_UndoError" xml:space="preserve">
+    <value>Could not undo Deployment rollout.</value>
+    <comment/>
+  </data>
   <data name="ResourceListView_CordonNode_Title" xml:space="preserve">
     <value>Warning</value>
     <comment/>

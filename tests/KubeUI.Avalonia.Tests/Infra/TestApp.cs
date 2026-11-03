@@ -28,6 +28,7 @@ public class TestApp : App, IDisposable
     public Mock<IDialogManager>? DialogManager { get; private set; }
     public INotification? Notification { get; private set; }
     public ContentDialogSettings? ContentDialogSettings { get; private set; }
+    public Action<ContentDialogSettings>? ConfigureContentDialog { get; set; }
     private IHost? _host;
     private int _disposed;
 
@@ -86,7 +87,11 @@ public class TestApp : App, IDisposable
         dialogManager.SetupProperty(x => x.AllowConcurrentDialogs);
         dialogManager
             .Setup(x => x.ShowFrameworkDialogAsync(It.IsAny<System.ComponentModel.INotifyPropertyChanged?>(), It.IsAny<ContentDialogSettings>(), It.IsAny<Func<object?, string>?>()))
-            .Callback<System.ComponentModel.INotifyPropertyChanged?, ContentDialogSettings, Func<object?, string>?>((_, settings, _) => ContentDialogSettings = settings)
+            .Callback<System.ComponentModel.INotifyPropertyChanged?, ContentDialogSettings, Func<object?, string>?>((_, settings, _) =>
+            {
+                ContentDialogSettings = settings;
+                ConfigureContentDialog?.Invoke(settings);
+            })
             .ReturnsAsync(FAContentDialogResult.Primary);
         DialogManager = dialogManager;
 

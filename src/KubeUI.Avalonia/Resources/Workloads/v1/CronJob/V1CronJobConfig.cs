@@ -1,4 +1,8 @@
 using FluentIcons.Common;
+using FluentAvalonia.UI.Controls;
+using HanumanInstitute.MvvmDialogs;
+using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Common;
@@ -84,7 +88,105 @@ public sealed partial class V1CronJobConfig : ResourceConfig<V1CronJob>
                 Command = StartCommand,
                 CommandParameter = selectedItems?.ToList(),
             },
+            new()
+            {
+                Title = Assets.Resources.V1CronJobConfig_Suspend,
+                FluentIcon = Icon.Pause,
+                Command = SuspendCommand,
+                CommandParameter = selectedItems?.ToList(),
+            },
+            new()
+            {
+                Title = Assets.Resources.V1CronJobConfig_Resume,
+                FluentIcon = Icon.Play,
+                Command = ResumeCommand,
+                CommandParameter = selectedItems?.ToList(),
+            },
         ];
+    }
+
+    [RelayCommand(CanExecute = nameof(CanSuspend))]
+    private Task Suspend(IList items) => SetSuspendedAsync(items, true);
+
+    [RelayCommand(CanExecute = nameof(CanResume))]
+    private Task Resume(IList items) => SetSuspendedAsync(items, false);
+
+    private async Task SetSuspendedAsync(IList items, bool suspended)
+    {
+        var cronJobs = GetSuspendCandidates(items, suspended);
+        if (cronJobs.Count == 0)
+        {
+            return;
+        }
+
+        var result = await _dialogService.ShowContentDialogAsync(this, new ContentDialogSettings
+        {
+            Title = suspended ? Assets.Resources.V1CronJobConfig_SuspendTitle : Assets.Resources.V1CronJobConfig_ResumeTitle,
+            Content = string.Format(suspended ? Assets.Resources.V1CronJobConfig_SuspendContent : Assets.Resources.V1CronJobConfig_ResumeContent, cronJobs.Count),
+            PrimaryButtonText = Assets.Resources.ResourceListView_Delete_Primary,
+            SecondaryButtonText = Assets.Resources.Shared_Cancel,
+            DefaultButton = FAContentDialogButton.Secondary,
+        });
+        if (result != FAContentDialogResult.Primary)
+        {
+            return;
+        }
+
+        cronJobs = GetSuspendCandidates(cronJobs, suspended);
+        var failures = new List<Exception>();
+        var patch = new V1Patch(suspended ? "{\"spec\":{\"suspend\":true}}" : "{\"spec\":{\"suspend\":false}}", V1Patch.PatchType.MergePatch);
+        foreach (var cronJob in cronJobs)
+        {
+            try
+            {
+                await Cluster.Runtime.Client!.BatchV1.PatchNamespacedCronJobAsync(patch, cronJob.Name(), cronJob.Namespace());
+            }
+            catch (Exception ex)
+            {
+                failures.Add(ex);
+                Utilities.HandleException(_logger, _notificationManager, ex, string.Format(suspended ? Assets.Resources.V1CronJobConfig_SuspendError : Assets.Resources.V1CronJobConfig_ResumeError, cronJob.Namespace(), cronJob.Name()), sendNotification: true);
+            }
+        }
+
+        if (failures.Count > 0)
+        {
+            _logger.LogError(new AggregateException(failures), "Error changing CronJob suspension state");
+        }
+    }
+
+    private bool CanSuspend(IList? items) => CanChangeSuspendState(items, suspended: true);
+
+    private bool CanResume(IList? items) => CanChangeSuspendState(items, suspended: false);
+
+    private bool CanChangeSuspendState(IList? items, bool suspended)
+        => GetSuspendCandidates(items, suspended).Count > 0;
+
+    private List<V1CronJob> GetSuspendCandidates(IList? items, bool suspended)
+    {
+        if (items is not { Count: > 0 } || Cluster is null)
+        {
+            return [];
+        }
+
+        var candidates = new List<V1CronJob>(items.Count);
+        foreach (var item in items)
+        {
+            if (item is not V1CronJob cronJob || (cronJob.Spec?.Suspend ?? false) == suspended)
+            {
+                continue;
+            }
+
+            var name = cronJob.Name();
+            var @namespace = cronJob.Namespace();
+            if (!string.IsNullOrWhiteSpace(name)
+                && !string.IsNullOrWhiteSpace(@namespace)
+                && Cluster.Runtime.Permissions.CanI<V1CronJob>(Verb.Patch, @namespace))
+            {
+                candidates.Add(cronJob);
+            }
+        }
+
+        return candidates;
     }
 
     [RelayCommand(CanExecute = nameof(CanStart))]

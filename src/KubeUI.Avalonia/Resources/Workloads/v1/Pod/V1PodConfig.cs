@@ -1,6 +1,7 @@
 using Avalonia.Collections;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
+using k8s;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
@@ -117,7 +118,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
         }
         if (selectedList.Count > 1)
         {
-            return [CreatePodLogsMenuItem(selectedList)];
+            return [CreatePodLogsMenuItem(selectedList), CreateEvictMenuItem(selectedList)];
         }
 
         var selectedItem = selectedList[0];
@@ -201,6 +202,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
                 ]),
             },
             CreatePodLogsMenuItem(selectedList),
+            CreateEvictMenuItem(selectedList),
             new()
             {
                 Title = Assets.Resources.V1PodConfig_DebugContainer,
@@ -298,11 +300,105 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
 
     public override IList<(Verb verb, string? subResource)> CustomPermissions() => [
         (Verb.Get, "log"),
+        (Verb.Create, "eviction"),
         (Verb.Create, "portforward"),
         (Verb.Create, "exec"),
         (Verb.Create, "attach"),
         (Verb.Update, "ephemeralcontainers"),
     ];
+
+    private MenuItemViewModel CreateEvictMenuItem(IReadOnlyList<V1Pod> selectedItems)
+        => new()
+        {
+            Title = Assets.Resources.V1PodConfig_Evict,
+            FluentIcon = Icon.ArrowRight,
+            Command = EvictPodsCommand,
+            CommandParameter = selectedItems,
+        };
+
+    [RelayCommand(CanExecute = nameof(CanEvictPods))]
+    private async Task EvictPods(IList items)
+    {
+        var pods = GetEvictablePods(items);
+        if (pods.Count == 0)
+        {
+            return;
+        }
+
+        var result = await _dialogService.ShowContentDialogAsync(this, new ContentDialogSettings
+        {
+            Title = Assets.Resources.V1PodConfig_EvictTitle,
+            Content = string.Format(Assets.Resources.V1PodConfig_EvictContent, pods.Count),
+            PrimaryButtonText = Assets.Resources.ResourceListView_Delete_Primary,
+            SecondaryButtonText = Assets.Resources.Shared_Cancel,
+            DefaultButton = FAContentDialogButton.Secondary,
+        });
+        if (result != FAContentDialogResult.Primary)
+        {
+            return;
+        }
+
+        pods = GetEvictablePods(pods);
+        var failures = new List<Exception>();
+        foreach (var pod in pods)
+        {
+            try
+            {
+                var eviction = new V1Eviction
+                {
+                    ApiVersion = V1Eviction.KubeGroup + "/" + V1Eviction.KubeApiVersion,
+                    Kind = V1Eviction.KubeKind,
+                    Metadata = new V1ObjectMeta { Name = pod.Name(), NamespaceProperty = pod.Namespace() },
+                };
+                await Cluster.Runtime.Client!.CoreV1.CreateNamespacedPodEvictionAsync(eviction, pod.Name(), pod.Namespace());
+            }
+            catch (Exception ex)
+            {
+                failures.Add(ex);
+                Utilities.HandleException(_logger, _notificationManager, ex, string.Format(Assets.Resources.V1PodConfig_EvictError, pod.Namespace(), pod.Name()), sendNotification: true);
+            }
+        }
+
+        if (failures.Count > 0)
+        {
+            _logger.LogError(new AggregateException(failures), "Error evicting Pods");
+        }
+    }
+
+    private bool CanEvictPods(IList? items)
+    {
+        return GetEvictablePods(items).Count > 0;
+    }
+
+    private List<V1Pod> GetEvictablePods(IList? items)
+    {
+        if (items is not { Count: > 0 } || Cluster is null)
+        {
+            return [];
+        }
+
+        var candidates = new List<V1Pod>(items.Count);
+        foreach (var item in items)
+        {
+            if (item is not V1Pod pod
+                || pod.Metadata?.DeletionTimestamp is not null
+                || pod.Status?.Phase is "Succeeded" or "Failed")
+            {
+                continue;
+            }
+
+            var name = pod.Name();
+            var @namespace = pod.Namespace();
+            if (!string.IsNullOrWhiteSpace(name)
+                && !string.IsNullOrWhiteSpace(@namespace)
+                && Cluster.Runtime.Permissions.CanI<V1Pod>(Verb.Create, @namespace, "eviction"))
+            {
+                candidates.Add(pod);
+            }
+        }
+
+        return candidates;
+    }
 
     [RelayCommand(CanExecute = nameof(CanViewConsole))]
     private void ViewConsole(IList parameters)

@@ -3,6 +3,7 @@
 ## Current Behavior
 - Pods expose custom list cells for containers, CPU, memory, and status.
 - Pod actions include logs, console, and port forwarding flows.
+- Pod eviction uses the `policy/v1` eviction API, requires `create` on `pods/eviction`, and must surface PodDisruptionBudget or admission rejections without falling back to Pod deletion.
 - Pod-specific supporting views and view models stay local to this folder.
 - Port-forwarders use `SvcSystems.Avalonia.DynamicTableView` with a single selection model; the library owns row rendering, live updates, sorting, sizing, and context-menu targeting. This view configures its own key bindings and double-tap action.
 

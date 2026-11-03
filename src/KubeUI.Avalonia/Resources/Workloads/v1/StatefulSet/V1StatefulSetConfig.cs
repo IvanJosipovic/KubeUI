@@ -1,12 +1,14 @@
+using k8s;
 using FluentIcons.Common;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Features.Resources.Common;
 using KubeUI.Kubernetes;
+using KubeUI.Avalonia.Resources.Workloads;
 
 namespace KubeUI.Avalonia.Resources.Workloads.v1.StatefulSet;
 
-public sealed partial class V1StatefulSetConfig : ResourceConfig<V1StatefulSet>
+public sealed partial class V1StatefulSetConfig : ScalableWorkloadConfig<V1StatefulSet>
 {
     public V1StatefulSetConfig(IServiceProvider serviceProvider)
         : base(serviceProvider)
@@ -16,6 +18,12 @@ public sealed partial class V1StatefulSetConfig : ResourceConfig<V1StatefulSet>
     public override NavigationPlacement Navigation => NavigationPlacement.InSection(NavigationSections.WorkloadsId);
 
     public override int Order => 3;
+
+    protected override int GetDesiredReplicas(V1StatefulSet workload) => workload.Spec?.Replicas ?? 0;
+
+    protected override Task PatchReplicasAsync(V1StatefulSet workload, int replicas)
+        => Cluster.Runtime.Client!.AppsV1.PatchNamespacedStatefulSetScaleAsync(
+            CreateScalePatch(replicas), workload.Name(), workload.Namespace());
 
     protected override IList<IResourceListColumn> CreateDefaultColumns()
     {
@@ -37,6 +45,7 @@ public sealed partial class V1StatefulSetConfig : ResourceConfig<V1StatefulSet>
     {
         return [
             CreatePodLogsMenuItem(selectedItems),
+            CreateScaleMenuItem(selectedItems),
             new()
             {
                 Title = Assets.Resources.V1StatefulSetConfig_MenuItem_Restart,

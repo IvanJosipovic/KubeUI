@@ -1183,6 +1183,58 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
             return Json(updated);
         }
 
+        if (route.Subresource == "eviction")
+        {
+            if (request.Method != HttpMethod.Post)
+            {
+                return Error(HttpStatusCode.MethodNotAllowed, "Only POST is supported for the eviction subresource.");
+            }
+
+            var body = await ReadBodyAsync(request, cancellationToken).ConfigureAwait(false);
+            if (!TryParseObject(body, out var eviction))
+            {
+                return BadRequestStatus("the body of the request was in an unknown format");
+            }
+
+            var evictionMetadata = eviction["metadata"] as JsonObject;
+            var evictionName = evictionMetadata?["name"]?.GetValue<string>();
+            var evictionNamespace = evictionMetadata?["namespace"]?.GetValue<string>();
+            if (!string.Equals(evictionName, route.ResourceName, StringComparison.Ordinal)
+                || !string.IsNullOrEmpty(evictionNamespace)
+                    && !string.Equals(evictionNamespace, route.Namespace, StringComparison.Ordinal))
+            {
+                return BadRequestStatus("eviction metadata must match the targeted Pod");
+            }
+
+            if (HasFinalizers(existing) && existing["metadata"]?["deletionTimestamp"] is null)
+            {
+                var updated = existing.DeepClone().AsObject();
+                updated["metadata"]!["deletionTimestamp"] = DateTime.UtcNow;
+                updated["metadata"]!["resourceVersion"] = CurrentResourceVersion();
+                _resources[key] = updated;
+                PublishWatch(collectionKey, "MODIFIED", updated);
+            }
+            else
+            {
+                _resources.TryRemove(key, out _);
+                PublishWatch(collectionKey, "DELETED", existing);
+            }
+
+            return Json(new JsonObject
+            {
+                ["apiVersion"] = "v1",
+                ["kind"] = "Status",
+                ["status"] = "Success",
+                ["details"] = new JsonObject
+                {
+                    ["name"] = existing["metadata"]?["name"]?.DeepClone(),
+                    ["kind"] = "pods",
+                    ["uid"] = existing["metadata"]?["uid"]?.DeepClone(),
+                },
+                ["code"] = (int)HttpStatusCode.Created,
+            }, HttpStatusCode.Created);
+        }
+
         if (route.Subresource == "status")
         {
             if (request.Method == HttpMethod.Get)
@@ -1251,11 +1303,8 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     {
         var replicas = resource["spec"]?["replicas"]?.GetValue<int?>() ?? 0;
         var statusReplicas = resource["status"]?["replicas"]?.GetValue<int?>() ?? replicas;
-        var selector = resource["status"]?["selector"]?.DeepClone()
-            ?? new JsonObject
-            {
-                ["matchLabels"] = resource["spec"]?["selector"]?["matchLabels"]?.DeepClone() ?? new JsonObject(),
-            };
+        var selector = resource["status"]?["selector"]?.GetValue<string>()
+            ?? FormatScaleSelector(resource["spec"]?["selector"]?["matchLabels"]?.AsObject());
 
         return new JsonObject
         {
@@ -1276,6 +1325,12 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
             },
         };
     }
+
+    private static string FormatScaleSelector(JsonObject? matchLabels)
+        => matchLabels is null
+            ? string.Empty
+            : string.Join(",", matchLabels.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+                .Select(pair => $"{pair.Key}={pair.Value?.ToString() ?? string.Empty}"));
 
     private HttpResponseMessage ListResponse(HttpRequestMessage request, Route route, ResourceDefinition definition)
     {

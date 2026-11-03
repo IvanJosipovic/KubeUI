@@ -1,7 +1,10 @@
 using System.Collections;
+using System.Net;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using CommunityToolkit.Mvvm.Input;
+using k8s;
+using k8s.Autorest;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Avalonia.Resources;
@@ -117,6 +120,257 @@ public sealed class ResourceFeatureConfigTests
         controls.Length.ShouldBe(1);
         controls[0].ShouldBeOfType<DeploymentPropertiesView>();
     }
+
+    [AvaloniaFact]
+    public void scalable_workload_configs_expose_scale_actions()
+    {
+        var deployment = ResolveConfig<V1DeploymentConfig>();
+        var statefulSet = ResolveConfig<V1StatefulSetConfig>();
+        var replicaSet = ResolveConfig<V1ReplicaSetConfig>();
+
+        deployment.GetCustomMenuItems(new[] { new V1Deployment() }).ShouldContain(item => item.Title == Assets.Resources.ScalableWorkloadConfig_Scale);
+        statefulSet.GetCustomMenuItems(new[] { new V1StatefulSet() }).ShouldContain(item => item.Title == Assets.Resources.ScalableWorkloadConfig_Scale);
+        replicaSet.GetCustomMenuItems(new[] { new V1ReplicaSet() }).ShouldContain(item => item.Title == Assets.Resources.ScalableWorkloadConfig_Scale);
+    }
+
+    [AvaloniaFact]
+    public void workload_action_menus_expose_cronjob_suspend_resume_and_pod_eviction()
+    {
+        var cronJob = ResolveConfig<V1CronJobConfig>();
+        var pod = ResolveConfig<V1PodConfig>();
+
+        var cronJobActions = cronJob.GetCustomMenuItems(new[] { new V1CronJob() }).Select(item => item.Title).ToArray();
+        cronJobActions.ShouldContain(Assets.Resources.V1CronJobConfig_Suspend);
+        cronJobActions.ShouldContain(Assets.Resources.V1CronJobConfig_Resume);
+
+        var podActions = pod.GetCustomMenuItems(new[] { new V1Pod() }).Select(item => item.Title).ToArray();
+        podActions.ShouldContain(Assets.Resources.V1PodConfig_Evict);
+    }
+
+    [AvaloniaFact]
+    public void scalable_and_evict_actions_request_subresource_permissions()
+    {
+        ResolveConfig<V1DeploymentConfig>().AuthorizationRequests()
+            .ShouldContain(new AuthorizationRequest(GroupApiVersionKind.From<V1Deployment>(), Verb.Patch, "scale"));
+        ResolveConfig<V1StatefulSetConfig>().AuthorizationRequests()
+            .ShouldContain(new AuthorizationRequest(GroupApiVersionKind.From<V1StatefulSet>(), Verb.Patch, "scale"));
+        ResolveConfig<V1ReplicaSetConfig>().AuthorizationRequests()
+            .ShouldContain(new AuthorizationRequest(GroupApiVersionKind.From<V1ReplicaSet>(), Verb.Patch, "scale"));
+        ResolveConfig<V1PodConfig>().AuthorizationRequests()
+            .ShouldContain(new AuthorizationRequest(GroupApiVersionKind.From<V1Pod>(), Verb.Create, "eviction"));
+    }
+
+    [AvaloniaFact]
+    public async Task deployment_scale_action_patches_scale_subresource()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        var deployment = new V1Deployment
+        {
+            Metadata = new V1ObjectMeta { Name = "scale-test", NamespaceProperty = "default" },
+            Spec = new V1DeploymentSpec { Replicas = 2 },
+        };
+        await workspace.Runtime.Client!.AppsV1.CreateNamespacedDeploymentAsync(deployment, "default", cancellationToken: TestContext.Current.CancellationToken);
+        await workspace.Runtime.Permissions.UpdateCanI<V1Deployment>(Verb.Patch, "default", "scale");
+        var config = (V1DeploymentConfig)workspace.GetResourceConfig(GroupApiVersionKind.From<V1Deployment>());
+        var action = config.GetCustomMenuItems(new[]
+        {
+            deployment,
+            new V1Deployment { Metadata = new V1ObjectMeta { Name = "missing-namespace" } },
+        }).Single(item => item.Title == Assets.Resources.ScalableWorkloadConfig_Scale);
+        var command = action.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
+        var parameters = action.CommandParameter.ShouldBeAssignableTo<IList>();
+        command.CanExecute(parameters).ShouldBeTrue();
+        var requestedReplicas = 2.5m;
+        ((TestApp)Application.Current!).ConfigureContentDialog = settings =>
+        {
+            var content = settings.Content.ShouldBeOfType<StackPanel>();
+            content.Children.OfType<NumericUpDown>().Single().Value = requestedReplicas;
+        };
+
+        try
+        {
+            await command.ExecuteAsync(parameters).WaitAsync(TestContext.Current.CancellationToken);
+            (await workspace.Runtime.Client.AppsV1.ReadNamespacedDeploymentAsync(
+                "scale-test", "default", cancellationToken: TestContext.Current.CancellationToken)).Spec.Replicas.ShouldBe(2);
+
+            requestedReplicas = 5;
+            await command.ExecuteAsync(parameters).WaitAsync(TestContext.Current.CancellationToken);
+        }
+        finally
+        {
+            ((TestApp)Application.Current!).ConfigureContentDialog = null;
+        }
+
+        var scaled = await workspace.Runtime.Client.AppsV1.ReadNamespacedDeploymentScaleAsync(
+            deployment.Name(), deployment.Namespace(), cancellationToken: TestContext.Current.CancellationToken);
+        scaled.Spec.Replicas.ShouldBe(5);
+        ((TestApp)Application.Current!).Notification.ShouldBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task deployment_pause_and_resume_patch_only_paused_state()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        var deployment = await workspace.Runtime.Client!.AppsV1.CreateNamespacedDeploymentAsync(new V1Deployment
+        {
+            Metadata = new V1ObjectMeta { Name = "pause-test", NamespaceProperty = "default" },
+            Spec = new V1DeploymentSpec { Replicas = 2 },
+        }, "default", cancellationToken: TestContext.Current.CancellationToken);
+        await workspace.Runtime.Permissions.UpdateCanI<V1Deployment>(Verb.Patch, "default");
+        var config = (V1DeploymentConfig)workspace.GetResourceConfig(GroupApiVersionKind.From<V1Deployment>());
+        var pause = config.GetCustomMenuItems(new[]
+        {
+            deployment,
+            new V1Deployment { Metadata = new V1ObjectMeta { Name = "missing-namespace" } },
+        }).Single(item => item.Title == Assets.Resources.V1DeploymentConfig_Pause);
+        var pauseCommand = pause.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
+        pauseCommand.CanExecute(pause.CommandParameter).ShouldBeTrue();
+
+        await pauseCommand.ExecuteAsync(pause.CommandParameter).WaitAsync(TestContext.Current.CancellationToken);
+        ((TestApp)Application.Current!).Notification.ShouldBeNull();
+
+        var paused = await workspace.Runtime.Client.AppsV1.ReadNamespacedDeploymentAsync("pause-test", "default", cancellationToken: TestContext.Current.CancellationToken);
+        paused.Spec.Paused.ShouldBe(true);
+        paused.Spec.Replicas.ShouldBe(2);
+
+        var resume = config.GetCustomMenuItems(new[] { paused }).Single(item => item.Title == Assets.Resources.V1DeploymentConfig_Resume);
+        var resumeCommand = resume.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
+        resumeCommand.CanExecute(resume.CommandParameter).ShouldBeTrue();
+        await resumeCommand.ExecuteAsync(resume.CommandParameter).WaitAsync(TestContext.Current.CancellationToken);
+
+        var resumed = await workspace.Runtime.Client.AppsV1.ReadNamespacedDeploymentAsync("pause-test", "default", cancellationToken: TestContext.Current.CancellationToken);
+        resumed.Spec.Paused.ShouldBe(false);
+        resumed.Spec.Replicas.ShouldBe(2);
+    }
+
+    [AvaloniaFact]
+    public async Task cronjob_suspend_action_patches_suspend_field()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        var cronJob = CreateCronJob("default", "suspend-test");
+        await workspace.Runtime.Client!.BatchV1.CreateNamespacedCronJobAsync(cronJob, "default", cancellationToken: TestContext.Current.CancellationToken);
+        await workspace.Runtime.Permissions.UpdateCanI<V1CronJob>(Verb.Patch, "default");
+        var config = (V1CronJobConfig)workspace.GetResourceConfig(GroupApiVersionKind.From<V1CronJob>());
+        var action = config.GetCustomMenuItems(new[]
+        {
+            cronJob,
+            new V1CronJob { Metadata = new V1ObjectMeta { Name = "missing-namespace" } },
+        }).Single(item => item.Title == Assets.Resources.V1CronJobConfig_Suspend);
+        var command = action.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
+        var parameters = action.CommandParameter.ShouldBeAssignableTo<IList>();
+        command.CanExecute(parameters).ShouldBeTrue();
+
+        await command.ExecuteAsync(parameters).WaitAsync(TestContext.Current.CancellationToken);
+        ((TestApp)Application.Current!).Notification.ShouldBeNull();
+
+        var updated = await workspace.Runtime.Client.BatchV1.ReadNamespacedCronJobAsync(
+            cronJob.Name(), cronJob.Namespace(), cancellationToken: TestContext.Current.CancellationToken);
+        updated.Spec.Suspend.ShouldBe(true);
+    }
+
+    [AvaloniaFact]
+    public async Task pod_evict_action_uses_eviction_subresource()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        var pod = new V1Pod
+        {
+            Metadata = new V1ObjectMeta { Name = "evict-test", NamespaceProperty = "default" },
+            Spec = new V1PodSpec { Containers = [new V1Container { Name = "app", Image = "busybox" }] },
+        };
+        await workspace.Runtime.Client!.CoreV1.CreateNamespacedPodAsync(pod, "default", cancellationToken: TestContext.Current.CancellationToken);
+        await workspace.Runtime.Permissions.UpdateCanI<V1Pod>(Verb.Create, "default", "eviction");
+        var config = (V1PodConfig)workspace.GetResourceConfig(GroupApiVersionKind.From<V1Pod>());
+        var action = config.GetCustomMenuItems(new[]
+        {
+            pod,
+            new V1Pod { Metadata = new V1ObjectMeta { Name = "missing-namespace" } },
+        }).Single(item => item.Title == Assets.Resources.V1PodConfig_Evict);
+        var command = action.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
+        var parameters = action.CommandParameter.ShouldBeAssignableTo<IList>();
+        command.CanExecute(parameters).ShouldBeTrue();
+
+        await command.ExecuteAsync(parameters).WaitAsync(TestContext.Current.CancellationToken);
+        ((TestApp)Application.Current!).Notification.ShouldBeNull();
+
+        var missingPod = await Should.ThrowAsync<HttpOperationException>(() => workspace.Runtime.Client.CoreV1.ReadNamespacedPodAsync(
+            pod.Name(), pod.Namespace(), cancellationToken: TestContext.Current.CancellationToken));
+        missingPod.Response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [AvaloniaFact]
+    public async Task deployment_rollout_history_lists_owned_revisions_and_undoes_selected_template()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        var deployment = await workspace.Runtime.Client!.AppsV1.CreateNamespacedDeploymentAsync(new V1Deployment
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "rollout-test",
+                NamespaceProperty = "default",
+                Annotations = new Dictionary<string, string> { ["deployment.kubernetes.io/revision"] = "2" },
+            },
+            Spec = new V1DeploymentSpec
+            {
+                Replicas = 1,
+                Template = CreatePodTemplate("new-image"),
+            },
+        }, "default", cancellationToken: TestContext.Current.CancellationToken);
+        await workspace.Runtime.Client.AppsV1.CreateNamespacedReplicaSetAsync(CreateRevisionReplicaSet(deployment, "rev-old", "1", "old-image"), "default", cancellationToken: TestContext.Current.CancellationToken);
+        await workspace.Runtime.Client.AppsV1.CreateNamespacedReplicaSetAsync(CreateRevisionReplicaSet(deployment, "rev-current", "2", "new-image"), "default", cancellationToken: TestContext.Current.CancellationToken);
+        await workspace.Runtime.Permissions.UpdateCanI<V1Deployment>(Verb.Patch, "default");
+        await workspace.Runtime.Permissions.UpdateCanI<V1Deployment>(Verb.Get, "default");
+        await workspace.Runtime.Permissions.UpdateCanI<V1ReplicaSet>(Verb.List, "default");
+
+        using var viewModel = Application.Current.GetTestServices().GetRequiredService<DeploymentRolloutHistoryViewModel>();
+        viewModel.Initialize(workspace, deployment);
+        await viewModel.LoadAsync();
+
+        viewModel.Revisions.Select(revision => revision.Revision).ShouldBe(new int?[] { 2, 1 });
+        viewModel.Revisions[0].IsCurrent.ShouldBeTrue();
+        viewModel.Revisions[1].IsCurrent.ShouldBeFalse();
+        var undoCommand = viewModel.UndoCommand;
+        undoCommand.CanExecute(null).ShouldBeFalse();
+        var undoCanExecuteChanged = false;
+        undoCommand.CanExecuteChanged += (_, _) => undoCanExecuteChanged = true;
+        viewModel.SelectedRevision = viewModel.Revisions[1];
+        undoCanExecuteChanged.ShouldBeTrue();
+        undoCommand.CanExecute(null).ShouldBeTrue();
+
+        await undoCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
+
+        var updated = await workspace.Runtime.Client.AppsV1.ReadNamespacedDeploymentAsync("rollout-test", "default", cancellationToken: TestContext.Current.CancellationToken);
+        updated.Spec.Template.Spec.Containers.Single().Image.ShouldBe("old-image");
+    }
+
+    private static V1ReplicaSet CreateRevisionReplicaSet(V1Deployment deployment, string name, string revision, string image)
+        => new()
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = name,
+                NamespaceProperty = deployment.Namespace(),
+                Annotations = new Dictionary<string, string> { ["deployment.kubernetes.io/revision"] = revision },
+                OwnerReferences =
+                [
+                    new V1OwnerReference
+                    {
+                        ApiVersion = "apps/v1",
+                        Kind = "Deployment",
+                        Name = deployment.Name(),
+                        Uid = deployment.Uid(),
+                        Controller = true,
+                    },
+                ],
+            },
+            Spec = new V1ReplicaSetSpec { Replicas = 1, Template = CreatePodTemplate(image) },
+        };
+
+    private static V1PodTemplateSpec CreatePodTemplate(string image)
+        => new()
+        {
+            Metadata = new V1ObjectMeta { Labels = new Dictionary<string, string> { ["app"] = "rollout-test" } },
+            Spec = new V1PodSpec { Containers = [new V1Container { Name = "app", Image = image }] },
+        };
 
     [AvaloniaFact]
     public void deployment_config_exposes_visualize_action_for_single_selection()
