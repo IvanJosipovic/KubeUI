@@ -38,6 +38,6 @@
 
 ## Validation
 
-- Preserve and extend the behaviors covered by `tests/KubeUI.Avalonia.Tests/Shell/Navigation/NavigationViewModelTests.cs`, `NavigationSectionTests.cs`, `NavigationTreeBuilderTests.cs`, and `LimitedAccessNavigationTests.cs`.
+- Preserve and extend the behaviors covered by `tests/KubeUI.Avalonia.Tests/App/Shell/Navigation/NavigationViewModelTests.cs`, `NavigationSectionTests.cs`, `NavigationTreeBuilderTests.cs`, and `LimitedAccessNavigationTests.cs`.
 - For navigation changes, add or update a focused Avalonia headless regression covering the exact lifecycle or permission transition, run it before broader validation, and verify both link structure and count behavior where applicable.
 - At minimum, validate connected/disconnected transitions, incremental resource-config updates, CRD updates, Pod port-forward visibility, seeded/unseeded count behavior, and missing-namespace permission handling when those areas change.

@@ -2,7 +2,7 @@ using Avalonia.Collections;
 using CommunityToolkit.Mvvm.Input;
 using Shouldly;
 
-namespace KubeUI.Avalonia.Tests.Features.Resources.Common;
+namespace KubeUI.Avalonia.Tests.Controls.Presentation;
 
 public sealed class MenuItemViewModelTests
 {

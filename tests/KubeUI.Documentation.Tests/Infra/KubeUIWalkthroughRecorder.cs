@@ -24,6 +24,7 @@ using Helm.NET;
 using k8s;
 using k8s.Models;
 using KokoroSharp;
+using KubeUI.Controls.Presentation;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Helm.Charts;
 using KubeUI.Features.Helm.Releases;

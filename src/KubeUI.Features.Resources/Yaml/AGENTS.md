@@ -10,7 +10,7 @@
 - `InitializeReadOnly` accepts plain YAML snapshots without a Kubernetes resource or cluster subscription. Lock editing permanently for that document, hide edit/noisy-field controls, and skip Kubernetes schema validation. Keep YAML syntax highlighting, folding, selection, copy, and word wrap.
 
 ## Validation
-- Preserve the behaviors covered by `tests/KubeUI.Avalonia.Tests/Features/Resources/Yaml/`.
+- Preserve the behaviors covered by `tests/KubeUI.Features.Resources.Tests/Features/Resources/Yaml/`.
 - Keep action-result banners with balanced outer spacing and a clear bottom inset for wrapped messages.
 - Show structured Kubernetes server validation causes at their YAML field values after dry-run or save; clear those diagnostics when the document changes.
 - Keep the hover documentation popup closed while YAML completion and its documentation popup are open.

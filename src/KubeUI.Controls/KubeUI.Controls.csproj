@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <Using Include="Avalonia" />
+    <Using Include="Avalonia.Collections" />
     <Using Include="Avalonia.Controls" />
     <Using Include="Avalonia.Data" />
     <Using Include="Avalonia.Media" />
@@ -13,6 +14,8 @@
     <Using Include="Avalonia.Markup.Declarative" />
     <Using Include="Avalonia.Styling" />
     <Using Include="Dock.Model.Mvvm.Controls" />
+    <Using Include="CommunityToolkit.Mvvm.ComponentModel" />
+    <Using Include="FluentIcons.Common" />
     <Using Include="PropertyGenerator.Avalonia" />
     <Using Include="System.Collections" />
   </ItemGroup>
@@ -27,7 +30,9 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Markup.Declarative" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="Dock.Model.Mvvm" />
+    <PackageReference Include="FluentIcons.Avalonia" />
     <PackageReference Include="PropertyGenerator.Avalonia">
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>

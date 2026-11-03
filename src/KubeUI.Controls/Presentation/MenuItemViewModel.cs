@@ -3,8 +3,9 @@ using System.Windows.Input;
 using Avalonia.Collections;
 using FluentIcons.Common;
 
-namespace KubeUI.Features.Resources.Common;
+namespace KubeUI.Controls.Presentation;
 
+/// <summary>Describes a command, separator, or nested group in a shared menu.</summary>
 public sealed partial class MenuItemViewModel : ObservableObject
 {
     [ObservableProperty]

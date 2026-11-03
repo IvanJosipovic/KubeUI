@@ -1,6 +1,6 @@
 # KubeUI Restructuring Plan
 
-**Status:** **Phase 1 Complete; Phase 2 Active; Phase 3 Complete** — based on architectural review of current state vs. `avalonia-project-structure-plan.md`
+**Status:** **Phase 1 Complete; Phase 2 Active; Phase 3 Split Complete** — based on architectural review of current state vs. `avalonia-project-structure-plan.md`
 
 ---
 
@@ -14,7 +14,7 @@ The project structure largely matches the target architecture, but **9 structura
 
 | ID | Title | Severity | Category | Status |
 |----|-------|----------|----------|--------|
-| R-01 | Test project references all 11 source projects | High | Test Architecture | ✅ Reviewed; retain shared test host |
+| R-01 | Feature tests share one test project | High | Test Architecture | ✅ Split into feature test projects |
 | R-02 | App.csproj leaks 30+ feature-internal namespaces via `Using` | High | Encapsulation | ✅ Done |
 | R-03 | Cross-feature `Using` creates compile-time coupling | High | Dependency Hygiene | 🟡 In Progress |
 | R-04 | Desktop references Kubernetes directly (bypasses App) | Medium | Layering | ✅ Done |
@@ -41,7 +41,11 @@ This can cause:
 
 **Implementation:** Move feature tests into matching test projects. Keep reusable headless and Kubernetes fixtures in shared test support. Keep App-shell and cross-feature integration tests in `KubeUI.Avalonia.Tests`.
 
-**Status:** In progress.
+**Status:** Split complete; local test execution remains blocked before test discovery by Microsoft.Testing.Extensions.HangDump startup timeout.
+
+Seven feature test projects now cover AI, Cilium, Clusters, Crossplane, Gateway API, Helm, and Resources. Shared headless/Kubernetes setup is imported from `tests/FeatureTests.props`; App-shell, Controls, Desktop startup, and cross-feature tests remain in `KubeUI.Avalonia.Tests`. All new projects are included in `KubeUI.slnx` and CI's solution-level test run.
+
+Removed seven direct feature project references and two feature-only package references from `KubeUI.Avalonia.Tests.csproj`; those feature tests now compile in their matching projects. The remaining test project references are App, Controls, Desktop, Kubernetes, and shared `KubeUI.Testing`.
 
 ---
 
@@ -269,7 +273,7 @@ Phase 2 (Encapsulation - depends on Phase 1): 🟡 IN PROGRESS
   └─ R-03: Cross-feature contracts 🟡 (icon and visualization contracts moved; cluster/resource boundaries remain)
 
 Phase 3 (Test project split):
-  └─ R-01: Feature test projects ⏳
+  └─ R-01: Feature test projects ✅ (build passes; local test host times out before discovery)
 ```
 
 ---
