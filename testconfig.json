@@ -11,7 +11,11 @@
   },
   "codeCoverage": {
     "Configuration": {
-      "Format": "cobertura"
+      "Format": "cobertura",
+      "CodeCoverage": {
+        "EnableDynamicManagedInstrumentation": true,
+        "EnableStaticManagedInstrumentation": false
+      }
     }
   },
   "xUnit": {
