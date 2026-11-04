@@ -10,7 +10,7 @@ public sealed class ProjectBoundaryTests
     {
         var projects = LoadProjectGraph();
 
-        projects["KubeUI.Avalonia"].References.ShouldBeEmpty();
+        projects["KubeUI.Foundation"].References.ShouldBeEmpty();
     }
 
     [Fact]
@@ -18,7 +18,7 @@ public sealed class ProjectBoundaryTests
     {
         var projects = LoadProjectGraph();
 
-        projects["KubeUI.Controls"].References.ShouldBe(["KubeUI.Avalonia"]);
+        projects["KubeUI.Controls"].References.ShouldBe(["KubeUI.Foundation"]);
     }
 
     [Fact]
@@ -33,7 +33,7 @@ public sealed class ProjectBoundaryTests
     public void Features_do_not_reference_shell_or_framework_foundation()
     {
         var projects = LoadProjectGraph();
-        string[] forbidden = ["KubeUI.App", "KubeUI.Desktop", "KubeUI.Avalonia"];
+        string[] forbidden = ["KubeUI.App", "KubeUI.Desktop", "KubeUI.Foundation"];
 
         foreach (var project in projects.Values.Where(static project => project.Name.StartsWith("KubeUI.Features.", StringComparison.Ordinal)))
         {
@@ -53,7 +53,7 @@ public sealed class ProjectBoundaryTests
             "KubeUI.App",
             "KubeUI.Controls",
             "KubeUI.Desktop",
-            "KubeUI.Avalonia",
+            "KubeUI.Foundation",
             .. projects.Keys.Where(static name => name.StartsWith("KubeUI.Features.", StringComparison.Ordinal))
         ];
 
@@ -172,7 +172,7 @@ public sealed class ProjectBoundaryTests
                 .Where(static element => element.Name.LocalName == "ProjectReference")
                 .Select(static element => (string?)element.Attribute("Include"))
                 .Where(static include => !string.IsNullOrWhiteSpace(include))
-                .Select(include => Path.GetFullPath(Path.Combine(projectDirectory, include!)))
+                .Select(include => Path.GetFullPath(Path.Combine(projectDirectory, include!.Replace('\\', '/'))))
                 .Select(path => projectNamesByPath.TryGetValue(path, out var name)
                     ? name
                     : throw new InvalidDataException($"{projectPath} references a project outside src or a missing project: {path}"))
