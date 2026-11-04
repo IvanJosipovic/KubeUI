@@ -8,11 +8,11 @@
     <PackageReference Include="Microsoft.Testing.Extensions.CrashDump" />
     <PackageReference Include="Microsoft.Testing.Extensions.HangDump" />
     <PackageReference Include="xunit.v3.mtp-v2" />
+    <PackageReference Include="Shouldly" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\KubeUI.Features.Azure\KubeUI.Features.Azure.csproj" />
-    <ProjectReference Include="..\KubeUI.Testing\KubeUI.Testing.csproj" />
   </ItemGroup>
 
   <ItemGroup>

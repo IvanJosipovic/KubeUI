@@ -21,6 +21,10 @@ Run commands from the repository root. KubeUI targets .NET 10 and opts into Micr
 3. Treat a run that executes zero tests as invalid validation. Use `--minimum-expected-tests 1` for focused runs and verify the output reports a nonzero count.
 4. For a bug, add the failing regression first, confirm it fails, implement the fix, and rerun the same regression before broader validation.
 
+## Hang and crash diagnosis
+
+When a test run hangs or crashes and produces a dump, inspect that dump before changing code. Use the dump and test log to identify the active test, blocked or faulting thread, async wait/continuation, and relevant application frames. Follow the evidence to the cause; do not guess, only increase timeouts, or treat an isolated passing rerun as proof the issue is fixed. Reproduce the failure when practical, fix its cause, then rerun the focused test and broader suite. If no dump was produced, capture or enable one when practical and report what evidence is unavailable.
+
 ## CLI examples
 
 The examples use `KubeUI.Avalonia.Tests` as “project A”,
