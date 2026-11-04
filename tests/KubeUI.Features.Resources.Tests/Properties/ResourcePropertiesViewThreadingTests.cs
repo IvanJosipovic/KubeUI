@@ -10,7 +10,7 @@ public sealed class ResourcePropertiesViewThreadingTests
     public async Task ClearItems_is_safe_when_invoked_from_background_thread()
     {
         var services = Application.Current.GetTestServices();
-        var workspace = await Application.Current.CreateClusterAsync();
+        using var workspace = await Application.Current.CreateClusterAsync();
 
         var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
         viewModel.Initialize(workspace, new V1Pod
@@ -32,21 +32,31 @@ public sealed class ResourcePropertiesViewThreadingTests
             Content = view
         };
 
-        window.Show();
-        await TestApplicationExtensions.WaitForUiAsync();
-        await TestApplicationExtensions.WaitForUiAsync();
-
-        // Close the window to detach the view from the visual tree
-        window.Close();
-        await TestApplicationExtensions.WaitForUiAsync();
-
-        // Invoke ClearItems via a public wrapper from a background thread to simulate the race.
-        await Task.Run(() =>
+        try
         {
-            view.InvokeClear();
-        }, TestContext.Current.CancellationToken);
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
+            await TestApplicationExtensions.WaitForUiAsync();
 
-        // If we reach here without throwing, the invocation was handled safely.
+            // Close the window to detach the view from the visual tree
+            window.Close();
+            await TestApplicationExtensions.WaitForUiAsync();
+
+            // Invoke ClearItems via a public wrapper from a background thread to simulate the race.
+            await Task.Run(() =>
+            {
+                view.InvokeClear();
+            }, TestContext.Current.CancellationToken);
+
+            // If we reach here without throwing, the invocation was handled safely.
+        }
+        finally
+        {
+            if (window.IsVisible)
+            {
+                window.Close();
+            }
+        }
     }
 }
 

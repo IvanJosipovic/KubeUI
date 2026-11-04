@@ -238,7 +238,7 @@ public class ResourceYamlViewModelTests
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesNoisyFieldsInSerializedYaml()
     {
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var resource = KubernetesJson.Deserialize<GenericKubernetesObject>("""
             {
               "apiVersion": "v1",
@@ -265,7 +265,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -324,7 +324,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod { Metadata = new V1ObjectMeta { Name = "test" } });
 
@@ -372,7 +372,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -426,7 +426,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, CreatePod("before", includeLabels: false, extraEnv: true));
 
@@ -579,7 +579,7 @@ public class ResourceYamlViewModelTests
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesFoldState_WhenActiveDockableChanges()
     {
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var factory = Application.Current.GetRequiredTestService<IFactory>();
         var layout = factory.CreateLayout();
         factory.InitLayout(layout);
@@ -652,7 +652,7 @@ public class ResourceYamlViewModelTests
     [AvaloniaFact]
     public async Task ResourceYamlView_DoesNotReplaceUnsavedYaml_WhenResourceUpdatesDuringEdit()
     {
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Namespace
         {
@@ -694,7 +694,7 @@ public class ResourceYamlViewModelTests
     [AvaloniaFact]
     public async Task ResourceYamlView_PreservesScrollOffset_WhenActiveDockableChanges()
     {
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var factory = Application.Current.GetRequiredTestService<IFactory>();
         var layout = factory.CreateLayout();
         factory.InitLayout(layout);
@@ -773,7 +773,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
 
         var resource = new V1Namespace
@@ -841,7 +841,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -986,7 +986,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1021,7 +1021,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1059,7 +1059,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1103,7 +1103,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1162,7 +1162,7 @@ public class ResourceYamlViewModelTests
     public async Task ResourceYamlView_ShowsDocumentationPopupForPodMetadataNameAndNamespace()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1234,7 +1234,7 @@ public class ResourceYamlViewModelTests
     public async Task ResourceYamlView_ShowsDocumentationPopupForMetadataNameAtEndOfDocument()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1282,7 +1282,7 @@ public class ResourceYamlViewModelTests
     public async Task ResourceYamlView_ShowsTooltipForBuiltInResourceSchema()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var kind = GroupApiVersionKind.From<V1Pod>();
         cluster.Runtime.ModelCatalog.OpenApiSchemas.GetSchema(kind).ShouldNotBeNull();
 
@@ -1318,7 +1318,7 @@ public class ResourceYamlViewModelTests
     public async Task ResourceYamlView_ShowsTooltipForBuiltInResourceThroughWindowPointerMove()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1351,7 +1351,7 @@ public class ResourceYamlViewModelTests
     [AvaloniaFact]
     public async Task ResourceYamlView_ShowsTooltipForBuiltInResourceWhenPresentedByDock()
     {
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         cluster.Runtime.ModelCatalog.OpenApiSchemas.GetSchema(GroupApiVersionKind.From<V1Pod>()).ShouldNotBeNull();
 
         var factory = Application.Current.GetRequiredTestService<IFactory>();
@@ -1397,7 +1397,7 @@ public class ResourceYamlViewModelTests
     [AvaloniaFact]
     public async Task MainView_ShowsTooltipForV1PodYaml()
     {
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var mainViewModel = Application.Current.GetRequiredTestService<MainViewModel>();
         var factory = Application.Current.GetRequiredTestService<IFactory>();
         var previousLayout = mainViewModel.Layout;
@@ -1450,7 +1450,7 @@ public class ResourceYamlViewModelTests
     [AvaloniaFact]
     public async Task MainWindow_ShowsTooltipForV1PodYaml()
     {
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var mainViewModel = Application.Current.GetRequiredTestService<MainViewModel>();
         var factory = Application.Current.GetRequiredTestService<IFactory>();
         var previousLayout = mainViewModel.Layout;
@@ -1504,7 +1504,7 @@ public class ResourceYamlViewModelTests
     public async Task ResourceYamlView_ShowsTooltipForCustomResourceSchema()
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var kind = new GroupApiVersionKind("example.com", "v1", "Widget", "widgets");
         cluster.Runtime.ModelCatalog.RegisterCustomResourceDefinition(kind);
         cluster.Runtime.ModelCatalog.OpenApiSchemas.GetSchema(kind).ShouldNotBeNull();
@@ -1535,7 +1535,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1586,7 +1586,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1647,7 +1647,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1709,7 +1709,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1770,7 +1770,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1833,7 +1833,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1905,7 +1905,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -1968,7 +1968,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -2025,7 +2025,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -2126,7 +2126,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -2173,7 +2173,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -2226,7 +2226,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -2286,7 +2286,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -2329,7 +2329,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -2405,7 +2405,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -2484,7 +2484,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 250);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -2570,7 +2570,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 250);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -2650,7 +2650,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 250);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -2729,7 +2729,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -2764,7 +2764,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -2816,7 +2816,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -2870,7 +2870,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -2924,7 +2924,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -2979,7 +2979,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -3027,7 +3027,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -3073,7 +3073,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -3120,7 +3120,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -3193,7 +3193,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         vm.Initialize(cluster, new V1Pod
         {
@@ -4273,7 +4273,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         var resource = CreatePod("test", includeLabels: false, extraEnv: false);
         vm.Initialize(cluster, resource);
@@ -4309,7 +4309,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         var resource = CreatePod("test", includeLabels: true, extraEnv: false);
         vm.Initialize(cluster, resource);
@@ -4345,7 +4345,7 @@ public class ResourceYamlViewModelTests
     {
         using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
 
-        var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync();
         var vm = Application.Current.GetRequiredTestService<ResourceYamlViewModel>();
         var resource = CreatePod("test", includeLabels: true, extraEnv: false);
         vm.Initialize(cluster, resource);

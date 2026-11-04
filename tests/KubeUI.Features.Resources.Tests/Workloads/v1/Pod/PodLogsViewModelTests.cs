@@ -739,6 +739,12 @@ public sealed class PodLogsViewModelTests
         viewModel.Logs.Text.ShouldBeEmpty();
     }
 
+    // Regression: app teardown can dispose a docked PodLogsViewModel on a background thread
+    // while the dispatcher shuts down; Dispose used to throw TaskCanceledException from
+    // Dispatcher.UIThread.Invoke. That state only occurs during test-app teardown, so the
+    // full PodLogsViewModelTests run exercises it; a dedicated test cannot InvokeShutdown
+    // without killing the shared headless session.
+
     [AvaloniaTheory]
     [InlineData("status-added")]
     [InlineData("status-renamed")]

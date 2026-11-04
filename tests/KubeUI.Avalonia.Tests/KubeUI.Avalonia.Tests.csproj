@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Headless.XUnit" />
+  <PackageReference Include="Moq" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
     <PackageReference Include="Microsoft.Testing.Extensions.CrashDump" />
     <PackageReference Include="Microsoft.Testing.Extensions.HangDump" />

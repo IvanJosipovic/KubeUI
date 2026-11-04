@@ -14,15 +14,20 @@ public sealed class HostWindowStyleTests
     {
         var window = CreateHostWindow(isToolWindow: true);
 
-        window.Show();
+        try
+        {
+            window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+            Dispatcher.UIThread.RunJobs();
 
-        window.RequestedThemeVariant.ShouldBe(Application.Current.RequestedThemeVariant);
-        window.TransparencyLevelHint.ShouldContain(WindowTransparencyLevel.None);
-        window.Opacity.ShouldBe(1.0);
-
-        window.Close();
+            window.RequestedThemeVariant.ShouldBe(Application.Current.RequestedThemeVariant);
+            window.TransparencyLevelHint.ShouldContain(WindowTransparencyLevel.None);
+            window.Opacity.ShouldBe(1.0);
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [AvaloniaFact]
@@ -30,13 +35,18 @@ public sealed class HostWindowStyleTests
     {
         var window = CreateHostWindow(isToolWindow: false);
 
-        window.Show();
+        try
+        {
+            window.Show();
 
-        Dispatcher.UIThread.RunJobs();
+            Dispatcher.UIThread.RunJobs();
 
-        window.RequestedThemeVariant.ShouldBe(Application.Current!.RequestedThemeVariant);
-
-        window.Close();
+            window.RequestedThemeVariant.ShouldBe(Application.Current!.RequestedThemeVariant);
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     private static HostWindow CreateHostWindow(bool isToolWindow)

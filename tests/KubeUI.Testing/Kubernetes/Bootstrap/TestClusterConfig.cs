@@ -106,5 +106,21 @@ public sealed class TestClusterConfig
             FirstMessageHandlerSetup = firstMessageHandlerSetup,
         };
 
+    /// <summary>Restores every field to its default so a shared config instance can be reused safely.</summary>
+    public void Reset()
+    {
+        Type = KubernetesBackend.Fake;
+        Name = null;
+        KubeConfig = null;
+        InitialResources = Array.Empty<IKubernetesObject<V1ObjectMeta>>();
+        InitialYaml = null;
+        HttpHandlers = Array.Empty<DelegatingHandler>();
+        HttpHandlerFactory = null;
+        FirstMessageHandlerSetup = null;
+        ResponseLatency = default;
+        ThrowOnConnect = false;
+        AuthenticatedUser = "system:admin";
+    }
+
     internal TimeSpan EffectiveResponseLatency => ResponseLatency;
 }

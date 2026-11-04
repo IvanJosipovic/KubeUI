@@ -10,6 +10,7 @@ using Dock.Model.Core;
 using DynamicData;
 using k8s.Models;
 using KubeUI.App.Shell.Documents.About;
+using Shouldly;
 using SvcSystems.Avalonia.DynamicTableView;
 
 namespace KubeUI.Features.Resources.Tests.List;
@@ -60,27 +61,25 @@ public sealed class ResourceListViewSelectionTests
         table.DetachedFromVisualTree += (_, _) => detachCount++;
 
         SelectTenRows(window, table);
-        Assert.Equal(10, viewModel.SelectionModel.SelectedItems.Count);
+        viewModel.SelectionModel.SelectedItems.Count.ShouldBe(10);
 
         tabs.SelectedIndex = 1;
         await WaitForAsync(() => detachCount == 1);
-        Assert.Equal(10, viewModel.SelectionModel.SelectedItems.Count);
+        viewModel.SelectionModel.SelectedItems.Count.ShouldBe(10);
         tabs.SelectedIndex = 0;
         await WaitForAsync(() => attachCount == 2);
 
-        Assert.Equal(10, viewModel.SelectionModel.SelectedItems.Count);
+        viewModel.SelectionModel.SelectedItems.Count.ShouldBe(10);
 
         SelectOneRow(window, table, "pod-05");
-        Assert.Equal(["pod-05"],
-            viewModel.SelectionModel.SelectedItems.Cast<V1Pod>().Select(static pod => pod.Metadata.Name));
+        viewModel.SelectionModel.SelectedItems.Cast<V1Pod>().Select(static pod => pod.Metadata.Name).ShouldBe(["pod-05"]);
 
         tabs.SelectedIndex = 1;
         await WaitForAsync(() => detachCount == 2);
         tabs.SelectedIndex = 0;
         await WaitForAsync(() => attachCount == 3);
 
-        Assert.Equal(["pod-05"],
-            viewModel.SelectionModel.SelectedItems.Cast<V1Pod>().Select(static pod => pod.Metadata.Name));
+        viewModel.SelectionModel.SelectedItems.Cast<V1Pod>().Select(static pod => pod.Metadata.Name).ShouldBe(["pod-05"]);
     }
 
     [AvaloniaFact]
@@ -117,22 +116,21 @@ public sealed class ResourceListViewSelectionTests
         await WaitForAsync(() => table.GetVisualDescendants().OfType<TableViewRow>().Count() == 10);
 
         SelectRowsByName(window, table, "dock-pod-00", "dock-pod-09");
-        Assert.Equal(10, viewModel.SelectionModel.SelectedItems.Count);
+        viewModel.SelectionModel.SelectedItems.Count.ShouldBe(10);
 
         factory.SetActiveDockable(otherDocument);
         factory.SetFocusedDockable(documents, otherDocument);
         await WaitForAsync(() => ReferenceEquals(documents.ActiveDockable, otherDocument));
-        Assert.Equal(10, viewModel.SelectionModel.SelectedItems.Count);
+        viewModel.SelectionModel.SelectedItems.Count.ShouldBe(10);
         factory.SetActiveDockable(viewModel);
         factory.SetFocusedDockable(documents, viewModel);
         await WaitForAsync(() => ReferenceEquals(documents.ActiveDockable, viewModel));
         table = await WaitForDockTableAsync(window, table);
         await WaitForAsync(() => viewModel.SelectionModel.SelectedItems.Count == 10);
-        Assert.Equal(10, viewModel.SelectionModel.SelectedItems.Count);
+        viewModel.SelectionModel.SelectedItems.Count.ShouldBe(10);
 
         SelectOneRow(window, table, "dock-pod-05");
-        Assert.Equal(["dock-pod-05"],
-            viewModel.SelectionModel.SelectedItems.Cast<V1Pod>().Select(static pod => pod.Metadata.Name));
+        viewModel.SelectionModel.SelectedItems.Cast<V1Pod>().Select(static pod => pod.Metadata.Name).ShouldBe(["dock-pod-05"]);
 
         var selectionChangesDuringRestore = new List<string>();
         viewModel.SelectionModel.SelectionChanged += (_, _) => selectionChangesDuringRestore.Add(
@@ -143,17 +141,16 @@ public sealed class ResourceListViewSelectionTests
         factory.SetActiveDockable(otherDocument);
         factory.SetFocusedDockable(documents, otherDocument);
         await WaitForAsync(() => ReferenceEquals(documents.ActiveDockable, otherDocument));
-        Assert.Equal(viewModel.TableViewRuntimeState!.Sorts, viewModel.TableSource.SortDescriptors);
-        Assert.Equal(viewModel.TableViewRuntimeState.Filters, viewModel.TableSource.FilterDescriptors);
+        viewModel.TableSource.SortDescriptors.ShouldBe(viewModel.TableViewRuntimeState!.Sorts);
+        viewModel.TableSource.FilterDescriptors.ShouldBe(viewModel.TableViewRuntimeState.Filters);
         factory.SetActiveDockable(viewModel);
         factory.SetFocusedDockable(documents, viewModel);
         await WaitForAsync(() => ReferenceEquals(documents.ActiveDockable, viewModel));
         table = await WaitForDockTableAsync(window, table);
         await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
-        Assert.Equal(["dock-pod-05"],
-            viewModel.SelectionModel.SelectedItems.Cast<V1Pod>().Select(static pod => pod.Metadata.Name));
-        Assert.Empty(selectionChangesDuringRestore);
-        Assert.Equal(0, Volatile.Read(ref sourceChangesDuringRestore));
+        viewModel.SelectionModel.SelectedItems.Cast<V1Pod>().Select(static pod => pod.Metadata.Name).ShouldBe(["dock-pod-05"]);
+        selectionChangesDuringRestore.ShouldBeEmpty();
+        Volatile.Read(ref sourceChangesDuringRestore).ShouldBe(0);
         viewModel.TableSource.Changed -= sourceChanged;
     }
 

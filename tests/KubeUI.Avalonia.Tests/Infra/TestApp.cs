@@ -32,6 +32,21 @@ public class TestApp : KubeUIApplication, IDisposable
     public Action<ContentDialogSettings>? ConfigureContentDialog { get; set; }
     private IHost? _host;
     private int _disposed;
+    private readonly List<TestCluster> _testClusters = [];
+    private readonly Lock _testClustersLock = new();
+
+    /// <summary>
+    /// Registers a generated <see cref="TestCluster"/> so it is disposed when the app is
+    /// disposed, instead of living until the generator's process-exit cleanup. A disposed
+    /// cluster is a no-op (idempotent), so this is safe alongside the generator cleanup.
+    /// </summary>
+    internal void RegisterTestCluster(TestCluster cluster)
+    {
+        lock (_testClustersLock)
+        {
+            _testClusters.Add(cluster);
+        }
+    }
 
     public TestApp() : this(null)
     {
@@ -60,6 +75,18 @@ public class TestApp : KubeUIApplication, IDisposable
         }
 
         DisposeApplication();
+
+        TestCluster[] clusters;
+        lock (_testClustersLock)
+        {
+            clusters = [.. _testClusters];
+            _testClusters.Clear();
+        }
+
+        for (var index = clusters.Length - 1; index >= 0; index--)
+        {
+            await clusters[index].DisposeAsync().ConfigureAwait(false);
+        }
 
         if (_host is IAsyncDisposable asyncDisposableHost)
         {
@@ -128,6 +155,7 @@ public class TestApp : KubeUIApplication, IDisposable
                         var generator = sp.GetRequiredService<TestClusterGenerator>();
                         var cluster = generator.CreateAsync(config).GetAwaiter().GetResult();
                         cluster.Cluster.EnsureOpenApiSchemasAsync().GetAwaiter().GetResult();
+                        RegisterTestCluster(cluster);
                         manager.AddCluster(cluster.Cluster);
                     }
                 }

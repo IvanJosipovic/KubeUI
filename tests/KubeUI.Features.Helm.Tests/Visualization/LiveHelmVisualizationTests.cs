@@ -99,7 +99,8 @@ public sealed class LiveHelmVisualizationTests : IDisposable
             }
             catch (TimeoutException)
             {
-                Assert.Fail($"Graph={viewModel.Graph!.Resources.Count}; error={viewModel.ErrorMessage}; "
+                throw new ShouldAssertException(
+                    $"Graph={(viewModel.Graph?.Resources.Count ?? 0)}; error={viewModel.ErrorMessage}; "
                     + $"types={string.Join(',', viewModel.ResourceTypes)}; seeded={cluster.Runtime.Objects.Count}; "
                     + $"cachedDeployments={cluster.Runtime.GetResourceList<V1Deployment>().Count}; "
                     + $"namespaces={string.Join(',', viewModel.SelectedNamespaces.Select(item => item.Name()))}");

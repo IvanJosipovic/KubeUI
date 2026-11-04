@@ -21,25 +21,31 @@ public sealed class ClusterViewTests
 
         var view = new ClusterView { ViewModel = viewModel };
         var window = new Window { Content = view };
-        window.Show();
-        await TestApplicationExtensions.WaitForUiAsync();
+        try
+        {
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
 
-        GetRefreshTimer(view).IsEnabled.ShouldBeTrue();
+            GetRefreshTimer(view).IsEnabled.ShouldBeTrue();
 
-        window.Content = null;
-        await TestApplicationExtensions.WaitForUiAsync();
-        GetRefreshTimer(view).IsEnabled.ShouldBeFalse();
+            window.Content = null;
+            await TestApplicationExtensions.WaitForUiAsync();
+            GetRefreshTimer(view).IsEnabled.ShouldBeFalse();
 
-        view.DataContext = null;
-        view.DataContext = viewModel;
-        await TestApplicationExtensions.WaitForUiAsync();
-        GetRefreshTimer(view).IsEnabled.ShouldBeFalse();
+            view.DataContext = null;
+            view.DataContext = viewModel;
+            await TestApplicationExtensions.WaitForUiAsync();
+            GetRefreshTimer(view).IsEnabled.ShouldBeFalse();
 
-        window.Content = view;
-        await TestApplicationExtensions.WaitForUiAsync();
+            window.Content = view;
+            await TestApplicationExtensions.WaitForUiAsync();
 
-        GetRefreshTimer(view).IsEnabled.ShouldBeTrue();
-        window.Close();
+            GetRefreshTimer(view).IsEnabled.ShouldBeTrue();
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [AvaloniaFact]
@@ -51,19 +57,24 @@ public sealed class ClusterViewTests
 
         var view = new ClusterView { ViewModel = viewModel };
         var window = new Window { Content = view };
-        window.Show();
-        await TestApplicationExtensions.WaitForUiAsync();
-
-        var charts = view.GetVisualDescendants().OfType<PieChart>().ToList();
-        charts.Count.ShouldBe(3);
-        foreach (var chart in charts)
+        try
         {
-            var series = chart.Series.OfType<IPieSeries>().ToList();
-            series.ShouldNotBeEmpty();
-            series.ShouldAllBe(x => x.CornerRadius == 0);
-        }
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
 
-        window.Close();
+            var charts = view.GetVisualDescendants().OfType<PieChart>().ToList();
+            charts.Count.ShouldBe(3);
+            foreach (var chart in charts)
+            {
+                var series = chart.Series.OfType<IPieSeries>().ToList();
+                series.ShouldNotBeEmpty();
+                series.ShouldAllBe(x => x.CornerRadius == 0);
+            }
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     private static DispatcherTimer GetRefreshTimer(ClusterView view)

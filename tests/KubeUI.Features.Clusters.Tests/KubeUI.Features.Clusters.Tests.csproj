@@ -4,6 +4,7 @@
 
   <ItemGroup>
     <Using Include="KubeUI.Features.Clusters.Assets.LanguageManager" Alias="ClusterL10n" />
+    <PackageReference Include="Moq" />
   </ItemGroup>
 
   <ItemGroup>

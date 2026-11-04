@@ -6,7 +6,6 @@ namespace KubeUI.Documentation.Tests.Shell;
 public sealed class ConnectToClusterRecordingTests
 {
     [DocumentationVideoTheory]
-    [Obsolete]
     public Task Connect_to_cluster_video(string theme)
     {
         return KubeUIWalkthrough.Create(theme, "connect-to-cluster")

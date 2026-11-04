@@ -81,10 +81,9 @@ public sealed class McpToolsTests
     [Fact]
     public async Task list_resources_accepts_a_cursor_for_the_granted_default_cluster()
     {
-        var dev = new Mock<IClusterRuntime>(MockBehavior.Strict);
-        dev.SetupGet(x => x.Name).Returns("dev");
+        await using var clusters = await NamedClusterCatalogFactory.CreateAsync("dev");
         var catalog = new Mock<IClusterRuntimeCatalog>(MockBehavior.Strict);
-        catalog.Setup(x => x.GetDefault()).Returns(dev.Object);
+        catalog.Setup(x => x.GetDefault()).Returns(clusters.Runtimes[0]);
         var session = new Mock<IMcpClusterSession>(MockBehavior.Strict);
         var cursor = McpResourceCursorCodec.Encode("dev", "v1", "Pod", null, "default", "api", "uid-api");
         var expected = new McpResourcePage(
@@ -114,13 +113,13 @@ public sealed class McpToolsTests
     }
 
     [Fact]
-    public void list_clusters_filters_results_to_the_external_client_grant()
+    public async Task list_clusters_filters_results_to_the_external_client_grant()
     {
-        var dev = CreateRuntime("dev");
-        var prod = CreateRuntime("prod");
+        await using var dev = await CreateConnectedCluster("dev");
+        await using var prod = await CreateConnectedCluster("prod");
         var catalog = new Mock<IClusterRuntimeCatalog>(MockBehavior.Strict);
-        catalog.SetupGet(x => x.Clusters).Returns([dev.Object, prod.Object]);
-        catalog.Setup(x => x.GetDefault()).Returns(dev.Object);
+        catalog.SetupGet(x => x.Clusters).Returns([dev.Runtime, prod.Runtime]);
+        catalog.Setup(x => x.GetDefault()).Returns(dev.Runtime);
         var tools = new McpTools(
             catalog.Object,
             new Mock<IMcpClusterSession>(MockBehavior.Strict).Object,
@@ -137,11 +136,11 @@ public sealed class McpToolsTests
     [Fact]
     public async Task empty_external_cluster_grant_lists_all_clusters()
     {
-        var dev = CreateRuntime("dev");
-        var prod = CreateRuntime("prod");
+        await using var dev = await CreateConnectedCluster("dev");
+        await using var prod = await CreateConnectedCluster("prod");
         var catalog = new Mock<IClusterRuntimeCatalog>(MockBehavior.Strict);
-        catalog.SetupGet(x => x.Clusters).Returns([dev.Object, prod.Object]);
-        catalog.Setup(x => x.GetDefault()).Returns(dev.Object);
+        catalog.SetupGet(x => x.Clusters).Returns([dev.Runtime, prod.Runtime]);
+        catalog.Setup(x => x.GetDefault()).Returns(dev.Runtime);
         var session = new Mock<IMcpClusterSession>(MockBehavior.Strict);
         session.Setup(x => x.ListSupportedResourcesAsync("prod")).ReturnsAsync([]);
         var identity = new McpClientIdentity("external", "external tool", false,
@@ -160,11 +159,11 @@ public sealed class McpToolsTests
     }
 
     [Fact]
-    public void list_clusters_marks_no_cluster_default_when_none_is_configured()
+    public async Task list_clusters_marks_no_cluster_default_when_none_is_configured()
     {
-        var dev = CreateRuntime("dev");
+        await using var dev = await CreateConnectedCluster("dev");
         var catalog = new Mock<IClusterRuntimeCatalog>(MockBehavior.Strict);
-        catalog.SetupGet(x => x.Clusters).Returns([dev.Object]);
+        catalog.SetupGet(x => x.Clusters).Returns([dev.Runtime]);
         catalog.Setup(x => x.GetDefault()).Returns((IClusterRuntime?)null);
         var tools = new McpTools(
             catalog.Object,
@@ -180,11 +179,11 @@ public sealed class McpToolsTests
     [Fact]
     public async Task connect_cluster_returns_the_connected_runtime_status()
     {
-        var runtime = CreateRuntime("dev");
+        await using var runtime = await CreateConnectedCluster("dev");
         var catalog = new Mock<IClusterRuntimeCatalog>(MockBehavior.Strict);
-        catalog.Setup(x => x.GetDefault()).Returns(runtime.Object);
+        catalog.Setup(x => x.GetDefault()).Returns(runtime.Runtime);
         var session = new Mock<IMcpClusterSession>(MockBehavior.Strict);
-        session.Setup(x => x.GetConnectedClusterAsync("dev")).ReturnsAsync(runtime.Object);
+        session.Setup(x => x.GetConnectedClusterAsync("dev")).ReturnsAsync(runtime.Runtime);
         var tools = new McpTools(
             catalog.Object,
             session.Object,
@@ -317,9 +316,9 @@ public sealed class McpToolsTests
     [Fact]
     public async Task external_default_cluster_is_allowed_only_when_explicitly_granted()
     {
-        var runtime = CreateRuntime("dev");
+        await using var runtime = await CreateConnectedCluster("dev");
         var catalog = new Mock<IClusterRuntimeCatalog>(MockBehavior.Strict);
-        catalog.Setup(x => x.GetDefault()).Returns(runtime.Object);
+        catalog.Setup(x => x.GetDefault()).Returns(runtime.Runtime);
         var session = new Mock<IMcpClusterSession>(MockBehavior.Strict);
         session.Setup(x => x.ListResourcesAsync(null, "v1", "Pod", null, 100, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new McpResourcePage([], null));
@@ -412,11 +411,11 @@ public sealed class McpToolsTests
     }
 
     [Fact]
-    public void cluster_listing_fails_closed_without_request_identity()
+    public async Task cluster_listing_fails_closed_without_request_identity()
     {
-        var cluster = CreateRuntime("dev");
+        await using var cluster = await CreateConnectedCluster("dev");
         var catalog = new Mock<IClusterRuntimeCatalog>(MockBehavior.Strict);
-        catalog.SetupGet(x => x.Clusters).Returns([cluster.Object]);
+        catalog.SetupGet(x => x.Clusters).Returns([cluster.Runtime]);
         catalog.Setup(x => x.GetDefault()).Returns((IClusterRuntime?)null);
         var tools = new McpTools(
             catalog.Object,
@@ -589,24 +588,14 @@ public sealed class McpToolsTests
     {
         using var cancellation = new CancellationTokenSource();
         await cancellation.CancelAsync();
-        var operations = new Mock<ICoreV1Operations>(MockBehavior.Strict);
-        operations.Setup(x => x.ReadNamespacedPodLogWithHttpMessagesAsync(
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<bool?>(), It.IsAny<bool?>(),
-                It.IsAny<int?>(), It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<int?>(), It.IsAny<string?>(), It.IsAny<int?>(),
-                It.IsAny<bool?>(), It.IsAny<IReadOnlyDictionary<string, IReadOnlyList<string>>>(), cancellation.Token))
-            .Returns(Task.FromCanceled<k8s.Autorest.HttpOperationResponse<Stream>>(cancellation.Token));
-        var runtime = new Mock<IClusterRuntime>(MockBehavior.Strict);
-        var client = new Mock<IKubernetes>(MockBehavior.Strict);
-        client.SetupGet(x => x.CoreV1).Returns(operations.Object);
-        runtime.SetupGet(x => x.Client).Returns(client.Object);
+        await using var cluster = await CreatePodLogCluster("api", logContent: null);
         var session = new Mock<IMcpClusterSession>(MockBehavior.Strict);
-        session.Setup(x => x.GetConnectedClusterAsync(null)).ReturnsAsync(runtime.Object);
+        session.Setup(x => x.GetConnectedClusterAsync(null)).ReturnsAsync(cluster.Cluster);
 
         var tools = CreateTools(session);
 
         await Should.ThrowAsync<OperationCanceledException>(() => tools.GetPodLogs(
             null, "default", "api", cancellationToken: cancellation.Token));
-        operations.VerifyAll();
     }
 
     [Theory]
@@ -614,26 +603,9 @@ public sealed class McpToolsTests
     [InlineData(1024 * 1024 + 1, true)]
     public async Task pod_log_output_is_read_and_bounded(int byteCount, bool shouldExceedLimit)
     {
-        var operations = new Mock<ICoreV1Operations>(MockBehavior.Strict);
-        operations.Setup(x => x.ReadNamespacedPodLogWithHttpMessagesAsync(
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<bool?>(), It.IsAny<bool?>(),
-                It.IsAny<int?>(), It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<int?>(), It.IsAny<string?>(), It.IsAny<int?>(),
-                It.IsAny<bool?>(), It.IsAny<IReadOnlyDictionary<string, IReadOnlyList<string>>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() =>
-            {
-                var body = new MemoryStream(Encoding.UTF8.GetBytes(new string('x', byteCount)));
-                return new k8s.Autorest.HttpOperationResponse<Stream>
-                {
-                    Request = new HttpRequestMessage(),
-                    Body = body,
-                };
-            });
-        var client = new Mock<IKubernetes>(MockBehavior.Strict);
-        client.SetupGet(x => x.CoreV1).Returns(operations.Object);
-        var runtime = new Mock<IClusterRuntime>(MockBehavior.Strict);
-        runtime.SetupGet(x => x.Client).Returns(client.Object);
+        await using var cluster = await CreatePodLogCluster("api", new string('x', byteCount));
         var session = new Mock<IMcpClusterSession>(MockBehavior.Strict);
-        session.Setup(x => x.GetConnectedClusterAsync("dev")).ReturnsAsync(runtime.Object);
+        session.Setup(x => x.GetConnectedClusterAsync("dev")).ReturnsAsync(cluster.Cluster);
         var tools = CreateTools(session);
 
         if (shouldExceedLimit)
@@ -644,10 +616,42 @@ public sealed class McpToolsTests
         {
             (await tools.GetPodLogs("dev", "default", "api")).ShouldBe(new string('x', byteCount));
         }
+    }
 
-        operations.VerifyAll();
-        client.VerifyAll();
-        session.VerifyAll();
+    /// <summary>
+    /// Creates a generated fake cluster with one pod whose log content is carried by the
+    /// "kubeui.testing/log" annotation, exercising the production Kubernetes client and
+    /// transport fake instead of client doubles.
+    /// </summary>
+    private static async Task<TestCluster> CreatePodLogCluster(string podName, string? logContent)
+    {
+        var pod = new V1Pod
+        {
+            ApiVersion = V1Pod.KubeApiVersion,
+            Kind = V1Pod.KubeKind,
+            Metadata = new()
+            {
+                Name = podName,
+                NamespaceProperty = "default",
+                Annotations = logContent is null
+                    ? null
+                    : new Dictionary<string, string> { ["kubeui.testing/log"] = logContent },
+            },
+        };
+        var config = TestClusterConfig.Fake();
+        config.InitialResources = [new V1Namespace { Metadata = new() { Name = "default" } }, pod];
+        var cluster = await new TestClusterGenerator()
+            .CreateAsync(config, TestContext.Current.CancellationToken);
+        try
+        {
+            await cluster.Cluster.Connect().WaitAsync(TestContext.Current.CancellationToken);
+            return cluster;
+        }
+        catch
+        {
+            await cluster.DisposeAsync();
+            throw;
+        }
     }
 
     [Fact]
@@ -710,12 +714,29 @@ public sealed class McpToolsTests
         => new(new McpClientIdentity("external", "external test", false,
             new HashSet<string>(clusters, StringComparer.Ordinal)));
 
-    private static Mock<IClusterRuntime> CreateRuntime(string name)
+    private sealed record ConnectedCluster(IClusterRuntime Runtime, TestCluster TestCluster) : IAsyncDisposable
     {
-        var runtime = new Mock<IClusterRuntime>(MockBehavior.Strict);
-        runtime.SetupGet(x => x.Name).Returns(name);
-        runtime.SetupGet(x => x.Connected).Returns(true);
-        runtime.SetupGet(x => x.Status).Returns(ClusterStatus.Connected);
-        return runtime;
+        public async ValueTask DisposeAsync() => await TestCluster.DisposeAsync();
+    }
+
+    /// <summary>
+    /// Creates a generated fake cluster with the requested name through the production
+    /// runtime instead of an <see cref="IClusterRuntime"/> double.
+    /// </summary>
+    private static async Task<ConnectedCluster> CreateConnectedCluster(string name)
+    {
+        var config = TestClusterConfig.Fake();
+        config.Name = name;
+        var testCluster = await new TestClusterGenerator().CreateAsync(config, TestContext.Current.CancellationToken);
+        try
+        {
+            await testCluster.Cluster.Connect().WaitAsync(TestContext.Current.CancellationToken);
+            return new ConnectedCluster(testCluster.Cluster, testCluster);
+        }
+        catch
+        {
+            await testCluster.DisposeAsync();
+            throw;
+        }
     }
 }

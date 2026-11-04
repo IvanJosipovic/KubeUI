@@ -4,56 +4,58 @@ using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Features.Crossplane.MRDiffDetection;
+using KubeUI.Kubernetes;
+using KubeUI.Testing.Kubernetes.Scenarios;
+using KubeUI.Testing.Utilities;
 using Microsoft.Extensions.Logging.Abstractions;
-using Moq;
+using Shouldly;
 
 namespace KubeUI.Features.Crossplane.Tests.MRDiffDetection;
 
 public sealed class CrossplaneProviderLogMonitorTests
 {
-    [Fact]
-    public void Provider_label_prevents_prefix_fallback_to_another_provider()
+    [Theory]
+    [KubernetesBackendData]
+    [Trait("Category", "Kind")]
+    public async Task Provider_label_prevents_prefix_fallback_to_another_provider(KubernetesBackend backend)
     {
         var correctlyLabeledDifferentProvider = CreatePod(
             "provider-beta-hash",
             labels: new Dictionary<string, string> { ["pkg.crossplane.io/provider"] = "provider-beta" });
         var unlabeledProviderPod = CreatePod("provider-hash");
-        var container = new Mock<IResourceContainer>();
-        container.Setup(resourceContainer => resourceContainer.Snapshot())
-            .Returns(new List<IKubernetesObject<V1ObjectMeta>> { correctlyLabeledDifferentProvider, unlabeledProviderPod });
-        var runtime = new Mock<IClusterRuntime>();
-        runtime.SetupGet(cluster => cluster.Objects).Returns(new Dictionary<GroupApiVersionKind, object>
-        {
-            [GroupApiVersionKind.From<V1Pod>()] = container.Object
-        });
+        await using var fixture = await CrossplaneTestCluster.CreatePodsAsync(
+            TestContext.Current.CancellationToken,
+            backend,
+            correctlyLabeledDifferentProvider,
+            unlabeledProviderPod);
 
-        var podKeys = CrossplaneProviderLogMonitor.GetProviderPodKeys(runtime.Object, "provider");
+        var podKeys = CrossplaneProviderLogMonitor.GetProviderPodKeys(fixture.Cluster.Cluster, "provider");
 
-        Assert.Equal(["default\0provider-hash"], podKeys);
+        podKeys.ShouldBe(["default\0provider-hash"]);
     }
 
-    [Fact]
-    public void Provider_container_restart_counts_include_the_pod_and_container_identity()
+    [Theory]
+    [KubernetesBackendData]
+    [Trait("Category", "Kind")]
+    public async Task Provider_container_restart_counts_include_the_pod_and_container_identity(KubernetesBackend backend)
     {
         var pod = CreatePod("provider-hash", restartCount: 3);
-        var container = new Mock<IResourceContainer>();
-        container.Setup(resourceContainer => resourceContainer.Snapshot())
-            .Returns(new List<IKubernetesObject<V1ObjectMeta>> { pod });
-        var runtime = new Mock<IClusterRuntime>();
-        runtime.SetupGet(cluster => cluster.Objects).Returns(new Dictionary<GroupApiVersionKind, object>
-        {
-            [GroupApiVersionKind.From<V1Pod>()] = container.Object
-        });
+        await using var fixture = await CrossplaneTestCluster.CreatePodsAsync(
+            TestContext.Current.CancellationToken,
+            backend,
+            pod);
 
-        var restartCounts = CrossplaneProviderLogMonitor.GetProviderContainerRestartCounts(runtime.Object, "provider");
+        var restartCounts = CrossplaneProviderLogMonitor.GetProviderContainerRestartCounts(fixture.Cluster.Cluster, "provider");
 
-        Assert.Equal(3, restartCounts["default\0provider-hash\0provider"]);
+        restartCounts["default\0provider-hash\0provider"].ShouldBe(3);
     }
 
     [Fact]
     public async Task Current_stream_retries_after_failure_filters_lines_and_deduplicates_replays()
     {
         var pod = CreatePod("provider-hash");
+        await using var fixture = await CrossplaneTestCluster.CreatePodsAsync(TestContext.Current.CancellationToken, KubernetesBackend.Fake, pod);
+        var cluster = fixture.Cluster.Cluster;
         var resolver = new FixedPodResolver(pod);
         var streamClient = new ReplayingPodLogStreamClient(failFirstOpen: true);
         using var monitor = new CrossplaneProviderLogMonitor(resolver, streamClient, NullLogger<CrossplaneProviderLogMonitor>.Instance);
@@ -61,7 +63,7 @@ public sealed class CrossplaneProviderLogMonitorTests
         var receivedLines = new ConcurrentQueue<string>();
         var receivedLine = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var monitoring = monitor.StartAsync(
-            Mock.Of<IClusterRuntime>(),
+            cluster,
             new GenericKubernetesObject { Metadata = new V1ObjectMeta { Name = "provider" } },
             (line, _) =>
             {
@@ -71,28 +73,30 @@ public sealed class CrossplaneProviderLogMonitorTests
             },
             cancellation.Token);
 
-        await streamClient.SecondFollowOpen.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await streamClient.SecondFollowOpen.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
         monitor.Stop();
-        await monitoring.WaitAsync(TimeSpan.FromSeconds(5));
+        await monitoring.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
-        await receivedLine.Task.WaitAsync(TimeSpan.FromSeconds(1));
-        Assert.True(streamClient.OpenCount >= 3);
-        Assert.Single(receivedLines);
-        Assert.Contains("Diff detected", receivedLines.Single(), StringComparison.Ordinal);
-        Assert.All(streamClient.Options, options => Assert.Equal(500, options.TailLines));
+        await receivedLine.Task.WaitAsync(TimeSpan.FromSeconds(1), TestContext.Current.CancellationToken);
+        streamClient.OpenCount.ShouldBeGreaterThanOrEqualTo(3);
+        receivedLines.Count.ShouldBe(1);
+        receivedLines.Single().ShouldContain("Diff detected");
+        streamClient.Options.ShouldAllBe(options => options.TailLines == 500);
     }
 
     [Fact]
     public async Task Restarted_container_reads_previous_logs_once_and_follows_current_logs()
     {
         var pod = CreatePod("provider-hash", restartCount: 1);
+        await using var fixture = await CrossplaneTestCluster.CreatePodsAsync(TestContext.Current.CancellationToken, KubernetesBackend.Fake, pod);
+        var cluster = fixture.Cluster.Cluster;
         var resolver = new FixedPodResolver(pod);
         var streamClient = new ReplayingPodLogStreamClient(failFirstOpen: false);
         using var monitor = new CrossplaneProviderLogMonitor(resolver, streamClient, NullLogger<CrossplaneProviderLogMonitor>.Instance);
         var receivedLines = new ConcurrentQueue<string>();
         var receivedLine = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var monitoring = monitor.StartAsync(
-            Mock.Of<IClusterRuntime>(),
+            cluster,
             new GenericKubernetesObject { Metadata = new V1ObjectMeta { Name = "provider" } },
             (line, _) =>
             {
@@ -100,23 +104,25 @@ public sealed class CrossplaneProviderLogMonitorTests
                 receivedLine.TrySetResult();
                 return ValueTask.CompletedTask;
             },
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
-        await streamClient.SecondFollowOpen.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        await receivedLine.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await streamClient.SecondFollowOpen.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+        await receivedLine.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
         monitor.Stop();
-        await monitoring.WaitAsync(TimeSpan.FromSeconds(5));
+        await monitoring.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
-        Assert.Contains(streamClient.Options, options => options.Previous && !options.Follow);
-        Assert.Contains(streamClient.Options, options => !options.Previous && options.Follow);
-        Assert.All(streamClient.Options, options => Assert.Equal(500, options.TailLines));
-        Assert.Single(receivedLines);
+        streamClient.Options.ShouldContain(options => options.Previous && !options.Follow);
+        streamClient.Options.ShouldContain(options => !options.Previous && options.Follow);
+        streamClient.Options.ShouldAllBe(options => options.TailLines == 500);
+        receivedLines.Count.ShouldBe(1);
     }
 
     [Fact]
     public async Task Resetting_rows_allows_the_same_provider_log_tail_to_be_replayed()
     {
         var pod = CreatePod("provider-hash");
+        await using var fixture = await CrossplaneTestCluster.CreatePodsAsync(TestContext.Current.CancellationToken, KubernetesBackend.Fake, pod);
+        var cluster = fixture.Cluster.Cluster;
         var resolver = new FixedPodResolver(pod);
         var streamClient = new ReplayingPodLogStreamClient(failFirstOpen: false);
         using var monitor = new CrossplaneProviderLogMonitor(resolver, streamClient, NullLogger<CrossplaneProviderLogMonitor>.Instance);
@@ -142,39 +148,40 @@ public sealed class CrossplaneProviderLogMonitorTests
         }
 
         var firstMonitoring = monitor.StartAsync(
-            Mock.Of<IClusterRuntime>(),
+            cluster,
             new GenericKubernetesObject { Metadata = new V1ObjectMeta { Name = "provider" } },
             ReceiveLine,
-            CancellationToken.None,
+            TestContext.Current.CancellationToken,
             resetSeen: true);
-        await streamClient.SecondFollowOpen.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        await firstLine.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await streamClient.SecondFollowOpen.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+        await firstLine.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
         monitor.Stop();
-        await firstMonitoring.WaitAsync(TimeSpan.FromSeconds(5));
+        await firstMonitoring.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         var secondMonitoring = monitor.StartAsync(
-            Mock.Of<IClusterRuntime>(),
+            cluster,
             new GenericKubernetesObject { Metadata = new V1ObjectMeta { Name = "provider" } },
             ReceiveLine,
-            CancellationToken.None,
+            TestContext.Current.CancellationToken,
             resetSeen: true);
-        await secondLine.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await secondLine.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
         monitor.Stop();
-        await secondMonitoring.WaitAsync(TimeSpan.FromSeconds(5));
+        await secondMonitoring.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
-        Assert.Equal(2, receivedLines.Count);
+        receivedLines.Count.ShouldBe(2);
     }
 
     [Fact]
     public async Task New_monitor_session_does_not_deduplicate_a_late_line_from_the_previous_session()
     {
         var pod = CreatePod("provider-hash");
+        await using var fixture = await CrossplaneTestCluster.CreatePodsAsync(TestContext.Current.CancellationToken, KubernetesBackend.Fake, pod);
+        var cluster = fixture.Cluster.Cluster;
         using var streamClient = new GatedPodLogStreamClient();
         using var monitor = new CrossplaneProviderLogMonitor(
             new FixedPodResolver(pod),
             streamClient,
             NullLogger<CrossplaneProviderLogMonitor>.Instance);
-        var cluster = Mock.Of<IClusterRuntime>();
         var provider = new GenericKubernetesObject { Metadata = new V1ObjectMeta { Name = "provider" } };
         var activeGeneration = 1;
         var acceptedSessions = new ConcurrentQueue<int>();
@@ -199,7 +206,7 @@ public sealed class CrossplaneProviderLogMonitorTests
         {
             try
             {
-                await task.WaitAsync(TimeSpan.FromSeconds(5));
+                await task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
             }
             catch (TimeoutException exception)
             {
@@ -216,7 +223,7 @@ public sealed class CrossplaneProviderLogMonitorTests
             cluster,
             provider,
             CreateCallback(1),
-            CancellationToken.None,
+            TestContext.Current.CancellationToken,
             resetSeen: true);
         await WaitForStepAsync(streamClient.FirstReadStarted.Task, "first stream read");
 
@@ -225,7 +232,7 @@ public sealed class CrossplaneProviderLogMonitorTests
             cluster,
             provider,
             CreateCallback(2),
-            CancellationToken.None,
+            TestContext.Current.CancellationToken,
             resetSeen: true);
         await WaitForStepAsync(streamClient.SecondReadStarted.Task, "second stream read");
 
@@ -236,25 +243,27 @@ public sealed class CrossplaneProviderLogMonitorTests
         monitor.Stop();
         await WaitForStepAsync(secondMonitoring, "current monitoring session completion");
 
-        Assert.Equal([2], acceptedSessions);
+        acceptedSessions.ShouldBe([2]);
     }
 
     [Fact]
     public async Task Callback_failure_is_propagated_and_does_not_suppress_a_retry()
     {
         var pod = CreatePod("provider-hash");
+        await using var fixture = await CrossplaneTestCluster.CreatePodsAsync(TestContext.Current.CancellationToken, KubernetesBackend.Fake, pod);
+        var cluster = fixture.Cluster.Cluster;
         var resolver = new FixedPodResolver(pod);
         var streamClient = new ReplayingPodLogStreamClient(failFirstOpen: false);
         using var monitor = new CrossplaneProviderLogMonitor(resolver, streamClient, NullLogger<CrossplaneProviderLogMonitor>.Instance);
-        var cluster = Mock.Of<IClusterRuntime>();
         var provider = new GenericKubernetesObject { Metadata = new V1ObjectMeta { Name = "provider" } };
         var failedMonitoring = monitor.StartAsync(
             cluster,
             provider,
             static (_, _) => throw new InvalidOperationException("callback failed"),
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => failedMonitoring.WaitAsync(TimeSpan.FromSeconds(5)));
+        await Should.ThrowAsync<InvalidOperationException>(
+            () => failedMonitoring.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken));
 
         var receivedLine = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var retriedMonitoring = monitor.StartAsync(
@@ -265,17 +274,17 @@ public sealed class CrossplaneProviderLogMonitorTests
                 receivedLine.TrySetResult();
                 return ValueTask.CompletedTask;
             },
-            CancellationToken.None);
-        await receivedLine.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            TestContext.Current.CancellationToken);
+        await receivedLine.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
         monitor.Stop();
-        await retriedMonitoring.WaitAsync(TimeSpan.FromSeconds(5));
+        await retriedMonitoring.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
     }
 
     private static V1Pod CreatePod(string name, IDictionary<string, string>? labels = null, int restartCount = 0)
         => new()
         {
             Metadata = new V1ObjectMeta { Name = name, NamespaceProperty = "default", Labels = labels },
-            Spec = new V1PodSpec { Containers = [new V1Container { Name = "provider" }] },
+            Spec = new V1PodSpec { Containers = [new V1Container { Name = "provider", Image = "provider:latest" }] },
             Status = new V1PodStatus
             {
                 ContainerStatuses = [new V1ContainerStatus { Name = "provider", RestartCount = restartCount }]

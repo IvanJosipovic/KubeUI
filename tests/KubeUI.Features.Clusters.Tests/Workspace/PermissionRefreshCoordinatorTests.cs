@@ -99,7 +99,7 @@ public sealed class PermissionRefreshCoordinatorTests
     }
 
     [Fact]
-    public void disposed_coordinator_stops_scheduling_passes()
+    public async Task disposed_coordinator_stops_scheduling_passes()
     {
         var canRefresh = true;
         var passes = 0;
@@ -114,6 +114,8 @@ public sealed class PermissionRefreshCoordinatorTests
         coordinator.Dispose();
         coordinator.Request(PermissionRefreshScope.All);
 
+        // Give a debounced (incorrect) pass a bounded window to fire before the negative assert.
+        await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(100), TestContext.Current.CancellationToken);
         passes.ShouldBe(0);
         coordinator.IsRefreshInProgress.ShouldBeFalse();
     }

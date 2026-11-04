@@ -54,8 +54,8 @@ public sealed class MRDiffDetectionDynamicDataTests
         });
         var tableCollectionUpdateWasOnUiThread = await collectionUpdate.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
-        Assert.False(cacheUpdateWasOnUiThread);
-        Assert.True(tableCollectionUpdateWasOnUiThread);
+        cacheUpdateWasOnUiThread.ShouldBeFalse();
+        tableCollectionUpdateWasOnUiThread.ShouldBeTrue();
     }
 
     [AvaloniaFact]
@@ -72,7 +72,7 @@ public sealed class MRDiffDetectionDynamicDataTests
         rows.AddOrUpdate(replacement);
         await WaitForAsync(() => ReferenceEquals(table.SelectionModel.SelectedItem, replacement));
 
-        Assert.Same(replacement, table.SelectionModel.SelectedItem);
+        table.SelectionModel.SelectedItem.ShouldBeSameAs(replacement);
     }
 
     private static DynamicTableViewSource<CrossplaneDiffRow, string> CreateTable(

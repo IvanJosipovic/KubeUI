@@ -4,6 +4,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DynamicData;
 using k8s.Models;
+using Shouldly;
 using SvcSystems.Avalonia.DynamicTableView;
 
 namespace KubeUI.Features.Resources.Tests.List;
@@ -44,15 +45,15 @@ public sealed class ResourceListViewRestoreTests
 
         var table = await WaitForTableAsync(view);
         await WaitForHeadersAsync(table, expectedHeaders);
-        Assert.Equal(expectedHeaders, ReadHeaderLabels(table));
-        Assert.Equal(["containers", "name"], viewModel.TableSource.Columns.Take(2).Select(static column => column.Key));
+        ReadHeaderLabels(table).ShouldBe(expectedHeaders);
+        viewModel.TableSource.Columns.Take(2).Select(static column => column.Key).ShouldBe(["containers", "name"]);
 
         tabs.SelectedIndex = 1;
         Dispatcher.UIThread.RunJobs();
         tabs.SelectedIndex = 0;
         await WaitForHeadersAsync(table, expectedHeaders);
 
-        Assert.Equal(expectedHeaders, ReadHeaderLabels(table));
+        ReadHeaderLabels(table).ShouldBe(expectedHeaders);
     }
 
     private static async Task<DynamicTableView> WaitForTableAsync(ResourceListView view)
