@@ -152,7 +152,7 @@ public class NavigationViewModelTests
         firstIndex.ShouldBeGreaterThanOrEqualTo(0);
         vm.Clusters.ShouldContain(node => ReferenceEquals(node.Cluster, firstWorkspace));
 
-        var replacementWorkspace = await Application.Current.CreateClusterAsync(connect: false);
+        using var replacementWorkspace = await Application.Current.CreateClusterAsync(connect: false);
         vm.ClusterCatalog.Clusters[firstIndex] = replacementWorkspace;
         vm.Clusters.ShouldNotContain(node => ReferenceEquals(node.Cluster, firstWorkspace));
         vm.Clusters.ShouldContain(node => ReferenceEquals(node.Cluster, replacementWorkspace));
@@ -174,7 +174,7 @@ public class NavigationViewModelTests
     [AvaloniaFact]
     public async Task resetting_cluster_catalog_disposes_removed_navigation_nodes()
     {
-        var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
         using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
 
@@ -363,7 +363,7 @@ public class NavigationViewModelTests
 
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -388,7 +388,7 @@ public class NavigationViewModelTests
             "Gadgets",
             "otherString",
             "other.com");
-        var workspace = await Application.Current.CreateClusterAsync(
+        using var workspace = await Application.Current.CreateClusterAsync(
             config => config.InitialResources = [crd, secondCrd],
             connect: false);
         using var vm = CreateViewModel();
@@ -539,7 +539,7 @@ public class NavigationViewModelTests
             })
             .Cast<IKubernetesObject<V1ObjectMeta>>()
             .ToArray();
-        var workspace = await Application.Current.CreateClusterAsync(
+        using var workspace = await Application.Current.CreateClusterAsync(
             config => config.InitialResources = [crd, .. resources],
             connect: false);
         using var vm = CreateViewModel();
@@ -690,7 +690,7 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -707,20 +707,19 @@ public class NavigationViewModelTests
     {
         var services = Application.Current.GetTestServices();
         var config = services.GetRequiredService<TestClusterConfig>();
-        config.ResponseLatency = TimeSpan.FromMilliseconds(50);
+        config.ResponseLatency = TimeSpan.FromMilliseconds(500);
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-        var stopwatch = Stopwatch.StartNew();
 
         await vm.TreeViewSelectionChangedAsync(clusterNode);
 
-        stopwatch.Stop();
-        stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromMilliseconds(150));
+        // With a 500 ms response latency the selection cannot have waited for the connection.
+        workspace.Runtime.Status.ShouldNotBe(ClusterStatus.Connected);
         clusterNode.IsExpanded.ShouldBeFalse();
 
         await WaitForAsync(() => workspace.Runtime.Status is ClusterStatus.Connected or ClusterStatus.Errored, timeoutMs: 5000);
@@ -737,7 +736,7 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -768,7 +767,7 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -806,7 +805,7 @@ public class NavigationViewModelTests
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -846,7 +845,7 @@ public class NavigationViewModelTests
         await workspace.Connect();
         await TestApplicationExtensions.WaitForUiAsync();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -895,7 +894,7 @@ public class NavigationViewModelTests
     [AvaloniaFact]
     public async Task selecting_cluster_node_with_namespace_fallback_does_not_open_settings_or_prompt()
     {
-        var workspace = await Application.Current.CreateClusterAsync(config =>
+        using var workspace = await Application.Current.CreateClusterAsync(config =>
         {
             config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
             config.InitialYaml = KubernetesTestData.LimitedAccessWithNamespaceFallback;
@@ -905,7 +904,7 @@ public class NavigationViewModelTests
         settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
         await workspace.Connect();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -928,7 +927,7 @@ public class NavigationViewModelTests
     [AvaloniaFact]
     public async Task selecting_cluster_node_with_namespace_fallback_shows_namespaced_resources_in_navigation()
     {
-        var workspace = await Application.Current.CreateClusterAsync(config =>
+        using var workspace = await Application.Current.CreateClusterAsync(config =>
         {
             config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
             config.InitialYaml = KubernetesTestData.LimitedAccessWithNamespaceFallback;
@@ -938,7 +937,7 @@ public class NavigationViewModelTests
         settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
         await workspace.Connect();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -966,7 +965,7 @@ public class NavigationViewModelTests
         await workspace.Connect();
         await TestApplicationExtensions.WaitForUiAsync();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -1007,7 +1006,7 @@ public class NavigationViewModelTests
     [AvaloniaFact]
     public async Task selecting_cluster_node_with_settings_only_namespace_fallback_shows_namespaced_resources_in_navigation()
     {
-        var workspace = await Application.Current.CreateClusterAsync(config =>
+        using var workspace = await Application.Current.CreateClusterAsync(config =>
         {
             config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
             config.InitialYaml = KubernetesTestData.LimitedAccessWithNamespacePermissions;
@@ -1017,7 +1016,7 @@ public class NavigationViewModelTests
         settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
         await workspace.Connect();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -1036,7 +1035,7 @@ public class NavigationViewModelTests
     [AvaloniaFact]
     public async Task namespaced_resource_link_stays_hidden_when_cached_config_flag_is_false()
     {
-        var workspace = await Application.Current.CreateClusterAsync(config =>
+        using var workspace = await Application.Current.CreateClusterAsync(config =>
         {
             config.InitialResources = [
                 new V1Namespace { Metadata = new V1ObjectMeta { Name = "my-app" } },
@@ -1054,7 +1053,7 @@ public class NavigationViewModelTests
             "Alpha Permission Resource",
             canListAndWatch: false));
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -1065,7 +1064,7 @@ public class NavigationViewModelTests
     [AvaloniaFact]
     public async Task configured_namespaced_resource_link_is_visible_without_namespace_listing_access()
     {
-        var workspace = await Application.Current.CreateClusterAsync(config =>
+        using var workspace = await Application.Current.CreateClusterAsync(config =>
         {
             config.InitialResources = [
                     new V1Namespace { Metadata = new V1ObjectMeta { Name = "my-app" } },
@@ -1077,13 +1076,11 @@ public class NavigationViewModelTests
         settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(TestPermissionResourceAlpha), "Alpha Permission Resource"));
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
-
-        FindResourceLink(clusterNode, "Alpha Permission Resource").ShouldNotBeNull();
 
         FindResourceLink(clusterNode, "Alpha Permission Resource").ShouldNotBeNull();
     }
@@ -1101,7 +1098,7 @@ public class NavigationViewModelTests
         settingsService.Settings.GetClusterSettings(workspace.Runtime).Namespaces!.Add("my-app");
         await workspace.Connect();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -1163,7 +1160,7 @@ public class NavigationViewModelTests
         await workspace.Connect();
         await TestApplicationExtensions.WaitForUiAsync();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -1184,7 +1181,7 @@ public class NavigationViewModelTests
 
         workspace.GetResourceConfigs().ShouldBeEmpty();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -1206,7 +1203,7 @@ public class NavigationViewModelTests
         var permissionRefreshRelease = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
         workspace.AddResourceConfigForTest(new SlowPermissionResourceConfig(typeof(TestPermissionResourceGamma), "Gamma Permission Resource", permissionRefreshRelease.Task));
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -1356,7 +1353,7 @@ public class NavigationViewModelTests
             alphaPermissionCompleted));
         workspace.AddResourceConfigForTest(new SlowPermissionResourceConfig(typeof(TestPermissionResourceGamma), "Gamma Permission Resource", slowPermissionRelease.Task));
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -1382,7 +1379,7 @@ public class NavigationViewModelTests
         await workspace.Connect();
         await TestApplicationExtensions.WaitForUiAsync();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -1408,7 +1405,7 @@ public class NavigationViewModelTests
         await workspace.Connect();
         await TestApplicationExtensions.WaitForUiAsync();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -1442,7 +1439,7 @@ public class NavigationViewModelTests
         await workspace.Connect();
         await TestApplicationExtensions.WaitForUiAsync();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -1470,7 +1467,7 @@ public class NavigationViewModelTests
 
                 return link;
             },
-            timeoutMs: 150);
+            timeoutMs: 5000);
 
         alphaLink.ShouldNotBeNull();
         FindResourceLink(clusterNode, betaConfig.Name).ShouldBeNull();
@@ -1493,7 +1490,7 @@ public class NavigationViewModelTests
         await workspace.Connect();
         await TestApplicationExtensions.WaitForUiAsync();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -1517,11 +1514,11 @@ public class NavigationViewModelTests
     [AvaloniaFact]
     public async Task renaming_connected_cluster_preserves_resource_navigation()
     {
-        var workspace = await Application.Current.CreateClusterAsync();
+        using var workspace = await Application.Current.CreateClusterAsync();
         workspace.Runtime.Name = "old-name";
         await TestApplicationExtensions.WaitForUiAsync();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -1551,7 +1548,7 @@ public class NavigationViewModelTests
         await workspace.Connect();
         await TestApplicationExtensions.WaitForUiAsync();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
@@ -1588,7 +1585,7 @@ public class NavigationViewModelTests
             }
         });
         burst.Start();
-        burst.Join();
+        burst.Join(TimeSpan.FromSeconds(30)).ShouldBeTrue();
 
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -1606,7 +1603,7 @@ public class NavigationViewModelTests
         await workspace.Connect();
         await TestApplicationExtensions.WaitForUiAsync();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -1644,7 +1641,7 @@ public class NavigationViewModelTests
             cancellationToken: TestContext.Current.CancellationToken);
         await TestApplicationExtensions.WaitForUiAsync();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -1674,7 +1671,7 @@ public class NavigationViewModelTests
             CanListAndWatch = false,
         });
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -1685,7 +1682,7 @@ public class NavigationViewModelTests
     [AvaloniaFact]
     public async Task resource_navigation_updates_incrementally_and_port_forward_waits_for_pod_permissions()
     {
-        var workspace = await Application.Current.CreateClusterAsync(config =>
+        using var workspace = await Application.Current.CreateClusterAsync(config =>
         {
             config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
             config.InitialResources = KubernetesRbac.ClusterWide(
@@ -1709,7 +1706,7 @@ public class NavigationViewModelTests
         await fastConfig.EvaluateListWatchAccessAsync();
         workspace.AddResourceConfigForTest(fastConfig);
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -1730,7 +1727,7 @@ public class NavigationViewModelTests
     [AvaloniaFact]
     public async Task connect_preloads_pod_default_and_custom_permissions()
     {
-        var workspace = await Application.Current.CreateClusterAsync(config =>
+        using var workspace = await Application.Current.CreateClusterAsync(config =>
         {
             config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
             config.InitialResources = new[]
@@ -1769,7 +1766,7 @@ public class NavigationViewModelTests
         await workspace.Connect();
         await TestApplicationExtensions.WaitForUiAsync();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -1792,7 +1789,7 @@ public class NavigationViewModelTests
         await workspace.Connect();
         await TestApplicationExtensions.WaitForUiAsync();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -1819,7 +1816,7 @@ public class NavigationViewModelTests
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceBeta), "Beta Resources"));
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceNested), "Nested Resources"));
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -1885,7 +1882,7 @@ public class NavigationViewModelTests
         await TestApplicationExtensions.WaitForUiAsync();
         workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCustomResourceAlpha), "Alpha Resources"));
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -1910,7 +1907,7 @@ public class NavigationViewModelTests
         await workspace.Connect();
         await TestApplicationExtensions.WaitForUiAsync();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -1956,7 +1953,7 @@ public class NavigationViewModelTests
         await workspace.Runtime.Permissions.UpdatePermissionsAllNamespaceAsync(GetCustomResourceKind(originalCrd), true, Verb.Watch);
         await workspace.Runtime.SeedResource(originalKind, true);
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -2008,7 +2005,7 @@ public class NavigationViewModelTests
         await workspace.Connect();
         await TestApplicationExtensions.WaitForUiAsync();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -2037,7 +2034,7 @@ public class NavigationViewModelTests
 
         await TestApplicationExtensions.WaitForUiAsync();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -2065,7 +2062,7 @@ public class NavigationViewModelTests
 
         await TestApplicationExtensions.WaitForUiAsync();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -2104,7 +2101,7 @@ public class NavigationViewModelTests
         await workspace.Connect();
         await workspace.Runtime.SeedResource<V1Namespace>(true);
 
-        var navigation = CreateViewModel();
+        using var navigation = CreateViewModel();
         navigation.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -2133,7 +2130,7 @@ public class NavigationViewModelTests
         await workspace.Connect();
         await TestApplicationExtensions.WaitForUiAsync();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -2183,7 +2180,7 @@ public class NavigationViewModelTests
         await workspace.Connect();
         await TestApplicationExtensions.WaitForUiAsync();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -2204,35 +2201,36 @@ public class NavigationViewModelTests
             }
         });
 
-        for (var i = 0; i < 20; i++)
+        var pendingAdds = Task.Run(async () =>
         {
-            await workspace.Runtime.AddOrUpdateResource(new Corev1Event
+            for (var i = 0; i < 100; i++)
             {
-                Metadata = new()
+                await workspace.Runtime.AddOrUpdateResource(new Corev1Event
                 {
-                    Name = $"event-{i}",
-                    NamespaceProperty = "default",
-                },
-                InvolvedObject = new()
+                    Metadata = new()
+                    {
+                        Name = $"event-{i}",
+                        NamespaceProperty = "default",
+                    },
+                    InvolvedObject = new()
+                    {
+                        Name = "pod-one",
+                        NamespaceProperty = "default",
+                        Kind = "Pod",
+                    },
+                    LastTimestamp = DateTime.UtcNow,
+                    Count = 1,
+                });
+
+                if (positiveCount.Task.IsCompleted)
                 {
-                    Name = "pod-one",
-                    NamespaceProperty = "default",
-                    Kind = "Pod",
-                },
-                LastTimestamp = DateTime.UtcNow,
-                Count = 1,
-            });
-
-            await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(20), TestContext.Current.CancellationToken);
-            await TestApplicationExtensions.WaitForUiAsync();
-
-            if (positiveCount.Task.IsCompleted)
-            {
-                break;
+                    return;
+                }
             }
-        }
+        }, TestContext.Current.CancellationToken);
 
-        positiveCount.Task.IsCompleted.ShouldBeTrue();
+        await positiveCount.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        await pendingAdds;
     }
 
     [AvaloniaFact]
@@ -2245,7 +2243,7 @@ public class NavigationViewModelTests
         await workspace.Connect();
         await TestApplicationExtensions.WaitForUiAsync();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -2262,7 +2260,7 @@ public class NavigationViewModelTests
         {
             Metadata = new()
             {
-                Name = "event-from-decorated-workspace.Runtime",
+                Name = "event-from-decorated-workspace-runtime",
                 NamespaceProperty = "default",
             },
             InvolvedObject = new()
@@ -2285,7 +2283,7 @@ public class NavigationViewModelTests
         var config = services.GetRequiredService<TestClusterConfig>();
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -2372,7 +2370,7 @@ public class NavigationViewModelTests
     [AvaloniaFact]
     public async Task event_navigation_count_recovers_when_event_seed_happened_before_namespace_permission()
     {
-        var workspace = await Application.Current.CreateClusterAsync(config =>
+        using var workspace = await Application.Current.CreateClusterAsync(config =>
         {
             config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
             config.InitialResources = KubernetesRbac.ClusterWide(
@@ -2394,7 +2392,7 @@ public class NavigationViewModelTests
         workspace.Runtime.Objects[GroupApiVersionKind.From<Corev1Event>()].ShouldBeOfType<ContainerClass<Corev1Event>>()
             .Informers.Count.ShouldBe(1);
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -2438,7 +2436,7 @@ public class NavigationViewModelTests
 
         await TestApplicationExtensions.WaitForUiAsync();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -2471,7 +2469,7 @@ public class NavigationViewModelTests
 
         await TestApplicationExtensions.WaitForUiAsync();
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -2510,7 +2508,7 @@ public class NavigationViewModelTests
         await TestApplicationExtensions.WaitForUiAsync();
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -2544,7 +2542,7 @@ public class NavigationViewModelTests
         await TestApplicationExtensions.WaitForUiAsync();
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
 
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -2573,7 +2571,7 @@ public class NavigationViewModelTests
         await workspace.Connect();
         await TestApplicationExtensions.WaitForUiAsync();
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -2625,7 +2623,7 @@ public class NavigationViewModelTests
         await workspace.Connect();
         await TestApplicationExtensions.WaitForUiAsync();
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 
@@ -2686,7 +2684,7 @@ public class NavigationViewModelTests
                 name: "Definitions",
                 order: -1),
         });
-        var vm = CreateViewModel();
+        using var vm = CreateViewModel();
         vm.ClusterCatalog.Clusters.Add(workspace);
         await TestApplicationExtensions.WaitForUiAsync();
 

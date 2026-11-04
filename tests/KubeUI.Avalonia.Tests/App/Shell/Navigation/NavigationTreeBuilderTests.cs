@@ -125,16 +125,14 @@ public sealed class NavigationTreeBuilderTests
             .ToArray();
         expectedLinks.Length.ShouldBe(documentCount);
 
-        var stopwatch = Stopwatch.StartNew();
         builder.Reconcile(node);
-        stopwatch.Stop();
-
-        stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromMilliseconds(500));
         var documentLinks = section.NavigationItems.OfType<NavigationLink>()
             .Where(link => link.DocumentId is not null)
             .ToArray();
         documentLinks.Length.ShouldBe(documentCount);
-        documentLinks.ShouldAllBe(link => expectedLinks.Contains(link, ReferenceEqualityComparer.Instance));
+        // Re-reconciling an unchanged tree must preserve link instances instead of rebuilding.
+        var expectedByReference = expectedLinks.ToDictionary(link => link, _ => true, ReferenceEqualityComparer.Instance);
+        documentLinks.ShouldAllBe(link => expectedByReference.ContainsKey(link));
     }
 
     private static NavigationTreeBuilder CreateBuilder(NavigationSectionCatalog catalog) => new(

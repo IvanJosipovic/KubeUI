@@ -2,6 +2,10 @@
   <Import Project="..\FeatureTests.props" />
 
   <ItemGroup>
+    <PackageReference Include="Moq" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Helm.NET" />
   </ItemGroup>
 

@@ -3,6 +3,10 @@
   <Import Project="..\FeatureTests.props" />
 
   <ItemGroup>
+    <PackageReference Include="Moq" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\KubeUI.Features.Cilium\KubeUI.Features.Cilium.csproj" />
     <ProjectReference Include="..\..\src\KubeUI.App\KubeUI.App.csproj" />
     <ProjectReference Include="..\..\src\KubeUI.Controls\KubeUI.Controls.csproj" />

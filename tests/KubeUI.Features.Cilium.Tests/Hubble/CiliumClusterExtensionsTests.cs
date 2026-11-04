@@ -24,4 +24,27 @@ public sealed class CiliumClusterExtensionsTests
 
         isInstalled.ShouldBeTrue();
     }
+
+    [AvaloniaFact]
+    public async Task IsCiliumInstalledAsync_rejects_dot_boundary_subgroups_that_share_the_prefix()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(config => config.Resources =
+        [
+            new V1CustomResourceDefinition
+            {
+                Metadata = new V1ObjectMeta { Name = "networkpolicies.xcilium.io" },
+                Spec = new V1CustomResourceDefinitionSpec { Group = "xcilium.io" },
+            },
+            new V1CustomResourceDefinition
+            {
+                Metadata = new V1ObjectMeta { Name = "networkpolicies.notcilium.io" },
+                Spec = new V1CustomResourceDefinitionSpec { Group = "notcilium.io" },
+            },
+        ]);
+
+        var isInstalled = await workspace.Runtime.IsCiliumInstalledAsync(TestContext.Current.CancellationToken);
+
+        isInstalled.ShouldBeFalse();
+        workspace.Runtime.IsCiliumInstalled().ShouldBeFalse();
+    }
 }

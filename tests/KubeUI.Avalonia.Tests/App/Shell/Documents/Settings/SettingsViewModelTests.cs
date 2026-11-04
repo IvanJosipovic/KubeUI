@@ -233,17 +233,14 @@ public sealed class SettingsViewModelTests
     }
 
     [AvaloniaFact]
-    public void settings_view_shows_cluster_scope_as_checkboxes()
+    public async Task settings_view_shows_cluster_scope_as_checkboxes()
     {
         var settings = new AppSettings { McpServerEnabled = true };
         var settingsService = new Mock<ISettingsService>();
         settingsService.SetupGet(service => service.Settings).Returns(settings);
-        var dev = new Mock<IClusterRuntime>();
-        dev.SetupGet(cluster => cluster.Name).Returns("dev");
-        var prod = new Mock<IClusterRuntime>();
-        prod.SetupGet(cluster => cluster.Name).Returns("prod");
+        await using var clusters = await NamedClusterCatalogFactory.CreateAsync("dev", "prod");
         var clusterCatalog = new Mock<IClusterRuntimeCatalog>();
-        clusterCatalog.SetupGet(catalog => catalog.Clusters).Returns([dev.Object, prod.Object]);
+        clusterCatalog.SetupGet(catalog => catalog.Clusters).Returns(clusters.Runtimes);
         var agent = new Mock<IAgent>();
         agent.SetupGet(value => value.Name).Returns("Test agent");
         var registry = new Mock<IAgentRegistry>();
@@ -270,18 +267,15 @@ public sealed class SettingsViewModelTests
     }
 
     [Fact]
-    public void external_mcp_credentials_are_shown_once_and_can_be_revoked()
+    public async Task external_mcp_credentials_are_shown_once_and_can_be_revoked()
     {
         var settings = new AppSettings();
         var settingsService = new Mock<ISettingsService>();
         settingsService.SetupGet(service => service.Settings).Returns(settings);
         settingsService.Setup(service => service.TrySaveSettings()).Returns(true);
-        var dev = new Mock<IClusterRuntime>();
-        dev.SetupGet(cluster => cluster.Name).Returns("dev");
-        var prod = new Mock<IClusterRuntime>();
-        prod.SetupGet(cluster => cluster.Name).Returns("prod");
+        await using var clusters = await NamedClusterCatalogFactory.CreateAsync("dev", "prod");
         var clusterCatalog = new Mock<IClusterRuntimeCatalog>();
-        clusterCatalog.SetupGet(catalog => catalog.Clusters).Returns([dev.Object, prod.Object]);
+        clusterCatalog.SetupGet(catalog => catalog.Clusters).Returns(clusters.Runtimes);
         using var viewModel = CreateViewModel(
             settingsService.Object,
             clusterCatalog: clusterCatalog.Object,
@@ -347,22 +341,16 @@ public sealed class SettingsViewModelTests
     }
 
     [Fact]
-    public void external_mcp_credential_rejects_more_than_one_hundred_selected_clusters()
+    public async Task external_mcp_credential_rejects_more_than_one_hundred_selected_clusters()
     {
         var settings = new AppSettings();
         var settingsService = new Mock<ISettingsService>();
         settingsService.SetupGet(service => service.Settings).Returns(settings);
         settingsService.Setup(service => service.TrySaveSettings()).Returns(true);
-        var runtimes = Enumerable.Range(0, 101)
-            .Select(index =>
-            {
-                var runtime = new Mock<IClusterRuntime>();
-                runtime.SetupGet(cluster => cluster.Name).Returns($"cluster-{index}");
-                return runtime.Object;
-            })
-            .ToArray();
+        await using var runtimes = await NamedClusterCatalogFactory.CreateAsync(
+            [.. Enumerable.Range(0, 101).Select(index => $"cluster-{index}")]);
         var clusterCatalog = new Mock<IClusterRuntimeCatalog>();
-        clusterCatalog.SetupGet(catalog => catalog.Clusters).Returns(runtimes);
+        clusterCatalog.SetupGet(catalog => catalog.Clusters).Returns(runtimes.Runtimes);
         using var viewModel = CreateViewModel(
             settingsService.Object,
             clusterCatalog: clusterCatalog.Object,

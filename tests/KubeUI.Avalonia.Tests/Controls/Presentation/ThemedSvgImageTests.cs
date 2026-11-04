@@ -69,16 +69,22 @@ public sealed class ThemedSvgImageTests
         var window = new Window();
         ThemedSvgImage image = new();
         window.Content = image;
-        window.Show();
+        try
+        {
+            window.Show();
 
-        image.Source.ShouldBeNull();
+            image.Source.ShouldBeNull();
 
-        image.SourcePath = HelmNavigationSectionProvider.IconAssetPath;
-        LoadedSource(image).Picture.ShouldNotBeNull();
+            image.SourcePath = HelmNavigationSectionProvider.IconAssetPath;
+            LoadedSource(image).Picture.ShouldNotBeNull();
 
-        image.SourcePath = null;
-        image.Source.ShouldBeNull();
-        window.Close();
+            image.SourcePath = null;
+            image.Source.ShouldBeNull();
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     private static SvgSource LoadedSource(ThemedSvgImage image)

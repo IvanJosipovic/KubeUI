@@ -237,7 +237,6 @@ public sealed class NavigationSectionTests
         builder.Reconcile(node);
         builder.Reconcile(node);
         node.NavigationItems.ShouldNotContain(item => item.Id == $"{workspace.Runtime.Name}-section-cilium");
-        node.NavigationItems.ShouldNotContain(item => item.Id == $"{workspace.Runtime.Name}-section-cilium");
     }
 
     [Fact]

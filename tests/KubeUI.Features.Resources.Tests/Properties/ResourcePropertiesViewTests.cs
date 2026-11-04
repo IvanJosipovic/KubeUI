@@ -105,22 +105,27 @@ public sealed class ResourcePropertiesViewTests
             Content = view
         };
 
-        window.Show();
-        await TestApplicationExtensions.WaitForUiAsync();
+        try
+        {
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
 
-        var buttons = view.FindControl<StackPanel>("PART_Actions")!.Children.OfType<Button>().ToList();
+            var buttons = view.FindControl<StackPanel>("PART_Actions")!.Children.OfType<Button>().ToList();
 
-        viewModel.Actions.Single(action => action.Title == "View").ShowInPropertiesView.ShouldBeFalse();
-        buttons.Any(button => Equals(ToolTip.GetTip(button), "View")).ShouldBeFalse();
-        buttons.Any(button => button.Command != null && button.Flyout == null).ShouldBeTrue();
-        var submenus = buttons.Select(button => button.Flyout).OfType<MenuFlyout>().ToList();
-        submenus.Count.ShouldBeGreaterThan(1);
-        var submenu = submenus[0];
-        var submenuItems = submenu.Items.OfType<MenuItem>().ToList();
-        submenuItems.ShouldNotBeEmpty();
-        submenuItems.Any(item => item.Items.OfType<MenuItem>().Any()).ShouldBeTrue();
-
-        window.Close();
+            viewModel.Actions.Single(action => action.Title == "View").ShowInPropertiesView.ShouldBeFalse();
+            buttons.Any(button => Equals(ToolTip.GetTip(button), "View")).ShouldBeFalse();
+            buttons.Any(button => button.Command != null && button.Flyout == null).ShouldBeTrue();
+            var submenus = buttons.Select(button => button.Flyout).OfType<MenuFlyout>().ToList();
+            submenus.Count.ShouldBeGreaterThan(1);
+            var submenu = submenus[0];
+            var submenuItems = submenu.Items.OfType<MenuItem>().ToList();
+            submenuItems.ShouldNotBeEmpty();
+            submenuItems.Any(item => item.Items.OfType<MenuItem>().Any()).ShouldBeTrue();
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [AvaloniaFact]

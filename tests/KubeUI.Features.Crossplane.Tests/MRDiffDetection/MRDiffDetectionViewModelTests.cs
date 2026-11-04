@@ -1,11 +1,8 @@
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using System.Text;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Dock.Model.Controls;
 using Dock.Model.Core;
-using DynamicData;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -13,7 +10,9 @@ using KubeUI.App.Infrastructure.Platform;
 using KubeUI.App.Shell.Main;
 using KubeUI.Features.Crossplane.MRDiffDetection;
 using KubeUI.Features.Resources;
+using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Serialization;
+using KubeUI.Testing.Utilities;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Shouldly;
@@ -46,71 +45,25 @@ public sealed class MRDiffDetectionViewModelTests
     [AvaloniaFact]
     public async Task Provider_log_diffs_are_searchable_and_clear_restarts_tail_replay()
     {
-        GroupApiVersionKind providerKind = new("pkg.crossplane.io", "v1", "Provider", "providers");
-        GroupApiVersionKind widgetKind = new("example.com", "v1", "Widget", "widgets");
-        using var providerCache = new SourceCache<GenericKubernetesObject, ResourceCacheKey>(ResourceCacheKey.From);
-        var provider = new GenericKubernetesObject
-        {
-            ApiVersion = "pkg.crossplane.io/v1",
-            Kind = "Provider",
-            Metadata = new V1ObjectMeta { Name = "provider-demo" }
-        };
-        var unnamedProvider = new GenericKubernetesObject
-        {
-            ApiVersion = "pkg.crossplane.io/v1",
-            Kind = "Provider",
-            Metadata = new V1ObjectMeta { Name = " " }
-        };
-        providerCache.AddOrUpdate([provider, unnamedProvider]);
+        await using var fixture = await CrossplaneTestCluster.CreateWithProviderAsync(
+            TestContext.Current.CancellationToken,
+            [CreateProviderPod(restartCount: 0)],
+            providerName: "provider-demo",
+            widgetUid: "uid-1");
+        var runtime = fixture.Cluster.Cluster;
 
-        var runtime = new Mock<IClusterRuntime>();
-        runtime.SetupGet(cluster => cluster.Name).Returns("test-cluster");
-        runtime.SetupGet(cluster => cluster.Status).Returns(ClusterStatus.None);
-        var widgetResource = new GenericKubernetesObject
-        {
-            ApiVersion = "example.com/v1",
-            Kind = "Widget",
-            Metadata = new V1ObjectMeta
-            {
-                Uid = "uid-1",
-                Name = "widget-one",
-                NamespaceProperty = "default"
-            }
-        };
-        var widgetContainer = new Mock<IResourceContainer>();
-        widgetContainer.Setup(container => container.Snapshot()).Returns([widgetResource]);
-        var providerPods = new List<V1Pod>();
-        var providerPodContainer = new Mock<IResourceContainer>();
-        providerPodContainer.Setup(container => container.Snapshot())
-            .Returns(() => providerPods.Cast<IKubernetesObject<V1ObjectMeta>>().ToArray());
-        var providerPod = new V1Pod
-        {
-            Metadata = new V1ObjectMeta
-            {
-                Name = "provider-demo-abc",
-                NamespaceProperty = "crossplane-system"
-            },
-            Spec = new V1PodSpec { Containers = [new V1Container { Name = "provider" }] },
-            Status = new V1PodStatus
-            {
-                ContainerStatuses = [new V1ContainerStatus { Name = "provider", RestartCount = 0 }]
-            }
-        };
-        providerPods.Add(providerPod);
-        using var podChanges = new Subject<ResourceChange>();
-        runtime.SetupGet(cluster => cluster.Objects).Returns(new Dictionary<GroupApiVersionKind, object>
-        {
-            [providerKind] = new object(),
-            [widgetKind] = widgetContainer.Object,
-            [GroupApiVersionKind.From<V1Pod>()] = providerPodContainer.Object
-        });
-        runtime.Setup(cluster => cluster.SeedResource(providerKind, true, It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-        runtime.Setup(cluster => cluster.SeedResource(
-            GroupApiVersionKind.From<V1Pod>(),
-            true,
-            It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-        runtime.Setup(cluster => cluster.GetResourceSourceCache<GenericKubernetesObject>(providerKind)).Returns(providerCache);
-        runtime.Setup(cluster => cluster.ConnectResources()).Returns(podChanges);
+        // The fake API server assigns uids; read the observed widget uid so the provider
+        // diff log lines reference the real resource identity.
+        var widgetUid = await TestWait.UntilValueAsync(
+            () => runtime.Objects.TryGetValue(CrossplaneTestCluster.WidgetKind, out var container)
+                && container is IResourceContainer seeded
+                    ? seeded.Snapshot().OfType<GenericKubernetesObject>()
+                        .FirstOrDefault(widget => widget.Name() == "widget-one")?.Metadata?.Uid
+                    : null,
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+        widgetUid.ShouldNotBeNull();
 
         var yamlSerializer = new Mock<IKubernetesYamlSerializer>();
         yamlSerializer.Setup(serializer => serializer.Serialize(It.IsAny<object>())).Returns("yaml");
@@ -133,10 +86,12 @@ public sealed class MRDiffDetectionViewModelTests
         mainViewModel.Layout = layout;
         using var instrumentation = new Instrumentation();
         using var cluster = new ClusterWorkspace(
-            runtime.Object,
+            runtime,
             serviceProvider.Object,
             NullLogger<ClusterWorkspace>.Instance,
             instrumentation);
+        GroupApiVersionKind providerKind = new("pkg.crossplane.io", "v1", "Provider", "providers");
+        GroupApiVersionKind widgetKind = new("example.com", "v1", "Widget", "widgets");
         var providerConfig = CreateResourceConfig(providerKind, "Providers");
         var widgetConfig = CreateResourceConfig(widgetKind, "Widgets");
         cluster.AddResourceConfigForTest(providerConfig.Object);
@@ -154,16 +109,16 @@ public sealed class MRDiffDetectionViewModelTests
 
         var streamClient = new StaticPodLogStreamClient(string.Join(
             '\n',
-            CreateDiffLog("uid-1", "widget-one", "old", "new"),
+            CreateDiffLog(widgetUid, "widget-one", "old", "new"),
             CreateDiffLog("uid-2", "widget-two", "old-two", "new-two"),
-            CreateDiffLog("uid-1", "widget-one", "new", "updated"),
+            CreateDiffLog(widgetUid, "widget-one", "new", "updated"),
             CreateDiffLog("uid-4", "core-thing", "old-four", "new-four", gvk: "v1, Kind=CoreThing"),
             CreateDiffLog("uid-5", "unknown-widget", "old-five", "new-five", gvk: "missing.example.com/v1, Kind=Unknown"),
             CreateTruncatedDiffLog("uid-3", "widget-three", "old-three", "new-three")));
         var resolver = new FixedPodResolver(new V1Pod
         {
             Metadata = new V1ObjectMeta { Name = "provider-demo-abc", NamespaceProperty = "crossplane-system" },
-            Spec = new V1PodSpec { Containers = [new V1Container { Name = "provider" }] },
+            Spec = new V1PodSpec { Containers = [new V1Container { Name = "provider", Image = "provider:latest" }] },
             Status = new V1PodStatus()
         });
         using var monitor = new CrossplaneProviderLogMonitor(
@@ -187,7 +142,7 @@ public sealed class MRDiffDetectionViewModelTests
         viewModel.SelectionModel.ShouldBeSameAs(viewModel.TableSource.SelectionModel);
         MRDiffDetectionViewModel.IsAvailable(cluster).ShouldBeTrue();
         var rows = GetRows(viewModel).ToDictionary(row => row.Uid, StringComparer.Ordinal);
-        var updatedRow = rows["uid-1"];
+        var updatedRow = rows[widgetUid];
         updatedRow.Name.ShouldBe("widget-one");
         updatedRow.DiffField.ShouldBe("spec.value");
         updatedRow.OldValue.ShouldBe("new");
@@ -217,7 +172,11 @@ public sealed class MRDiffDetectionViewModelTests
         {
             viewModel.ViewYamlCommand.Execute(updatedRow);
             yamlViewModel.Cluster.ShouldBeSameAs(cluster);
-            yamlViewModel.Object.ShouldBeSameAs(widgetResource);
+            yamlViewModel.Object.ShouldNotBeNull();
+            yamlViewModel.Object.Metadata.Uid.ShouldBe(widgetUid);
+            yamlViewModel.Object.Metadata.Name.ShouldBe("widget-one");
+            yamlViewModel.Object.ApiVersion.ShouldBe("example.com/v1");
+            yamlViewModel.Object.Kind.ShouldBe("Widget");
             factory.GetDockable<IToolDock>("BottomDock")!.VisibleDockables
                 .ShouldContain(yamlViewModel);
         }
@@ -249,57 +208,60 @@ public sealed class MRDiffDetectionViewModelTests
         await WaitForAsync(() => GetRows(viewModel).Length == 0);
         viewModel.SearchQuery = "widget-";
         await WaitForAsync(() => GetRows(viewModel).Length == 3);
-        providerCache.AddOrUpdate(new GenericKubernetesObject
-        {
-            ApiVersion = "pkg.crossplane.io/v1",
-            Kind = "Provider",
-            Metadata = new V1ObjectMeta { Name = "provider-another" }
-        });
+        await CrossplaneTestCluster.CreateCustomResourceAsync(
+            fixture,
+            TestContext.Current.CancellationToken,
+            providerKind,
+            new GenericKubernetesObject
+            {
+                ApiVersion = "pkg.crossplane.io/v1",
+                Kind = "Provider",
+                Metadata = new V1ObjectMeta { Name = "provider-another" }
+            });
         await WaitForAsync(() => viewModel.Providers.Count == 2);
         viewModel.SelectedProvider?.Name.ShouldBe("provider-demo");
 
         viewModel.SearchQuery = string.Empty;
         await WaitForAsync(() => GetRows(viewModel).Length == 5);
         streamClient.ResetOpenCount();
-        podChanges.OnNext(new ResourceChange(
-            WatchEventType.Modified,
-            GroupApiVersionKind.From<V1Pod>(),
-            providerPod));
-        await WaitForProviderReconciliationAsync();
+        var providerPod = CreateProviderPod(restartCount: 0);
+        var replacedPod = await CrossplaneTestCluster.ReplacePodStatusAsync(fixture, providerPod, "crossplane-system", TestContext.Current.CancellationToken);
+        await WaitForPodObservedAsync(runtime, replacedPod, TestContext.Current.CancellationToken);
         streamClient.OpenCount.ShouldBe(0);
 
         providerPod.Status.ContainerStatuses[0].RestartCount = 1;
-        podChanges.OnNext(new ResourceChange(
-            WatchEventType.Modified,
-            GroupApiVersionKind.From<V1Pod>(),
-            providerPod));
-        await WaitForAsync(() => streamClient.OpenCount == 1, timeoutMilliseconds: 750);
+        replacedPod = await CrossplaneTestCluster.ReplacePodStatusAsync(fixture, providerPod, "crossplane-system", TestContext.Current.CancellationToken);
+        await WaitForAsync(() => streamClient.OpenCount == 1);
         GetRows(viewModel).Length.ShouldBe(5);
 
         streamClient.ResetOpenCount();
         providerPod.Status.ContainerStatuses = [];
-        podChanges.OnNext(new ResourceChange(
-            WatchEventType.Modified,
-            GroupApiVersionKind.From<V1Pod>(),
-            providerPod));
-        await WaitForAsync(() => streamClient.OpenCount == 1, timeoutMilliseconds: 750);
+        replacedPod = await CrossplaneTestCluster.ReplacePodStatusAsync(fixture, providerPod, "crossplane-system", TestContext.Current.CancellationToken);
+        await WaitForAsync(() => streamClient.OpenCount == 1);
         GetRows(viewModel).Length.ShouldBe(5);
 
         streamClient.ResetOpenCount();
-        podChanges.OnNext(new ResourceChange(
-            WatchEventType.Modified,
-            GroupApiVersionKind.From<V1Pod>(),
-            providerPod));
-        await WaitForProviderReconciliationAsync();
+        providerPod.Status.ContainerStatuses = [];
+        replacedPod = await CrossplaneTestCluster.ReplacePodStatusAsync(fixture, providerPod, "crossplane-system", TestContext.Current.CancellationToken);
+        await WaitForPodObservedAsync(runtime, replacedPod, TestContext.Current.CancellationToken);
         streamClient.OpenCount.ShouldBe(0);
 
         viewModel.ClearCommand.Execute(null);
         await WaitForAsync(() => streamClient.OpenCount >= 1);
         await WaitForAsync(() => GetRows(viewModel).Length == 0);
-        providerCache.Remove(provider);
+        await CrossplaneTestCluster.DeleteCustomResourceAsync(
+            fixture,
+            TestContext.Current.CancellationToken,
+            providerKind,
+            new GenericKubernetesObject
+            {
+                ApiVersion = "pkg.crossplane.io/v1",
+                Kind = "Provider",
+                Metadata = new V1ObjectMeta { Name = "provider-demo" }
+            });
         await WaitForAsync(() => viewModel.Status == CrossplaneAssets.Resources.MRDiffDetectionView_SelectProvider);
         viewModel.SelectedProvider.ShouldBeNull();
-        var seedingToken = await seedStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var seedingToken = await seedStarted.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         viewModel.Dispose();
 
@@ -310,27 +272,21 @@ public sealed class MRDiffDetectionViewModelTests
     [AvaloniaFact]
     public async Task Initialize_without_provider_configuration_clears_selection_and_prompts_user()
     {
-        var runtime = new Mock<IClusterRuntime>();
-        runtime.SetupGet(cluster => cluster.Name).Returns("test-cluster");
-        runtime.SetupGet(cluster => cluster.Status).Returns(ClusterStatus.None);
-        runtime.SetupGet(cluster => cluster.Objects).Returns(new Dictionary<GroupApiVersionKind, object>());
-        runtime.Setup(cluster => cluster.ConnectResources()).Returns(Observable.Empty<ResourceChange>());
+        await using var fixture = await CrossplaneTestCluster.CreatePodsAsync(
+            TestContext.Current.CancellationToken,
+            KubernetesBackend.Fake,
+            CreateProviderPod(restartCount: 0));
+        var runtime = fixture.Cluster.Cluster;
 
         using var serviceProvider = new ServiceCollection().BuildServiceProvider();
         using var instrumentation = new Instrumentation();
         using var cluster = new ClusterWorkspace(
-            runtime.Object,
+            runtime,
             serviceProvider,
             NullLogger<ClusterWorkspace>.Instance,
             instrumentation);
-        var pod = new V1Pod
-        {
-            Metadata = new V1ObjectMeta { Name = "provider-demo-abc", NamespaceProperty = "crossplane-system" },
-            Spec = new V1PodSpec { Containers = [new V1Container { Name = "provider" }] },
-            Status = new V1PodStatus()
-        };
         using var monitor = new CrossplaneProviderLogMonitor(
-            new FixedPodResolver(pod),
+            new FixedPodResolver(CreateProviderPod(restartCount: 0)),
             new StaticPodLogStreamClient(string.Empty),
             NullLogger<CrossplaneProviderLogMonitor>.Instance);
         using var viewModel = new MRDiffDetectionViewModel(
@@ -355,35 +311,23 @@ public sealed class MRDiffDetectionViewModelTests
     [AvaloniaFact]
     public async Task Initialize_surfaces_provider_resource_seed_failures()
     {
+        await using var fixture = await CrossplaneTestCluster.CreatePodsAsync(
+            TestContext.Current.CancellationToken,
+            KubernetesBackend.Fake,
+            CreateProviderPod(restartCount: 0));
+        var runtime = fixture.Cluster.Cluster;
         GroupApiVersionKind providerKind = new("pkg.crossplane.io", "v1", "Provider", "providers");
-        var runtime = new Mock<IClusterRuntime>();
-        runtime.SetupGet(cluster => cluster.Name).Returns("test-cluster");
-        runtime.SetupGet(cluster => cluster.Status).Returns(ClusterStatus.None);
-        runtime.SetupGet(cluster => cluster.Objects).Returns(new Dictionary<GroupApiVersionKind, object>());
-        runtime.Setup(cluster => cluster.SeedResource(providerKind, true, It.IsAny<CancellationToken>()))
-            .Returns(Task.FromException(new InvalidOperationException("provider seed failed")));
-        runtime.Setup(cluster => cluster.SeedResource(
-            GroupApiVersionKind.From<V1Pod>(),
-            true,
-            It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-        runtime.Setup(cluster => cluster.ConnectResources()).Returns(Observable.Empty<ResourceChange>());
 
         using var serviceProvider = new ServiceCollection().BuildServiceProvider();
         using var instrumentation = new Instrumentation();
         using var cluster = new ClusterWorkspace(
-            runtime.Object,
+            runtime,
             serviceProvider,
             NullLogger<ClusterWorkspace>.Instance,
             instrumentation);
         cluster.AddResourceConfigForTest(CreateResourceConfig(providerKind, "Providers").Object);
-        var pod = new V1Pod
-        {
-            Metadata = new V1ObjectMeta { Name = "provider-demo-abc", NamespaceProperty = "crossplane-system" },
-            Spec = new V1PodSpec { Containers = [new V1Container { Name = "provider" }] },
-            Status = new V1PodStatus()
-        };
         using var monitor = new CrossplaneProviderLogMonitor(
-            new FixedPodResolver(pod),
+            new FixedPodResolver(CreateProviderPod(restartCount: 0)),
             new StaticPodLogStreamClient(string.Empty),
             NullLogger<CrossplaneProviderLogMonitor>.Instance);
         using var viewModel = new MRDiffDetectionViewModel(
@@ -395,35 +339,23 @@ public sealed class MRDiffDetectionViewModelTests
 
         viewModel.Initialize(cluster);
 
-        await WaitForAsync(() => viewModel.Status == "provider seed failed");
+        await WaitForAsync(() => viewModel.Status != CrossplaneAssets.Resources.MRDiffDetectionView_SelectProvider);
+        viewModel.Status.ShouldNotBeNull().ShouldContain("Unknown resource kind");
     }
 
     [AvaloniaFact]
     public async Task Provider_monitor_failures_are_reported_in_status()
     {
+        await using var fixture = await CrossplaneTestCluster.CreateWithProviderAsync(
+            TestContext.Current.CancellationToken,
+            [CreateProviderPod(restartCount: 0)]);
+        var runtime = fixture.Cluster.Cluster;
         GroupApiVersionKind providerKind = new("pkg.crossplane.io", "v1", "Provider", "providers");
-        using var providerCache = new SourceCache<GenericKubernetesObject, ResourceCacheKey>(ResourceCacheKey.From);
-        providerCache.AddOrUpdate(new GenericKubernetesObject
-        {
-            ApiVersion = "pkg.crossplane.io/v1",
-            Kind = "Provider",
-            Metadata = new V1ObjectMeta { Name = "provider-demo" }
-        });
-
-        var runtime = new Mock<IClusterRuntime>();
-        runtime.SetupGet(cluster => cluster.Name).Returns("test-cluster");
-        runtime.SetupGet(cluster => cluster.Status).Returns(ClusterStatus.None);
-        runtime.SetupGet(cluster => cluster.Objects).Returns(new Dictionary<GroupApiVersionKind, object>());
-        runtime.Setup(cluster => cluster.SeedResource(It.IsAny<GroupApiVersionKind>(), true, It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-        runtime.Setup(cluster => cluster.GetResourceSourceCache<GenericKubernetesObject>(providerKind))
-            .Returns(providerCache);
-        runtime.Setup(cluster => cluster.ConnectResources()).Returns(Observable.Empty<ResourceChange>());
 
         using var serviceProvider = new ServiceCollection().BuildServiceProvider();
         using var instrumentation = new Instrumentation();
         using var cluster = new ClusterWorkspace(
-            runtime.Object,
+            runtime,
             serviceProvider,
             NullLogger<ClusterWorkspace>.Instance,
             instrumentation);
@@ -464,6 +396,41 @@ public sealed class MRDiffDetectionViewModelTests
         viewModel.ViewYamlCommand.CanExecute(row).ShouldBeFalse();
         viewModel.ViewYamlCommand.Execute(row);
         viewModel.ViewYamlCommand.Execute(null);
+    }
+
+    private static V1Pod CreateProviderPod(int restartCount)
+        => new()
+        {
+            ApiVersion = V1Pod.KubeApiVersion,
+            Kind = V1Pod.KubeKind,
+            Metadata = new V1ObjectMeta
+            {
+                Name = "provider-demo-abc",
+                NamespaceProperty = "crossplane-system",
+                Labels = new Dictionary<string, string> { ["pkg.crossplane.io/provider"] = "provider-demo" },
+            },
+            Spec = new V1PodSpec { Containers = [new V1Container { Name = "provider", Image = "provider:latest" }] },
+            Status = new V1PodStatus
+            {
+                ContainerStatuses = [new V1ContainerStatus { Name = "provider", RestartCount = restartCount }]
+            },
+        };
+
+    /// <summary>Waits until the pod informer has observed the replaced resource version.</summary>
+    private static async Task WaitForPodObservedAsync(
+        IClusterRuntime runtime,
+        V1Pod pod,
+        CancellationToken cancellationToken)
+    {
+        var expectedVersion = pod.Metadata.ResourceVersion;
+        await TestWait.UntilAsync(
+            () => runtime.Objects.TryGetValue(GroupApiVersionKind.From<V1Pod>(), out var container)
+                && container is IResourceContainer seeded
+                && seeded.Snapshot().OfType<V1Pod>().Any(observed =>
+                    observed.Name() == pod.Name() && observed.Metadata.ResourceVersion == expectedVersion),
+            TimeSpan.FromSeconds(5),
+            cancellationToken: cancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
     }
 
     private static CrossplaneDiffRow CreateRow(
@@ -566,12 +533,6 @@ public sealed class MRDiffDetectionViewModelTests
             timeoutMilliseconds,
             TestContext.Current.CancellationToken,
             () => Dispatcher.UIThread.RunJobs());
-
-    private static async Task WaitForProviderReconciliationAsync()
-    {
-        await Observable.Timer(TimeSpan.FromMilliseconds(100)).FirstAsync();
-        await Dispatcher.UIThread.InvokeAsync(() => Dispatcher.UIThread.RunJobs());
-    }
 
     private sealed class FixedPodResolver(V1Pod pod) : IPodLogSessionResolver
     {

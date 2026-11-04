@@ -698,7 +698,14 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable, IPodL
         }
         else
         {
-            Dispatcher.UIThread.Invoke(ClearLogDocument);
+            try
+            {
+                Dispatcher.UIThread.Invoke(ClearLogDocument);
+            }
+            catch (TaskCanceledException)
+            {
+                // The dispatcher is shutting down; the log document does not need clearing.
+            }
         }
 
         // Connect may still be awaiting OpenAsync and will release the gate in its finally block.

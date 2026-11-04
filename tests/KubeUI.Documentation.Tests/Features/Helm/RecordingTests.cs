@@ -12,7 +12,6 @@ namespace KubeUI.Documentation.Tests.Features.Helm;
 public sealed class RecordingTests
 {
     [DocumentationVideoTheory]
-    [Obsolete]
     public Task Manage_prometheus_with_helm_video(string theme)
     {
         var clusterName = $"prometheus-{theme}";

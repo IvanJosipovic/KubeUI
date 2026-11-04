@@ -133,18 +133,23 @@ public sealed class NavigationViewTests
 
         var view = new NavigationView { DataContext = navigation };
         var window = new Window { Content = view };
-        window.Show();
-        await TestApplicationExtensions.WaitForUiAsync();
-        await TestApplicationExtensions.WaitForUiAsync();
+        try
+        {
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
+            await TestApplicationExtensions.WaitForUiAsync();
 
-        podsLink.Count = Observable.Return(3);
-        await TestApplicationExtensions.WaitForUiAsync();
-        await TestApplicationExtensions.WaitForUiAsync();
+            podsLink.Count = Observable.Return(3);
+            await TestApplicationExtensions.WaitForUiAsync();
+            await TestApplicationExtensions.WaitForUiAsync();
 
-        view.GetVisualDescendants().OfType<TextBlock>().Select(text => text.Text).ShouldContain("3");
-
-        window.Content = null;
-        window.Close();
+            view.GetVisualDescendants().OfType<TextBlock>().Select(text => text.Text).ShouldContain("3");
+        }
+        finally
+        {
+            window.Content = null;
+            window.Close();
+        }
     }
 
     [AvaloniaFact]

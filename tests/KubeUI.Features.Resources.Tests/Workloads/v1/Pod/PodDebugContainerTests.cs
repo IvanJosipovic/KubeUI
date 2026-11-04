@@ -11,7 +11,7 @@ public sealed class PodDebugContainerTests
     public async Task adding_debug_container_uses_cluster_image_and_target_container(KubernetesBackend backend)
     {
         var services = Application.Current.GetTestServices();
-        var workspace = await Application.Current.CreateClusterAsync(config => config.Type = backend);
+        using var workspace = await Application.Current.CreateClusterAsync(config => config.Type = backend);
         await workspace.Runtime.SeedResource<V1Pod>(true);
         var settings = services.GetRequiredService<ISettingsService>();
         settings.Settings.GetClusterSettings(workspace.Runtime).DebugContainerImage = "example.com/debug:1";

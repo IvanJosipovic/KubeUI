@@ -849,7 +849,13 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
                 resource["metadata"]!["generation"] = 1;
             }
 
-            _resources[resourceKey] = resource;
+            // TryAdd keeps create atomic under concurrency: a lost race returns 409 like a
+            // real API server instead of silently overwriting the existing resource.
+            if (!_resources.TryAdd(resourceKey, resource))
+            {
+                return AlreadyExistsStatus(route, name);
+            }
+
             if (route.PluralName == "customresourcedefinitions")
             {
                 RegisterCustomResourceDefinition(resource);
@@ -1150,9 +1156,15 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
         if (route.Subresource == "log")
         {
-            return request.Method == HttpMethod.Get
-                ? Text(string.Empty)
-                : Error(HttpStatusCode.MethodNotAllowed, "Only GET is supported for the log subresource.");
+            if (request.Method != HttpMethod.Get)
+            {
+                return Error(HttpStatusCode.MethodNotAllowed, "Only GET is supported for the log subresource.");
+            }
+
+            // Tests inject log content through the pod annotation "kubeui.testing/log";
+            // pods without it log an empty stream like a quiesced container.
+            var log = existing["metadata"]?["annotations"]?["kubeui.testing/log"]?.GetValue<string>();
+            return Text(log ?? string.Empty);
         }
 
         if (route.Subresource == "ephemeralcontainers")
@@ -2001,7 +2013,8 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
                 label.Length is > 0 and <= 63
                 && label[0] != '-'
                 && label[^1] != '-'
-                && label.All(character => char.IsAsciiLetterOrDigit(character) || character == '-'));
+                // RFC 1123 subdomains are lowercase; a real API server rejects uppercase names.
+                && label.All(character => char.IsAsciiDigit(character) || character is (>= 'a' and <= 'z') or '-'));
 
     private static string EncodeContinueToken(int offset)
         => Convert.ToBase64String(Encoding.UTF8.GetBytes(offset.ToString(System.Globalization.CultureInfo.InvariantCulture)));
@@ -2533,7 +2546,14 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
     private void RegisterPolicyResource(string group, string resourceName)
     {
-        const string apiVersion = "v1";
+        // RBAC rules may reference resources in groups the fake does not otherwise serve.
+        // Register them at the version a real cluster exposes for the group; unknown groups
+        // stay unregistered so discovery is not polluted with versions Kind will not have.
+        if (!PolicyGroupVersions.TryGetValue(group, out var apiVersion))
+        {
+            return;
+        }
+
         var key = DefinitionKey(group, apiVersion, resourceName);
         _definitions.TryAdd(
             key,
@@ -2541,6 +2561,24 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
                 new GroupApiVersionKind(group, apiVersion, InferKind(resourceName), resourceName),
                 IsNamespacedResource(resourceName)));
     }
+
+    /// <summary>Serving versions for groups commonly referenced by RBAC rules, matching Kind.</summary>
+    private static readonly Dictionary<string, string> PolicyGroupVersions = new(StringComparer.Ordinal)
+    {
+        [string.Empty] = "v1",
+        ["apps"] = "v1",
+        ["autoscaling"] = "v2",
+        ["batch"] = "v1",
+        ["coordination.k8s.io"] = "v1",
+        ["discovery.k8s.io"] = "v1",
+        ["events.k8s.io"] = "v1",
+        ["apiextensions.k8s.io"] = "v1",
+        ["networking.k8s.io"] = "v1",
+        ["policy"] = "v1",
+        ["rbac.authorization.k8s.io"] = "v1",
+        ["storage.k8s.io"] = "v1",
+        ["metrics.k8s.io"] = "v1beta1",
+    };
 
     private static bool IsNamespacedResource(string resource)
         => resource is not ("namespaces"

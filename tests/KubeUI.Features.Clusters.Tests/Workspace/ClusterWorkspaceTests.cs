@@ -23,7 +23,7 @@ public class ClusterWorkspaceTests
     [AvaloniaFact]
     public async Task creating_workspace_does_not_initialize_resource_configs_until_requested()
     {
-        var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
 
         workspace.GetResourceConfigs().ShouldBeEmpty();
     }
@@ -31,7 +31,7 @@ public class ClusterWorkspaceTests
     [AvaloniaFact]
     public async Task connected_workspace_does_not_register_crd_config_template_as_built_in()
     {
-        var workspace = await Application.Current.CreateClusterAsync();
+        using var workspace = await Application.Current.CreateClusterAsync();
 
         workspace.GetResourceConfigs().ShouldNotContain(config => config is CustomResourceConfig);
     }
@@ -60,7 +60,7 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task resource_config_can_be_looked_up_by_resource_kind(KubernetesBackend backend)
     {
-        var workspace = await Application.Current.CreateClusterAsync(
+        using var workspace = await Application.Current.CreateClusterAsync(
             config => config.Type = backend);
 
         var expected = workspace.GetResourceConfig(GroupApiVersionKind.From<V1Pod>());
@@ -70,7 +70,7 @@ public class ClusterWorkspaceTests
     [AvaloniaFact]
     public async Task changing_runtime_status_to_connecting_updates_cluster_color()
     {
-        var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
 
         workspace.Runtime.Status = ClusterStatus.Connecting;
         await TestApplicationExtensions.WaitForUiAsync();
@@ -81,7 +81,7 @@ public class ClusterWorkspaceTests
     [AvaloniaFact]
     public async Task namespace_updates_from_background_threads_update_bound_controls()
     {
-        var workspace = await Application.Current.CreateClusterAsync();
+        using var workspace = await Application.Current.CreateClusterAsync();
         var listBox = new ListBox
         {
             ItemsSource = workspace.Runtime.Namespaces
@@ -107,7 +107,7 @@ public class ClusterWorkspaceTests
     [AvaloniaFact]
     public async Task reconnect_replaces_namespace_collection_and_updates_bound_controls()
     {
-        var workspace = await Application.Current.CreateClusterAsync();
+        using var workspace = await Application.Current.CreateClusterAsync();
         var listBox = new ListBox();
         using var window = Application.Current.CreateTestWindow(content: listBox);
         listBox.ItemsSource = workspace.Runtime.Namespaces;
@@ -206,7 +206,7 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task resource_config_processed_event_observes_registered_crd_config(KubernetesBackend backend)
     {
-        var workspace = await Application.Current.CreateClusterAsync(
+        using var workspace = await Application.Current.CreateClusterAsync(
             config => config.Type = backend);
         await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
         TaskCompletionSource<IClusterResourceConfig> processedConfig =
@@ -235,7 +235,7 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task resource_config_processed_event_is_published_after_crd_registration(KubernetesBackend backend)
     {
-        var workspace = await Application.Current.CreateClusterAsync(
+        using var workspace = await Application.Current.CreateClusterAsync(
             config => config.Type = backend);
         await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
         System.Collections.Concurrent.ConcurrentQueue<IClusterResourceConfig> observedConfigs = new();
@@ -268,7 +268,7 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task updated_crd_updates_resource_config_gvk_entry_and_seeded_informer(KubernetesBackend backend)
     {
-        var workspace = await Application.Current.CreateClusterAsync(
+        using var workspace = await Application.Current.CreateClusterAsync(
             config => config.Type = backend);
         await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
         var originalCrd = TestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
@@ -331,7 +331,7 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task metadata_only_crd_update_does_not_rebuild_resource_config(KubernetesBackend backend)
     {
-        var workspace = await Application.Current.CreateClusterAsync(
+        using var workspace = await Application.Current.CreateClusterAsync(
             config => config.Type = backend);
         await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
         var originalCrd = TestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
@@ -390,7 +390,7 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task seeding_resource_raises_resource_seeded_event(KubernetesBackend backend)
     {
-        var workspace = await Application.Current.CreateClusterAsync(
+        using var workspace = await Application.Current.CreateClusterAsync(
             config => config.Type = backend);
         GroupApiVersionKind? seededKind = null;
         workspace.Runtime.ResourceSeeded += (_, resourceKind) => seededKind = resourceKind;
@@ -406,7 +406,7 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task denied_resource_seed_does_not_raise_resource_seeded_event(KubernetesBackend backend)
     {
-        var workspace = await Application.Current.CreateClusterAsync(config =>
+        using var workspace = await Application.Current.CreateClusterAsync(config =>
         {
             config.Type = backend;
             config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
@@ -427,7 +427,7 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task initializing_workspace_seeds_custom_resource_definitions_when_allowed(KubernetesBackend backend)
     {
-        var workspace = await Application.Current.CreateClusterAsync(
+        using var workspace = await Application.Current.CreateClusterAsync(
             config => config.Type = backend);
 
         var kind = GroupApiVersionKind.From<V1CustomResourceDefinition>();
@@ -440,7 +440,7 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task deleted_crd_removes_resource_config_gvk_entry_and_seeded_informer(KubernetesBackend backend)
     {
-        var workspace = await Application.Current.CreateClusterAsync(
+        using var workspace = await Application.Current.CreateClusterAsync(
             config => config.Type = backend);
         await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
         var crd = TestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
@@ -479,7 +479,7 @@ public class ClusterWorkspaceTests
     [AvaloniaFact]
     public async Task deleted_crd_with_invalid_spec_still_removes_resource_config()
     {
-        var workspace = await Application.Current.CreateClusterAsync();
+        using var workspace = await Application.Current.CreateClusterAsync();
         await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
         var crd = TestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
         crd.Metadata.Generation = 1;
@@ -518,7 +518,7 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task seeding_namespaced_resource_uses_known_namespaces_without_eager_resource_config_initialization(KubernetesBackend backend)
     {
-        var workspace = await Application.Current.CreateClusterAsync(config =>
+        using var workspace = await Application.Current.CreateClusterAsync(config =>
         {
             config.Type = backend;
             config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
@@ -576,7 +576,7 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task disconnect_disposes_seeded_informers_and_registrations(KubernetesBackend backend)
     {
-        var workspace = await Application.Current.CreateClusterAsync(
+        using var workspace = await Application.Current.CreateClusterAsync(
             config => config.Type = backend);
 
         await workspace.Runtime.Permissions.UpdateCanI<V1Pod>(Verb.List);
@@ -605,7 +605,7 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task disconnect_allows_resource_types_to_be_seeded_again(KubernetesBackend backend)
     {
-        var workspace = await Application.Current.CreateClusterAsync(
+        using var workspace = await Application.Current.CreateClusterAsync(
             config => config.Type = backend);
 
         await workspace.Runtime.Permissions.UpdateCanI<V1Pod>(Verb.List);
@@ -633,7 +633,7 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task disconnect_removes_dynamic_crd_gvk_catalog_entries(KubernetesBackend backend)
     {
-        var workspace = await Application.Current.CreateClusterAsync(
+        using var workspace = await Application.Current.CreateClusterAsync(
             config => config.Type = backend);
         await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true);
         var crd = TestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
@@ -654,15 +654,15 @@ public class ClusterWorkspaceTests
     [AvaloniaFact]
     public async Task connect_returns_before_synchronous_connection_work_completes()
     {
-        var workspace = await Application.Current.CreateClusterAsync(
+        using var workspace = await Application.Current.CreateClusterAsync(
             config => config.ResponseLatency = TimeSpan.FromMilliseconds(200),
             connect: false);
 
-        var stopwatch = Stopwatch.StartNew();
         var connectTask = workspace.Connect();
-        stopwatch.Stop();
 
-        stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromMilliseconds(150));
+        // With a 200 ms response latency the connect cannot have completed yet, so the
+        // call returning proves it did not block on the connection.
+        connectTask.IsCompleted.ShouldBeFalse();
 
         await connectTask;
         workspace.Runtime.Connected.ShouldBeTrue();
@@ -671,7 +671,7 @@ public class ClusterWorkspaceTests
     [AvaloniaFact]
     public async Task concurrent_connect_calls_share_one_in_flight_connection()
     {
-        var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
 
         var firstConnect = workspace.Connect();
         var secondConnect = workspace.Connect();
@@ -684,7 +684,7 @@ public class ClusterWorkspaceTests
     [AvaloniaFact]
     public async Task connect_skips_workspace_initialization_when_runtime_remains_disconnected()
     {
-        var workspace = await Application.Current.CreateClusterAsync(
+        using var workspace = await Application.Current.CreateClusterAsync(
             config => config.ThrowOnConnect = true,
             connect: false);
         workspace.Runtime.Status = ClusterStatus.Errored;
@@ -699,7 +699,7 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task added_crd_does_not_refresh_authorization_index_for_generic_resource(KubernetesBackend backend)
     {
-        var workspace = await Application.Current.CreateClusterAsync(
+        using var workspace = await Application.Current.CreateClusterAsync(
             config => config.Type = backend);
 
         var crd = TestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
@@ -845,7 +845,7 @@ public class ClusterWorkspaceTests
     [Trait("Category", "Kind")]
     public async Task workspace_does_not_watch_rbac_without_list_and_watch_permission(KubernetesBackend backend)
     {
-        var workspace = await Application.Current.CreateClusterAsync(config =>
+        using var workspace = await Application.Current.CreateClusterAsync(config =>
         {
             config.Type = backend;
             config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
