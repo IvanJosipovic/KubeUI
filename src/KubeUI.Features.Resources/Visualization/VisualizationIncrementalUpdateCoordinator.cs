@@ -157,11 +157,7 @@ internal sealed class VisualizationIncrementalUpdateCoordinator : IDisposable
             }
         }
 
-        IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources = currentResources
-            .Concat(delta.Resources)
-            .GroupBy(GetIdentity)
-            .Select(group => group.First())
-            .ToArray();
+        var resources = MergeResources(currentResources, delta.Resources);
         var relationships = ResourceRelationshipBuilder.SimplifyRelationships(
             currentRelationships.Concat(delta.Relationships));
         ResourceRelationshipGraph merged = new(
@@ -198,4 +194,31 @@ internal sealed class VisualizationIncrementalUpdateCoordinator : IDisposable
             resource.Namespace(),
             resource.Name() ?? string.Empty,
             resource.Uid());
+
+    /// <summary>
+    /// Merges the current graph resources with an addition delta built from the freshest store snapshot.
+    /// When both sides contain the same identity, the delta copy wins because it is newer; resources that
+    /// only exist in the current graph keep their position, and delta-only resources are appended.
+    /// </summary>
+    private static IReadOnlyList<IKubernetesObject<V1ObjectMeta>> MergeResources(
+        IReadOnlyList<IKubernetesObject<V1ObjectMeta>> currentResources,
+        IReadOnlyList<IKubernetesObject<V1ObjectMeta>> deltaResources)
+    {
+        var deltaByIdentity = new Dictionary<ResourceIdentity, IKubernetesObject<V1ObjectMeta>>();
+        foreach (var resource in deltaResources)
+        {
+            deltaByIdentity.TryAdd(GetIdentity(resource), resource);
+        }
+
+        List<IKubernetesObject<V1ObjectMeta>> merged = new(currentResources.Count + deltaByIdentity.Count);
+        foreach (var resource in currentResources)
+        {
+            merged.Add(deltaByIdentity.Remove(GetIdentity(resource), out var fresh)
+                ? fresh!
+                : resource);
+        }
+
+        merged.AddRange(deltaByIdentity.Values);
+        return merged;
+    }
 }

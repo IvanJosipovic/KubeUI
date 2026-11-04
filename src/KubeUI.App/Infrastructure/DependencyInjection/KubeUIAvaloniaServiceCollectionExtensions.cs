@@ -8,7 +8,6 @@ using KubeUI.App.Infrastructure.Docking;
 using KubeUI.App.Infrastructure.Mcp;
 using KubeUI.App.Infrastructure.Platform;
 using KubeUI.App.Infrastructure.Threading;
-using KubeUI.App.Infrastructure.Threading;
 using KubeUI.App.Options;
 using KubeUI.App.Shell.Navigation;
 using KubeUI.Features.AI.Mcp;

@@ -15,21 +15,42 @@ public sealed class ClusterErrorDocumentPresenterTests
     {
         var existing = new ClusterErrorViewModel { Id = "cluster-error", Error = "old error" };
         var documents = new DocumentDock { VisibleDockables = [existing] };
+        existing.Owner = documents;
         var factory = new Mock<IFactory>();
         factory.Setup(item => item.GetDockable<IDocumentDock>("Documents")).Returns(documents);
-        var createViewModelCalled = false;
-        var presenter = new ClusterErrorDocumentPresenter(() => factory.Object, () =>
-        {
-            createViewModelCalled = true;
-            return new ClusterErrorViewModel();
-        });
+        var presenter = new ClusterErrorDocumentPresenter(() => factory.Object, () => new ClusterErrorViewModel());
 
         presenter.Show("new error");
 
         existing.Error.ShouldBe("new error");
-        createViewModelCalled.ShouldBeFalse();
         factory.Verify(item => item.SetActiveDockable(existing), Times.Once);
         factory.Verify(item => item.SetFocusedDockable(documents, existing), Times.Once);
         factory.Verify(item => item.AddDockable(It.IsAny<IDock>(), It.IsAny<IDockable>()), Times.Never);
+        factory.Verify(item => item.InsertDockable(It.IsAny<IDock>(), It.IsAny<IDockable>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public void Show_updates_floated_cluster_error_document_instead_of_creating_a_duplicate()
+    {
+        var floated = new ClusterErrorViewModel { Id = "cluster-error", Error = "old error" };
+        var windowDock = new DocumentDock();
+        floated.Owner = windowDock;
+        var documents = new DocumentDock();
+        var factory = new Mock<IFactory>();
+        factory.Setup(item => item.GetDockable<IDocumentDock>("Documents")).Returns(documents);
+        factory
+            .Setup(item => item.Find(It.IsAny<Func<IDockable, bool>>()))
+            .Returns((Func<IDockable, bool> predicate) => predicate(floated)
+                ? [floated]
+                : Array.Empty<IDockable>());
+        var presenter = new ClusterErrorDocumentPresenter(() => factory.Object, () => new ClusterErrorViewModel());
+
+        presenter.Show("new error");
+
+        floated.Error.ShouldBe("new error");
+        factory.Verify(item => item.SetActiveDockable(floated), Times.Once);
+        factory.Verify(item => item.SetFocusedDockable(windowDock, floated), Times.Once);
+        factory.Verify(item => item.AddDockable(It.IsAny<IDock>(), It.IsAny<IDockable>()), Times.Never);
+        factory.Verify(item => item.InsertDockable(It.IsAny<IDock>(), It.IsAny<IDockable>(), It.IsAny<int>()), Times.Never);
     }
 }

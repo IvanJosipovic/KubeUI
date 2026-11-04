@@ -1,6 +1,6 @@
 using Dock.Model.Controls;
 using Dock.Model.Core;
-using KubeUI.App.Infrastructure.Docking;
+using KubeUI.Controls.Docking;
 using KubeUI.Features.Clusters.Error;
 
 namespace KubeUI.App.Infrastructure.Presentation;
@@ -22,33 +22,13 @@ internal sealed class ClusterErrorDocumentPresenter(
     public void Show(string error)
     {
         var factory = getFactory();
-        var documents = factory.GetDockable<IDocumentDock>(DocumentDockId);
-        if (documents is null)
+        if (factory.GetDockable<IDocumentDock>(DocumentDockId) is null)
         {
-            return;
-        }
-
-        var existing = documents.VisibleDockables?
-            .OfType<ClusterErrorViewModel>()
-            .FirstOrDefault(viewModel => viewModel.Id == DocumentId);
-        if (existing is not null)
-        {
-            existing.Error = error;
-            Activate(documents, existing);
             return;
         }
 
         var viewModel = createViewModel();
         viewModel.Id = DocumentId;
-        viewModel.Error = error;
-        factory.AddDockable(documents, viewModel);
-        Activate(documents, viewModel);
-    }
-
-    private void Activate(IDocumentDock documents, IDockable document)
-    {
-        var factory = getFactory();
-        factory.SetActiveDockable(document);
-        factory.SetFocusedDockable(documents, document);
+        factory.AddOrUpdateToDocuments(viewModel, document => document.Error = error);
     }
 }

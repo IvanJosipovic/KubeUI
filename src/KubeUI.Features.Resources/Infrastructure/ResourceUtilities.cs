@@ -40,7 +40,7 @@ public static class ResourceUtilities
                             if (status is not null)
                             {
                                 var details = status.Message + "\n\n" +
-                                    (status.Details?.Causes?.Select(static cause => cause.Message).Aggregate((left, right) => left + "\n" + right) ?? string.Empty);
+                                    string.Join("\n", status.Details?.Causes?.Select(static cause => cause.Message) ?? []);
                                 Dispatcher.UIThread.Post(() => notificationManager.Show(
                                     new Notification(status.Reason, details, type, TimeSpan.FromSeconds(30))));
                             }

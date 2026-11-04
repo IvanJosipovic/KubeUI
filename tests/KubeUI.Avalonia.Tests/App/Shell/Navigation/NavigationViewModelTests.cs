@@ -2903,6 +2903,7 @@ internal class FakeCustomResourceConfig : IResourceConfig
     public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
     public Task EvaluateListWatchAccessAsync() => Task.CompletedTask;
     public Task SeedResource(bool waitForReady = false) => Task.CompletedTask;
+    public Task SeedResource(bool waitForReady, CancellationToken cancellationToken) => SeedResource(waitForReady);
     public Type Type { get; }
 
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
@@ -2943,6 +2944,7 @@ internal class FakeResourceConfig : IResourceConfig
     public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
     public Task EvaluateListWatchAccessAsync() => Task.CompletedTask;
     public Task SeedResource(bool waitForReady = false) => Task.CompletedTask;
+    public Task SeedResource(bool waitForReady, CancellationToken cancellationToken) => SeedResource(waitForReady);
     public Type Type { get; }
 
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
@@ -2993,6 +2995,7 @@ internal sealed class DeferredPermissionResourceConfig : IResourceConfig
     }
 
     public Task SeedResource(bool waitForReady = false) => Task.CompletedTask;
+    public Task SeedResource(bool waitForReady, CancellationToken cancellationToken) => SeedResource(waitForReady);
 
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
 
@@ -3065,6 +3068,7 @@ internal sealed class SlowPermissionResourceConfig : IResourceConfig
     }
 
     public Task SeedResource(bool waitForReady = false) => Task.CompletedTask;
+    public Task SeedResource(bool waitForReady, CancellationToken cancellationToken) => SeedResource(waitForReady);
 
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
 

@@ -50,6 +50,8 @@ internal sealed class BlockingPodPermissionResourceConfig : IResourceConfig
 
     public Task SeedResource(bool waitForReady = false) => Task.CompletedTask;
 
+    public Task SeedResource(bool waitForReady, CancellationToken cancellationToken) => SeedResource(waitForReady);
+
     public void Initialize(ClusterWorkspace cluster) => Cluster = cluster;
 }
 
@@ -93,6 +95,8 @@ internal sealed class ImmediatePermissionResourceConfig : IResourceConfig
     }
 
     public Task SeedResource(bool waitForReady = false) => Task.CompletedTask;
+
+    public Task SeedResource(bool waitForReady, CancellationToken cancellationToken) => SeedResource(waitForReady);
 
     public void Initialize(ClusterWorkspace cluster) => Cluster = cluster;
 }

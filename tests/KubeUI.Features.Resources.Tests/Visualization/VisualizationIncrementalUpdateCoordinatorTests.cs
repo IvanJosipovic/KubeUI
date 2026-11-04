@@ -99,6 +99,37 @@ public sealed class VisualizationIncrementalUpdateCoordinatorTests
     }
 
     [Fact]
+    public void merge_prefers_the_fresher_delta_copy_for_resources_already_in_the_graph()
+    {
+        using var coordinator = CreateCoordinator();
+        var stale = Pod("namespace-a", "pod-a");
+        stale.Metadata!.ResourceVersion = "1";
+        stale.Metadata.Labels = new Dictionary<string, string> { ["version"] = "1" };
+        var fresh = Pod("namespace-a", "pod-a");
+        fresh.Metadata!.ResourceVersion = "2";
+        fresh.Metadata.Labels = new Dictionary<string, string> { ["version"] = "2" };
+        var unrelated = Pod("namespace-a", "unrelated");
+        var current = new ResourceRelationshipGraph([stale, unrelated], []);
+        var delta = new ResourceRelationshipGraph([fresh], []);
+
+        var merged = coordinator.MergeAdditionDelta(
+            current,
+            delta,
+            fresh,
+            replaceExisting: false,
+            new HashSet<string>(["namespace-a"], StringComparer.Ordinal),
+            rootResource: null,
+            selector: null,
+            out var requiresRebuild);
+
+        requiresRebuild.ShouldBeFalse();
+        merged.ShouldNotBeNull();
+        merged.Resources.Count.ShouldBe(2);
+        merged.Resources[0].Metadata!.Labels["version"].ShouldBe("2");
+        merged.Resources[1].Name().ShouldBe("unrelated");
+    }
+
+    [Fact]
     public void merge_requires_rebuild_when_root_scope_has_no_relationship_to_resource()
     {
         using var coordinator = CreateCoordinator();

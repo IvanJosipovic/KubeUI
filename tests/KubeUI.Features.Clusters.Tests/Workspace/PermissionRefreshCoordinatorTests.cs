@@ -6,28 +6,37 @@ namespace KubeUI.Features.Clusters.Tests.Workspace;
 public sealed class PermissionRefreshCoordinatorTests
 {
     [Fact]
-    public async Task queued_requests_coalesce_into_one_full_refresh_pass()
+    public async Task requests_queued_while_the_worker_is_debouncing_coalesce_into_one_full_pass()
     {
         List<PermissionRefreshScope> passes = [];
-        var firstPass = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var workerConsumedFirstRequest = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseDebounce = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var coordinator = CreateCoordinator(
             (scope, _) =>
             {
                 passes.Add(scope);
-                firstPass.TrySetResult();
                 return Task.CompletedTask;
+            },
+            debounce: _ =>
+            {
+                workerConsumedFirstRequest.TrySetResult();
+                return releaseDebounce.Task;
             });
 
         coordinator.Request(PermissionRefreshScope.Namespaces);
-        coordinator.Request(PermissionRefreshScope.All);
+        await workerConsumedFirstRequest.Task.WaitAsync(TestContext.Current.CancellationToken);
 
-        await firstPass.Task.WaitAsync(TestContext.Current.CancellationToken);
+        coordinator.Request(PermissionRefreshScope.All);
+        coordinator.Request(PermissionRefreshScope.Namespaces);
+
+        releaseDebounce.TrySetResult();
+
         await TestWait.UntilAsync(
-            () => passes.Count == 1,
+            () => passes.Count == 2,
             TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken);
 
-        passes.ShouldBe([PermissionRefreshScope.All]);
+        passes.ShouldBe([PermissionRefreshScope.Namespaces, PermissionRefreshScope.All]);
     }
 
     [Fact]
@@ -90,11 +99,11 @@ public sealed class PermissionRefreshCoordinatorTests
     }
 
     [Fact]
-    public async Task disposed_coordinator_stops_scheduling_passes()
+    public void disposed_coordinator_stops_scheduling_passes()
     {
         var canRefresh = true;
         var passes = 0;
-        var coordinator = CreateCoordinator(
+        using var coordinator = CreateCoordinator(
             (_, _) =>
             {
                 passes++;
@@ -129,12 +138,13 @@ public sealed class PermissionRefreshCoordinatorTests
 
     private static PermissionRefreshCoordinator CreateCoordinator(
         Func<PermissionRefreshScope, CancellationToken, Task> refreshAsync,
-        Func<bool>? canRefresh = null)
+        Func<bool>? canRefresh = null,
+        Func<CancellationToken, Task>? debounce = null)
     {
         return new PermissionRefreshCoordinator(
             refreshAsync,
             canRefresh ?? (static () => true),
-            static _ => Task.CompletedTask,
+            debounce ?? (static _ => Task.CompletedTask),
             CancellationToken.None);
     }
 }

@@ -162,6 +162,12 @@ internal sealed class PermissionRefreshCoordinator : IDisposable
     }
 
     /// <summary>Stops scheduling new passes and prevents the worker from rescheduling itself.</summary>
+    /// <remarks>
+    /// <see cref="_refreshGate"/> is intentionally not disposed: an in-flight pass may still release it while
+    /// disposal completes, and disposing it would turn that release into an <see cref="ObjectDisposedException"/>
+    /// reported as a worker failure. The semaphore allocates no OS resources unless its wait handle is accessed,
+    /// which never happens here.
+    /// </remarks>
     public void Dispose()
     {
         Interlocked.Exchange(ref _disposed, 1);

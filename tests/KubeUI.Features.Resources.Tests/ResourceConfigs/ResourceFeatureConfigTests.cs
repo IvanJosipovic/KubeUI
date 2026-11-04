@@ -778,6 +778,7 @@ public sealed class ResourceFeatureConfigTests
     public async Task cronjob_start_context_menu_creates_job_resource()
     {
         var workspace = await Application.Current.CreateClusterAsync();
+        using var _ = workspace;
         await workspace.Runtime.SeedResource<V1Namespace>(true);
         await workspace.Runtime.SeedResource<V1CronJob>(true);
         await workspace.Runtime.SeedResource<V1Job>(true);

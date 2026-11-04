@@ -94,7 +94,6 @@ public abstract partial class ScalableWorkloadConfig<[DynamicallyAccessedMembers
         }
 
         selected = GetEligibleWorkloads(selected);
-        var exceptions = new List<Exception>();
         foreach (var workload in selected)
         {
             try
@@ -103,14 +102,8 @@ public abstract partial class ScalableWorkloadConfig<[DynamicallyAccessedMembers
             }
             catch (Exception ex)
             {
-                exceptions.Add(ex);
                 ResourceUtilities.HandleException(_logger, _notificationManager, ex, string.Format(CultureInfo.CurrentCulture, Assets.Resources.ScalableWorkloadConfig_ScaleError!, workload.Namespace(), workload.Name()), sendNotification: true);
             }
-        }
-
-        if (exceptions.Count > 0)
-        {
-            _logger.LogError(new AggregateException(exceptions), "Error scaling {WorkloadKind} resources", Kind.Kind);
         }
     }
 

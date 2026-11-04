@@ -143,7 +143,6 @@ public sealed partial class V1DeploymentConfig : ScalableWorkloadConfig<V1Deploy
         }
 
         deployments = GetPauseCandidates(deployments, paused);
-        var failures = new List<Exception>();
         var patch = new V1Patch(paused ? "{\"spec\":{\"paused\":true}}" : "{\"spec\":{\"paused\":false}}", V1Patch.PatchType.MergePatch);
         foreach (var deployment in deployments)
         {
@@ -153,14 +152,8 @@ public sealed partial class V1DeploymentConfig : ScalableWorkloadConfig<V1Deploy
             }
             catch (Exception ex)
             {
-                failures.Add(ex);
                 ResourceUtilities.HandleException(_logger, _notificationManager, ex, string.Format(paused ? Assets.Resources.V1DeploymentConfig_PauseError : Assets.Resources.V1DeploymentConfig_ResumeError, deployment.Namespace(), deployment.Name()), sendNotification: true);
             }
-        }
-
-        if (failures.Count > 0)
-        {
-            _logger.LogError(new AggregateException(failures), "Error changing Deployment pause state");
         }
     }
 
