@@ -2,10 +2,10 @@
 using Avalonia.Xaml.Interactivity;
 using KubeUI.Controls.DependencyInjection;
 using KubeUI.Controls.Presentation;
-using KubeUI.Features.Resources.Workloads.v1.Pod.Behaviors;
-using KubeUI.Features.Resources.Settings;
-using KubeUI.Features.Resources.Infrastructure;
 using KubeUI.Controls.Styles;
+using KubeUI.Features.Resources.Infrastructure;
+using KubeUI.Features.Resources.Settings;
+using KubeUI.Features.Resources.Workloads.v1.Pod.Behaviors;
 using SvcSystems.UI.Terminal;
 
 

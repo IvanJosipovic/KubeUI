@@ -1,22 +1,22 @@
-using KubeUI.Features.Clusters.Presentation;
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml.MarkupExtensions;
-using Avalonia.Xaml.Interactivity;
 using Avalonia.Xaml.Interactions.Core;
+using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using FluentAvalonia.UI.Controls;
 using FluentAvalonia.UI.Controls.Primitives;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using k8s.Models;
-using KubeUI.Features.Resources.Yaml.Behaviors;
 using KubeUI.Controls.DependencyInjection;
 using KubeUI.Controls.Presentation;
-using KubeUI.Features.Resources.Settings;
-using KubeUI.Features.Resources.Infrastructure;
 using KubeUI.Controls.Styles;
+using KubeUI.Features.Clusters.Presentation;
+using KubeUI.Features.Resources.Infrastructure;
+using KubeUI.Features.Resources.Settings;
+using KubeUI.Features.Resources.Yaml.Behaviors;
 using SharedConverters = KubeUI.Controls.Converters.Converters;
 
 

@@ -186,7 +186,7 @@ public sealed class ResourcePropertiesViewTests
             },
         };
 
-        var view = new KubeUI.Features.Resources.Workloads.v1.Pod.PropertiesView
+        var view = new Resources.Workloads.v1.Pod.PropertiesView
         {
             DataContext = pod,
         };

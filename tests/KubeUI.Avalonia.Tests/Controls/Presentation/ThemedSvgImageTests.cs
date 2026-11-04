@@ -2,8 +2,8 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
 using Avalonia.Svg.Skia;
-using KubeUI.Features.Helm;
 using KubeUI.App.Infrastructure.Presentation;
+using KubeUI.Features.Helm;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Controls.Presentation;

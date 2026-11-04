@@ -4,9 +4,9 @@ using DynamicData.Binding;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
-using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Controls.Platform;
 using KubeUI.Controls.Presentation;
+using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Features.Resources.Workloads.v1.Pod;

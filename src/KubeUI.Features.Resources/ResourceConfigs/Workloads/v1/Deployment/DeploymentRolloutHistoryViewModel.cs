@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.Json;
 using Avalonia.Controls.Notifications;
@@ -8,9 +9,9 @@ using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s;
 using k8s.Models;
+using KubeUI.Controls.Presentation;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources.Infrastructure;
-using KubeUI.Controls.Presentation;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Serialization;
 
@@ -144,6 +145,7 @@ public sealed partial class DeploymentRolloutHistoryViewModel : ViewModelBase, I
     }
 
     [RelayCommand(CanExecute = nameof(CanUndo))]
+    [RequiresUnreferencedCode("Calls System.Text.Json.JsonSerializer.Serialize<TValue>(TValue, JsonSerializerOptions)")]
     private async Task Undo()
     {
         if (Cluster is null)

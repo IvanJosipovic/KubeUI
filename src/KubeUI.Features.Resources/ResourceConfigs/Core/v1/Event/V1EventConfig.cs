@@ -1,8 +1,8 @@
 ﻿using Avalonia.Data.Converters;
 using k8s.Models;
-using KubeUI.Features.Resources.Properties.Controls;
-using KubeUI.Features.Resources.Core.v1.Event.Controls;
 using KubeUI.Controls.Styles;
+using KubeUI.Features.Resources.Core.v1.Event.Controls;
+using KubeUI.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Features.Resources.Core.v1.Event;
 

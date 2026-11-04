@@ -3,9 +3,9 @@ using FluentAvalonia.UI.Controls;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Controls.Presentation;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources.Infrastructure;
-using KubeUI.Controls.Presentation;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Features.Resources.Properties.Controls;

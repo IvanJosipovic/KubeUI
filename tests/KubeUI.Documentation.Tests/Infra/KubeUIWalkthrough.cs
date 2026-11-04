@@ -1,6 +1,6 @@
 using Avalonia.Controls;
-using KubeUI.Features.Clusters.Workspace;
 using KubeUI.App.Infrastructure.Presentation;
+using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Testing.Kubernetes.Bootstrap;
 using Microsoft.Extensions.DependencyInjection;
 

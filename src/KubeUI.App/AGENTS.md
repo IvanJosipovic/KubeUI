@@ -16,6 +16,7 @@ References:
 ### Views and styling
 - Use C# for layout and visuals;
 - Views resolved by `ViewLocator` inherit `KubeUIView<TViewModel>`; `ServiceScan.SourceGenerator` discovers these mappings. Keep special runtime view factories on `IViewModelViewFactory`.
+- Each view-bearing feature registers its generated `IViewFactory` entries in its feature service extension. App composes feature registrations and discovers only App-owned views; do not list feature views in shell registration.
 - Prefer `StaticResource` for immutable resources and `DynamicResource` when runtime updates are required.
 - Use `Typography.TitleFontSizeResourceKey` for view and document titles so headers match the shared type scale.
 - Markdown surfaces must use the shared application typography (app font family and size); markdown code must use the shared code font family and console font size. Do not rely on the bundled Markdown default font.
@@ -53,6 +54,7 @@ Reference: https://github.com/wieslawsoltes/Dock
 - Use Dock.Avalonia for the view layer and Dock.Model.MVVM integration.
 - Persist layout state to user settings and restore on startup.
 - Keep layout logic in ViewModels; Views only render the Dock model.
+- Application startup must not resolve `IFactory`, `NavigationViewModel`, or `ClusterWorkspaceCatalog` eagerly; hold them behind `Func<>` so docking layout, navigation, and cluster workspaces initialize on first real use.
 
 ## 6) Text editing with AvaloniaEdit
 

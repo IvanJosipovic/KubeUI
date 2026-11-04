@@ -4,10 +4,10 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm;
 using Dock.Model.Mvvm.Controls;
-using KubeUI.Features.AI.Chat;
 using KubeUI.App.Services.Settings;
 using KubeUI.App.Shell.Main;
 using KubeUI.App.Shell.Navigation;
+using KubeUI.Features.AI.Chat;
 using Orientation = Dock.Model.Core.Orientation;
 
 namespace KubeUI.App.Infrastructure.Docking;

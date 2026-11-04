@@ -11,12 +11,12 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DynamicData;
 using k8s.Models;
-using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Controls.Presentation;
-using KubeUI.Features.Resources;
 using KubeUI.Controls.Styles;
 using KubeUI.Features.Cilium;
 using KubeUI.Features.Cilium.Hubble;
+using KubeUI.Features.Clusters.Workspace;
+using KubeUI.Features.Resources;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.Logging;
 using SvcSystems.Avalonia.DynamicTableView;
@@ -250,7 +250,7 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
         return columns;
     }
 
-    internal static string FormatDirection(KubeUI.Features.Cilium.Hubble.FlowDirection direction)
+    internal static string FormatDirection(FlowDirection direction)
         => direction switch
         {
             KubeUI.Features.Cilium.Hubble.FlowDirection.Ingress => L10n.Instance.FlowDirection_Ingress.CurrentValue()!,

@@ -80,13 +80,17 @@ jobs:
       - name: Install Velopack
         shell: pwsh
         run: |
-          $csprojPath = "src/KubeUI.App/KubeUI.App.csproj"
+          $propsPath = "Directory.Packages.props"
 
-          [xml]$csprojXml = Get-Content -Path $csprojPath
+          [xml]$propsXml = Get-Content -Path $propsPath
 
-          $velopackVersion = $csprojXml.Project.ItemGroup.PackageReference |
+          $velopackVersion = $propsXml.Project.ItemGroup.PackageVersion |
              Where-Object { $_.Include -eq "Velopack" } |
              Select-Object -ExpandProperty Version
+
+          if (-not $velopackVersion) {
+            throw "Velopack PackageVersion not found in $propsPath"
+          }
 
           dotnet tool install -g vpk --version $velopackVersion
 

@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Collections.Specialized;
+﻿using System.Collections.Specialized;
 using System.Globalization;
 using System.Reactive.Linq;
 using AvaloniaEdit.Document;
@@ -8,18 +7,17 @@ using k8s;
 using k8s.Autorest;
 using k8s.Models;
 using KubeUI.Controls.Presentation;
-using KubeUI.Features.Resources.Workloads.v1.Pod.Services;
 using KubeUI.Features.Resources.Settings;
+using KubeUI.Features.Resources.Workloads.v1.Pod.Services;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Features.Resources.Workloads.v1.Pod.ViewModels;
 
 /// <summary>Coordinates pod-log selection, streaming, reconnects, and display state.</summary>
-public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
+public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable, IPodLogStreamSessionSink
 {
     private const int DefaultTailLines = 500;
     private const int MaxLogEntries = 10_000;
-    private const int MaxAutomaticReconnectAttempts = 5;
     internal const int StreamWarningThreshold = 25;
     internal const int MaxStreamCount = 100;
     internal const int MaxScopeCount = 20;
@@ -30,22 +28,16 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     private readonly IPodLogStreamClient _streamClient;
     private readonly Func<int, CancellationToken, Task> _automaticReconnectDelay;
     private readonly SemaphoreSlim _connectionGate = new(1, 1);
-    private CancellationTokenSource? _connectionCts;
+    private PodLogStreamSession? _connectionSession;
     private bool _disposed;
     private readonly Lock _outputEntriesGate = new();
     private readonly List<PodLogOutputEntry> _outputEntries = [];
-    private readonly Lock _streamReadersGate = new();
-    private readonly List<StreamReader> _streamReaders = [];
-    private readonly ConcurrentDictionary<CancellationTokenSource, int> _readerCounts = new();
     private bool _hasLoadedSession;
     private bool _isApplyingSession;
     private bool _pendingSelectionReconnect;
     private bool _pendingReconnect;
     private bool _preserveOutputOnNextConnect;
     private bool _clearOutputBeforeNextConnect;
-    private int _streamEndedReconnectAttempts;
-    private int _streamEndedReconnectPending;
-    private int _activeReaderCount;
     private int _outputGeneration;
     private bool _displayPaused;
     private PodLogDisplayMode _resourceNameDisplayMode;
@@ -66,7 +58,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         IPodLogExportService exportService,
         IPodLogSessionResolver sessionResolver,
         IPodLogStreamClient streamClient)
-        : this(logger, settingsService, exportService, sessionResolver, streamClient, DelayAutomaticReconnectAsync)
+        : this(logger, settingsService, exportService, sessionResolver, streamClient, PodLogStreamSession.DelayAutomaticReconnectAsync)
     {
     }
 
@@ -358,10 +350,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
             _preserveOutputOnNextConnect = false;
             var clearOutputBeforeResolve = _clearOutputBeforeNextConnect;
             _clearOutputBeforeNextConnect = false;
-            if (!preserveOutput)
-            {
-                _streamEndedReconnectAttempts = 0;
-            }
+            var reconnectAttempts = preserveOutput ? _connectionSession?.ReconnectAttempts ?? 0 : 0;
             ResetConnection();
             if (clearOutputBeforeResolve)
             {
@@ -505,22 +494,21 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
                 ClearOutput();
             }
 
-            CancellationTokenSource connectionCts = new();
-            _connectionCts = connectionCts;
+            PodLogStreamSession connectionSession = new(
+                Cluster,
+                _streamClient,
+                _logger,
+                this,
+                _automaticReconnectDelay,
+                reconnectAttempts);
+            _connectionSession = connectionSession;
 
             IsConnected = true;
-            _activeReaderCount = options.Count;
-            _readerCounts[connectionCts] = options.Count;
+            connectionSession.SetReaderCount(options.Count);
 
-            var openTasks = new Task[options.Count];
-            for (var i = 0; i < options.Count; i++)
-            {
-                openTasks[i] = OpenAndReadLogsAsync(options[i], connectionCts, resolution);
-            }
+            await connectionSession.StartAsync(options, resolution);
 
-            await Task.WhenAll(openTasks);
-
-            if (Volatile.Read(ref _activeReaderCount) == 0)
+            if (connectionSession.RemainingReaders == 0)
             {
                 IsConnected = false;
                 return;
@@ -562,68 +550,6 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
             or TimeoutException)
         {
             LogUnableToLoadParentResource(ex, selectedResource.Namespace(), selectedResource.Name());
-        }
-    }
-
-    private async Task OpenAndReadLogsAsync(
-        PodLogReadOptions option,
-        CancellationTokenSource connectionCts,
-        PodLogSessionResolution resolution)
-    {
-        Stream? stream = null;
-        StreamReader? reader = null;
-        try
-        {
-            stream = await _streamClient.OpenAsync(Cluster, option, connectionCts.Token);
-            reader = new StreamReader(stream);
-            stream = null;
-            var registered = false;
-            lock (_streamReadersGate)
-            {
-                if (!_disposed
-                    && !connectionCts.IsCancellationRequested
-                    && ReferenceEquals(_connectionCts, connectionCts))
-                {
-                    _streamReaders.Add(reader);
-                    registered = true;
-                }
-            }
-
-            if (!registered)
-            {
-                DecrementActiveReaders(connectionCts);
-                return;
-            }
-
-            var registeredReader = reader;
-            reader = null;
-            _ = Task.Run(() => ReadLogsAsync(registeredReader, option, connectionCts, resolution));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unable to open pod log stream for {PodNamespace}/{PodName} container {ContainerName}.", option.PodNamespace, option.PodName, option.ContainerName);
-            var isLastActiveReader = DecrementActiveReaders(connectionCts);
-            if (!_pendingReconnect && IsCurrentConnection(connectionCts))
-            {
-                AppendStatusLine(option.PodName, option.ContainerName, ex.Message, connectionCts);
-                ConnectionError = ex.Message;
-            }
-
-            if (!_pendingReconnect
-                && ex is IOException or HttpRequestException
-                && option.Follow
-                && !option.Previous
-                && !connectionCts.IsCancellationRequested
-                && !IsTerminalPod(resolution.Pod)
-                && isLastActiveReader)
-            {
-                ScheduleReconnectAfterStreamEnd(connectionCts);
-            }
-        }
-        finally
-        {
-            reader?.Dispose();
-            stream?.Dispose();
         }
     }
 
@@ -1346,56 +1272,21 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
             || !string.Equals(current.ContainerName, next.ContainerName, StringComparison.Ordinal);
     }
 
+    private static bool IsTerminalPod(V1Pod pod)
+    {
+        return pod.Status?.Phase is "Succeeded" or "Failed";
+    }
+
     private void ResetConnection(bool updateConnectionState = true)
     {
-        var previousConnectionCts = _connectionCts;
-        try
-        {
-            previousConnectionCts?.Cancel();
-        }
-        catch (ObjectDisposedException)
-        {
-        }
-
-        StreamReader[] streamReaders;
-        lock (_streamReadersGate)
-        {
-            streamReaders = _streamReaders.ToArray();
-            _streamReaders.Clear();
-        }
-
-        for (var i = 0; i < streamReaders.Length; i++)
-        {
-            streamReaders[i].Dispose();
-        }
-
-        _connectionCts = null;
-        if (previousConnectionCts is not null && !_readerCounts.ContainsKey(previousConnectionCts))
-        {
-            previousConnectionCts.Dispose();
-        }
-
-        _activeReaderCount = 0;
+        var previousConnectionSession = _connectionSession;
+        previousConnectionSession?.Dispose();
+        _connectionSession = null;
         if (updateConnectionState)
         {
             IsConnected = false;
         }
     }
-
-    private void ReleaseStreamReader(StreamReader reader)
-    {
-        bool ownsReader;
-        lock (_streamReadersGate)
-        {
-            ownsReader = _streamReaders.Remove(reader);
-        }
-
-        if (ownsReader)
-        {
-            reader.Dispose();
-        }
-    }
-
 
     private void ClearOutput()
     {

@@ -26,7 +26,7 @@ public sealed class AksClusterServiceTests
         CredentialUnavailableException cause = new("Azure CLI is not available.");
 
         var exception = await Should.ThrowAsync<AzureAuthenticationUnavailableException>(
-            () => AksClusterService.TranslateCredentialUnavailableAsync<int>(
+            () => AksClusterService.TranslateCredentialUnavailableAsync(
                 () => Task.FromException<int>(cause)));
 
         exception.Message.ShouldBe(cause.Message);
@@ -63,7 +63,7 @@ public sealed class AksClusterServiceTests
             ],
             Clusters =
             [
-                new k8s.KubeConfigModels.Cluster
+                new Cluster
                 {
                     Name = "cluster-test-aks",
                     ClusterEndpoint = new ClusterEndpoint

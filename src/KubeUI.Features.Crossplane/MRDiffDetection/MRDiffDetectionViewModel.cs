@@ -7,11 +7,11 @@ using Dock.Model.Core;
 using DynamicData;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Features.Clusters.Workspace;
-using KubeUI.Features.Resources.Yaml;
 using KubeUI.Controls.Docking;
 using KubeUI.Controls.Presentation;
+using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources;
+using KubeUI.Features.Resources.Yaml;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Features.Crossplane.MRDiffDetection;

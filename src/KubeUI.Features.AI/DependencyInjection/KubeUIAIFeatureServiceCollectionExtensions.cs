@@ -3,11 +3,12 @@ using KubeUI.Features.AI.Chat;
 using KubeUI.Features.AI.Configuration;
 using KubeUI.Features.AI.Permissions;
 using Microsoft.Extensions.DependencyInjection;
+using ServiceScan.SourceGenerator;
 
 namespace KubeUI.Features.AI.DependencyInjection;
 
 /// <summary>Registers services and views owned by the AI feature.</summary>
-public static class KubeUIAIFeatureServiceCollectionExtensions
+public static partial class KubeUIAIFeatureServiceCollectionExtensions
 {
     /// <summary>Adds the AI feature's runtime services and chat UI.</summary>
     /// <param name="services">Services to configure.</param>
@@ -23,6 +24,10 @@ public static class KubeUIAIFeatureServiceCollectionExtensions
         services.AddSingleton<IAgentContextService, AgentContextService>();
         services.AddTransient<AgentChatViewModel>();
         services.AddTransient<AgentChatView>();
+        services.AddViewFactories(GetViewFactories());
         return services;
     }
+
+    [ScanForTypes(AssignableTo = typeof(IViewFactoryDefinition), Handler = nameof(ViewFactoryDiscovery.Create))]
+    private static partial IViewFactory[] GetViewFactories();
 }

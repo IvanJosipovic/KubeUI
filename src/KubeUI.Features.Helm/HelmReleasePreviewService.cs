@@ -1,8 +1,8 @@
-using KubeUI.Features.Helm.Helm;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Features.Clusters.Workspace;
+using KubeUI.Features.Helm.Helm;
 using KubeUI.Features.Resources.Contracts;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Resources.Relationships;

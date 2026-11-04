@@ -1,5 +1,10 @@
+using System.Diagnostics;
+using Avalonia.Threading;
+using Dock.Model.Core;
+using KubeUI.App.Infrastructure;
 using KubeUI.App.Infrastructure.Platform;
 using KubeUI.App.Infrastructure.Presentation;
+using KubeUI.Features.Clusters.Error;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -20,7 +25,7 @@ public sealed class ApplicationShutdownTests
             .BuildServiceProvider();
         var shutdownRequested = false;
 
-        global::KubeUI.Desktop.Program.RegisterAvaloniaShutdown(services, () =>
+        KubeUI.Desktop.Program.RegisterAvaloniaShutdown(services, () =>
         {
             shutdownRequested = true;
         });
@@ -34,18 +39,45 @@ public sealed class ApplicationShutdownTests
     public void avalonia_shutdown_requests_host_stop()
     {
         var hostLifetime = new Mock<IHostApplicationLifetime>();
-        using var services = new ServiceCollection()
-            .AddLogging()
-            .AddSingleton(hostLifetime.Object)
-            .AddSingleton<Instrumentation>()
-            .AddSingleton<ViewLocator>()
-            .BuildServiceProvider();
+        using var loggerProvider = new CapturingLoggerProvider();
+        using var services = CreateServices(hostLifetime.Object, loggerProvider);
 
         using var app = new TestApp(services);
         app.GracefulShutdown();
 
         app.TelemetryWasFlushed.ShouldBeTrue();
         hostLifetime.Verify(x => x.StopApplication(), Times.Once);
+    }
+
+    [Fact]
+    public void repeated_shutdown_requests_flush_and_stop_host_once()
+    {
+        var hostLifetime = new Mock<IHostApplicationLifetime>();
+        using var loggerProvider = new CapturingLoggerProvider();
+        using var services = CreateServices(hostLifetime.Object, loggerProvider);
+        using var app = new TestApp(services);
+
+        app.GracefulShutdown();
+        app.GracefulShutdown();
+
+        services.GetRequiredService<RecordingTelemetryFlusher>().FlushCount.ShouldBe(1);
+        hostLifetime.Verify(x => x.StopApplication(), Times.Once);
+    }
+
+    [Fact]
+    public void disposing_application_detaches_all_process_error_handlers()
+    {
+        var hostLifetime = new Mock<IHostApplicationLifetime>();
+        using var loggerProvider = new CapturingLoggerProvider();
+        var eventSource = new FakeApplicationEventSource();
+        using var services = CreateServices(hostLifetime.Object, loggerProvider, eventSource);
+        var app = new TestApp(services);
+
+        eventSource.SubscriberCount.ShouldBe(4);
+
+        app.Dispose();
+
+        eventSource.SubscriberCount.ShouldBe(0);
     }
 
     [Fact]
@@ -144,27 +176,34 @@ public sealed class ApplicationShutdownTests
     [Fact]
     public void late_unhandled_exception_does_not_throw_after_services_are_disposed()
     {
-        var hostLifetime = new Mock<IHostApplicationLifetime>();
-        using var loggerProvider = new CapturingLoggerProvider();
-        using var services = CreateServices(hostLifetime.Object, loggerProvider);
-        using var app = new DisposedTelemetryApp(services);
-        services.Dispose();
+        var flusher = new ApplicationTelemetryFlusher(new DisposedServiceProvider());
 
-        Should.NotThrow(() => app.RecordUnhandledException(
-            new InvalidOperationException("late task failure"),
-            isTerminating: false));
+        Should.NotThrow(flusher.TryFlush);
     }
 
     private static ServiceProvider CreateServices(
         IHostApplicationLifetime hostLifetime,
-        ILoggerProvider loggerProvider)
+        ILoggerProvider loggerProvider,
+        IApplicationEventSource? eventSource = null)
     {
-        return new ServiceCollection()
+        var services = new ServiceCollection()
             .AddLogging(builder => builder.AddProvider(loggerProvider))
             .AddSingleton(hostLifetime)
             .AddSingleton<Instrumentation>()
             .AddSingleton<ViewLocator>()
-            .BuildServiceProvider();
+            .AddSingleton(eventSource ?? new FakeApplicationEventSource())
+            .AddSingleton<RecordingTelemetryFlusher>()
+            .AddSingleton<IApplicationTelemetryFlusher>(sp => sp.GetRequiredService<RecordingTelemetryFlusher>())
+            .AddSingleton<ApplicationShutdownCoordinator>()
+            .AddSingleton(new Mock<IFactory>().Object)
+            .AddTransient<ClusterErrorViewModel>()
+            .AddTransient<Func<ClusterErrorViewModel>>(sp => () => sp.GetRequiredService<ClusterErrorViewModel>())
+            .AddSingleton<IClusterErrorDocumentPresenter>(sp => new ClusterErrorDocumentPresenter(
+                () => sp.GetRequiredService<IFactory>(),
+                sp.GetRequiredService<Func<ClusterErrorViewModel>>()))
+            .AddSingleton<ApplicationErrorHandler>();
+
+        return services.BuildServiceProvider();
     }
 
     private static InvalidOperationException CreateException(string message)
@@ -181,23 +220,60 @@ public sealed class ApplicationShutdownTests
 
     private sealed class TestApp(IServiceProvider services) : KubeUIApplication(services), IDisposable
     {
-        public bool TelemetryWasFlushed { get; private set; }
+        public bool TelemetryWasFlushed => services.GetRequiredService<RecordingTelemetryFlusher>().FlushCount > 0;
 
         public void Dispose() => DisposeApplication();
-
-        protected override void FlushTelemetry()
-        {
-            TelemetryWasFlushed = true;
-        }
     }
 
-    private sealed class DisposedTelemetryApp(IServiceProvider services) : KubeUIApplication(services), IDisposable
+    private sealed class RecordingTelemetryFlusher : IApplicationTelemetryFlusher
     {
-        public void Dispose() => DisposeApplication();
+        private int _flushCount;
 
-        protected override void FlushTelemetry()
+        public int FlushCount => Volatile.Read(ref _flushCount);
+
+        public void TryFlush() => Interlocked.Increment(ref _flushCount);
+    }
+
+    private sealed class DisposedServiceProvider : IServiceProvider
+    {
+        public object? GetService(Type serviceType) => throw new ObjectDisposedException(nameof(DisposedServiceProvider));
+    }
+
+    private sealed class FakeApplicationEventSource : IApplicationEventSource
+    {
+        private UnhandledExceptionEventHandler? _currentDomainUnhandledException;
+        private DispatcherUnhandledExceptionEventHandler? _dispatcherUnhandledException;
+        private EventHandler<UnobservedTaskExceptionEventArgs>? _unobservedTaskException;
+        private EventHandler<DataReceivedEventArgs>? _kubernetesExecStdError;
+
+        public int SubscriberCount =>
+            (_currentDomainUnhandledException?.GetInvocationList().Length ?? 0)
+            + (_dispatcherUnhandledException?.GetInvocationList().Length ?? 0)
+            + (_unobservedTaskException?.GetInvocationList().Length ?? 0)
+            + (_kubernetesExecStdError?.GetInvocationList().Length ?? 0);
+
+        public event UnhandledExceptionEventHandler? CurrentDomainUnhandledException
         {
-            throw new ObjectDisposedException(nameof(IServiceProvider));
+            add => _currentDomainUnhandledException += value;
+            remove => _currentDomainUnhandledException -= value;
+        }
+
+        public event DispatcherUnhandledExceptionEventHandler? DispatcherUnhandledException
+        {
+            add => _dispatcherUnhandledException += value;
+            remove => _dispatcherUnhandledException -= value;
+        }
+
+        public event EventHandler<UnobservedTaskExceptionEventArgs>? UnobservedTaskException
+        {
+            add => _unobservedTaskException += value;
+            remove => _unobservedTaskException -= value;
+        }
+
+        public event EventHandler<DataReceivedEventArgs>? KubernetesExecStdError
+        {
+            add => _kubernetesExecStdError += value;
+            remove => _kubernetesExecStdError -= value;
         }
     }
 

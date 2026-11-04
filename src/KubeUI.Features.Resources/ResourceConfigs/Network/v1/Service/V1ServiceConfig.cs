@@ -5,8 +5,8 @@ using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Features.Resources.Common;
 using KubeUI.Controls.Platform;
+using KubeUI.Features.Resources.Common;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Features.Resources.Network.v1.Service;

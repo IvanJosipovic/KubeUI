@@ -1,7 +1,7 @@
 using k8s.Models;
+using KubeUI.App.Infrastructure.Presentation;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources.List;
-using KubeUI.App.Infrastructure.Presentation;
 using LiveChartsCore.Defaults;
 using LiveChartsCore.Kernel;
 
@@ -40,49 +40,25 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
 
         await Cluster.Runtime.SeedResource<V1Pod>(true);
         await Cluster.Runtime.SeedResource<V1Node>(true);
-        var pods = Cluster.Runtime.GetResourceList<V1Pod>();
-        var nodes = Cluster.Runtime.GetResourceList<V1Node>();
+        var snapshot = ClusterMetricSnapshotBuilder.Build(
+            Cluster.Runtime.GetResourceList<V1Pod>(),
+            Cluster.Runtime.GetResourceList<V1Node>(),
+            Cluster.Runtime.PodMetrics);
 
-        var allPodContainers = pods.SelectMany(p => p.Spec?.Containers ?? []).ToArray();
-        var allMetricContainers = (Cluster.Runtime.PodMetrics ?? []).SelectMany(m => m.Containers ?? []).ToArray();
+        PodGaugeData.TotalPods.Value = snapshot.TotalPods;
+        PodGaugeData.MaxPods.Value = snapshot.MaxPods;
 
-        PodGaugeData.TotalPods.Value = pods.Count;
-        PodGaugeData.MaxPods.Value = nodes.Sum(x => x.Status.Capacity?.TryGetValue("pods", out var value) == true ? value.ToDouble() : 0);
+        CPUGaugeData.CpuAllocatable.Value = snapshot.CpuAllocatable;
+        CPUGaugeData.CpuCapacity.Value = snapshot.CpuCapacity;
+        CPUGaugeData.CpuRequests.Value = snapshot.CpuRequests;
+        CPUGaugeData.CpuLimits.Value = snapshot.CpuLimits;
+        CPUGaugeData.CpuUsage.Value = snapshot.CpuUsage;
 
-        CPUGaugeData.CpuAllocatable.Value = nodes.Sum(x => x.Status.Allocatable?.TryGetValue("cpu", out var value) == true ? value.ToDouble() : 0);
-        CPUGaugeData.CpuCapacity.Value = nodes.Sum(x => x.Status.Capacity?.TryGetValue("cpu", out var value) == true ? value.ToDouble() : 0);
-
-        CPUGaugeData.CpuRequests.Value = allPodContainers.Sum(c =>
-            c.Resources?.Requests?.TryGetValue("cpu", out var q) == true
-                ? q.ToDouble()
-                : 0d);
-
-        CPUGaugeData.CpuLimits.Value = allPodContainers.Sum(c =>
-            c.Resources?.Limits?.TryGetValue("cpu", out var q) == true
-                ? q.ToDouble()
-                : 0d);
-
-        CPUGaugeData.CpuUsage.Value = allMetricContainers.Sum(c =>
-            c.Usage?.TryGetValue("cpu", out var q) == true
-                ? q.ToDouble()
-                : 0d);
-
-        MemoryGaugeData.MemoryAllocatable.Value = nodes.Sum(x => x.Status.Allocatable?.TryGetValue("memory", out var value) == true ? value.ToDouble() : 0) / 1048576 / 1024;
-        MemoryGaugeData.MemoryCapacity.Value = nodes.Sum(x => x.Status.Capacity?.TryGetValue("memory", out var value) == true ? value.ToDouble() : 0) / 1048576 / 1024;
-        MemoryGaugeData.MemoryRequests.Value = allPodContainers.Sum(c =>
-            c.Resources?.Requests?.TryGetValue("memory", out var q) == true
-                ? q.ToDouble()
-                : 0d) / 1048576 / 1024;
-
-        MemoryGaugeData.MemoryLimits.Value = allPodContainers.Sum(c =>
-            c.Resources?.Limits?.TryGetValue("memory", out var q) == true
-                ? q.ToDouble()
-                : 0d) / 1048576 / 1024;
-
-        MemoryGaugeData.MemoryUsage.Value = allMetricContainers.Sum(c =>
-            c.Usage?.TryGetValue("memory", out var q) == true
-                ? q.ToDouble()
-                : 0d) / 1048576 / 1024;
+        MemoryGaugeData.MemoryAllocatable.Value = snapshot.MemoryAllocatableGi;
+        MemoryGaugeData.MemoryCapacity.Value = snapshot.MemoryCapacityGi;
+        MemoryGaugeData.MemoryRequests.Value = snapshot.MemoryRequestsGi;
+        MemoryGaugeData.MemoryLimits.Value = snapshot.MemoryLimitsGi;
+        MemoryGaugeData.MemoryUsage.Value = snapshot.MemoryUsageGi;
     }
 
     public void Initialize(ClusterWorkspace cluster)

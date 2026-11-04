@@ -1,4 +1,3 @@
-using KubeUI.Features.Helm.Helm;
 using System.ComponentModel;
 using Avalonia.Controls.Selection;
 using Avalonia.Threading;
@@ -7,8 +6,9 @@ using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using Helm.NET;
-using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Controls.Presentation;
+using KubeUI.Features.Clusters.Workspace;
+using KubeUI.Features.Helm.Helm;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.Logging;
 

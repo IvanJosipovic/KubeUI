@@ -1,11 +1,13 @@
 ﻿using KubeUI.Features.Clusters.Workspace;
+using KubeUI.Features.Resources;
 using KubeUI.Features.Resources.Icons;
 using KubeUI.Features.Resources.List;
 using KubeUI.Features.Resources.List.Controls;
 using KubeUI.Features.Resources.Properties;
 using KubeUI.Features.Resources.Visualization;
-using KubeUI.Features.Resources.Yaml;
 using KubeUI.Features.Resources.Workloads.v1.Pod.Services;
+using KubeUI.Features.Resources.Workloads.v1.Pod.ViewModels;
+using KubeUI.Features.Resources.Yaml;
 using ServiceScan.SourceGenerator;
 
 namespace KubeUI.Features.Resources.DependencyInjection;
@@ -20,12 +22,16 @@ public static partial class KubeUIResourcesFeatureServiceCollectionExtensions
         services.AddSingleton<ResourceIconService>();
         services.AddSingleton<IResourceIconService>(sp => sp.GetRequiredService<ResourceIconService>());
         services.AddSingleton<IResourceVisualizationService, ResourceVisualizationService>();
+        services.AddSingleton<IResourceListDocumentFactory>(static _ => new ResourceListDocumentFactory());
         services.AddSingleton<IYamlValidationService, YamlSyntaxValidationService>();
         services.AddTransient(typeof(ResourceListViewModel<>));
         services.AddTransient<Func<VisualizationViewModel>>(sp => () => sp.GetRequiredService<VisualizationViewModel>());
         services.AddTransient<Func<ResourceYamlViewModel>>(sp => () => sp.GetRequiredService<ResourceYamlViewModel>());
+        services.AddTransient<Func<PodLogsViewModel>>(sp => () => sp.GetRequiredService<PodLogsViewModel>());
+        services.AddTransient(static serviceProvider => new CustomResourceConfig(serviceProvider));
         services.AddTransient<IPodLogExportService, PodLogExportService>();
         services.AddTransient<IPodLogsLauncher, PodLogsLauncher>();
+        services.AddViewFactories(GetViewFactories());
         services.AddKubeUIResourcesGeneratedServices();
         services.AddKubeUIResourceConfigServices();
         services.AddKubeUIResourcesCustomConfigServices();
@@ -43,4 +49,7 @@ public static partial class KubeUIResourcesFeatureServiceCollectionExtensions
 
     [GenerateServiceRegistrations(AssignableTo = typeof(CustomResourceConfig), Lifetime = ServiceLifetime.Transient, ExcludeByTypeName = "KubeUI.Features.Resources.CustomResourceConfig", AssemblyNameFilter = "KubeUI.Features.Resources")]
     private static partial IServiceCollection AddKubeUIResourcesCustomConfigServices(this IServiceCollection services);
+
+    [ScanForTypes(AssignableTo = typeof(IViewFactoryDefinition), Handler = nameof(ViewFactoryDiscovery.Create))]
+    private static partial IViewFactory[] GetViewFactories();
 }

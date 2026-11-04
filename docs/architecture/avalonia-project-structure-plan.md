@@ -1,6 +1,6 @@
-# Avalonia project structure plan
+# Superseded architecture document
 
-**Status:** Structure implemented; Debug and Release builds, the Linux x64 Release trimmed publish, and the full local MTP suite pass. On Linux, test coverage uses dynamic instrumentation with static instrumentation disabled to avoid the slow pre-launch scan of the large test output folders.
+This project-structure plan is superseded. Current project ownership and dependency rules live in [ownership-map.md](ownership-map.md); prioritized remaining work lives in [remaining-work.md](remaining-work.md).
 
 **Rename:** `KubeUI.Avalonia` was renamed to `KubeUI.Foundation` (project, assembly, and namespaces). The old name collided with the global `Avalonia` namespace: inside any `KubeUI.*` namespace, cref resolution bound the first `Avalonia` segment to `KubeUI.Avalonia`, breaking XML doc crefs. `tests/KubeUI.Avalonia.Tests` keeps its name; it is the cross-feature test hub, not a test project for this assembly alone.
 

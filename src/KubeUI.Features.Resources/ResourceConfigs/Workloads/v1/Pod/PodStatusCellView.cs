@@ -1,6 +1,6 @@
 using k8s.Models;
-using KubeUI.Features.Resources.List.Controls;
 using KubeUI.Controls.Styles;
+using KubeUI.Features.Resources.List.Controls;
 
 namespace KubeUI.Features.Resources.Workloads.v1.Pod;
 

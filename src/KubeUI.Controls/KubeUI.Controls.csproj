@@ -2,6 +2,8 @@
   <PropertyGroup>
     <DebugType>embedded</DebugType>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsTrimmable>true</IsTrimmable>
+    <WarningsAsErrors>$(WarningsAsErrors);IL2091</WarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
@@ -32,6 +34,7 @@
     <PackageReference Include="Avalonia.Markup.Declarative" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="Dock.Model.Mvvm" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="FluentIcons.Avalonia" />
     <PackageReference Include="PropertyGenerator.Avalonia">
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>

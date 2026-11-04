@@ -4,13 +4,13 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using CommunityToolkit.Mvvm.Input;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
+using KubernetesClient.Informer.Client;
 using KubeUI.Features.Clusters.Workspace;
+using KubeUI.Features.Resources;
 using KubeUI.Features.Resources.Common;
 using KubeUI.Features.Resources.List;
-using KubeUI.Features.Resources;
 using KubeUI.Kubernetes;
-using KubernetesClient.Informer.Client;
-using KubernetesClient.Informer.Client;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Avalonia.Tests.Infra;
@@ -49,6 +49,8 @@ internal sealed class BlockingPodPermissionResourceConfig : IResourceConfig
     }
 
     public Task SeedResource(bool waitForReady = false) => Task.CompletedTask;
+
+    public Task SeedResource(bool waitForReady, CancellationToken cancellationToken) => SeedResource(waitForReady);
 
     public void Initialize(ClusterWorkspace cluster) => Cluster = cluster;
 }
@@ -93,6 +95,8 @@ internal sealed class ImmediatePermissionResourceConfig : IResourceConfig
     }
 
     public Task SeedResource(bool waitForReady = false) => Task.CompletedTask;
+
+    public Task SeedResource(bool waitForReady, CancellationToken cancellationToken) => SeedResource(waitForReady);
 
     public void Initialize(ClusterWorkspace cluster) => Cluster = cluster;
 }

@@ -7,10 +7,10 @@ using Avalonia.Markup.Xaml.MarkupExtensions;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using k8s.Models;
-using KubeUI.Features.Resources.Common;
-using KubeUI.Features.Clusters.Presentation;
 using KubeUI.Controls.DependencyInjection;
 using KubeUI.Controls.Presentation;
+using KubeUI.Features.Clusters.Presentation;
+using KubeUI.Features.Resources.Common;
 namespace KubeUI.Features.Resources.Visualization;
 
 public sealed partial class VisualizationView : KubeUIView<VisualizationViewModel>
@@ -117,7 +117,7 @@ public sealed partial class VisualizationView : KubeUIView<VisualizationViewMode
         return new Border()
             .Row(1)
             .Padding(12)
-            .IsVisible(vm, x => x.ErrorMessage, converter: KubeUI.Controls.Converters.Converters.NotNull)
+            .IsVisible(vm, x => x.ErrorMessage, converter: Controls.Converters.Converters.NotNull)
             .Child(new Grid()
                 .Rows("Auto,*")
                 .Children(

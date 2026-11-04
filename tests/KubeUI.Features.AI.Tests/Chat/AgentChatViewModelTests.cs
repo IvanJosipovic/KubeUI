@@ -1,9 +1,9 @@
 using System.Text.Json;
 using System.Threading.Channels;
-using KubeUI.Features.AI.Agents;
-using KubeUI.Features.AI.Mcp;
-using KubeUI.Features.AI.Chat;
 using KubeUI.App.Infrastructure.Mcp;
+using KubeUI.Features.AI.Agents;
+using KubeUI.Features.AI.Chat;
+using KubeUI.Features.AI.Mcp;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Shouldly;

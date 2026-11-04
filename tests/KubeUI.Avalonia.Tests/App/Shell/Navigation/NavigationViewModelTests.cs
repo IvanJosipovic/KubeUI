@@ -14,10 +14,10 @@ using FluentAvalonia.UI.Controls;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Features.Resources.Visualization;
+using KubeUI.App.Shell.Navigation;
 using KubeUI.Features.Resources;
 using KubeUI.Features.Resources.Contracts;
-using KubeUI.App.Shell.Navigation;
+using KubeUI.Features.Resources.Visualization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
@@ -1994,6 +1994,7 @@ public class NavigationViewModelTests
             .OfType<IResourceListViewModel>()
             .Single(x => ReferenceEquals(x.Cluster, workspace) && x.Kind == updatedKind);
 
+        openedDocument.ShouldBeOfType<ResourceListViewModel<GenericKubernetesObject>>();
         openedDocument.ResourceConfig.IsCustomResource.ShouldBeTrue();
     }
 
@@ -2902,6 +2903,7 @@ internal class FakeCustomResourceConfig : IResourceConfig
     public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
     public Task EvaluateListWatchAccessAsync() => Task.CompletedTask;
     public Task SeedResource(bool waitForReady = false) => Task.CompletedTask;
+    public Task SeedResource(bool waitForReady, CancellationToken cancellationToken) => SeedResource(waitForReady);
     public Type Type { get; }
 
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
@@ -2942,6 +2944,7 @@ internal class FakeResourceConfig : IResourceConfig
     public IEnumerable<(Verb verb, string? subresource)> Permissions() => [];
     public Task EvaluateListWatchAccessAsync() => Task.CompletedTask;
     public Task SeedResource(bool waitForReady = false) => Task.CompletedTask;
+    public Task SeedResource(bool waitForReady, CancellationToken cancellationToken) => SeedResource(waitForReady);
     public Type Type { get; }
 
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
@@ -2992,6 +2995,7 @@ internal sealed class DeferredPermissionResourceConfig : IResourceConfig
     }
 
     public Task SeedResource(bool waitForReady = false) => Task.CompletedTask;
+    public Task SeedResource(bool waitForReady, CancellationToken cancellationToken) => SeedResource(waitForReady);
 
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
 
@@ -3064,6 +3068,7 @@ internal sealed class SlowPermissionResourceConfig : IResourceConfig
     }
 
     public Task SeedResource(bool waitForReady = false) => Task.CompletedTask;
+    public Task SeedResource(bool waitForReady, CancellationToken cancellationToken) => SeedResource(waitForReady);
 
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
 

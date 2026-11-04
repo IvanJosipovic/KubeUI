@@ -1,4 +1,5 @@
 using KubeUI.Features.Crossplane.MRDiffDetection;
+using ServiceScan.SourceGenerator;
 
 namespace KubeUI.Features.Crossplane.DependencyInjection;
 
@@ -15,6 +16,7 @@ public static partial class KubeUICrossplaneFeatureServiceCollectionExtensions
         services.AddSingleton<INavigationSectionProvider, CrossplaneNavigationSectionProvider>();
         services.AddSingleton<CrossplaneDiffLogParser>();
         services.AddTransient<CrossplaneProviderLogMonitor>();
+        services.AddViewFactories(GetViewFactories());
         return services.AddKubeUICrossplaneGeneratedServices();
     }
 
@@ -22,4 +24,7 @@ public static partial class KubeUICrossplaneFeatureServiceCollectionExtensions
     [GenerateServiceRegistrations(AssignableTo = typeof(ViewModelBase), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI.Features.Crossplane")]
     [GenerateServiceRegistrations(AssignableTo = typeof(ViewBase<>), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI.Features.Crossplane")]
     private static partial IServiceCollection AddKubeUICrossplaneGeneratedServices(this IServiceCollection services);
+
+    [ScanForTypes(AssignableTo = typeof(IViewFactoryDefinition), Handler = nameof(ViewFactoryDiscovery.Create))]
+    private static partial IViewFactory[] GetViewFactories();
 }

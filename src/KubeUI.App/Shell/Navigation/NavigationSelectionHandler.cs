@@ -2,13 +2,13 @@ using Avalonia.Controls.Notifications;
 using Avalonia.Platform.Storage;
 using Dock.Model.Core;
 using KubeUI.App.Features.Clusters.Overview;
-using KubeUI.Features.Clusters.Settings;
-using KubeUI.Features.Clusters.Workspace;
-using KubeUI.Features.Resources.Visualization;
 using KubeUI.App.Infrastructure;
 using KubeUI.App.Infrastructure.Platform;
 using KubeUI.App.Infrastructure.Presentation;
+using KubeUI.Features.Clusters.Settings;
+using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources;
+using KubeUI.Features.Resources.Visualization;
 using KubeUI.Features.Resources.Workloads.v1.Pod;
 
 namespace KubeUI.App.Shell.Navigation;

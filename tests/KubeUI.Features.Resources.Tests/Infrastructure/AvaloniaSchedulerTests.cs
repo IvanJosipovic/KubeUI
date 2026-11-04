@@ -13,7 +13,7 @@ public sealed class AvaloniaSchedulerTests
     {
         var executedOnUiThread = false;
 
-        KubeUI.App.Infrastructure.Threading.AvaloniaScheduler.Instance.Invoke(() => executedOnUiThread = Dispatcher.UIThread.CheckAccess());
+        App.Infrastructure.Threading.AvaloniaScheduler.Instance.Invoke(() => executedOnUiThread = Dispatcher.UIThread.CheckAccess());
 
         executedOnUiThread.ShouldBeTrue();
     }
@@ -23,7 +23,7 @@ public sealed class AvaloniaSchedulerTests
     {
         var executedOnUiThread = false;
 
-        await Task.Run(() => KubeUI.App.Infrastructure.Threading.AvaloniaScheduler.Instance.Invoke(() => executedOnUiThread = Dispatcher.UIThread.CheckAccess()));
+        await Task.Run(() => App.Infrastructure.Threading.AvaloniaScheduler.Instance.Invoke(() => executedOnUiThread = Dispatcher.UIThread.CheckAccess()));
 
         executedOnUiThread.ShouldBeTrue();
     }
@@ -59,7 +59,7 @@ public sealed class AvaloniaSchedulerTests
                 });
         }
 
-        ScheduleNext(KubeUI.App.Infrastructure.Threading.AvaloniaScheduler.Instance, 1000);
+        ScheduleNext(App.Infrastructure.Threading.AvaloniaScheduler.Instance, 1000);
 
         (await completion.Task).ShouldBe(1);
     }

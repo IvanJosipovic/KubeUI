@@ -6,63 +6,6 @@ namespace KubeUI.Features.Resources.Workloads.v1.Pod.ViewModels;
 
 public sealed partial class PodLogsViewModel
 {
-    private const int MaxOutputBatchSize = 128;
-
-    private void AppendStatusLine(string podName, string containerName, string message, CancellationTokenSource connectionCts)
-    {
-        if (string.IsNullOrWhiteSpace(message) || !IsCurrentConnection(connectionCts))
-        {
-            return;
-        }
-
-        PodLogOutputEntry entry = new(podName, containerName, message);
-        var outputGeneration = Volatile.Read(ref _outputGeneration);
-        Dispatcher.UIThread.InvokeAsync(
-            () => AppendOutputEntry(entry, connectionCts, outputGeneration),
-            DispatcherPriority.Background);
-    }
-
-    private bool DecrementActiveReaders(CancellationTokenSource connectionCts)
-    {
-        var isCurrentConnection = IsCurrentConnection(connectionCts);
-        var isLastReaderForConnection = false;
-        if (_readerCounts.TryGetValue(connectionCts, out var remainingReaders))
-        {
-            remainingReaders = _readerCounts.AddOrUpdate(connectionCts, 0, static (_, count) => count - 1);
-            if (remainingReaders <= 0 && _readerCounts.TryRemove(connectionCts, out _))
-            {
-                isLastReaderForConnection = true;
-                if (!isCurrentConnection)
-                {
-                    connectionCts.Dispose();
-                }
-            }
-        }
-
-        if (!isCurrentConnection)
-        {
-            return false;
-        }
-
-        Interlocked.Decrement(ref _activeReaderCount);
-        if (!isLastReaderForConnection)
-        {
-            return false;
-        }
-
-        Dispatcher.UIThread.InvokeAsync(
-            () =>
-            {
-                if (IsCurrentConnection(connectionCts))
-                {
-                    IsConnected = false;
-                }
-            },
-            DispatcherPriority.Background);
-
-        return true;
-    }
-
     private string BuildSuggestedFileName()
     {
         if (IsMultiScope)
@@ -118,193 +61,6 @@ public sealed partial class PodLogsViewModel
         return builder.ToString();
     }
 
-    private async Task ReadLogsAsync(
-        StreamReader reader,
-        PodLogReadOptions option,
-        CancellationTokenSource connectionCts,
-        PodLogSessionResolution connectionResolution)
-    {
-        var cancellationToken = connectionCts.Token;
-        var streamEnded = false;
-        var transientReadFailure = false;
-        var appendedOutput = false;
-        List<PodLogOutputEntry> pendingOutput = [];
-        List<string>? reconnectBuffer = HasExistingOutput(option) ? [] : null;
-        var outputGeneration = Volatile.Read(ref _outputGeneration);
-        try
-        {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                var read = reader.ReadLineAsync(cancellationToken);
-                // Publish quiet streams promptly, but combine already-buffered lines.
-                if (!read.IsCompletedSuccessfully || pendingOutput.Count >= MaxOutputBatchSize)
-                {
-                    await FlushOutputEntriesAsync(pendingOutput, connectionCts, outputGeneration);
-                    pendingOutput.Clear();
-                }
-
-                var log = await read;
-                if (log is null)
-                {
-                    streamEnded = true;
-                    break;
-                }
-
-                if (reconnectBuffer is null)
-                {
-                    QueueOutputEntry(pendingOutput, option, log);
-                    appendedOutput = true;
-                }
-                else
-                {
-                    reconnectBuffer.Add(log);
-                    if (TryFlushReconnectBuffer(reconnectBuffer, option, atEnd: false, out var lines))
-                    {
-                        reconnectBuffer = null;
-                        for (var i = 0; i < lines.Count; i++)
-                        {
-                            QueueOutputEntry(pendingOutput, option, lines[i]);
-                            if (pendingOutput.Count >= MaxOutputBatchSize)
-                            {
-                                await FlushOutputEntriesAsync(pendingOutput, connectionCts, outputGeneration);
-                                pendingOutput.Clear();
-                            }
-                        }
-
-                        appendedOutput |= lines.Count > 0;
-                    }
-                }
-            }
-        }
-        catch (Exception ex) when (cancellationToken.IsCancellationRequested
-            && ex is OperationCanceledException or IOException or ObjectDisposedException)
-        {
-        }
-        catch (Exception ex) when (ex is IOException or HttpRequestException)
-        {
-            transientReadFailure = true;
-            _logger.LogWarning(ex, "Pod log stream disconnected for {PodNamespace}/{PodName} container {ContainerName}.", option.PodNamespace, option.PodName, option.ContainerName);
-            Dispatcher.UIThread.Post(
-                () =>
-                {
-                    if (!_pendingReconnect && IsCurrentConnection(connectionCts))
-                    {
-                        ConnectionError = ex.Message;
-                    }
-                },
-                DispatcherPriority.Background);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unable to read pod log stream for {PodNamespace}/{PodName} container {ContainerName}.", option.PodNamespace, option.PodName, option.ContainerName);
-            Dispatcher.UIThread.Post(
-                () =>
-                {
-                    if (!_pendingReconnect && IsCurrentConnection(connectionCts))
-                    {
-                        ConnectionError = ex.Message;
-                    }
-                },
-                DispatcherPriority.Background);
-        }
-        finally
-        {
-            try
-            {
-                if (reconnectBuffer is not null
-                    && TryFlushReconnectBuffer(reconnectBuffer, option, atEnd: true, out var lines))
-                {
-                    for (var i = 0; i < lines.Count; i++)
-                    {
-                        QueueOutputEntry(pendingOutput, option, lines[i]);
-                        if (pendingOutput.Count >= MaxOutputBatchSize)
-                        {
-                            await FlushOutputEntriesAsync(pendingOutput, connectionCts, outputGeneration);
-                            pendingOutput.Clear();
-                        }
-                    }
-
-                    appendedOutput |= lines.Count > 0;
-                }
-
-                await FlushOutputEntriesAsync(pendingOutput, connectionCts, outputGeneration);
-
-                var isLastActiveReader = DecrementActiveReaders(connectionCts);
-                if (((streamEnded && appendedOutput) || transientReadFailure)
-                    && ShouldReconnectAfterStreamEnd(reader, option, connectionResolution.Pod, cancellationToken, isLastActiveReader))
-                {
-                    ScheduleReconnectAfterStreamEnd(connectionCts);
-                }
-            }
-            finally
-            {
-                ReleaseStreamReader(reader);
-            }
-        }
-    }
-
-    private bool ShouldReconnectAfterStreamEnd(
-        StreamReader reader,
-        PodLogReadOptions option,
-        V1Pod resolvedPod,
-        CancellationToken cancellationToken,
-        bool isLastActiveReader)
-    {
-        return option.Follow
-            && !option.Previous
-            && !cancellationToken.IsCancellationRequested
-            && !reader.BaseStream.CanSeek
-            && !IsTerminalPod(resolvedPod)
-            && isLastActiveReader;
-    }
-
-    private static bool IsTerminalPod(V1Pod pod)
-    {
-        return pod.Status?.Phase is "Succeeded" or "Failed";
-    }
-
-    private void ScheduleReconnectAfterStreamEnd(CancellationTokenSource connectionCts)
-    {
-        if (Interlocked.Exchange(ref _streamEndedReconnectPending, 1) != 0)
-        {
-            return;
-        }
-
-        var reconnectAttempt = Interlocked.Increment(ref _streamEndedReconnectAttempts);
-        if (reconnectAttempt > MaxAutomaticReconnectAttempts)
-        {
-            Interlocked.Exchange(ref _streamEndedReconnectPending, 0);
-            return;
-        }
-
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await _automaticReconnectDelay(reconnectAttempt, connectionCts.Token);
-            }
-            catch (OperationCanceledException)
-            {
-                Interlocked.Exchange(ref _streamEndedReconnectPending, 0);
-                return;
-            }
-
-            Dispatcher.UIThread.Post(
-                () =>
-                {
-                    Interlocked.Exchange(ref _streamEndedReconnectPending, 0);
-                    RequestReconnect(preserveOutput: true);
-                },
-                DispatcherPriority.Background);
-        }, CancellationToken.None);
-    }
-
-    private static Task DelayAutomaticReconnectAsync(int reconnectAttempt, CancellationToken cancellationToken)
-    {
-        var delaySeconds = Math.Min(30, 1 << Math.Min(reconnectAttempt - 1, 4));
-        return Task.Delay(TimeSpan.FromSeconds(delaySeconds), cancellationToken);
-    }
-
     private void AddOutputEntry(PodLogOutputEntry entry)
     {
         lock (_outputEntriesGate)
@@ -333,35 +89,12 @@ public sealed partial class PodLogsViewModel
         }
     }
 
-    private static void QueueOutputEntry(List<PodLogOutputEntry> pendingOutput, PodLogReadOptions option, string message)
-    {
-        pendingOutput.Add(new PodLogOutputEntry(option.PodName, option.ContainerName, message));
-    }
-
-    private async Task FlushOutputEntriesAsync(
-        IReadOnlyList<PodLogOutputEntry> entries,
-        CancellationTokenSource connectionCts,
-        int outputGeneration)
-    {
-        if (entries.Count == 0)
-        {
-            return;
-        }
-
-        var batch = entries.ToArray();
-
-        // Backpressure bounds outstanding dispatcher work to one batch per reader.
-        await Dispatcher.UIThread.InvokeAsync(
-            () => AppendOutputEntries(batch, connectionCts, outputGeneration),
-            DispatcherPriority.Background);
-    }
-
     private void AppendOutputEntries(
         IReadOnlyList<PodLogOutputEntry> entries,
-        CancellationTokenSource connectionCts,
+        PodLogStreamSession connectionSession,
         int outputGeneration)
     {
-        if (!IsCurrentConnection(connectionCts) || outputGeneration != Volatile.Read(ref _outputGeneration))
+        if (!IsCurrentConnection(connectionSession) || outputGeneration != Volatile.Read(ref _outputGeneration))
         {
             return;
         }
@@ -393,9 +126,9 @@ public sealed partial class PodLogsViewModel
         }
     }
 
-    private void AppendOutputEntry(PodLogOutputEntry entry, CancellationTokenSource connectionCts, int outputGeneration)
+    private void AppendOutputEntry(PodLogOutputEntry entry, PodLogStreamSession connectionSession, int outputGeneration)
     {
-        if (!IsCurrentConnection(connectionCts) || outputGeneration != Volatile.Read(ref _outputGeneration))
+        if (!IsCurrentConnection(connectionSession) || outputGeneration != Volatile.Read(ref _outputGeneration))
         {
             return;
         }
@@ -427,11 +160,11 @@ public sealed partial class PodLogsViewModel
         }
     }
 
-    private bool IsCurrentConnection(CancellationTokenSource connectionCts)
+    private bool IsCurrentConnection(PodLogStreamSession connectionSession)
     {
         return !_disposed
-            && ReferenceEquals(_connectionCts, connectionCts)
-            && !connectionCts.IsCancellationRequested;
+            && ReferenceEquals(_connectionSession, connectionSession)
+            && !connectionSession.CancellationToken.IsCancellationRequested;
     }
 
     private void RenderOutputEntries()
@@ -532,23 +265,69 @@ public sealed partial class PodLogsViewModel
         return false;
     }
 
-    private bool TryFlushReconnectBuffer(
-        List<string> pending,
-        PodLogReadOptions option,
-        bool atEnd,
-        out List<string> lines)
-    {
-        var history = GetRecentMessages(option);
-        var overlap = GetSuffixPrefixOverlap(history, pending);
+    bool IPodLogStreamSessionSink.IsCurrent(PodLogStreamSession session) => IsCurrentConnection(session);
 
-        if (!atEnd && overlap == pending.Count)
+    bool IPodLogStreamSessionSink.IsReconnectPending => _pendingReconnect;
+
+    int IPodLogStreamSessionSink.OutputGeneration => Volatile.Read(ref _outputGeneration);
+
+    bool IPodLogStreamSessionSink.HasExistingOutput(PodLogReadOptions option) => HasExistingOutput(option);
+
+    List<string> IPodLogStreamSessionSink.GetRecentMessages(PodLogReadOptions option) => GetRecentMessages(option);
+
+    async Task IPodLogStreamSessionSink.AppendOutputEntriesAsync(
+        PodLogStreamSession session,
+        IReadOnlyList<PodLogOutputEntry> entries,
+        int outputGeneration)
+    {
+        await Dispatcher.UIThread.InvokeAsync(
+            () => AppendOutputEntries(entries, session, outputGeneration),
+            DispatcherPriority.Background);
+    }
+
+    void IPodLogStreamSessionSink.AppendStatusLine(
+        PodLogStreamSession session,
+        PodLogOutputEntry entry,
+        int outputGeneration)
+    {
+        if (string.IsNullOrWhiteSpace(entry.Message) || !IsCurrentConnection(session))
         {
-            lines = [];
-            return false;
+            return;
         }
 
-        lines = pending.Skip(overlap).ToList();
-        return true;
+        Dispatcher.UIThread.InvokeAsync(
+            () => AppendOutputEntry(entry, session, outputGeneration),
+            DispatcherPriority.Background);
+    }
+
+    void IPodLogStreamSessionSink.OpenFailed(
+        PodLogStreamSession session,
+        PodLogReadOptions option,
+        Exception exception)
+    {
+        ((IPodLogStreamSessionSink)this).AppendStatusLine(
+            session,
+            new PodLogOutputEntry(option.PodName, option.ContainerName, exception.Message),
+            Volatile.Read(ref _outputGeneration));
+        ConnectionError = exception.Message;
+    }
+
+    void IPodLogStreamSessionSink.ReadFailed(PodLogStreamSession session, Exception exception)
+    {
+        if (!_pendingReconnect && IsCurrentConnection(session))
+        {
+            ConnectionError = exception.Message;
+        }
+    }
+
+    void IPodLogStreamSessionSink.Disconnected(PodLogStreamSession session)
+    {
+        IsConnected = false;
+    }
+
+    void IPodLogStreamSessionSink.RequestReconnect(PodLogStreamSession session)
+    {
+        RequestReconnect(preserveOutput: true);
     }
 
     private List<string> GetRecentMessages(PodLogReadOptions option)
@@ -569,30 +348,6 @@ public sealed partial class PodLogsViewModel
 
         history.Reverse();
         return history;
-    }
-
-    private static int GetSuffixPrefixOverlap(IReadOnlyList<string> history, IReadOnlyList<string> pending)
-    {
-        var maximum = Math.Min(history.Count, pending.Count);
-        for (var length = maximum; length > 0; length--)
-        {
-            var matches = true;
-            for (var i = 0; i < length; i++)
-            {
-                if (!string.Equals(history[history.Count - length + i], pending[i], StringComparison.Ordinal))
-                {
-                    matches = false;
-                    break;
-                }
-            }
-
-            if (matches)
-            {
-                return length;
-            }
-        }
-
-        return 0;
     }
 
 }

@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 using Avalonia.Collections;
 using Avalonia.Controls.Notifications;
 using Dock.Model.Core;
@@ -10,21 +11,22 @@ using Humanizer;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Controls.Docking;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources.Common;
+using KubeUI.Features.Resources.Infrastructure;
+using KubeUI.Features.Resources.List;
 using KubeUI.Features.Resources.List.Controls;
 using KubeUI.Features.Resources.Properties;
 using KubeUI.Features.Resources.Visualization;
-using KubeUI.Features.Resources.Yaml;
-using KubeUI.Features.Resources.Infrastructure;
-using KubeUI.Controls.Docking;
 using KubeUI.Features.Resources.Workloads.v1.Pod.Services;
 using KubeUI.Features.Resources.Workloads.v1.Pod.ViewModels;
+using KubeUI.Features.Resources.Yaml;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Features.Resources;
 
-public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourceConfig
+public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T> : ObservableObject, IResourceConfig, IResourceListViewModelCreator
     where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     protected IServiceProvider ServiceProvider { get; private set; } = null!;
@@ -66,6 +68,15 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
     }
 
     public virtual GroupApiVersionKind Kind => GroupApiVersionKind.From<T>();
+
+    Type IResourceListViewModelCreator.ResourceType => typeof(T);
+
+    IResourceListViewModel IResourceListViewModelCreator.Create(ClusterWorkspace cluster, GroupApiVersionKind kind)
+    {
+        var viewModel = cluster.ServiceProvider.GetRequiredService<ResourceListViewModel<T>>();
+        viewModel.InitializeResource(cluster, kind);
+        return viewModel;
+    }
 
     /// <inheritdoc />
     public virtual ResourceOrigin Origin => ResourceOrigin.BuiltIn;

@@ -1,9 +1,9 @@
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.App.Shell.Navigation;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources;
-using KubeUI.App.Shell.Navigation;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Resources.Relationships;
 

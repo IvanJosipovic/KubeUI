@@ -1,7 +1,7 @@
 ﻿using k8s.Models;
+using KubeUI.Controls.Threading;
 using KubeUI.Features.Resources.List.Controls;
 using KubeUI.Features.Resources.Properties.Controls;
-using KubeUI.Controls.Threading;
 
 namespace KubeUI.Features.Resources.Core.v1.Event.Controls;
 

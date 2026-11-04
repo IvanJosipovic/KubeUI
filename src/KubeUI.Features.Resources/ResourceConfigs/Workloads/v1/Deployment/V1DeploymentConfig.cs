@@ -1,15 +1,15 @@
-﻿using k8s;
-using FluentAvalonia.UI.Controls;
+﻿using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
+using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Controls.Docking;
 using KubeUI.Features.Resources.Common;
 using KubeUI.Features.Resources.Infrastructure;
-using KubeUI.Controls.Docking;
-using KubeUI.Kubernetes;
 using KubeUI.Features.Resources.Workloads;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Features.Resources.Workloads.v1.Deployment;
 

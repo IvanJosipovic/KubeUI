@@ -1,7 +1,7 @@
 using System.Net;
+using KubeUI.App.Infrastructure.Mcp;
 using KubeUI.Features.AI.Mcp;
 using KubeUI.Features.AI.Mcp.Hosting;
-using KubeUI.App.Infrastructure.Mcp;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Http;

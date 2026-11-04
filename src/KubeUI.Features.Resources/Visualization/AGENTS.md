@@ -20,6 +20,7 @@
 ## Pipeline stage ownership
 - `VisualizationResourceStore` owns keyed resource snapshots and owner-reference indexing; the ViewModel must not maintain a second resource index.
 - `VisualizationBuildCoordinator` owns pending rebuild coalescing, cancellation, and latest-request-wins version checks.
+- `VisualizationIncrementalUpdateCoordinator` owns incremental admission (one in-flight update), pending-change coalescing, addition-delta construction, and merge/projection of incremental graphs. The ViewModel supplies the current scope state and decides when an incremental result requires a full rebuild.
 - `ResourceGraphProjection` owns root, annotation-selector, namespace, and incremental namespace reachability and must preserve graph metadata.
 - `ResourceGraphDisplayFilter` owns display-only type/readiness filtering and must not mutate the complete graph.
 - `VisualizationSeedPlanner` owns unresolved-reference and seed-prerequisite resolution; seed planning must remain pure and separate from informer/resource mutation.

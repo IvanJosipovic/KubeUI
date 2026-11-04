@@ -9,10 +9,10 @@ using k8s;
 using k8s.Autorest;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Features.Resources;
-using KubeUI.Features.Resources.Yaml;
 using KubeUI.App.Infrastructure.Docking;
 using KubeUI.App.Shell.Navigation;
+using KubeUI.Features.Resources;
+using KubeUI.Features.Resources.Yaml;
 using Shouldly;
 using ClusterRoleBindingPropertiesView = KubeUI.Features.Resources.AccessControl.v1.ClusterRoleBinding.PropertiesView;
 using ClusterRolePropertiesView = KubeUI.Features.Resources.AccessControl.v1.ClusterRole.PropertiesView;
@@ -57,7 +57,7 @@ public sealed class ResourceFeatureConfigTests
 {
     private static void AssertProperties<TConfig, TResource, TView>(TResource resource)
         where TConfig : ResourceConfigBase<TResource>
-        where TResource : class, k8s.IKubernetesObject<V1ObjectMeta>, new()
+        where TResource : class, IKubernetesObject<V1ObjectMeta>, new()
         where TView : Control
     {
         var config = ResolveConfig<TConfig>();
@@ -778,6 +778,7 @@ public sealed class ResourceFeatureConfigTests
     public async Task cronjob_start_context_menu_creates_job_resource()
     {
         var workspace = await Application.Current.CreateClusterAsync();
+        using var _ = workspace;
         await workspace.Runtime.SeedResource<V1Namespace>(true);
         await workspace.Runtime.SeedResource<V1CronJob>(true);
         await workspace.Runtime.SeedResource<V1Job>(true);
@@ -818,7 +819,7 @@ public sealed class ResourceFeatureConfigTests
         clusterConfig.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
         clusterConfig.InitialResources = new[]
         {
-            (k8s.IKubernetesObject<V1ObjectMeta>)new V1Namespace { Metadata = new V1ObjectMeta { Name = "volsync" } },
+            (IKubernetesObject<V1ObjectMeta>)new V1Namespace { Metadata = new V1ObjectMeta { Name = "volsync" } },
         }
             .Concat(KubernetesRbac.ClusterWide(
                 new RbacRule("namespaces", "list"),

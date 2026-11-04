@@ -1,17 +1,18 @@
-﻿using Dock.Model.Core;
+﻿using System.Diagnostics.CodeAnalysis;
+using Dock.Model.Core;
 using k8s;
 using k8s.Models;
-using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Controls.Docking;
+using KubeUI.Features.Clusters.Workspace;
 
 namespace KubeUI.Features.Resources.Properties;
 
 internal sealed class ResourcePropertiesCoordinator(IFactory factory, IServiceProvider services)
 {
-    public void Open<T>(ClusterWorkspace cluster, T resource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public void Open<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(ClusterWorkspace cluster, T resource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
         => factory.AddToRight(Create(cluster, resource));
 
-    public void Follow<T>(ClusterWorkspace cluster, T resource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    public void Follow<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(ClusterWorkspace cluster, T resource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         const string id = nameof(ResourcePropertiesViewModel<>);
         var pinned = factory.FindRightPinnedDockable(id);
@@ -33,7 +34,7 @@ internal sealed class ResourcePropertiesCoordinator(IFactory factory, IServicePr
             factory.AddToRight(replacement, previewPinned, focus: false);
     }
 
-    private ResourcePropertiesViewModel<T> Create<T>(ClusterWorkspace cluster, T resource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    private ResourcePropertiesViewModel<T> Create<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(ClusterWorkspace cluster, T resource) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var instance = services.GetRequiredService<ResourcePropertiesViewModel<T>>();
         instance.Initialize(cluster, resource);

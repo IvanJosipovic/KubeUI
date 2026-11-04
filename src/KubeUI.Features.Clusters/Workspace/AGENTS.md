@@ -32,3 +32,4 @@
 ## Constraints
 - Keep cluster-wide state and runtime subscriptions here instead of in individual views.
 - Keep permission-refresh orchestration here; navigation should react to workspace events rather than owning permission polling or bootstrap sequencing.
+- `PermissionRefreshCoordinator` owns trigger coalescing, the 500 ms debounce, single-worker scheduling, follow-up passes, and the in-progress guard; `ClusterWorkspace` supplies the refresh pass and remains the public facade.

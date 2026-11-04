@@ -11,13 +11,13 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using FluentIcons.Avalonia;
 using KubernetesClient.Informer.Client;
-using KubeUI.Features.Cilium.Hubble;
-using KubeUI.Features.Cilium.Hubble.Controls;
-using KubeUI.Features.Resources.Properties.Controls;
-using KubeUI.Features.Resources.Contracts;
-using KubeUI.Features.Resources.Icons;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Features.Cilium.Hubble;
+using KubeUI.Features.Cilium.Hubble;
+using KubeUI.Features.Cilium.Hubble.Controls;
+using KubeUI.Features.Resources.Contracts;
+using KubeUI.Features.Resources.Icons;
+using KubeUI.Features.Resources.Properties.Controls;
 using KubeUI.Testing.Utilities;
 using Microsoft.Extensions.DependencyInjection;
 using QuikGraph;
@@ -719,6 +719,7 @@ public sealed class ServiceMapViewTests
     }
 
     [AvaloniaFact]
+    [Obsolete]
     public async Task Dense_mock_graph_layout_preview()
     {
         var graph = CreateDenseMockGraph();
@@ -859,6 +860,7 @@ public sealed class ServiceMapViewTests
     }
 
     [AvaloniaFact]
+    [Obsolete]
     public async Task View_loads_empty_map_and_updates_when_graph_changes()
     {
         var services = Application.Current.GetTestServices();

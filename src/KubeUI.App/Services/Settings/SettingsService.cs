@@ -1,8 +1,8 @@
 using KubeUI.App.Options;
+using KubeUI.App.Styles;
 using KubeUI.Features.Clusters.Settings;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources.Settings;
-using KubeUI.App.Styles;
 using KubeUI.Kubernetes;
 using AppAppearanceSettings = KubeUI.App.Options.AppearanceSettings;
 using AppSettings = KubeUI.App.Options.Settings;
@@ -131,8 +131,8 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
     {
         Appearance.ConsoleFontSize = Math.Clamp(
             Appearance.ConsoleFontSize + change,
-            AppearanceSettings.MinimumFontSize,
-            AppearanceSettings.MaximumFontSize);
+            AppAppearanceSettings.MinimumFontSize,
+            AppAppearanceSettings.MaximumFontSize);
     }
 
     public virtual void ApplySettings()

@@ -27,17 +27,11 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         GroupApiVersionKind.From<V1RoleBinding>(),
     ];
 
-    private const int PermissionRefreshNone = 0;
-    private const int PermissionRefreshAll = 1;
-    private const int PermissionRefreshNamespaces = 2;
     private static readonly TimeSpan PermissionRefreshDebounce = TimeSpan.FromMilliseconds(500);
 
     private readonly Lock _connectLock = new();
-    private readonly SemaphoreSlim _permissionRefreshGate = new(1, 1);
+    private readonly PermissionRefreshCoordinator _permissionRefreshCoordinator;
     private long _customResourceDefinitionRevision;
-    private int _permissionRefreshRequested;
-    private int _permissionRefreshWorkerRunning;
-    private int _permissionRefreshInProgress;
     private volatile bool _disposed;
     private volatile bool _workspaceStateInitialized;
     private Task? _connectTask;
@@ -54,6 +48,12 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         _serviceProvider = serviceProvider;
         _logger = logger;
         _instrumentation = instrumentation;
+        _permissionRefreshCoordinator = new(
+            RefreshPermissionsCoreAsync,
+            CanRefreshPermissions,
+            cancellationToken => Task.Delay(PermissionRefreshDebounce, cancellationToken),
+            _disposeCancellation.Token,
+            exception => _logger.LogDebug(exception, "Unable to refresh permissions for cluster {ClusterName}", Runtime.Name));
 
         SubscribeRuntime();
         SubscribeNamespaces();
@@ -195,121 +195,36 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     /// Discards cached authorization rules and re-evaluates every resource configuration.
     /// Call from explicit permission triggers only; this method does not schedule polling.
     /// </summary>
-    public async Task RefreshPermissionsAsync()
+    public Task RefreshPermissionsAsync()
     {
-        if (!Runtime.Connected || !_workspaceStateInitialized || _disposed)
-        {
-            return;
-        }
+        return _permissionRefreshCoordinator.RefreshAsync();
+    }
 
-        await RefreshPermissionsCoreAsync(PermissionRefreshAll, CancellationToken.None).ConfigureAwait(false);
+    private bool CanRefreshPermissions()
+    {
+        return !_disposed && _workspaceStateInitialized && Runtime.Connected;
     }
 
     private void OnPermissionsInvalidated()
     {
-        if (_disposed
-            || !_workspaceStateInitialized
-            || !Runtime.Connected
-            || Volatile.Read(ref _permissionRefreshInProgress) != 0)
-        {
-            return;
-        }
-
-        RequestPermissionRefresh(PermissionRefreshAll);
+        _permissionRefreshCoordinator.Invalidate();
     }
 
-    private void RequestPermissionRefresh(int scope)
+    private async Task RefreshPermissionsCoreAsync(
+        PermissionRefreshScope scope,
+        CancellationToken cancellationToken)
     {
-        if (_disposed || !_workspaceStateInitialized || !Runtime.Connected)
+        if (scope == PermissionRefreshScope.All)
         {
-            return;
+            Runtime.Permissions.InvalidatePermissions();
+        }
+        else
+        {
+            Runtime.Permissions.InvalidateNamespacePermissions();
         }
 
-        Interlocked.Or(ref _permissionRefreshRequested, scope);
-        SchedulePermissionRefreshWorker();
-    }
-
-    private void SchedulePermissionRefreshWorker()
-    {
-        if (Interlocked.CompareExchange(ref _permissionRefreshWorkerRunning, 1, 0) != 0)
-        {
-            return;
-        }
-
-        _ = Task.Run(RunPermissionRefreshWorkerAsync);
-    }
-
-    private async Task RunPermissionRefreshWorkerAsync()
-    {
-        var cancellationToken = _disposeCancellation.Token;
-        try
-        {
-            while (true)
-            {
-                var scope = Interlocked.Exchange(ref _permissionRefreshRequested, PermissionRefreshNone);
-                if (scope == PermissionRefreshNone)
-                {
-                    break;
-                }
-
-                await Task.Delay(PermissionRefreshDebounce, cancellationToken).ConfigureAwait(false);
-                if (!Runtime.Connected || !_workspaceStateInitialized || _disposed)
-                {
-                    continue;
-                }
-
-                await RefreshPermissionsCoreAsync(scope, cancellationToken).ConfigureAwait(false);
-            }
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug(ex, "Unable to refresh permissions for cluster {ClusterName}", Runtime.Name);
-        }
-        finally
-        {
-            Interlocked.Exchange(ref _permissionRefreshWorkerRunning, 0);
-            if (!_disposed && Volatile.Read(ref _permissionRefreshRequested) != PermissionRefreshNone)
-            {
-                SchedulePermissionRefreshWorker();
-            }
-        }
-    }
-
-    private async Task RefreshPermissionsCoreAsync(int scope, CancellationToken cancellationToken)
-    {
-        var isFullRefresh = (scope & PermissionRefreshAll) != 0;
-        await _permissionRefreshGate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        if (isFullRefresh)
-        {
-            Interlocked.Exchange(ref _permissionRefreshInProgress, 1);
-        }
-
-        try
-        {
-            if (isFullRefresh)
-            {
-                Runtime.Permissions.InvalidatePermissions();
-            }
-            else
-            {
-                Runtime.Permissions.InvalidateNamespacePermissions();
-            }
-
-            await UpdateResourceConfigsPermissionsAndEvaluateAsync().ConfigureAwait(false);
-            await SeedPermissionWatchersAsync().ConfigureAwait(false);
-        }
-        finally
-        {
-            if (isFullRefresh)
-            {
-                Interlocked.Exchange(ref _permissionRefreshInProgress, 0);
-            }
-
-            _permissionRefreshGate.Release();
-        }
+        await UpdateResourceConfigsPermissionsAndEvaluateAsync().ConfigureAwait(false);
+        await SeedPermissionWatchersAsync().ConfigureAwait(false);
     }
 
     private async Task UpdateResourceConfigsPermissionsAndEvaluateAsync(
@@ -437,6 +352,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             runtime.PropertyChanged -= OnRuntimePropertyChanged;
         }
 
+        _permissionRefreshCoordinator.Dispose();
         _disposeCancellation.Cancel();
         _disposeCancellation.Dispose();
     }
@@ -583,7 +499,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
     private void OnNamespacesChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        RequestPermissionRefresh(PermissionRefreshNamespaces);
+        _permissionRefreshCoordinator.Request(PermissionRefreshScope.Namespaces);
     }
 
     private void OnRuntimePropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -633,7 +549,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     {
         if (Array.IndexOf(PermissionWatchKinds, resourceKind) >= 0)
         {
-            RequestPermissionRefresh(PermissionRefreshAll);
+            _permissionRefreshCoordinator.Request(PermissionRefreshScope.All);
             return;
         }
 

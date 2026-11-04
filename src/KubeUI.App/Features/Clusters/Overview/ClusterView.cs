@@ -1,11 +1,11 @@
 using Avalonia.Collections;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using k8s.Models;
-using KubeUI.Features.Resources.List;
 using KubeUI.App.Infrastructure.DependencyInjection;
 using KubeUI.App.Infrastructure.Presentation;
 using KubeUI.App.Styles;
 using KubeUI.Features.Clusters.Presentation;
+using KubeUI.Features.Resources.List;
 using LiveChartsCore;
 using LiveChartsCore.Kernel;
 using LiveChartsCore.Measure;

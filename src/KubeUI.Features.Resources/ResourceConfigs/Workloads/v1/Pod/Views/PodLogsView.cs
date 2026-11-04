@@ -3,17 +3,17 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml.MarkupExtensions;
-using Avalonia.Xaml.Interactivity;
 using Avalonia.Xaml.Interactions.Core;
+using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using KubeUI.Controls.Converters;
-using KubeUI.Features.Resources.Infrastructure;
 using KubeUI.Controls.Presentation;
+using KubeUI.Controls.Styles;
+using KubeUI.Features.Resources.Infrastructure;
 using KubeUI.Features.Resources.Workloads.v1.Pod.Behaviors;
 using KubeUI.Features.Resources.Workloads.v1.Pod.ViewModels;
-using KubeUI.Controls.Styles;
 using Ursa.Controls;
 
 
