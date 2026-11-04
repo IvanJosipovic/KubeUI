@@ -1,11 +1,12 @@
-﻿using k8s;
+﻿using System.Diagnostics.CodeAnalysis;
+using k8s;
 using k8s.Models;
 using KubeUI.Features.Clusters.Workspace;
 
 namespace KubeUI.Features.Resources;
 
 /// <summary>Base for typed, statically registered Kubernetes resource configurations.</summary>
-public abstract partial class ResourceConfig<T> : ResourceConfigBase<T>
+public abstract partial class ResourceConfig<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T> : ResourceConfigBase<T>
     where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     /// <summary>Creates a config whose services are supplied when its cluster is initialized.</summary>

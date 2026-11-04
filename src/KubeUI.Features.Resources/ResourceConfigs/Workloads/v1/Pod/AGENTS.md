@@ -8,6 +8,7 @@
 - Port-forwarders use `SvcSystems.Avalonia.DynamicTableView` with a single selection model; the library owns row rendering, live updates, sorting, sizing, and context-menu targeting. This view configures its own key bindings and double-tap action.
 
 ## Pod Logs
+- `PodLogStreamSession` owns stream opening/reading, reconnect attempts, cancellation, and reader disposal. `PodLogsViewModel` owns source selection, buffered output, presentation, and UI-facing callbacks.
 - A pod-scoped log view uses the title `Pod Logs` and selects all containers when launched from the pod's View Logs action.
 - Present sources in one compact Ursa TreeComboBox in the toolbar: Resource -> Pod -> Container.
 - Keep the popup hierarchy expanded, show partial parent selection, and let parent checks apply to descendants without closing the popup.

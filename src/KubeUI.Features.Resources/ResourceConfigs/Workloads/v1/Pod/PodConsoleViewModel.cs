@@ -5,9 +5,9 @@ using System.Text.Json.Serialization;
 using Avalonia.Input.Platform;
 using k8s;
 using k8s.Models;
-using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Controls.Platform;
 using KubeUI.Controls.Presentation;
+using KubeUI.Features.Clusters.Workspace;
 using SvcSystems.UI.Terminal;
 
 namespace KubeUI.Features.Resources.Workloads.v1.Pod;

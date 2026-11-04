@@ -3,8 +3,8 @@ using System.Text;
 using Dock.Model.Core;
 using k8s;
 using k8s.Models;
-using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Controls.Docking;
+using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources.Workloads.v1.Pod.ViewModels;
 
 namespace KubeUI.Features.Resources.Workloads.v1.Pod.Services;

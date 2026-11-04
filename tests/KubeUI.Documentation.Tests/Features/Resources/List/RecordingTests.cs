@@ -1,7 +1,7 @@
 using Avalonia.VisualTree;
-using KubeUI.Features.Resources.Yaml;
 using KubeUI.App.Shell.Main;
 using KubeUI.Documentation.Tests.Infra;
+using KubeUI.Features.Resources.Yaml;
 
 namespace KubeUI.Documentation.Tests.Features.Resources.List;
 

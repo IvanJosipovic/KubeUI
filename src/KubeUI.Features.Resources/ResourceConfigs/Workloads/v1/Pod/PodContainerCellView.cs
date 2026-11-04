@@ -1,4 +1,3 @@
-using KubeUI.Features.Resources.Converters;
 using System.Globalization;
 using Avalonia.Controls.Shapes;
 using Avalonia.Controls.Templates;
@@ -6,6 +5,7 @@ using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Markup.Xaml.Templates;
 using k8s.Models;
 using KubeUI.Controls.Converters;
+using KubeUI.Features.Resources.Converters;
 
 namespace KubeUI.Features.Resources.Workloads.v1.Pod;
 

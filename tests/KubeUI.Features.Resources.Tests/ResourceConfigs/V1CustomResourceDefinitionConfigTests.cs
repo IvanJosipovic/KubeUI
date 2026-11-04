@@ -3,9 +3,9 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using k8s;
 using k8s.Models;
-using KubeUI.Features.Resources.Common;
-using KubeUI.Features.Resources;
 using KubeUI.App.Shell.Navigation;
+using KubeUI.Features.Resources;
+using KubeUI.Features.Resources.Common;
 using KubeUI.Kubernetes.Serialization;
 using Shouldly;
 

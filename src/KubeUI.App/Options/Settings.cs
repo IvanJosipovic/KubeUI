@@ -1,6 +1,6 @@
-using KubeUI.Kubernetes;
 using KubeUI.Features.AI.Mcp;
 using KubeUI.Features.Clusters.Settings;
+using KubeUI.Kubernetes;
 namespace KubeUI.App.Options;
 
 public sealed partial class Settings : ObservableObject

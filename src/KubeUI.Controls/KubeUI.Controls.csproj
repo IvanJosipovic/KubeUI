@@ -32,6 +32,7 @@
     <PackageReference Include="Avalonia.Markup.Declarative" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="Dock.Model.Mvvm" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="FluentIcons.Avalonia" />
     <PackageReference Include="PropertyGenerator.Avalonia">
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>

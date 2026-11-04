@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Avalonia.Controls;
 using CommunityToolkit.Mvvm.Input;
@@ -17,7 +18,7 @@ namespace KubeUI.Features.Resources.Workloads;
 
 /// <summary>Shares scale-subresource UI and permission handling across scalable built-in workloads.</summary>
 /// <typeparam name="T">The scalable Kubernetes workload kind.</typeparam>
-public abstract partial class ScalableWorkloadConfig<T> : ResourceConfig<T>
+public abstract partial class ScalableWorkloadConfig<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T> : ResourceConfig<T>
     where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     protected ScalableWorkloadConfig(IServiceProvider serviceProvider)
@@ -73,7 +74,7 @@ public abstract partial class ScalableWorkloadConfig<T> : ResourceConfig<T>
             content.Children.Add(new TextBlock
             {
                 Text = string.Format(CultureInfo.CurrentCulture, Assets.Resources.ScalableWorkloadConfig_BulkPrompt!, selected.Count),
-                TextWrapping = global::Avalonia.Media.TextWrapping.Wrap,
+                TextWrapping = TextWrapping.Wrap,
             });
         }
         content.Children.Add(new TextBlock { Text = Assets.Resources.ScalableWorkloadConfig_ReplicaCount });

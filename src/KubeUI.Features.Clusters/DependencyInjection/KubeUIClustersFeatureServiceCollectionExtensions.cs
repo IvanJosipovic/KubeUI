@@ -1,12 +1,9 @@
-using KubeUI.Features.Clusters.Cloud.Aks;
-using KubeUI.Features.Clusters.Catalog;
-using KubeUI.Features.Clusters.Error;
-using KubeUI.Features.Clusters.Settings;
 using KubeUI.Features.Clusters.Workspace;
+using ServiceScan.SourceGenerator;
 
 namespace KubeUI.Features.Clusters.DependencyInjection;
 
-public static class KubeUIClustersFeatureServiceCollectionExtensions
+public static partial class KubeUIClustersFeatureServiceCollectionExtensions
 {
     public static IServiceCollection AddKubeUIClustersFeature(this IServiceCollection services)
     {
@@ -14,14 +11,16 @@ public static class KubeUIClustersFeatureServiceCollectionExtensions
 
         services.AddSingleton<ClusterWorkspacePreferences>();
         services.AddSingleton<ClusterWorkspaceCatalog>();
-        services.AddTransient<ImportAksClusterView>();
-        services.AddTransient<ImportAksClusterViewModel>();
-        services.AddTransient<ClusterListView>();
-        services.AddTransient<ClusterListViewModel>();
-        services.AddTransient<ClusterErrorView>();
-        services.AddTransient<ClusterErrorViewModel>();
-        services.AddTransient<ClusterSettingsView>();
-        services.AddTransient<ClusterSettingsViewModel>();
+        services.AddKubeUIClustersGeneratedServices();
+        services.AddViewFactories(GetViewFactories());
         return services;
     }
+
+    [GenerateServiceRegistrations(AssignableTo = typeof(UserControl), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI.Features.Clusters")]
+    [GenerateServiceRegistrations(AssignableTo = typeof(ViewModelBase), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI.Features.Clusters")]
+    [GenerateServiceRegistrations(AssignableTo = typeof(ViewBase<>), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI.Features.Clusters")]
+    private static partial IServiceCollection AddKubeUIClustersGeneratedServices(this IServiceCollection services);
+
+    [ScanForTypes(AssignableTo = typeof(IViewFactoryDefinition), Handler = nameof(ViewFactoryDiscovery.Create))]
+    private static partial IViewFactory[] GetViewFactories();
 }

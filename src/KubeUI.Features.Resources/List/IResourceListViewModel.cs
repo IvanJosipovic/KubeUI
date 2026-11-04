@@ -2,8 +2,8 @@
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Features.Clusters.Workspace;
-using KubeUI.Features.Resources.Common;
 using KubeUI.Features.Resources;
+using KubeUI.Features.Resources.Common;
 
 namespace KubeUI.Features.Resources.List
 {

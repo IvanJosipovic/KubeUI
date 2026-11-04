@@ -22,11 +22,13 @@ public static partial class KubeUIHelmFeatureServiceCollectionExtensions
         services.AddTransient<Func<HelmReleaseEditorViewModel>>(sp => () => sp.GetRequiredService<HelmReleaseEditorViewModel>());
         services.AddTransient<Func<HelmRepositoryEditorViewModel>>(sp => () => sp.GetRequiredService<HelmRepositoryEditorViewModel>());
         services.AddTransient<IHelmReleasePreviewService, HelmReleasePreviewService>();
-        
+
         // Helm service infrastructure
         services.AddSingleton<IHelmClientFactory, HelmClientFactory>();
         services.AddSingleton<IHelmService, HelmService>();
-        
+
+        services.AddViewFactories(GetViewFactories());
+
         return services.AddKubeUIHelmGeneratedServices();
     }
 
@@ -34,4 +36,7 @@ public static partial class KubeUIHelmFeatureServiceCollectionExtensions
     [GenerateServiceRegistrations(AssignableTo = typeof(ViewModelBase), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI.Features.Helm")]
     [GenerateServiceRegistrations(AssignableTo = typeof(ViewBase<>), Lifetime = ServiceLifetime.Transient, AsSelf = true, AsImplementedInterfaces = false, AssemblyNameFilter = "KubeUI.Features.Helm")]
     private static partial IServiceCollection AddKubeUIHelmGeneratedServices(this IServiceCollection services);
+
+    [ScanForTypes(AssignableTo = typeof(IViewFactoryDefinition), Handler = nameof(ViewFactoryDiscovery.Create))]
+    private static partial IViewFactory[] GetViewFactories();
 }

@@ -11,12 +11,12 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DynamicData;
 using k8s.Models;
-using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Controls.Presentation;
-using KubeUI.Features.Resources;
 using KubeUI.Controls.Styles;
 using KubeUI.Features.Cilium;
 using KubeUI.Features.Cilium.Hubble;
+using KubeUI.Features.Clusters.Workspace;
+using KubeUI.Features.Resources;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.Logging;
 using SvcSystems.Avalonia.DynamicTableView;
@@ -187,7 +187,7 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
             new DynamicTableViewColumn<FlowViewModel>(
                 "Direction",
                 Assets.Resources.FlowListView_ColumnDirection,
-                typeof(KubeUI.Features.Cilium.Hubble.FlowDirection),
+                typeof(FlowDirection),
                 flow => flow.Direction,
                 flow => FormatDirection(flow.Direction)),
             new DynamicTableViewColumn<FlowViewModel>(
@@ -250,11 +250,11 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
         return columns;
     }
 
-    internal static string FormatDirection(KubeUI.Features.Cilium.Hubble.FlowDirection direction)
+    internal static string FormatDirection(FlowDirection direction)
         => direction switch
         {
-            KubeUI.Features.Cilium.Hubble.FlowDirection.Ingress => Assets.Resources.FlowDirection_Ingress,
-            KubeUI.Features.Cilium.Hubble.FlowDirection.Egress => Assets.Resources.FlowDirection_Egress,
+            FlowDirection.Ingress => Assets.Resources.FlowDirection_Ingress,
+            FlowDirection.Egress => Assets.Resources.FlowDirection_Egress,
             _ => Assets.Resources.FlowDirection_Unknown
         };
 

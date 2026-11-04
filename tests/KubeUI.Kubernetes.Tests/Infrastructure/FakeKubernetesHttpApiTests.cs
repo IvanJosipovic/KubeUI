@@ -137,7 +137,7 @@ public sealed class FakeKubernetesHttpApiTests
         var activities = new ConcurrentQueue<Activity>();
         using var listener = new ActivityListener
         {
-            ShouldListenTo = source => source.Name == global::KubeUI.Kubernetes.Client.KubeInstrumentation.SourceName,
+            ShouldListenTo = source => source.Name == Kubernetes.Client.KubeInstrumentation.SourceName,
             Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
             ActivityStarted = activity => activities.Enqueue(activity),
         };

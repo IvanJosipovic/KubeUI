@@ -8,12 +8,12 @@ using Avalonia.VisualTree;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using KubernetesClient.Informer.Client;
-using KubeUI.Features.Resources.Visualization;
 using KubeUI.Controls.DependencyInjection;
 using KubeUI.Controls.Presentation;
+using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Features.Resources.Contracts;
 using KubeUI.Features.Resources.Icons;
-using KubeUI.Features.Cilium.Hubble;
+using KubeUI.Features.Resources.Visualization;
 using QuikGraph;
 using Westermo.GraphX.Common.Enums;
 using Westermo.GraphX.Common.Interfaces;
@@ -324,7 +324,7 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
             }
         }
 
-        Dictionary<(string Source, string Target), KubeUI.Features.Cilium.Hubble.ServiceMapEdge> desiredEdges = [];
+        Dictionary<(string Source, string Target), Hubble.ServiceMapEdge> desiredEdges = [];
         if (snapshot is not null)
         {
             foreach (var edge in snapshot.Edges)
@@ -983,7 +983,7 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
                 {
                     groupGraph.AddEdge(new ServiceMapEdge(
                         groupVertices[edge.Source.GroupKey], groupVertices[edge.Target.GroupKey],
-                        new KubeUI.Features.Cilium.Hubble.ServiceMapEdge()));
+                        new Hubble.ServiceMapEdge()));
                 }
             }
 
@@ -1066,7 +1066,7 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
         }
     }
 
-    internal sealed class ServiceMapEdge(ServiceMapVertex source, ServiceMapVertex target, KubeUI.Features.Cilium.Hubble.ServiceMapEdge edge)
+    internal sealed class ServiceMapEdge(ServiceMapVertex source, ServiceMapVertex target, Hubble.ServiceMapEdge edge)
         : EdgeBase<ServiceMapVertex>(source, target), INotifyPropertyChanged
     {
         public int FlowCount { get; private set; } = edge.FlowCount;
@@ -1074,7 +1074,7 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
         public event PropertyChangedEventHandler? PropertyChanged;
         public string Tooltip { get; private set; } = FormatTooltip(edge);
 
-        public void UpdateFrom(KubeUI.Features.Cilium.Hubble.ServiceMapEdge edge)
+        public void UpdateFrom(Hubble.ServiceMapEdge edge)
         {
             FlowCount = edge.FlowCount;
             DeniedCount = edge.DeniedCount;
@@ -1085,7 +1085,7 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Tooltip)));
         }
 
-        private static string FormatTooltip(KubeUI.Features.Cilium.Hubble.ServiceMapEdge edge)
+        private static string FormatTooltip(Hubble.ServiceMapEdge edge)
         {
             var accessPoints = string.Join(", ", edge.AccessPoints.Select(accessPoint =>
                 $"{accessPoint.Protocol} {accessPoint.Port} ({accessPoint.FlowCount})"));

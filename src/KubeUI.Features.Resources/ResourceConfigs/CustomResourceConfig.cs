@@ -226,7 +226,7 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>, ICl
 
             Definition = crd;
             _resourceName = spec.Names!.Kind.Humanize(LetterCasing.Title).Pluralize();
-        _groups = NavigationGroupPath.CreateCustomResourceGroups(spec.Group);
+            _groups = NavigationGroupPath.CreateCustomResourceGroups(spec.Group);
 
             _isNamespaced = spec.Scope == "Namespaced";
 

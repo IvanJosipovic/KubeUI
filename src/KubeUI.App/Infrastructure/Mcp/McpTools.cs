@@ -1,9 +1,9 @@
 using System.Text;
 using k8s;
+using KubeUI.App.Shell.Navigation;
 using KubeUI.Features.AI.Agents;
 using KubeUI.Features.AI.Mcp;
 using KubeUI.Features.AI.Permissions;
-using KubeUI.App.Shell.Navigation;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Serialization;
 using ModelContextProtocol.Server;

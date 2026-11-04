@@ -1,13 +1,9 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Avalonia.Markup.Xaml.Styling;
-using Dock.Model.Controls;
-using Dock.Model.Core;
 using Dock.Settings;
-using k8s;
-using KubeUI.Features.Clusters.Error;
+using KubeUI.App.Infrastructure;
 using KubeUI.App.Infrastructure.DependencyInjection;
-using KubeUI.App.Infrastructure.Docking;
 using KubeUI.App.Infrastructure.Platform;
 using KubeUI.App.Infrastructure.Presentation;
 using KubeUI.App.Services.Settings;
@@ -16,10 +12,6 @@ using KubeUI.App.Styles;
 using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.Themes;
-using Microsoft.Extensions.Hosting;
-using OpenTelemetry.Logs;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Trace;
 
 [assembly: GenerateMarkupExtensionsForAvalonia(false)]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(LiveChartsCore.SkiaSharpView.Avalonia.PieChart), true)]
@@ -32,9 +24,9 @@ public partial class App : Application, IServiceProviderHost
 
     public IServiceProvider Services { get; private set; } = null!;
     private ILogger<App> _logger = null!;
-    private IHostApplicationLifetime _hostApplicationLifetime = null!;
-    private int _shutdownRequested;
-    private const int TelemetryFlushTimeoutMilliseconds = 5000;
+    private IApplicationEventSource _applicationEventSource = null!;
+    private ApplicationErrorHandler _applicationErrorHandler = null!;
+    private ApplicationShutdownCoordinator _shutdownCoordinator = null!;
 
     public App(IServiceProvider serviceProvider)
     {
@@ -51,22 +43,24 @@ public partial class App : Application, IServiceProviderHost
 
         Services = serviceProvider;
         _logger = Services.GetRequiredService<ILogger<App>>();
-        _hostApplicationLifetime = Services.GetRequiredService<IHostApplicationLifetime>();
+        _applicationEventSource = Services.GetRequiredService<IApplicationEventSource>();
+        _applicationErrorHandler = Services.GetRequiredService<ApplicationErrorHandler>();
+        _shutdownCoordinator = Services.GetRequiredService<ApplicationShutdownCoordinator>();
 
         DataTemplates.Add(Services.GetRequiredService<ViewLocator>());
 
-        AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
-        Dispatcher.UIThread.UnhandledException += OnUnhandledException;
-        TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
-        KubernetesClientConfiguration.ExecStdError += KubernetesClientConfiguration_ExecStdError;
+        _applicationEventSource.CurrentDomainUnhandledException += CurrentDomain_UnhandledException;
+        _applicationEventSource.DispatcherUnhandledException += OnUnhandledException;
+        _applicationEventSource.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
+        _applicationEventSource.KubernetesExecStdError += KubernetesClientConfiguration_ExecStdError;
     }
 
     protected void DisposeApplication()
     {
-        AppDomain.CurrentDomain.UnhandledException -= CurrentDomain_UnhandledException;
-        Dispatcher.UIThread.UnhandledException -= OnUnhandledException;
-        TaskScheduler.UnobservedTaskException -= TaskScheduler_UnobservedTaskException;
-        KubernetesClientConfiguration.ExecStdError -= KubernetesClientConfiguration_ExecStdError;
+        _applicationEventSource.CurrentDomainUnhandledException -= CurrentDomain_UnhandledException;
+        _applicationEventSource.DispatcherUnhandledException -= OnUnhandledException;
+        _applicationEventSource.UnobservedTaskException -= TaskScheduler_UnobservedTaskException;
+        _applicationEventSource.KubernetesExecStdError -= KubernetesClientConfiguration_ExecStdError;
     }
 
     [RequiresUnreferencedCode("Application initialization loads Avalonia styles from runtime XAML resources.")]
@@ -135,40 +129,7 @@ public partial class App : Application, IServiceProviderHost
 
     private void KubernetesClientConfiguration_ExecStdError(object? sender, DataReceivedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(e.Data))
-        {
-            _logger.LogTrace("Cluster ExecStdError: no data");
-            return;
-        }
-
-        _logger.LogWarning("Cluster ExecStdError: {Data}", e.Data);
-
-        Dispatcher.UIThread.Post(() => ShowClusterError(e.Data), DispatcherPriority.Background);
-    }
-
-    private void ShowClusterError(string error)
-    {
-        var factory = Services.GetRequiredService<IFactory>();
-        var documents = factory.GetDockable<IDocumentDock>("Documents");
-        if (documents == null)
-        {
-            return;
-        }
-
-        if (factory.FindDockableById("cluster-error") is ClusterErrorViewModel existing)
-        {
-            existing.Error = error;
-            factory.SetActiveDockable(existing);
-            factory.SetFocusedDockable(documents, existing);
-            return;
-        }
-
-        var vm = Services.GetRequiredService<ClusterErrorViewModel>();
-        vm.Id = "cluster-error";
-        vm.Error = error;
-        factory.AddDockable(documents, vm);
-        factory.SetActiveDockable(vm);
-        factory.SetFocusedDockable(documents, vm);
+        _applicationErrorHandler.HandleKubernetesExecStdError(e.Data);
     }
 
     private void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
@@ -184,8 +145,7 @@ public partial class App : Application, IServiceProviderHost
 
     internal void RecordUnhandledException(Exception exception, bool isTerminating)
     {
-        _logger.LogCritical(exception, "Unhandled exception (terminating: {IsTerminating})", isTerminating);
-        TryFlushTelemetry();
+        _applicationErrorHandler.ReportUnhandledException(exception, isTerminating);
 
         if (isTerminating)
         {
@@ -195,32 +155,7 @@ public partial class App : Application, IServiceProviderHost
 
     internal void GracefulShutdown()
     {
-        if (Interlocked.Exchange(ref _shutdownRequested, 1) == 1)
-        {
-            return;
-        }
-
-        KubernetesClientConfiguration.ExecStdError -= KubernetesClientConfiguration_ExecStdError;
-        TryFlushTelemetry();
-        _hostApplicationLifetime.StopApplication();
-    }
-
-    private void TryFlushTelemetry()
-    {
-        try
-        {
-            FlushTelemetry();
-        }
-        catch (ObjectDisposedException)
-        {
-            // Late unobserved task exceptions can arrive after host teardown.
-        }
-    }
-
-    protected virtual void FlushTelemetry()
-    {
-        Services.GetService<LoggerProvider>()?.ForceFlush(TelemetryFlushTimeoutMilliseconds);
-        Services.GetService<MeterProvider>()?.ForceFlush(TelemetryFlushTimeoutMilliseconds);
-        Services.GetService<TracerProvider>()?.ForceFlush(TelemetryFlushTimeoutMilliseconds);
+        _shutdownCoordinator.RequestShutdown(() =>
+            _applicationEventSource.KubernetesExecStdError -= KubernetesClientConfiguration_ExecStdError);
     }
 }

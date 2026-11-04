@@ -79,6 +79,7 @@
     <PackageReference Include="Dock.Model.Mvvm" />
     <PackageReference Include="FluentAvaloniaUI" />
     <PackageReference Include="FluentIcons.Avalonia" />
+    <PackageReference Include="ServiceScan.SourceGenerator" PrivateAssets="all" />
     <PackageReference Include="SvcSystems.Avalonia.DynamicTableView" />
     <PackageReference Include="Westermo.GraphX.Controls.Avalonia" />
     <PackageReference Include="Westermo.GraphX.Controls.Avalonia.Themes.Fluent" />

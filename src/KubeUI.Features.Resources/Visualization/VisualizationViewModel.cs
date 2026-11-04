@@ -3,8 +3,8 @@ using System.Reactive.Linq;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Controls.Presentation;
+using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Resources.Relationships;
@@ -13,10 +13,6 @@ namespace KubeUI.Features.Resources.Visualization;
 
 public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeCluster, IDisposable
 {
-    private readonly record struct PendingIncrementalChange(
-        IKubernetesObject<V1ObjectMeta> Resource,
-        bool ReplaceExisting);
-
     private readonly IResourceRelationshipBuilder _resourceRelationshipBuilder;
     private readonly ILogger<VisualizationViewModel>? _logger;
     private readonly VisualizationResourceStore _resourceStore = new();
@@ -33,9 +29,8 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     private int _filterVersion;
     private int _graphApplicationVersion;
     private int _initializationVersion;
-    private int _incrementalBuildRunning;
     private readonly List<ResourceChange> _deferredResourceChanges = [];
-    private readonly Dictionary<ResourceKey, PendingIncrementalChange> _pendingIncrementalChanges = [];
+    private readonly VisualizationIncrementalUpdateCoordinator _incrementalUpdateCoordinator;
     private readonly ObservableCollection<V1Namespace> _localSelectedNamespaces = [];
     private ResourceRelationshipGraph _completeGraph = ResourceRelationshipGraph.Empty;
     private IReadOnlyList<IKubernetesObject<V1ObjectMeta>> _previewResources = [];
@@ -120,6 +115,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     {
         _resourceRelationshipBuilder = new ResourceRelationshipBuilder();
         _buildCoordinator = new(ProcessBuildAsync);
+        _incrementalUpdateCoordinator = new(_resourceStore, _resourceRelationshipBuilder);
         _logger = logger;
         SelectedResourceTypes.CollectionChanged += SelectedResourceTypes_CollectionChanged;
         Title = Assets.Resources.VisualizationView_Title!;
@@ -129,6 +125,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     {
         _resourceRelationshipBuilder = resourceRelationshipBuilder;
         _buildCoordinator = new(ProcessBuildAsync);
+        _incrementalUpdateCoordinator = new(_resourceStore, _resourceRelationshipBuilder);
         SelectedResourceTypes.CollectionChanged += SelectedResourceTypes_CollectionChanged;
         Title = Assets.Resources.VisualizationView_Title!;
     }
@@ -277,7 +274,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         _knownResourceTypes.Clear();
         _excludedResourceTypes.Clear();
         _deferredResourceChanges.Clear();
-        _pendingIncrementalChanges.Clear();
+        _incrementalUpdateCoordinator.ClearPending();
         _suppressResourceChanges = false;
         _previewResources = resources.ToArray();
 
@@ -790,18 +787,18 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 GetResourceKey(item) == key && GetIdentity(item) != identity);
             if (_buildCoordinator.IsPendingOrRunning)
             {
-                _pendingIncrementalChanges.Clear();
+                _incrementalUpdateCoordinator.ClearPending();
                 _buildCoordinator.Invalidate();
                 Run();
             }
-            else if (Volatile.Read(ref _incrementalBuildRunning) != 0)
+            else if (_incrementalUpdateCoordinator.IsRunning)
             {
-                _pendingIncrementalChanges[key] = new(change.Resource, true);
+                _incrementalUpdateCoordinator.Enqueue(key, change.Resource, replaceExisting: true);
             }
             else if ((previousResource is null || GetIdentity(previousResource) == identity)
-                && !conflictingIdentity)
+                && !conflictingIdentity
+                && _incrementalUpdateCoordinator.TryBegin())
             {
-                Interlocked.Exchange(ref _incrementalBuildRunning, 1);
                 var changeVersion = _buildCoordinator.Invalidate();
                 _ = AddResourceIncrementallyAsync(change.Resource, key, changeVersion, replaceExisting: true);
             }
@@ -819,21 +816,20 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             if (_resourceStore.HasOwnerReferencesTo(change.Resource)
                 || _buildCoordinator.IsPendingOrRunning)
             {
-                _pendingIncrementalChanges.Clear();
+                _incrementalUpdateCoordinator.ClearPending();
                 _buildCoordinator.Invalidate();
                 Run();
                 return;
             }
 
-            if (Volatile.Read(ref _incrementalBuildRunning) != 0)
+            if (_incrementalUpdateCoordinator.IsRunning)
             {
-                _pendingIncrementalChanges[key] = new(change.Resource, false);
+                _incrementalUpdateCoordinator.Enqueue(key, change.Resource, replaceExisting: false);
                 return;
             }
 
-            if (ResourceCanAffectGraph(change.Resource))
+            if (ResourceCanAffectGraph(change.Resource) && _incrementalUpdateCoordinator.TryBegin())
             {
-                Interlocked.Exchange(ref _incrementalBuildRunning, 1);
                 var changeVersion = _buildCoordinator.Invalidate();
                 _ = AddResourceIncrementallyAsync(change.Resource, key, changeVersion);
             }
@@ -864,15 +860,14 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
             var namespaces = SelectedNamespaces.Select(x => x.Name()).OfType<string>().ToHashSet(StringComparer.Ordinal);
             var hideNoise = HideNoise;
-            var source = _resourceStore.Snapshot();
             IReadOnlySet<string> buildNamespaces = RootResource == null && _scope is null
                 ? namespaces
                 : new HashSet<string>(StringComparer.Ordinal);
-            var delta = await Task.Run(() => _resourceRelationshipBuilder.BuildAdditionDelta(
-                source,
+            var delta = await _incrementalUpdateCoordinator.BuildAdditionDeltaAsync(
                 key,
                 buildNamespaces,
-                hideNoise)).ConfigureAwait(false);
+                hideNoise,
+                CancellationToken.None).ConfigureAwait(false);
 
             await Dispatcher.UIThread.InvokeAsync(async () =>
             {
@@ -896,87 +891,71 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                     return;
                 }
 
-                var identity = GetIdentity(resource);
-                var current = _completeGraph;
-                var currentResources = replaceExisting
-                    ? current.Resources.Where(item => GetIdentity(item) != identity).ToArray()
-                    : current.Resources;
-                var currentRelationships = replaceExisting
-                    ? current.Relationships.Where(relationship => relationship.Source != identity && relationship.Target != identity).ToArray()
-                    : current.Relationships;
-                var currentIdentities = currentResources.Select(GetIdentity).ToHashSet();
-                if (RootResource != null
-                    && identity != GetIdentity(RootResource)
-                    && !delta.Relationships.Any(relationship => currentIdentities.Contains(relationship.Source) || currentIdentities.Contains(relationship.Target)))
+                var completeGraph = _incrementalUpdateCoordinator.MergeAdditionDelta(
+                    _completeGraph,
+                    delta,
+                    resource,
+                    replaceExisting,
+                    namespaces,
+                    RootResource,
+                    _scope?.Selector,
+                    out var requiresRebuild);
+                if (completeGraph is null)
                 {
-                    Run();
+                    if (requiresRebuild)
+                    {
+                        Run();
+                    }
+
                     return;
                 }
 
-                if (RootResource == null && _scope is null)
-                {
-                    delta = ResourceGraphProjection.ToSelectedNamespacesIncremental(delta, namespaces, currentIdentities);
-                    if (!replaceExisting && delta.Resources.Count == 0)
-                    {
-                        return;
-                    }
-                }
-
-                IReadOnlyList<IKubernetesObject<V1ObjectMeta>> resources = currentResources
-                    .Concat(delta.Resources)
-                    .GroupBy(GetIdentity)
-                    .Select(group => group.First())
-                    .ToArray();
-                var relationships = ResourceRelationshipBuilder.SimplifyRelationships(
-                    currentRelationships.Concat(delta.Relationships));
-                ResourceRelationshipGraph merged = new(
-                    resources,
-                    relationships,
-                    current.PendingReferences.Union(delta.PendingReferences).ToHashSet(),
-                    current.RequiredSeedPrerequisites.Union(delta.RequiredSeedPrerequisites).ToHashSet());
-                var completeGraph = _scope is { } scope
-                    ? ResourceGraphProjection.ToSelector(merged, scope.Selector)
-                    : RootResource is { } root
-                    ? ResourceGraphProjection.ToRootResource(merged, root)
-                    : ResourceGraphProjection.ToSelectedNamespaces(merged, namespaces);
                 await ApplyGraphAsync(completeGraph);
             });
         }
         finally
         {
-            Interlocked.Exchange(ref _incrementalBuildRunning, 0);
+            _incrementalUpdateCoordinator.Complete();
             Dispatcher.UIThread.Post(StartPendingIncrementalChange);
         }
     }
 
     private void StartPendingIncrementalChange()
     {
-        if (_disposed || _pendingIncrementalChanges.Count == 0)
+        if (_disposed || _incrementalUpdateCoordinator.PendingCount == 0)
         {
             return;
         }
 
         if (_buildCoordinator.IsPendingOrRunning)
         {
-            _pendingIncrementalChanges.Clear();
+            _incrementalUpdateCoordinator.ClearPending();
             return;
         }
 
-        var pending = _pendingIncrementalChanges.First();
-        _pendingIncrementalChanges.Remove(pending.Key);
+        if (!_incrementalUpdateCoordinator.TryTakePending(out var pending) || pending is null)
+        {
+            return;
+        }
+
         if (!_resourceStore.TryGet(pending.Key, out var resource))
         {
             StartPendingIncrementalChange();
             return;
         }
 
-        Interlocked.Exchange(ref _incrementalBuildRunning, 1);
+        if (!_incrementalUpdateCoordinator.TryBegin())
+        {
+            _incrementalUpdateCoordinator.Enqueue(pending.Key, resource, pending.ReplaceExisting);
+            return;
+        }
+
         var changeVersion = _buildCoordinator.Invalidate();
         _ = AddResourceIncrementallyAsync(
             resource,
             pending.Key,
             changeVersion,
-            pending.Value.ReplaceExisting);
+            pending.ReplaceExisting);
     }
 
     private void OnResourceSeeded(IClusterRuntime runtime, GroupApiVersionKind kind)
@@ -1411,6 +1390,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     {
         _disposed = true;
         UnsubscribeCluster();
+        _incrementalUpdateCoordinator.Dispose();
         _buildCoordinator.Dispose();
         _resourceStore.Clear();
         _completeGraph = ResourceRelationshipGraph.Empty;

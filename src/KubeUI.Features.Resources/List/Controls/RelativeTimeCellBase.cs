@@ -1,5 +1,5 @@
-﻿using KubeUI.Features.Resources.Properties.Controls;
-using KubeUI.Controls.Threading;
+﻿using KubeUI.Controls.Threading;
+using KubeUI.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Features.Resources.List.Controls;
 

@@ -4,16 +4,23 @@ using Avalonia.Headless.XUnit;
 using Avalonia.VisualTree;
 using Dock.Model.Core;
 using k8s.Models;
-using KubeUI.Features.Cilium.Hubble;
-using KubeUI.Features.Cilium.Hubble.Controls;
-using KubeUI.Features.Crossplane.MRDiffDetection;
 using KubeUI.App.Infrastructure.Platform;
 using KubeUI.App.Infrastructure.Presentation;
 using KubeUI.App.Services.Settings;
 using KubeUI.App.Shell.Documents.Updates;
 using KubeUI.App.Shell.Main;
 using KubeUI.Desktop;
+using KubeUI.Features.AI.DependencyInjection;
+using KubeUI.Features.Cilium;
+using KubeUI.Features.Cilium.Hubble;
+using KubeUI.Features.Cilium.Hubble.Controls;
+using KubeUI.Features.Clusters.DependencyInjection;
+using KubeUI.Features.Crossplane.DependencyInjection;
+using KubeUI.Features.Crossplane.MRDiffDetection;
+using KubeUI.Features.Helm.DependencyInjection;
+using KubeUI.Features.Resources.DependencyInjection;
 using KubeUI.Kubernetes.Client;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -23,6 +30,29 @@ namespace KubeUI.Avalonia.Tests.App.Infrastructure.Presentation;
 
 public sealed class ViewLocatorTests
 {
+    [Fact]
+    public void FeatureRegistration_RegistersItsOwnViewFactories()
+    {
+        Action<IServiceCollection>[] registerFeatures =
+        [
+            static services => services.AddKubeUIAIFeature(),
+            static services => services.AddKubeUIClustersFeature(),
+            static services => services.AddKubeUIResourcesFeature(),
+            static services => services.AddKubeUICiliumFeature(),
+            static services => services.AddKubeUICrossplaneFeature(),
+            static services => services.AddKubeUIHelmFeature()
+        ];
+
+        foreach (var registerFeature in registerFeatures)
+        {
+            var services = new ServiceCollection();
+            registerFeature(services);
+
+            services.Count(descriptor => descriptor.ServiceType == typeof(IViewFactory))
+                .ShouldBeGreaterThan(0);
+        }
+    }
+
     [AvaloniaFact]
     public void Build_ResolvesClusterSettingsViewFromGeneratedFactory()
     {

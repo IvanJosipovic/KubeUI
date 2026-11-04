@@ -25,6 +25,7 @@
     <InternalsVisibleTo Include="KubeUI.Desktop" />
     <Using Include="KubeUI.Features.AI.Assets" Alias="Assets" />
     <Using Include="KubeUI.Controls.Presentation" />
+    <Using Include="KubeUI.Controls.DependencyInjection" />
     <ProjectReference Include="..\KubeUI.Controls\KubeUI.Controls.csproj" />
   </ItemGroup>
 
@@ -48,6 +49,7 @@
     <PackageReference Include="LiveMarkdown.Avalonia" />
     <PackageReference Include="ModelContextProtocol" />
     <PackageReference Include="ModelContextProtocol.AspNetCore" />
+    <PackageReference Include="ServiceScan.SourceGenerator" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

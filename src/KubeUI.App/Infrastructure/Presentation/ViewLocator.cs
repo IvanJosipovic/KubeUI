@@ -18,12 +18,12 @@ sealed class ViewLocator : IDataTemplate
         IServiceProvider serviceProvider,
         ILogger<ViewLocator> logger,
         Instrumentation instrumentation,
-        IViewFactory[]? viewFactories = null)
+        IEnumerable<IViewFactory>? viewFactories = null)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
         _instrumentation = instrumentation;
-        _viewFactories = viewFactories ?? [];
+        _viewFactories = viewFactories?.ToArray() ?? [];
 
         _viewFactoryMap = new Dictionary<Type, IViewFactory>();
     }

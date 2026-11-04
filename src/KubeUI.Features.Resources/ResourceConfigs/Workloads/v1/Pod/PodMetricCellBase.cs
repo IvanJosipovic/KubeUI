@@ -1,8 +1,8 @@
 ﻿using k8s.Models;
-using KubeUI.Features.Clusters.Workspace;
-using KubeUI.Features.Resources.List.Controls;
 using KubeUI.Controls.Presentation;
 using KubeUI.Controls.Threading;
+using KubeUI.Features.Clusters.Workspace;
+using KubeUI.Features.Resources.List.Controls;
 
 namespace KubeUI.Features.Resources.Workloads.v1.Pod;
 

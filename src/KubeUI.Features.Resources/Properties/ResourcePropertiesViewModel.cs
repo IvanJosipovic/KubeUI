@@ -1,15 +1,16 @@
-﻿using k8s;
+﻿using System.Diagnostics.CodeAnalysis;
+using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Features.Clusters.Workspace;
-using KubeUI.Features.Resources.Common;
 using KubeUI.Controls.Presentation;
+using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources;
+using KubeUI.Features.Resources.Common;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Features.Resources.Properties;
 
-public sealed partial class ResourcePropertiesViewModel<T> : ViewModelBase, IViewModelViewFactory, IClusterWorkspaceContext, IDisposable where T : class, IKubernetesObject<V1ObjectMeta>, new()
+public sealed partial class ResourcePropertiesViewModel<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T> : ViewModelBase, IViewModelViewFactory, IClusterWorkspaceContext, IDisposable where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     [ObservableProperty]
     public partial ClusterWorkspace? Cluster { get; set; }

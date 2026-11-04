@@ -1,4 +1,5 @@
-﻿using k8s;
+﻿using System.Diagnostics.CodeAnalysis;
+using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Features.Clusters.Workspace;
@@ -8,7 +9,7 @@ namespace KubeUI.Features.Clusters.Workspace;
 
 public static class ClusterWorkspaceResourceConfigExtensions
 {
-    public static ResourceConfigBase<T> GetResourceConfig<T>(this ClusterWorkspace workspace, GroupApiVersionKind kind)
+    public static ResourceConfigBase<T> GetResourceConfig<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this ClusterWorkspace workspace, GroupApiVersionKind kind)
         where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         ArgumentNullException.ThrowIfNull(workspace);

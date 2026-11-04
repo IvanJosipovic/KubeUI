@@ -6,11 +6,11 @@ using Avalonia.VisualTree;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using k8s.Models;
-using KubeUI.Features.Resources.Common;
-using KubeUI.Features.Clusters.Presentation;
-using KubeUI.Features.Resources.Infrastructure;
 using KubeUI.Controls.DependencyInjection;
 using KubeUI.Controls.Presentation;
+using KubeUI.Features.Clusters.Presentation;
+using KubeUI.Features.Resources.Common;
+using KubeUI.Features.Resources.Infrastructure;
 using Ursa.Controls;
 
 namespace KubeUI.Features.Resources.List;

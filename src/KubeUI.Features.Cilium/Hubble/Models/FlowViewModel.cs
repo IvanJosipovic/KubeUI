@@ -117,6 +117,7 @@ public sealed partial class FlowViewModel : ObservableObject
 
     public FlowCacheKey CacheKey => new(string.IsNullOrWhiteSpace(Uuid) ? _fallbackCacheIdentity : Uuid);
 
+    [Obsolete]
     public void UpdateFrom(Pb.Flow flow)
     {
         if (flow.Time != null)

@@ -1,11 +1,11 @@
-using KubeUI.Features.Resources.Infrastructure;
-﻿using Avalonia.Xaml.Interactivity;
+using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using AvaloniaEdit.Document;
 using Dock.Model.Core;
 using Dock.Model.Core.Events;
 using KubeUI.Controls.DependencyInjection;
 using KubeUI.Controls.Platform;
+using KubeUI.Features.Resources.Infrastructure;
 
 namespace KubeUI.Features.Resources.Yaml.Behaviors;
 

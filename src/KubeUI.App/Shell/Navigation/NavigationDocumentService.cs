@@ -1,11 +1,11 @@
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using KubernetesClient.Informer.Client;
-using KubeUI.Features.Clusters.Workspace;
-using KubeUI.Features.Resources.List;
 using KubeUI.App.Infrastructure.Docking;
 using KubeUI.App.Infrastructure.Presentation;
+using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources;
+using KubeUI.Features.Resources.List;
 
 namespace KubeUI.App.Shell.Navigation;
 
@@ -17,18 +17,18 @@ public interface IResourceNavigationService
 
 internal sealed class NavigationDocumentService : IResourceNavigationService
 {
-    private readonly IServiceProvider _serviceProvider;
+    private readonly IResourceListDocumentFactory _resourceListDocumentFactory;
     private readonly ILogger<NavigationDocumentService> _logger;
     private readonly ClusterWorkspaceCatalog _clusterCatalog;
     private readonly Func<IFactory> _factory;
 
     public NavigationDocumentService(
-        IServiceProvider serviceProvider,
+        IResourceListDocumentFactory resourceListDocumentFactory,
         ILogger<NavigationDocumentService> logger,
         ClusterWorkspaceCatalog clusterCatalog,
         Func<IFactory> factory)
     {
-        _serviceProvider = serviceProvider;
+        _resourceListDocumentFactory = resourceListDocumentFactory;
         _logger = logger;
         _clusterCatalog = clusterCatalog;
         _factory = factory;
@@ -84,7 +84,7 @@ internal sealed class NavigationDocumentService : IResourceNavigationService
             return;
         }
 
-        var document = Create(navigation.Cluster, config.Kind);
+        var document = Create(navigation.Cluster, config);
         if (document == null)
         {
             _logger.LogError("Unable to resolve resource list view model for {Name}", navigation.Name);
@@ -106,26 +106,11 @@ internal sealed class NavigationDocumentService : IResourceNavigationService
             : null;
     }
 
-    private IDockable? Create(ClusterWorkspace cluster, GroupApiVersionKind kind)
+    private IDockable? Create(ClusterWorkspace cluster, IResourceConfig config)
     {
-        if (!cluster.Runtime.ModelCatalog.TryGetResourceType(kind, out var resourceType))
+        if (_resourceListDocumentFactory.Create(cluster, config) is not IDockable document)
         {
             return null;
-        }
-
-        var type = typeof(ResourceListViewModel<>).MakeGenericType(resourceType);
-        if (_serviceProvider.GetRequiredService(type) is not IDockable document)
-        {
-            return null;
-        }
-
-        if (document is IResourceListViewModel resourceList)
-        {
-            resourceList.InitializeResource(cluster, kind);
-        }
-        else if (document is IInitializeCluster initialize)
-        {
-            initialize.Initialize(cluster);
         }
 
         return document;

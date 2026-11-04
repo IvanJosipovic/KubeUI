@@ -1,6 +1,6 @@
 using k8s.Models;
-using KubeUI.Features.Resources.Yaml;
 using KubeUI.Documentation.Tests.Infra;
+using KubeUI.Features.Resources.Yaml;
 
 namespace KubeUI.Documentation.Tests.Features.Resources.Yaml;
 
