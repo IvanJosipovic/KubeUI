@@ -33,7 +33,6 @@ namespace KubeUI.Kubernetes.Serialization;
 [JsonSerializable(typeof(IReadOnlyDictionary<object, object>))]
 [JsonSerializable(typeof(IReadOnlyCollection<KeyValuePair<object, object>>))]
 [JsonSerializable(typeof(IDeserializationCallback))]
-[JsonSerializable(typeof(DateTimeOffset))]
 
 [JsonSerializable(typeof(KubernetesList<V1CustomResourceDefinition>))]
 [JsonSerializable(typeof(Watcher<V1CustomResourceDefinition>.WatchEvent))]
@@ -133,6 +132,8 @@ namespace KubeUI.Kubernetes.Serialization;
 [JsonSerializable(typeof(PodMetrics))]
 [JsonSerializable(typeof(PodMetricsList))]
 [JsonSerializable(typeof(V1Patch.PatchType))]
+// Kubeconfig roots stay YAML-only because NamedExtension.Extension is dynamic and breaks System.Text.Json source generation.
+
 [JsonSourceGenerationOptions(
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
