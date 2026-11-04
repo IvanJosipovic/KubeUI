@@ -47,7 +47,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     public partial IKubernetesObject<V1ObjectMeta>? RootResource { get; set; }
 
     public string RootResourceDisplay => _scope?.ResourceDisplay ?? (RootResource == null
-        ? IsPreview ? string.Format(Assets.Resources.VisualizationView_HelmPreviewTitle!, PreviewTitle) : string.Empty
+        ? IsPreview ? string.Format(L10n.Instance.VisualizationView_HelmPreviewTitle.CurrentValue()!, PreviewTitle) : string.Empty
         : $"Resource: {RootResource.ApiVersion}/{RootResource.Kind} {RootResource.Namespace()}/{RootResource.Name()}");
 
     public bool IsRootResourceDisplayVisible => _scope is not null || IsPreview || RootResource != null;
@@ -122,7 +122,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         _buildCoordinator = new(ProcessBuildAsync);
         _logger = logger;
         SelectedResourceTypes.CollectionChanged += SelectedResourceTypes_CollectionChanged;
-        Title = Assets.Resources.VisualizationView_Title!;
+        Title = L10n.Instance.VisualizationView_Title.CurrentValue()!;
     }
 
     internal VisualizationViewModel(IResourceRelationshipBuilder resourceRelationshipBuilder)
@@ -130,7 +130,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         _resourceRelationshipBuilder = resourceRelationshipBuilder;
         _buildCoordinator = new(ProcessBuildAsync);
         SelectedResourceTypes.CollectionChanged += SelectedResourceTypes_CollectionChanged;
-        Title = Assets.Resources.VisualizationView_Title!;
+        Title = L10n.Instance.VisualizationView_Title.CurrentValue()!;
     }
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
@@ -164,7 +164,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         IsPreview = false;
         PreviewTitle = string.Empty;
         _previewResources = [];
-        Title = Assets.Resources.VisualizationView_Title!;
+        Title = L10n.Instance.VisualizationView_Title.CurrentValue()!;
         Cluster = cluster;
         var isNamespaceRoot = rootResource is V1Namespace;
         RootResource = isNamespaceRoot ? null : rootResource;
@@ -292,7 +292,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         RootResource = null;
         IsNamespaceSelectionLinked = false;
         Cluster = cluster;
-        Title = string.Format(Assets.Resources.VisualizationView_HelmPreviewTitle!, releaseName);
+        Title = string.Format(L10n.Instance.VisualizationView_HelmPreviewTitle.CurrentValue()!, releaseName);
         Id = $"{nameof(VisualizationViewModel)}-{cluster.Title}-helm-preview-{Guid.NewGuid():N}";
         OnPropertyChanged(nameof(SelectedNamespaces));
         Run();

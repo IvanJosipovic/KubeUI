@@ -38,14 +38,14 @@ public sealed record DeploymentRevision(
     /// <summary>Gets the localized, compact row text.</summary>
     public string Display => string.Format(
         CultureInfo.CurrentCulture,
-        Assets.Resources.DeploymentRolloutHistoryViewModel_RevisionFormat,
-        Revision?.ToString(CultureInfo.CurrentCulture) ?? Assets.Resources.DeploymentRolloutHistoryViewModel_UnknownRevision,
+        L10n.Instance.DeploymentRolloutHistoryViewModel_RevisionFormat.CurrentValue()!,
+        Revision?.ToString(CultureInfo.CurrentCulture) ?? L10n.Instance.DeploymentRolloutHistoryViewModel_UnknownRevision.CurrentValue()!,
         ReplicaSetName,
         ReadyReplicas,
         DesiredReplicas,
-        CreatedAt?.ToLocalTime().ToString("g", CultureInfo.CurrentCulture) ?? Assets.Resources.DeploymentRolloutHistoryViewModel_UnknownValue,
+        CreatedAt?.ToLocalTime().ToString("g", CultureInfo.CurrentCulture) ?? L10n.Instance.DeploymentRolloutHistoryViewModel_UnknownValue.CurrentValue()!,
         ChangeCause,
-        IsCurrent ? Assets.Resources.DeploymentRolloutHistoryViewModel_Current : string.Empty);
+        IsCurrent ? L10n.Instance.DeploymentRolloutHistoryViewModel_Current.CurrentValue()! : string.Empty);
 }
 
 /// <summary>Loads Deployment revision history and restores a selected revision's Pod template.</summary>
@@ -70,7 +70,7 @@ public sealed partial class DeploymentRolloutHistoryViewModel : ViewModelBase, I
         _jsonSerializer = jsonSerializer;
         _logger = logger;
         _notificationManager = notificationManager;
-        Title = Assets.Resources.DeploymentRolloutHistoryViewModel_Title;
+        Title = L10n.Instance.DeploymentRolloutHistoryViewModel_Title.CurrentValue()!;
     }
 
     /// <summary>Gets the workspace that owns the Deployment.</summary>
@@ -99,7 +99,7 @@ public sealed partial class DeploymentRolloutHistoryViewModel : ViewModelBase, I
         Cluster = cluster;
         Deployment = deployment;
         Id = $"{nameof(DeploymentRolloutHistoryViewModel)}-{cluster.Runtime.Name}-{deployment.Namespace()}-{deployment.Name()}";
-        Title = string.Format(CultureInfo.CurrentCulture, Assets.Resources.DeploymentRolloutHistoryViewModel_TitleFormat, deployment.Name());
+        Title = string.Format(CultureInfo.CurrentCulture, L10n.Instance.DeploymentRolloutHistoryViewModel_TitleFormat.CurrentValue()!, deployment.Name());
     }
 
     /// <summary>Loads ReplicaSets owned by the Deployment and orders them by revision.</summary>
@@ -129,7 +129,7 @@ public sealed partial class DeploymentRolloutHistoryViewModel : ViewModelBase, I
                 Revisions.Add(replicaSet);
             }
 
-            StatusMessage = Revisions.Count == 0 ? Assets.Resources.DeploymentRolloutHistoryViewModel_NoHistory : null;
+            StatusMessage = Revisions.Count == 0 ? L10n.Instance.DeploymentRolloutHistoryViewModel_NoHistory.CurrentValue()! : null;
             SelectedRevision = Revisions.FirstOrDefault();
         }
         catch (Exception ex)
@@ -138,8 +138,8 @@ public sealed partial class DeploymentRolloutHistoryViewModel : ViewModelBase, I
             {
                 return;
             }
-            StatusMessage = Assets.Resources.DeploymentRolloutHistoryViewModel_LoadError;
-            ResourceUtilities.HandleException(_logger, _notificationManager, ex, Assets.Resources.DeploymentRolloutHistoryViewModel_LoadError, sendNotification: true);
+            StatusMessage = L10n.Instance.DeploymentRolloutHistoryViewModel_LoadError.CurrentValue()!;
+            ResourceUtilities.HandleException(_logger, _notificationManager, ex, L10n.Instance.DeploymentRolloutHistoryViewModel_LoadError.CurrentValue()!, sendNotification: true);
         }
     }
 
@@ -159,10 +159,10 @@ public sealed partial class DeploymentRolloutHistoryViewModel : ViewModelBase, I
 
         var result = await _dialogService.ShowContentDialogAsync(this, new ContentDialogSettings
         {
-            Title = Assets.Resources.DeploymentRolloutHistoryViewModel_UndoTitle,
-            Content = string.Format(Assets.Resources.DeploymentRolloutHistoryViewModel_UndoContent, Deployment.Name(), target.Revision, target.ReplicaSetName),
-            PrimaryButtonText = Assets.Resources.DeploymentRolloutHistoryViewModel_Undo,
-            SecondaryButtonText = SharedAssets.Resources.Shared_Cancel,
+            Title = L10n.Instance.DeploymentRolloutHistoryViewModel_UndoTitle.CurrentValue()!,
+            Content = string.Format(L10n.Instance.DeploymentRolloutHistoryViewModel_UndoContent.CurrentValue()!, Deployment.Name(), target.Revision, target.ReplicaSetName),
+            PrimaryButtonText = L10n.Instance.DeploymentRolloutHistoryViewModel_Undo.CurrentValue()!,
+            SecondaryButtonText = SharedL10n.Instance.Shared_Cancel.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary,
         });
         if (result != FAContentDialogResult.Primary)
@@ -182,7 +182,7 @@ public sealed partial class DeploymentRolloutHistoryViewModel : ViewModelBase, I
                 && GetRevision(replicaSet.Metadata?.Annotations) == target.Revision);
             if (source?.Spec?.Template is null || string.IsNullOrWhiteSpace(deployment.Metadata?.ResourceVersion))
             {
-                StatusMessage = Assets.Resources.DeploymentRolloutHistoryViewModel_StaleRevision;
+                StatusMessage = L10n.Instance.DeploymentRolloutHistoryViewModel_StaleRevision.CurrentValue()!;
                 return;
             }
 
@@ -193,7 +193,7 @@ public sealed partial class DeploymentRolloutHistoryViewModel : ViewModelBase, I
             await Cluster.Runtime.Client.AppsV1.PatchNamespacedDeploymentAsync(
                 new V1Patch(patchJson, V1Patch.PatchType.JsonPatch), Deployment.Name(), Deployment.Namespace(), cancellationToken: _lifetimeCts.Token);
             await LoadAsync();
-            StatusMessage = Assets.Resources.DeploymentRolloutHistoryViewModel_UndoComplete;
+            StatusMessage = L10n.Instance.DeploymentRolloutHistoryViewModel_UndoComplete.CurrentValue()!;
         }
         catch (Exception ex)
         {
@@ -201,8 +201,8 @@ public sealed partial class DeploymentRolloutHistoryViewModel : ViewModelBase, I
             {
                 return;
             }
-            StatusMessage = Assets.Resources.DeploymentRolloutHistoryViewModel_UndoError;
-            ResourceUtilities.HandleException(_logger, _notificationManager, ex, Assets.Resources.DeploymentRolloutHistoryViewModel_UndoError, sendNotification: true);
+            StatusMessage = L10n.Instance.DeploymentRolloutHistoryViewModel_UndoError.CurrentValue()!;
+            ResourceUtilities.HandleException(_logger, _notificationManager, ex, L10n.Instance.DeploymentRolloutHistoryViewModel_UndoError.CurrentValue()!, sendNotification: true);
         }
     }
 
@@ -227,7 +227,7 @@ public sealed partial class DeploymentRolloutHistoryViewModel : ViewModelBase, I
         var annotations = replicaSet.Metadata?.Annotations;
         var changeCause = annotations is not null && annotations.TryGetValue(ChangeCauseAnnotation, out var value)
             ? value
-            : Assets.Resources.DeploymentRolloutHistoryViewModel_UnknownValue;
+            : L10n.Instance.DeploymentRolloutHistoryViewModel_UnknownValue.CurrentValue()!;
         return new DeploymentRevision(
             replicaSet.Uid() ?? string.Empty,
             revision,

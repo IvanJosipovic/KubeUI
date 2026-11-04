@@ -12,16 +12,16 @@ public sealed class PropertiesView : ViewBase<V1NetworkPolicy>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(Assets.Resources.NetworkPolicyPropertiesView_Pod_Selector_Labels!)
+                    .Key(L10n.Instance.NetworkPolicyPropertiesView_Pod_Selector_Labels.CurrentValue()!)
                     .Value(vm.Spec?.PodSelector?.MatchLabels?.Count ?? 0),
                 new PropertyItem()
-                    .Key(Assets.Resources.NetworkPolicyPropertiesView_Policy_Types!)
+                    .Key(L10n.Instance.NetworkPolicyPropertiesView_Policy_Types.CurrentValue()!)
                     .Value(vm.Spec?.PolicyTypes?.Count ?? 0),
                 new PropertyItem()
-                    .Key(Assets.Resources.NetworkPolicyPropertiesView_Ingress_Rules!)
+                    .Key(L10n.Instance.NetworkPolicyPropertiesView_Ingress_Rules.CurrentValue()!)
                     .Value(vm.Spec?.Ingress?.Count ?? 0),
                 new PropertyItem()
-                    .Key(Assets.Resources.NetworkPolicyPropertiesView_Egress_Rules!)
+                    .Key(L10n.Instance.NetworkPolicyPropertiesView_Egress_Rules.CurrentValue()!)
                     .Value(vm.Spec?.Egress?.Count ?? 0));
     }
 }

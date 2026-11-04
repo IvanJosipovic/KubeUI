@@ -12,46 +12,46 @@ public sealed class PropertiesView : ViewBase<V1CronJob>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(Assets.Resources.CronJobPropertiesView_Schedule!)
+                    .Key(L10n.Instance.CronJobPropertiesView_Schedule.CurrentValue()!)
                     .Value(vm.Spec?.Schedule ?? ""),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Suspend!)
+                    .Key(SharedL10n.Instance.Shared_Suspend.CurrentValue()!)
                     .Value(vm.Spec?.Suspend ?? false),
                 new PropertyItem()
-                    .Key(Assets.Resources.CronJobPropertiesView_Concurrency_Policy!)
+                    .Key(L10n.Instance.CronJobPropertiesView_Concurrency_Policy.CurrentValue()!)
                     .Value(vm.Spec?.ConcurrencyPolicy ?? ""),
                 new ExpandableSection()
-                    .Header(SharedAssets.Resources.Shared_Configuration!)
+                    .Header(SharedL10n.Instance.Shared_Configuration.ToBinding())
                     .IsExpanded(true)
                     .Content(
                         new StackPanel()
                             .Children(
                                 new PropertyItem()
-                                    .Key(Assets.Resources.CronJobPropertiesView_Successful_History_Limit!)
+                                    .Key(L10n.Instance.CronJobPropertiesView_Successful_History_Limit.CurrentValue()!)
                                     .Value(vm.Spec?.SuccessfulJobsHistoryLimit ?? 0),
                                 new PropertyItem()
-                                    .Key(Assets.Resources.CronJobPropertiesView_Failed_History_Limit!)
+                                    .Key(L10n.Instance.CronJobPropertiesView_Failed_History_Limit.CurrentValue()!)
                                     .Value(vm.Spec?.FailedJobsHistoryLimit ?? 0),
                                 new PropertyItem()
-                                    .Key(Assets.Resources.CronJobPropertiesView_Starting_Deadline_Seconds!)
+                                    .Key(L10n.Instance.CronJobPropertiesView_Starting_Deadline_Seconds.CurrentValue()!)
                                     .Value(vm.Spec?.StartingDeadlineSeconds ?? 0),
                                 new PropertyItem()
-                                    .Key(Assets.Resources.CronJobPropertiesView_Time_Zone!)
+                                    .Key(L10n.Instance.CronJobPropertiesView_Time_Zone.CurrentValue()!)
                                     .Value(vm.Spec?.TimeZone ?? ""))),
                 new ExpandableSection()
-                    .Header(SharedAssets.Resources.Shared_Status!)
+                    .Header(SharedL10n.Instance.Shared_Status.ToBinding())
                     .IsExpanded(true)
                     .Content(
                         new StackPanel()
                             .Children(
                                 new PropertyItem()
-                                    .Key(Assets.Resources.CronJobPropertiesView_Active_Jobs!)
+                                    .Key(L10n.Instance.CronJobPropertiesView_Active_Jobs.CurrentValue()!)
                                     .Value(vm.Status?.Active?.Count ?? 0),
                                 new PropertyItem()
-                                    .Key(Assets.Resources.CronJobPropertiesView_Last_Schedule_Time!)
+                                    .Key(L10n.Instance.CronJobPropertiesView_Last_Schedule_Time.CurrentValue()!)
                                     .Value(vm.Status?.LastScheduleTime ?? DateTime.MinValue),
                                 new PropertyItem()
-                                    .Key(Assets.Resources.CronJobPropertiesView_Last_Successful_Time!)
+                                    .Key(L10n.Instance.CronJobPropertiesView_Last_Successful_Time.CurrentValue()!)
                                     .Value(vm.Status?.LastSuccessfulTime ?? DateTime.MinValue))));
     }
 }

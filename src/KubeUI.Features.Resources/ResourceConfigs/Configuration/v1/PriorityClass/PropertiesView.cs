@@ -12,16 +12,16 @@ public sealed class PropertiesView : ViewBase<V1PriorityClass>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(Assets.Resources.PriorityClassPropertiesView_Value)
+                    .Key(L10n.Instance.PriorityClassPropertiesView_Value.CurrentValue()!)
                     .Value(vm.Value),
                 new PropertyItem()
-                    .Key(Assets.Resources.PriorityClassPropertiesView_Global_Default)
+                    .Key(L10n.Instance.PriorityClassPropertiesView_Global_Default.CurrentValue()!)
                     .Value(vm.GlobalDefault),
                 new PropertyItem()
-                    .Key(Assets.Resources.PriorityClassPropertiesView_Preemption_Policy)
+                    .Key(L10n.Instance.PriorityClassPropertiesView_Preemption_Policy.CurrentValue()!)
                     .Value(vm.PreemptionPolicy),
                 new PropertyItem()
-                    .Key(Assets.Resources.PriorityClassPropertiesView_Description)
+                    .Key(L10n.Instance.PriorityClassPropertiesView_Description.CurrentValue()!)
                     .Value(vm.Description));
     }
 }

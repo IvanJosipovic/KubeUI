@@ -20,7 +20,7 @@ public sealed partial class V1ConfigMapConfig : ResourceConfig<V1ConfigMap>
             new ResourceListColumn<V1ConfigMap, string>()
             {
                 Key = "keys",
-                Name = Assets.Resources.V1ConfigMapConfig_Keys!,
+                Name = L10n.Instance.V1ConfigMapConfig_Keys.CurrentValue()!,
                 Field = x => x.Data is { Count: > 0 } data ? string.Join(", ", data.Keys) : "",
                 WidthMode = DynamicTableViewWidthMode.Header
             },

@@ -192,7 +192,7 @@ Removed seven direct feature project references and two feature-only package ref
 
 **Target State:** Each feature's global `Using` includes only:
 - Its own public contract namespace(s)
-- Shared foundation namespaces (`KubeUI.Controls.*`, `KubeUI.Avalonia.*`)
+- Shared foundation namespaces (`KubeUI.Controls.*`, `KubeUI.Foundation.*`)
 - No implementation namespaces
 
 **Implementation:**

@@ -15,8 +15,8 @@ public sealed class MainWindow : Window
     internal MainWindow(bool useNativeChrome)
     {
         UseNativeChrome = useNativeChrome;
-        this.Title(Assets.Resources.MainWindow_Title)
-            .Icon(new WindowIcon(AssetLoader.Open(new Uri("avares://KubeUI.Avalonia/Assets/icon.ico"))))
+        this.Title(SharedL10n.Instance.MainWindow_Title.ToBinding())
+            .Icon(new WindowIcon(AssetLoader.Open(new Uri("avares://KubeUI.Foundation/Assets/icon.ico"))))
             .UseLayoutRounding(true)
             .FontSize(new DynamicResourceExtension(Typography.AppFontSizeResourceKey))
             .MinWidth(360)

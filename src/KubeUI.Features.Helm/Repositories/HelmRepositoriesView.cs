@@ -33,14 +33,14 @@ public sealed class HelmRepositoriesView : KubeUIView<HelmRepositoriesViewModel>
                             .Margin(2, 0, 0, 0)
                             .Command(vm, x => x.NewRepositoryCommand)
                             .Content(new FluentIcon().Icon(Icon.AddSquare))
-                            .ToolTip_Tip(Assets.Resources.HelmRepositoriesView_New),
+                            .ToolTip_Tip(L10n.Instance.HelmRepositoriesView_New.ToBinding()),
                         new Label()
                             .Col(1)
                             .Margin(2, 0, 0, 0)
                             .VerticalContentAlignment(VerticalAlignment.Center)
                             .Content(CompiledBinding.Create<HelmRepositoriesViewModel, int>(
                                 x => x.ItemCount, source: vm,
-                                stringFormat: Assets.Resources.HelmRepositoriesView_ItemsFormat)),
+                                stringFormat: L10n.Instance.HelmRepositoriesView_ItemsFormat.CurrentValue()!)),
                         new StackPanel()
                             .Col(3)
                             .MaxWidth(700)
@@ -56,11 +56,11 @@ public sealed class HelmRepositoriesView : KubeUIView<HelmRepositoriesViewModel>
                                     .Margin(0, 0, 2, 0)
                                     .Command(vm, x => x.UpdateIndexesCommand)
                                     .Content(new FluentIcon().Icon(Icon.ArrowDownload))
-                                    .ToolTip_Tip(Assets.Resources.HelmRepositoriesView_UpdateIndexes),
+                                    .ToolTip_Tip(L10n.Instance.HelmRepositoriesView_UpdateIndexes.ToBinding()),
                                 new Button()
                                     .Command(vm, x => x.RefreshCommand)
                                     .Content(new FluentIcon().Icon(Icon.ArrowSync))
-                                    .ToolTip_Tip(SharedAssets.Resources.Shared_Refresh))),
+                                    .ToolTip_Tip(SharedL10n.Instance.Shared_Refresh.ToBinding()))),
                 table.Row(1));
     }
 
@@ -69,17 +69,17 @@ public sealed class HelmRepositoriesView : KubeUIView<HelmRepositoriesViewModel>
         foreach (var repository in targets.OfType<HelmRepository>())
         {
             yield return new MenuItem()
-                .Header(Assets.Resources.HelmRepositoriesView_ViewCharts)
+                .Header(L10n.Instance.HelmRepositoriesView_ViewCharts.ToBinding())
                 .Command(vm, x => x.ViewChartsCommand)
                 .CommandParameter(repository)
                 .Icon(new FluentIcon().Icon(Icon.DataUsage));
             yield return new MenuItem()
-                .Header(Assets.Resources.HelmRepositoriesView_Edit)
+                .Header(L10n.Instance.HelmRepositoriesView_Edit.ToBinding())
                 .Command(vm, x => x.EditRepositoryCommand)
                 .CommandParameter(repository)
                 .Icon(new FluentIcon().Icon(Icon.Edit));
             yield return new MenuItem()
-                .Header(Assets.Resources.HelmRepositoriesView_Delete)
+                .Header(L10n.Instance.HelmRepositoriesView_Delete.ToBinding())
                 .Command(vm, x => x.DeleteRepositoryCommand)
                 .CommandParameter(repository)
                 .Icon(new FluentIcon().Icon(Icon.Delete));

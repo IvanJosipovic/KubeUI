@@ -120,7 +120,7 @@ public sealed class HelmChartsViewModelTests : IDisposable
             await TestWait.UntilAsync(() => charts.ItemCount == 2,
                 TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
             var search = controls.OfType<TextBox>()
-                .Single(control => control.PlaceholderText == HelmAssets.Resources.HelmChartsView_SearchPlaceholder);
+                .Single(control => control.PlaceholderText == HelmL10n.Instance.HelmChartsView_SearchPlaceholder.CurrentValue());
             search.Height.ShouldBe(32);
             search.VerticalContentAlignment.ShouldBe(VerticalAlignment.Center);
             search.Text = "tools";
@@ -132,7 +132,7 @@ public sealed class HelmChartsViewModelTests : IDisposable
             var table = controls.OfType<DynamicTableView>().Single();
             var menu = table.ContextMenuItemsFactory!([new HelmChartSearchResult("second/web", "web", "3.0")])
                 .Cast<MenuItem>().Single();
-            menu.Header.ShouldBe(HelmAssets.Resources.HelmChartsView_Install);
+            menu.Header.ShouldBe(HelmL10n.Instance.HelmChartsView_Install.CurrentValue());
             menu.Command.ShouldBeSameAs(charts.InstallChartCommand);
             await charts.InstallChartCommand.ExecuteAsync(menu.CommandParameter).WaitAsync(TestContext.Current.CancellationToken);
             opened.ShouldNotBeNull();
@@ -147,7 +147,7 @@ public sealed class HelmChartsViewModelTests : IDisposable
             factory.Setup(item => item.InsertDockable(documents, It.IsAny<IDockable>(), 0))
                 .Throws(new InvalidOperationException("Cannot open document"));
             await charts.InstallChartCommand.ExecuteAsync(menu.CommandParameter).WaitAsync(TestContext.Current.CancellationToken);
-            charts.Status.ShouldBe(SharedAssets.Resources.Shared_ErrorOccurred);
+            charts.Status.ShouldBe(SharedL10n.Instance.Shared_ErrorOccurred.CurrentValue()!);
 
             charts.SelectedRepository = "first";
             await TestWait.UntilAsync(() => charts.ItemCount == 1,
@@ -192,7 +192,7 @@ public sealed class HelmChartsViewModelTests : IDisposable
         helm.Setup(service => service.ListRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("Repository configuration unavailable"));
         await charts.RefreshCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
-        charts.Status.ShouldBe(SharedAssets.Resources.Shared_ErrorOccurred);
+        charts.Status.ShouldBe(SharedL10n.Instance.Shared_ErrorOccurred.CurrentValue()!);
         await TestWait.UntilAsync(() => charts.ItemCount == 0,
             TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
     }
@@ -219,7 +219,7 @@ public sealed class HelmChartsViewModelTests : IDisposable
         using var charts = new HelmChartsViewModel(helm.Object, Mock.Of<IHelmDocumentOpener>());
         charts.Initialize(workspace);
         await charts.RefreshCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
-        charts.Status.ShouldBe(fails ? SharedAssets.Resources.Shared_ErrorOccurred : SharedAssets.Resources.Shared_NoCharts);
+        charts.Status.ShouldBe(fails ? SharedL10n.Instance.Shared_ErrorOccurred.CurrentValue()! : SharedL10n.Instance.Shared_NoCharts.CurrentValue()!);
         charts.ItemCount.ShouldBe(0);
         charts.IsLoading.ShouldBeFalse();
         await charts.InstallChartCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);

@@ -502,13 +502,13 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
     }
 
     private static string GetNodeKindLabel(ServiceMapNode node)
-        => GetNodeResourceKind(node)?.Kind ?? Assets.Resources.ServiceMapGraphControl_External!;
+        => GetNodeResourceKind(node)?.Kind ?? L10n.Instance.ServiceMapGraphControl_External.CurrentValue()!;
 
     private static StackPanel CreateNodeConnectionDetails(ServiceMapNode node)
     {
         var flowCounts = string.Format(
             CultureInfo.CurrentCulture,
-            Assets.Resources.ServiceMapGraphControl_FlowCountsFormat!,
+            L10n.Instance.ServiceMapGraphControl_FlowCountsFormat.CurrentValue()!,
             node.IngressFlowCount,
             node.EgressFlowCount,
             node.DeniedCount);
@@ -522,7 +522,7 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
                 : $" • {string.Join(" • ", accessPoint.ApplicationProtocols)}";
             connectionDetails.Children.Add(CreateNodeDetailText(string.Format(
                 CultureInfo.CurrentCulture,
-                Assets.Resources.ServiceMapGraphControl_IncomingPortFormat!,
+                L10n.Instance.ServiceMapGraphControl_IncomingPortFormat.CurrentValue()!,
                 accessPoint.Port,
                 accessPoint.Protocol,
                 applicationProtocols)));
@@ -533,7 +533,7 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
 
     private static string GetNodeNamespaceLabel(ServiceMapNode node)
         => string.IsNullOrEmpty(node.Namespace)
-            ? Assets.Resources.ServiceMapGraphControl_External!
+            ? L10n.Instance.ServiceMapGraphControl_External.CurrentValue()!
             : node.Namespace;
 
     private static TextBlock CreateNodeDetailText(string text, double width = 176)
@@ -547,24 +547,24 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
     private static string CreateNodeTooltip(ServiceMapNode node)
     {
         var accessPoints = node.AccessPoints.Count == 0
-            ? Assets.Resources.ServiceMapNodePropertiesView_NoAccessPoints
+            ? L10n.Instance.ServiceMapNodePropertiesView_NoAccessPoints.CurrentValue()!
             : string.Join(", ", node.AccessPoints.Select(accessPoint => string.Format(
                 CultureInfo.CurrentCulture,
-                Assets.Resources.ServiceMapNodePropertiesView_AccessPointFormat!,
+                L10n.Instance.ServiceMapNodePropertiesView_AccessPointFormat.CurrentValue()!,
                 accessPoint.Protocol,
                 accessPoint.Port,
                 accessPoint.FlowCount,
                 accessPoint.DeniedCount,
                 accessPoint.ApplicationProtocols.Count == 0
-                    ? Assets.Resources.ServiceMapNodePropertiesView_NoApplicationProtocols
+                    ? L10n.Instance.ServiceMapNodePropertiesView_NoApplicationProtocols.CurrentValue()!
                     : string.Join(", ", accessPoint.ApplicationProtocols))));
 
         return string.Format(
             CultureInfo.CurrentCulture,
-            Assets.Resources.ServiceMapGraphControl_NodeTooltipFormat!,
+            L10n.Instance.ServiceMapGraphControl_NodeTooltipFormat.CurrentValue()!,
             node.Name,
             GetNodeKindLabel(node),
-            string.IsNullOrEmpty(node.Namespace) ? Assets.Resources.ServiceMapGraphControl_External : node.Namespace,
+            string.IsNullOrEmpty(node.Namespace) ? L10n.Instance.ServiceMapGraphControl_External.CurrentValue()! : node.Namespace,
             node.IngressFlowCount,
             node.EgressFlowCount,
             node.AllowedCount,
@@ -660,7 +660,7 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
             {
                 new MenuItem
                 {
-                    Header = Assets.Resources.ServiceMapGraphControl_View,
+                    Header = L10n.Instance.ServiceMapGraphControl_View.CurrentValue()!,
                     Command = _viewNodeCommand,
                     CommandParameter = node,
                 }
@@ -1091,7 +1091,7 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
                 $"{accessPoint.Protocol} {accessPoint.Port} ({accessPoint.FlowCount})"));
             return string.Format(
                 CultureInfo.CurrentCulture,
-                Assets.Resources.ServiceMapGraphControl_EdgeTooltipFormat,
+                L10n.Instance.ServiceMapGraphControl_EdgeTooltipFormat.CurrentValue()!,
                 edge.FlowCount,
                 accessPoints);
         }

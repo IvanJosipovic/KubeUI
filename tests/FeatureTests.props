@@ -27,18 +27,12 @@
     <Using Include="KubeUI.Controls.Docking" />
     <Using Include="KubeUI.Controls.Platform" />
     <Using Include="KubeUI.Controls.Threading" />
-    <Using Include="KubeUI.Avalonia.Styles" />
+    <Using Include="KubeUI.Foundation.Styles" />
+    <Using Include="KubeUI.Foundation.Localization" />
     <Using Include="KubeUI.Kubernetes.Client" />
     <Using Include="KubeUI.Kubernetes" />
     <Using Include="KubernetesClient.Informer.Client" />
-    <Using Include="KubeUI.Avalonia.Assets" Alias="Assets" />
-    <Using Include="KubeUI.Avalonia.Assets" Alias="SharedAssets" />
-    <Using Include="KubeUI.Features.AI.Assets" Alias="AIAssets" />
-    <Using Include="KubeUI.Features.Cilium.Assets" Alias="CiliumAssets" />
-    <Using Include="KubeUI.Features.Clusters.Assets" Alias="ClusterAssets" />
-    <Using Include="KubeUI.Features.Crossplane.Assets" Alias="CrossplaneAssets" />
-    <Using Include="KubeUI.Features.Helm.Assets" Alias="HelmAssets" />
-    <Using Include="KubeUI.Features.Resources.Assets" Alias="ResourceAssets" />
+    <Using Include="KubeUI.Foundation.Assets.LanguageManager" Alias="SharedL10n" />
   </ItemGroup>
 
   <ItemGroup>

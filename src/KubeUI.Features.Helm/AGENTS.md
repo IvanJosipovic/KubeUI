@@ -13,7 +13,7 @@
 - Saving a repository form that changed nothing must skip the Helm `RepoAdd` call, because re-adding without credentials silently drops stored basic auth. The form warns that Helm does not return saved credentials; unchanged edits are still acknowledged as successful.
 - Release rows support namespace-scoped or all-namespace listing, install, upgrade, status, values, rollback to a chosen revision, uninstall, and chart template preview. Rollback dialog includes revision history. Format the Updated column with the same pretty age text as resource Age cells.
 - Refresh release data on every view load, including reattachment of an existing document, through a lifecycle behavior. Fetch all namespaces and apply namespace selection as a local table filter; an empty selection means all namespaces.
-- Keep Helm UI text in Resources.resx and cover service, navigation, and ViewModel behavior with tests.
+- Keep Helm UI text in `Assets/Resources.json` and cover service, navigation, and ViewModel behavior with tests.
 - Repository and release list headers follow resource-list layout: minimum height 32, vertical margin 2, left add-square action and item-count label with left margin 2, stretch spacer, right-aligned controls/actions, and bounded wrapping status text. Repository index updates stay in the right action group; do not displace the count.
 - Top-bar status messages must remain clear and concise (at most two words); log detailed exception text instead of displaying it in the header.
 - Distinguish downloading repository indexes (`ArrowDownload`, header action) from refreshing the displayed repository list (`ArrowSync`).

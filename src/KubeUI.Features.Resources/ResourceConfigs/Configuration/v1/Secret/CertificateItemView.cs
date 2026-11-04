@@ -58,19 +58,19 @@ public sealed partial class CertificateItemView : UserControl, IDeclarativeViewB
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(Assets.Resources.CertificateItemView_Issuer)
+                    .Key(L10n.Instance.CertificateItemView_Issuer.CurrentValue()!)
                     .Value(cert.Issuer),
                 new PropertyItem()
-                    .Key(Assets.Resources.CertificateItemView_Subject)
+                    .Key(L10n.Instance.CertificateItemView_Subject.CurrentValue()!)
                     .Value(cert.SubjectName.Name),
                 new PropertyItem()
-                    .Key(Assets.Resources.CertificateItemView_NotBefore)
+                    .Key(L10n.Instance.CertificateItemView_NotBefore.CurrentValue()!)
                     .Value(cert.NotBefore),
                 new PropertyItem()
-                    .Key(Assets.Resources.CertificateItemView_Expires)
+                    .Key(L10n.Instance.CertificateItemView_Expires.CurrentValue()!)
                     .Value(GetExpiryValue(cert)),
-                CreateSanList(GetDnsNames(cert), Assets.Resources.CertificateItemView_Dns),
-                CreateSanList(GetIpAddresses(cert), Assets.Resources.CertificateItemView_Ip));
+                CreateSanList(GetDnsNames(cert), L10n.Instance.CertificateItemView_Dns.CurrentValue()!),
+                CreateSanList(GetIpAddresses(cert), L10n.Instance.CertificateItemView_Ip.CurrentValue()!));
     }
 
     private static StackPanel CreateKeyTemplate(RSA key)
@@ -187,13 +187,13 @@ public sealed partial class CertificateItemView : UserControl, IDeclarativeViewB
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(Assets.Resources.CertificateItemView_KeyExchangeAlgorithm)
+                    .Key(L10n.Instance.CertificateItemView_KeyExchangeAlgorithm.CurrentValue()!)
                     .Value(exchangeAlgorithm),
                 new PropertyItem()
-                    .Key(Assets.Resources.CertificateItemView_SignatureAlgorithm)
+                    .Key(L10n.Instance.CertificateItemView_SignatureAlgorithm.CurrentValue()!)
                     .Value(signatureAlgorithm),
                 new PropertyItem()
-                    .Key(Assets.Resources.CertificateItemView_KeySize)
+                    .Key(L10n.Instance.CertificateItemView_KeySize.CurrentValue()!)
                     .Value(keySize));
     }
 

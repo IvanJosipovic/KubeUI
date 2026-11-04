@@ -47,7 +47,7 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
     private ExpandableSection CreateContent()
     {
         return new ExpandableSection()
-            .Header(Assets.Resources.ResourceEventsView_Title)
+            .Header(L10n.Instance.ResourceEventsView_Title.ToBinding())
             .IsExpanded(true)
             .Content(
                 new StackPanel()
@@ -60,7 +60,7 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
                             .ItemTemplate(new FuncDataTemplate<ResourceEventItem>((item, _) => CreateEventCard(item!))),
                         new PropertyItem()
                             .IsVisible(this, x => x.HasItems, BindingMode.OneWay, SharedConverters.Not)
-                            .Value(Assets.Resources.ResourceEventsView_NoEventsFound)));
+                            .Value(L10n.Instance.ResourceEventsView_NoEventsFound.CurrentValue()!)));
     }
 
     private static Border CreateEventCard(ResourceEventItem item)
@@ -78,16 +78,16 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
                             .Spacing(0)
                             .Children(
                                 new PropertyItem()
-                                    .Key(SharedAssets.Resources.Shared_Source)
+                                    .Key(SharedL10n.Instance.Shared_Source.CurrentValue()!)
                                     .Value(item.Source),
                                 new PropertyItem()
-                                    .Key(SharedAssets.Resources.Shared_Count)
+                                    .Key(SharedL10n.Instance.Shared_Count.CurrentValue()!)
                                     .Value(item.Count),
                                 new PropertyItem()
-                                    .Key(Assets.Resources.ResourceEventsView_SubObject)
+                                    .Key(L10n.Instance.ResourceEventsView_SubObject.CurrentValue()!)
                                     .Value(item.SubObject),
                                 new PropertyItem()
-                                    .Key(Assets.Resources.ResourceEventsView_LastSeen)
+                                    .Key(L10n.Instance.ResourceEventsView_LastSeen.CurrentValue()!)
                                     .Value(item.LastSeen))));
     }
 

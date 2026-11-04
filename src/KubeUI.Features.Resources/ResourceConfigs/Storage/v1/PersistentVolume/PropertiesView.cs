@@ -12,34 +12,34 @@ public sealed class PropertiesView : ViewBase<V1PersistentVolume>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Phase!)
+                    .Key(SharedL10n.Instance.Shared_Phase.CurrentValue()!)
                     .Value(vm.Status?.Phase ?? ""),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Reason!)
+                    .Key(SharedL10n.Instance.Shared_Reason.CurrentValue()!)
                     .Value(vm.Status?.Reason ?? ""),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Storage_Class!)
+                    .Key(SharedL10n.Instance.Shared_Storage_Class.CurrentValue()!)
                     .Value(vm.Spec?.StorageClassName ?? ""),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Reclaim_Policy!)
+                    .Key(SharedL10n.Instance.Shared_Reclaim_Policy.CurrentValue()!)
                     .Value(vm.Spec?.PersistentVolumeReclaimPolicy ?? ""),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Volume_Mode!)
+                    .Key(SharedL10n.Instance.Shared_Volume_Mode.CurrentValue()!)
                     .Value(vm.Spec?.VolumeMode ?? ""),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Access_Modes!)
+                    .Key(SharedL10n.Instance.Shared_Access_Modes.CurrentValue()!)
                     .Value(vm.Spec?.AccessModes?.Count ?? 0),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Capacity_Entries!)
+                    .Key(SharedL10n.Instance.Shared_Capacity_Entries.CurrentValue()!)
                     .Value(vm.Spec?.Capacity?.Count ?? 0),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Mount_Options!)
+                    .Key(SharedL10n.Instance.Shared_Mount_Options.CurrentValue()!)
                     .Value(vm.Spec?.MountOptions?.Count ?? 0),
                 new PropertyItem()
-                    .Key(Assets.Resources.PersistentVolumePropertiesView_Claim_Name!)
+                    .Key(L10n.Instance.PersistentVolumePropertiesView_Claim_Name.CurrentValue()!)
                     .Value(vm.Spec?.ClaimRef?.Name ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.PersistentVolumePropertiesView_Last_Phase_Transition!)
+                    .Key(L10n.Instance.PersistentVolumePropertiesView_Last_Phase_Transition.CurrentValue()!)
                     .Value(vm.Status?.LastPhaseTransitionTime ?? DateTime.MinValue));
     }
 }

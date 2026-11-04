@@ -35,7 +35,7 @@ public sealed class MRDiffDetectionView : KubeUIView<MRDiffDetectionViewModel>
                             .Margin(0, 0, 6, 0)
                             .VerticalAlignment(VerticalAlignment.Stretch)
                             .VerticalContentAlignment(VerticalAlignment.Center)
-                            .PlaceholderText(Assets.Resources.MRDiffDetectionView_SelectProvider)
+                            .PlaceholderText(L10n.Instance.MRDiffDetectionView_SelectProvider.ToBinding())
                             .ItemsSource(vm, x => x.Providers)
                             .SelectedItem(vm, x => x.SelectedProvider, BindingMode.TwoWay)
                             .ItemTemplate(new FuncDataTemplate<CrossplaneProviderOption>(
@@ -48,7 +48,7 @@ public sealed class MRDiffDetectionView : KubeUIView<MRDiffDetectionViewModel>
                             .VerticalAlignment(VerticalAlignment.Stretch)
                             .VerticalContentAlignment(VerticalAlignment.Center)
                             .Background(Brushes.Transparent)
-                            .PlaceholderText(Assets.Resources.MRDiffDetectionView_Search)
+                            .PlaceholderText(L10n.Instance.MRDiffDetectionView_Search.ToBinding())
                             .Text(vm, x => x.SearchQuery, BindingMode.TwoWay),
                         new TextBlock()
                             .Col(2)
@@ -59,7 +59,7 @@ public sealed class MRDiffDetectionView : KubeUIView<MRDiffDetectionViewModel>
                             .Col(3)
                             .VerticalAlignment(VerticalAlignment.Stretch)
                             .Command(vm, x => x.ClearCommand)
-                            .ToolTip_Tip(Assets.Resources.MRDiffDetectionView_Clear)
+                            .ToolTip_Tip(L10n.Instance.MRDiffDetectionView_Clear.ToBinding())
                             .Content(new FluentIcon().Icon(Icon.Broom))),
                 table.Row(1));
     }
@@ -71,7 +71,7 @@ public sealed class MRDiffDetectionView : KubeUIView<MRDiffDetectionViewModel>
         foreach (var row in targets.OfType<CrossplaneDiffRow>())
         {
             yield return new MenuItem()
-                .Header(ResourceAssets.Resources.ResourceConfigBase_MenuItem_ViewYaml)
+                .Header(ResourceL10n.Instance.ResourceConfigBase_MenuItem_ViewYaml.ToBinding())
                 .Command(viewModel, x => x.ViewYamlCommand)
                 .CommandParameter(row);
         }

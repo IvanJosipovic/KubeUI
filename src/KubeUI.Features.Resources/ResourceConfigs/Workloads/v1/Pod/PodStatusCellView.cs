@@ -20,16 +20,16 @@ public sealed class PodStatusCellView : RefreshingCellTextBlock
         }
 
         var status = pod.Metadata?.DeletionTimestamp.HasValue == true
-            ? Assets.Resources.PodStatusCell_Terminating!
+            ? L10n.Instance.PodStatusCell_Terminating.CurrentValue()!
             : pod.Status?.Conditions?.FirstOrDefault(condition => condition.Type == "Ready") is { } ready
                 ? ready.Status == "True"
-                    ? Assets.Resources.PodStatusCell_Running!
+                    ? L10n.Instance.PodStatusCell_Running.CurrentValue()!
                     : ready.Reason == "PodCompleted"
-                        ? Assets.Resources.PodStatusCell_PodCompleted!
-                        : ready.Reason ?? Assets.Resources.PodStatusCell_Unknown!
-                : Assets.Resources.PodStatusCell_Unknown!;
+                        ? L10n.Instance.PodStatusCell_PodCompleted.CurrentValue()!
+                        : ready.Reason ?? L10n.Instance.PodStatusCell_Unknown.CurrentValue()!
+                : L10n.Instance.PodStatusCell_Unknown.CurrentValue()!;
 
-        Foreground = status == Assets.Resources.PodStatusCell_PodCompleted || status == Assets.Resources.PodStatusCell_Running
+        Foreground = status == L10n.Instance.PodStatusCell_PodCompleted.CurrentValue()! || status == L10n.Instance.PodStatusCell_Running.CurrentValue()!
             ? ApplicationBrushResources.GetBrush("PodStatusReadyBrush")
             : ApplicationBrushResources.GetBrush("PodStatusWarningBrush");
         return status;

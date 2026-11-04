@@ -84,7 +84,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         _sessionResolver = sessionResolver;
         _streamClient = streamClient;
         _automaticReconnectDelay = automaticReconnectDelay;
-        Title = Assets.Resources.PodLogsView_Title;
+        Title = L10n.Instance.PodLogsView_Title.CurrentValue()!;
         SelectedScopeItems.CollectionChanged += SelectedScopeItemsOnCollectionChanged;
     }
 
@@ -141,7 +141,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
             {
                 return string.Format(
                     CultureInfo.CurrentCulture,
-                    Assets.Resources.PodLogsView_MultiScopeKindNamespace,
+                    L10n.Instance.PodLogsView_MultiScopeKindNamespace.CurrentValue()!,
                     _scopeItems.Count,
                     PluralizeKind(distinctKinds[0]),
                     distinctNamespaces[0]);
@@ -151,7 +151,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
             {
                 return string.Format(
                     CultureInfo.CurrentCulture,
-                    Assets.Resources.PodLogsView_MultiScopeKindNamespaces,
+                    L10n.Instance.PodLogsView_MultiScopeKindNamespaces.CurrentValue()!,
                     _scopeItems.Count,
                     PluralizeKind(distinctKinds[0]),
                     distinctNamespaces.Length);
@@ -159,7 +159,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
 
             return string.Format(
                 CultureInfo.CurrentCulture,
-                Assets.Resources.PodLogsView_MultiScopeSummary,
+                L10n.Instance.PodLogsView_MultiScopeSummary.CurrentValue()!,
                 _scopeItems.Count,
                 distinctKinds.Length,
                 distinctNamespaces.Length);
@@ -283,8 +283,8 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     public string LogUpdateStatus => !IsDisplayPaused
         ? string.Empty
         : HasPendingLogUpdates
-            ? string.Format(CultureInfo.CurrentCulture, Assets.Resources.PodLogsView_LogUpdatesPaused, PendingLogCount)
-            : Assets.Resources.PodLogsView_UpdatesPaused;
+            ? string.Format(CultureInfo.CurrentCulture, L10n.Instance.PodLogsView_LogUpdatesPaused.CurrentValue()!, PendingLogCount)
+            : L10n.Instance.PodLogsView_UpdatesPaused.CurrentValue()!;
 
     [ObservableProperty]
     /// <summary>Gets or sets the persisted editor scroll offset.</summary>
@@ -329,7 +329,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
     public string StreamLimitWarning => HasStreamLimitWarning && PlannedStreamCount <= MaxStreamCount
         ? string.Format(
             CultureInfo.CurrentCulture,
-            Assets.Resources.PodLogsView_StreamLimitWarning,
+            L10n.Instance.PodLogsView_StreamLimitWarning.CurrentValue()!,
             PlannedStreamCount,
             StreamWarningThreshold)
         : string.Empty;
@@ -387,7 +387,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
                 AvailableContainers = [];
                 SourceTreeItems.Clear();
                 UpdatePlannedStreamCount(0);
-                ConnectionError = Assets.Resources.PodLogsView_NoResources;
+                ConnectionError = L10n.Instance.PodLogsView_NoResources.CurrentValue()!;
                 return;
             }
 
@@ -487,7 +487,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
                 _awaitingReadableTargets = true;
                 ConnectionError = string.Format(
                     CultureInfo.CurrentCulture,
-                    Assets.Resources.PodLogsView_StreamLimitExceeded,
+                    L10n.Instance.PodLogsView_StreamLimitExceeded.CurrentValue()!,
                     options.Count,
                     MaxStreamCount);
                 return;
@@ -663,7 +663,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
             _isApplyingSession = false;
         }
 
-        ConnectionError = Assets.Resources.PodLogsView_NoResources;
+        ConnectionError = L10n.Instance.PodLogsView_NoResources.CurrentValue()!;
         UpdateScopePresentation(updateSelection);
     }
 
@@ -907,14 +907,14 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(IsControllerScope));
         var resourceKind = ScopeResourceKind;
         Title = Object is null
-            ? Assets.Resources.PodLogsView_Title
+            ? L10n.Instance.PodLogsView_Title.CurrentValue()!
             : IsMultiScope
             ? BuildMultiScopeTitle()
             : Object is null || IsPodScope
-                ? Assets.Resources.PodLogsView_Title
+                ? L10n.Instance.PodLogsView_Title.CurrentValue()!
                 : string.Format(
                 CultureInfo.CurrentCulture,
-                Assets.Resources.PodLogsView_ResourceTitleFormat,
+                L10n.Instance.PodLogsView_ResourceTitleFormat.CurrentValue()!,
                 resourceKind);
         ReconcileSourceTree();
         UpdateResourceNameToggleState();
@@ -936,12 +936,12 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
         return distinctKinds.Length == 1
             ? string.Format(
                 CultureInfo.CurrentCulture,
-                Assets.Resources.PodLogsView_MultiScopeTitleKind,
+                L10n.Instance.PodLogsView_MultiScopeTitleKind.CurrentValue()!,
                 _scopeItems.Count,
                 PluralizeKind(distinctKinds[0]))
             : string.Format(
                 CultureInfo.CurrentCulture,
-                Assets.Resources.PodLogsView_MultiScopeTitle,
+                L10n.Instance.PodLogsView_MultiScopeTitle.CurrentValue()!,
                 _scopeItems.Count);
     }
 
@@ -963,12 +963,12 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
                     || string.Equals(scope.Scope.ResourceUid, item.Resource.Metadata?.Uid, StringComparison.Ordinal)));
             if (scopeResolution is null)
             {
-                item.ResolutionStatus = Assets.Resources.PodLogsView_Resolving;
+                item.ResolutionStatus = L10n.Instance.PodLogsView_Resolving.CurrentValue()!;
                 item.ResolvedPodCount = 0;
                 continue;
             }
 
-            item.ResolutionStatus = scopeResolution.Error ?? Assets.Resources.PodLogsView_Active;
+            item.ResolutionStatus = scopeResolution.Error ?? L10n.Instance.PodLogsView_Active.CurrentValue()!;
             item.ResolvedPodCount = scopeResolution.Pods.Count;
         }
     }
@@ -1170,7 +1170,7 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable
             {
                 ConnectionError = string.Format(
                     CultureInfo.CurrentCulture,
-                    Assets.Resources.PodLogsView_ScopeLimitExceeded,
+                    L10n.Instance.PodLogsView_ScopeLimitExceeded.CurrentValue()!,
                     MaxScopeCount);
                 break;
             }

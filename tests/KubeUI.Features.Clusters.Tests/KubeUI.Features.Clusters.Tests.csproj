@@ -3,6 +3,10 @@
   <Import Project="..\FeatureTests.props" />
 
   <ItemGroup>
+    <Using Include="KubeUI.Features.Clusters.Assets.LanguageManager" Alias="ClusterL10n" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\KubeUI.Features.Clusters\KubeUI.Features.Clusters.csproj" />
     <ProjectReference Include="..\..\src\KubeUI.Features.Azure\KubeUI.Features.Azure.csproj" />
     <ProjectReference Include="..\..\src\KubeUI.App\KubeUI.App.csproj" />

@@ -18,7 +18,7 @@ public sealed partial class V1RuntimeClassConfig : ResourceConfig<V1RuntimeClass
             new ResourceListColumn<V1RuntimeClass, string>()
             {
                 Key = "handler",
-                Name = Assets.Resources.V1RuntimeClassConfig_Handler!,
+                Name = L10n.Instance.V1RuntimeClassConfig_Handler.CurrentValue()!,
                 Field = x => x.Handler,
                 WidthMode = DynamicTableViewWidthMode.Cells
             },

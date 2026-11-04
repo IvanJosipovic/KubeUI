@@ -167,7 +167,7 @@ public class DockFactory : Factory
     {
         return new()
         {
-            Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://KubeUI.Avalonia/Assets/icon.ico")))
+            Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://KubeUI.Foundation/Assets/icon.ico")))
         };
     }
 

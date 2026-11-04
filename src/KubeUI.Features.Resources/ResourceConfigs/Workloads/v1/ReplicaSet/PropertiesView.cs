@@ -12,43 +12,43 @@ public sealed class PropertiesView : ViewBase<V1ReplicaSet>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Desired_Replicas!)
+                    .Key(SharedL10n.Instance.Shared_Desired_Replicas.CurrentValue()!)
                     .Value(vm.Spec?.Replicas ?? 0),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Current_Replicas!)
+                    .Key(SharedL10n.Instance.Shared_Current_Replicas.CurrentValue()!)
                     .Value(vm.Status?.Replicas ?? 0),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Ready_Replicas!)
+                    .Key(SharedL10n.Instance.Shared_Ready_Replicas.CurrentValue()!)
                     .Value(vm.Status?.ReadyReplicas ?? 0),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Available_Replicas!)
+                    .Key(SharedL10n.Instance.Shared_Available_Replicas.CurrentValue()!)
                     .Value(vm.Status?.AvailableReplicas ?? 0),
                 new ExpandableSection()
-                    .Header(SharedAssets.Resources.Shared_Status!)
+                    .Header(SharedL10n.Instance.Shared_Status.ToBinding())
                     .IsExpanded(true)
                     .Content(
                         new StackPanel()
                             .Children(
                                 new PropertyItem()
-                                    .Key(Assets.Resources.ReplicaSetPropertiesView_Fully_Labeled_Replicas!)
+                                    .Key(L10n.Instance.ReplicaSetPropertiesView_Fully_Labeled_Replicas.CurrentValue()!)
                                     .Value(vm.Status?.FullyLabeledReplicas ?? 0),
                                 new PropertyItem()
-                                    .Key(SharedAssets.Resources.Shared_Observed_Generation!)
+                                    .Key(SharedL10n.Instance.Shared_Observed_Generation.CurrentValue()!)
                                     .Value(vm.Status?.ObservedGeneration ?? 0),
                                 new PropertyItem()
-                                    .Key(SharedAssets.Resources.Shared_Conditions!)
+                                    .Key(SharedL10n.Instance.Shared_Conditions.CurrentValue()!)
                                     .Value(vm.Status?.Conditions?.Count ?? 0))),
                 new ExpandableSection()
-                    .Header(SharedAssets.Resources.Shared_Configuration!)
+                    .Header(SharedL10n.Instance.Shared_Configuration.ToBinding())
                     .IsExpanded(true)
                     .Content(
                         new StackPanel()
                             .Children(
                                 new PropertyItem()
-                                    .Key(SharedAssets.Resources.Shared_Min_Ready_Seconds!)
+                                    .Key(SharedL10n.Instance.Shared_Min_Ready_Seconds.CurrentValue()!)
                                     .Value(vm.Spec?.MinReadySeconds ?? 0),
                                 new PropertyItem()
-                                    .Key(SharedAssets.Resources.Shared_Selector_Labels!)
+                                    .Key(SharedL10n.Instance.Shared_Selector_Labels.CurrentValue()!)
                                     .Value(vm.Spec?.Selector?.MatchLabels?.Count ?? 0))));
     }
 }

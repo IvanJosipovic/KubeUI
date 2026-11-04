@@ -12,13 +12,13 @@ public sealed class PropertiesView : ViewBase<V1EndpointSlice>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(Assets.Resources.EndpointSlicePropertiesView_Address_Type!)
+                    .Key(L10n.Instance.EndpointSlicePropertiesView_Address_Type.CurrentValue()!)
                     .Value(vm.AddressType ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.EndpointSlicePropertiesView_Endpoints!)
+                    .Key(L10n.Instance.EndpointSlicePropertiesView_Endpoints.CurrentValue()!)
                     .Value(vm.Endpoints?.Count ?? 0),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Ports!)
+                    .Key(SharedL10n.Instance.Shared_Ports.CurrentValue()!)
                     .Value(vm.Ports?.Count ?? 0));
     }
 }

@@ -40,7 +40,7 @@ public sealed class HelmReleasesView : KubeUIView<HelmReleasesViewModel>
                             .Margin(2, 0, 0, 0)
                             .Command(vm, x => x.NewReleaseCommand)
                             .Content(new FluentIcon().Icon(Icon.AddSquare))
-                            .ToolTip_Tip(Assets.Resources.HelmReleasesView_Install),
+                            .ToolTip_Tip(L10n.Instance.HelmReleasesView_Install.ToBinding()),
                         new Label()
                             .Col(1)
                             .Margin(2, 0, 0, 0)
@@ -48,7 +48,7 @@ public sealed class HelmReleasesView : KubeUIView<HelmReleasesViewModel>
                             .Content(CompiledBinding.Create<HelmReleasesViewModel, int>(
                                 x => x.ItemCount,
                                 source: vm,
-                                stringFormat: Assets.Resources.HelmReleasesView_ItemsFormat)),
+                                stringFormat: L10n.Instance.HelmReleasesView_ItemsFormat.CurrentValue()!)),
                         new StackPanel()
                             .Col(3)
                             .MaxWidth(700)
@@ -64,12 +64,12 @@ public sealed class HelmReleasesView : KubeUIView<HelmReleasesViewModel>
                                 new ToggleButton()
                                     .Margin(0, 0, 2, 0)
                                     .IsChecked(vm, x => x.IsNamespaceSelectionLinked, BindingMode.TwoWay)
-                                    .ToolTip_Tip(ResourceAssets.Resources.ResourceListView_NamespaceLink)
+                                    .ToolTip_Tip(ResourceL10n.Instance.ResourceListView_NamespaceLink.ToBinding())
                                     .Content(new FluentIcon().Icon(Icon.Link)),
                                 new Button()
                                     .Command(vm, x => x.RefreshCommand)
                                     .Content(new FluentIcon().Icon(Icon.ArrowSync))
-                                    .ToolTip_Tip(SharedAssets.Resources.Shared_Refresh))),
+                                    .ToolTip_Tip(SharedL10n.Instance.Shared_Refresh.ToBinding()))),
                 table.Row(1));
         Interaction.GetBehaviors(root).Add(new EventTriggerBehavior
         {
@@ -92,7 +92,7 @@ public sealed class HelmReleasesView : KubeUIView<HelmReleasesViewModel>
             .HorizontalAlignment(HorizontalAlignment.Stretch)
             .Classes("ClearButton")
             .ItemsSource(CompiledBinding.Create<HelmReleasesViewModel, IEnumerable>(x => x.Cluster!.Runtime.Namespaces, source: viewModel))
-            .PlaceholderText(ResourceAssets.Resources.ResourceListView_SelectNamespace)
+            .PlaceholderText(ResourceL10n.Instance.ResourceListView_SelectNamespace.ToBinding())
             .SelectedItems(CompiledBinding.Create<HelmReleasesViewModel, IList>(x => x.SelectedNamespaces, source: viewModel))
             .ItemTemplate(template)
             .SelectedItemTemplate(template);
@@ -103,27 +103,27 @@ public sealed class HelmReleasesView : KubeUIView<HelmReleasesViewModel>
         foreach (var release in targets.OfType<HelmRelease>())
         {
             yield return new MenuItem()
-                .Header(Assets.Resources.HelmReleasesView_Visualize)
+                .Header(L10n.Instance.HelmReleasesView_Visualize.ToBinding())
                 .Command(vm, x => x.VisualizeReleaseCommand)
                 .CommandParameter(release)
                 .Icon(new FluentIcon().Icon(Icon.DataUsage));
             yield return new MenuItem()
-                .Header(Assets.Resources.HelmReleasesView_Values)
+                .Header(L10n.Instance.HelmReleasesView_Values.ToBinding())
                 .Command(vm, x => x.ViewValuesCommand)
                 .CommandParameter(release)
                 .Icon(new FluentIcon().Icon(Icon.Code));
             yield return new MenuItem()
-                .Header(Assets.Resources.HelmReleasesView_Upgrade)
+                .Header(L10n.Instance.HelmReleasesView_Upgrade.ToBinding())
                 .Command(vm, x => x.UpgradeReleaseCommand)
                 .CommandParameter(release)
                 .Icon(new FluentIcon().Icon(Icon.Edit));
             yield return new MenuItem()
-                .Header(Assets.Resources.HelmReleasesView_Rollback)
+                .Header(L10n.Instance.HelmReleasesView_Rollback.ToBinding())
                 .Command(vm, x => x.RollbackCommand)
                 .CommandParameter(release)
                 .Icon(new FluentIcon().Icon(Icon.ArrowUndo));
             yield return new MenuItem()
-                .Header(Assets.Resources.HelmReleasesView_Uninstall)
+                .Header(L10n.Instance.HelmReleasesView_Uninstall.ToBinding())
                 .Command(vm, x => x.UninstallCommand)
                 .CommandParameter(release)
                 .Icon(new FluentIcon().Icon(Icon.Delete));

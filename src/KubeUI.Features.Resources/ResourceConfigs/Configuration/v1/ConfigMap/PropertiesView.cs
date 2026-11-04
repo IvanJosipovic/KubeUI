@@ -22,17 +22,17 @@ public sealed class PropertiesView : ViewBase<V1ConfigMap>, IResourcePropertiesR
             static value => value,
             static value => value);
         _binaryDataProperty = new PropertyItem()
-            .Key(Assets.Resources.ConfigMapPropertiesView_Binary_Data)
+            .Key(L10n.Instance.ConfigMapPropertiesView_Binary_Data.CurrentValue()!)
             .Value(vm.BinaryData?.Count ?? 0);
         _immutableProperty = new PropertyItem()
-            .Key(Assets.Resources.ConfigMapPropertiesView_Immutable)
+            .Key(L10n.Instance.ConfigMapPropertiesView_Immutable.CurrentValue()!)
             .Value(vm.Immutable);
 
         return new StackPanel()
             .Children(
                 _binaryDataProperty,
                 new ExpandableSection()
-                    .Header(SharedAssets.Resources.Shared_Data)
+                    .Header(SharedL10n.Instance.Shared_Data.ToBinding())
                     .IsExpanded(true)
                     .Content(_dataDisplay),
                 _immutableProperty);

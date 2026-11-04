@@ -175,13 +175,13 @@ public partial class ResourcePropertiesView<T> : ViewBase<ResourcePropertiesView
 
         var obj = viewModel.Object;
 
-        _itemsPanel.Children.Add(new PropertyItem { Key = Assets.Resources.ResourcePropertiesView_Name, Value = obj.Metadata.Name });
+        _itemsPanel.Children.Add(new PropertyItem { Key = L10n.Instance.ResourcePropertiesView_Name.CurrentValue()!, Value = obj.Metadata.Name });
         if (viewModel.ResourceConfig?.IsNamespaced == true)
         {
-            _itemsPanel.Children.Add(new PropertyItem { Key = Assets.Resources.ResourcePropertiesView_Namespace, Value = obj.Metadata.NamespaceProperty });
+            _itemsPanel.Children.Add(new PropertyItem { Key = L10n.Instance.ResourcePropertiesView_Namespace.CurrentValue()!, Value = obj.Metadata.NamespaceProperty });
         }
 
-        _itemsPanel.Children.Add(new PropertyItem { Key = Assets.Resources.ResourcePropertiesView_Created, Value = obj.Metadata.CreationTimestamp });
+        _itemsPanel.Children.Add(new PropertyItem { Key = L10n.Instance.ResourcePropertiesView_Created.CurrentValue()!, Value = obj.Metadata.CreationTimestamp });
 
         if (viewModel.ResourceConfig == null)
         {

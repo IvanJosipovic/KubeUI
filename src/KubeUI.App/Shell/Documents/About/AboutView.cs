@@ -20,34 +20,34 @@ public sealed class AboutView() : KubeUIView<AboutViewModel>()
                 new TextBlock()
                     .HorizontalAlignment(HorizontalAlignment.Center)
                     .FontSize(new DynamicResourceExtension(Typography.TitleFontSizeResourceKey))
-                    .Text(Assets.Resources.MainWindow_Title),
+                    .Text(SharedL10n.Instance.MainWindow_Title.ToBinding()),
                 new TextBlock()
                     .HorizontalAlignment(HorizontalAlignment.Center)
-                    .Text(string.Format(Assets.Resources.AboutView_Version_StringFormat!, vm.Version ?? Assets.Resources.AboutView_Version_FallbackValue)),
+                    .Text(string.Format(SharedL10n.Instance.AboutView_Version_StringFormat.CurrentValue()!, vm.Version ?? SharedL10n.Instance.AboutView_Version_FallbackValue.CurrentValue()!)),
                 new TextBlock()
                     .Padding(0, 15, 0, 0)
                     .HorizontalAlignment(HorizontalAlignment.Center)
-                    .Text(Assets.Resources.AboutView_CreatedBy),
+                    .Text(SharedL10n.Instance.AboutView_CreatedBy.ToBinding()),
                 new StackPanel()
                     .Margin(0, 15, 0, 0)
                     .HorizontalAlignment(HorizontalAlignment.Center)
                     .Orientation(Orientation.Horizontal)
                     .Children(
                         new TextBlock()
-                            .Text(Assets.Resources.AboutView_Contact),
+                            .Text(SharedL10n.Instance.AboutView_Contact.ToBinding()),
                         new HyperlinkButton()
                             .Padding(2, -2, 0, 0)
-                            .Content(Assets.Resources.AboutView_ContactEmailContent)
-                            .NavigateUri(new Uri(Assets.Resources.AboutView_ContactEmailUri!))),
+                            .Content(SharedL10n.Instance.AboutView_ContactEmailContent.ToBinding())
+                            .NavigateUri(new Uri(SharedL10n.Instance.AboutView_ContactEmailUri.CurrentValue()!))),
                 new StackPanel()
                     .Margin(0, 5, 0, 0)
                     .HorizontalAlignment(HorizontalAlignment.Center)
                     .Orientation(Orientation.Horizontal)
                     .Children(
                         new TextBlock()
-                            .Text(Assets.Resources.AboutView_Website),
+                            .Text(SharedL10n.Instance.AboutView_Website.ToBinding()),
                         new HyperlinkButton()
                             .Padding(2, -2, 0, 0)
-                            .Content(Assets.Resources.AboutView_WebsiteContent)
-                            .NavigateUri(new Uri(Assets.Resources.AboutView_WebsiteUri!))));
+                            .Content(SharedL10n.Instance.AboutView_WebsiteContent.ToBinding())
+                            .NavigateUri(new Uri(SharedL10n.Instance.AboutView_WebsiteUri.CurrentValue()!))));
 }

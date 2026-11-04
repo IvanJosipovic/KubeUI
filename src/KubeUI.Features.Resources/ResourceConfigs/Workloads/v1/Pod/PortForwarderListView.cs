@@ -54,12 +54,12 @@ public partial class PortForwarderListView : KubeUIView<PortForwarderListViewMod
         foreach (var portForwarder in targets.OfType<PortForwarder>())
         {
             yield return new MenuItem()
-                .Header(Assets.Resources.PortForwarderListView_OpenInBrowser)
+                .Header(L10n.Instance.PortForwarderListView_OpenInBrowser.ToBinding())
                 .Command(vm, x => x.OpenCommand)
                 .CommandParameter(portForwarder)
                 .Icon(new FluentIcon().Icon(Icon.Open));
             yield return new MenuItem()
-                .Header(Assets.Resources.PortForwarderListView_Remove)
+                .Header(L10n.Instance.PortForwarderListView_Remove.ToBinding())
                 .Command(vm, x => x.RemoveCommand)
                 .CommandParameter(portForwarder)
                 .Icon(new FluentIcon().Icon(Icon.Delete));

@@ -30,7 +30,7 @@ namespace KubeUI.App.Styles;
 public sealed class Fluent : AvaloniaStyles
 {
     private static readonly CultureInfo s_locale = CultureInfo.CurrentUICulture;
-    private static readonly Uri s_baseUri = new("avares://KubeUI.Avalonia");
+    private static readonly Uri s_baseUri = new("avares://KubeUI.Foundation");
     private readonly ColorPaletteResources _lightPalette = CreateLightPalette();
     private readonly ColorPaletteResources _darkPalette = CreateDarkPalette();
 

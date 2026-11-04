@@ -97,10 +97,10 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
             _releases,
             static release => $"{release.Namespace}\u001f{release.Name}",
             [
-                CreateColumn("name", Assets.Resources.HelmReleasesView_Name!, static release => release.Name, DynamicTableViewWidthMode.Star, 1.5),
-                CreateColumn("namespace", Assets.Resources.HelmReleasesView_Namespace!, static release => release.Namespace, DynamicTableViewWidthMode.Star, 1.2),
-                CreateColumn("app-version", Assets.Resources.HelmReleasesView_AppVersion!, static release => release.AppVersion, DynamicTableViewWidthMode.Star, 1),
-                CreateColumn("status", Assets.Resources.HelmReleasesView_Status!, static release => release.Status, DynamicTableViewWidthMode.Star, 1),
+                CreateColumn("name", L10n.Instance.HelmReleasesView_Name.CurrentValue()!, static release => release.Name, DynamicTableViewWidthMode.Star, 1.5),
+                CreateColumn("namespace", L10n.Instance.HelmReleasesView_Namespace.CurrentValue()!, static release => release.Namespace, DynamicTableViewWidthMode.Star, 1.2),
+                CreateColumn("app-version", L10n.Instance.HelmReleasesView_AppVersion.CurrentValue()!, static release => release.AppVersion, DynamicTableViewWidthMode.Star, 1),
+                CreateColumn("status", L10n.Instance.HelmReleasesView_Status.CurrentValue()!, static release => release.Status, DynamicTableViewWidthMode.Star, 1),
                 CreateUpdatedColumn(_refreshClock)
             ],
             options: new DynamicTableViewSourceOptions { SelectionIdentityMode = DynamicTableViewSelectionIdentityMode.Key });
@@ -112,7 +112,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
             _itemsNotifications.CollectionChanged += ItemsOnCollectionChanged;
         }
 
-        Title = Assets.Resources.HelmReleasesView_Title;
+        Title = L10n.Instance.HelmReleasesView_Title.CurrentValue()!;
     }
 
     public void Initialize(ClusterWorkspace cluster)
@@ -155,7 +155,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         catch (Exception exception)
         {
             _logger?.LogError(exception, "Failed to refresh Helm releases");
-            Status = Assets.Resources.HelmReleasesView_RefreshFailed!;
+            Status = L10n.Instance.HelmReleasesView_RefreshFailed.CurrentValue()!;
         }
     }
 
@@ -187,7 +187,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         catch (Exception exception)
         {
             _logger?.LogError(exception, "Failed to visualize Helm release {ReleaseName}", release.Name);
-            Status = Assets.Resources.HelmReleasesView_VisualizeFailed!;
+            Status = L10n.Instance.HelmReleasesView_VisualizeFailed.CurrentValue()!;
         }
     }
 
@@ -202,12 +202,12 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         try
         {
             await _helmService.StatusAsync(_connection with { Namespace = release.Namespace }, release.Name, cancellationToken);
-            Status = Assets.Resources.HelmReleasesView_StatusLoaded!;
+            Status = L10n.Instance.HelmReleasesView_StatusLoaded.CurrentValue()!;
         }
         catch (Exception exception)
         {
             _logger?.LogError(exception, "Failed to load status for Helm release {ReleaseName}", release.Name);
-            Status = Assets.Resources.HelmReleasesView_StatusFailed!;
+            Status = L10n.Instance.HelmReleasesView_StatusFailed.CurrentValue()!;
         }
     }
 
@@ -228,7 +228,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
                 ? existing
                 : _createYamlViewer();
             viewer.InitializeReadOnly(
-                string.Format(Assets.Resources.HelmReleasesView_ValuesTitle!, release.Name, release.Namespace),
+                string.Format(L10n.Instance.HelmReleasesView_ValuesTitle.CurrentValue()!, release.Name, release.Namespace),
                 id,
                 yaml);
             _factory.AddToBottom(viewer);
@@ -237,7 +237,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         catch (Exception exception)
         {
             _logger?.LogError(exception, "Failed to load values for Helm release {ReleaseName}", release.Name);
-            Status = Assets.Resources.HelmReleasesView_ValuesFailed!;
+            Status = L10n.Instance.HelmReleasesView_ValuesFailed.CurrentValue()!;
         }
     }
 
@@ -256,10 +256,10 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
             var dialogViewModel = new ReleaseActionDialogViewModel { Revision = 0 };
             var result = await _dialogService.ShowContentDialogAsync(this, new ContentDialogSettings
             {
-                Title = Assets.Resources.HelmReleasesView_RollbackDialog_Title,
+                Title = L10n.Instance.HelmReleasesView_RollbackDialog_Title.CurrentValue()!,
                 Content = CreateRollbackDialogContent(dialogViewModel, release, maximumRevision, history),
-                PrimaryButtonText = Assets.Resources.HelmReleasesView_Rollback,
-                SecondaryButtonText = SharedAssets.Resources.Shared_Cancel,
+                PrimaryButtonText = L10n.Instance.HelmReleasesView_Rollback.CurrentValue()!,
+                SecondaryButtonText = SharedL10n.Instance.Shared_Cancel.CurrentValue()!,
                 DefaultButton = FAContentDialogButton.Secondary
             });
 
@@ -279,7 +279,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         catch (Exception exception)
         {
             _logger?.LogError(exception, "Failed to roll back Helm release {ReleaseName}", release.Name);
-            Status = Assets.Resources.HelmReleasesView_RollbackFailed!;
+            Status = L10n.Instance.HelmReleasesView_RollbackFailed.CurrentValue()!;
         }
     }
 
@@ -294,10 +294,10 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         ReleaseActionDialogViewModel dialogViewModel = new();
         var result = await _dialogService.ShowContentDialogAsync(this, new ContentDialogSettings
         {
-            Title = Assets.Resources.HelmReleasesView_UninstallTitle,
+            Title = L10n.Instance.HelmReleasesView_UninstallTitle.CurrentValue()!,
             Content = CreateUninstallDialogContent(dialogViewModel, release),
-            PrimaryButtonText = Assets.Resources.HelmReleasesView_Uninstall,
-            SecondaryButtonText = SharedAssets.Resources.Shared_Cancel,
+            PrimaryButtonText = L10n.Instance.HelmReleasesView_Uninstall.CurrentValue()!,
+            SecondaryButtonText = SharedL10n.Instance.Shared_Cancel.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary
         });
 
@@ -318,7 +318,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         catch (Exception exception)
         {
             _logger?.LogError(exception, "Failed to uninstall Helm release {ReleaseName}", release.Name);
-            Status = Assets.Resources.HelmReleasesView_UninstallFailed!;
+            Status = L10n.Instance.HelmReleasesView_UninstallFailed.CurrentValue()!;
         }
     }
 
@@ -375,15 +375,15 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
             .Spacing(8)
             .Children(
                 new TextBlock().Text(string.Format(
-                    Assets.Resources.HelmReleasesView_RollbackDialog_Content!,
+                    L10n.Instance.HelmReleasesView_RollbackDialog_Content.CurrentValue()!,
                     release.Name,
                     release.Namespace)),
-                new TextBlock().Text(Assets.Resources.HelmReleasesView_RollbackRevision),
+                new TextBlock().Text(L10n.Instance.HelmReleasesView_RollbackRevision.ToBinding()),
                 new NumericUpDown()
                     .Minimum(0)
                     .Maximum(maximumRevision)
                     .Value(viewModel, x => x.Revision, BindingMode.TwoWay),
-                new TextBlock().Text(Assets.Resources.HelmReleasesView_HistoryLabel).FontWeight(FontWeight.Bold),
+                new TextBlock().Text(L10n.Instance.HelmReleasesView_HistoryLabel.ToBinding()).FontWeight(FontWeight.Bold),
                 new ScrollViewer()
                     .MaxHeight(200)
                     .Content(new StackPanel().Spacing(2).Children(historyItems)));
@@ -394,11 +394,11 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
             .Spacing(8)
             .Children(
                 new TextBlock().Text(string.Format(
-                    Assets.Resources.HelmReleasesView_UninstallContent!,
+                    L10n.Instance.HelmReleasesView_UninstallContent.CurrentValue()!,
                     release.Name,
                     release.Namespace)),
                 new CheckBox()
-                    .Content(Assets.Resources.HelmReleasesView_Wait)
+                    .Content(L10n.Instance.HelmReleasesView_Wait.ToBinding())
                     .IsChecked(viewModel, x => x.WaitForAction, BindingMode.TwoWay));
 
     private static DynamicTableViewColumn<HelmRelease> CreateColumn<TValue>(
@@ -417,7 +417,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
     private static DynamicTableViewColumn<HelmRelease> CreateUpdatedColumn(IUiRefreshClock? refreshClock)
     {
         var column = DynamicTableViewColumn<HelmRelease>.Create(
-            "updated", Assets.Resources.HelmReleasesView_Updated!, static release => release.Updated);
+            "updated", L10n.Instance.HelmReleasesView_Updated.CurrentValue()!, static release => release.Updated);
         column.WidthMode = DynamicTableViewWidthMode.Star;
         column.Width = 1;
         column.CellTemplate = new FuncDataTemplate<HelmRelease>(

@@ -17,19 +17,19 @@ public sealed partial class ServiceMapNodePropertiesViewModel : ViewModelBase
         get
         {
             if (Node is not { } node || node.AccessPoints.Count == 0)
-                return Assets.Resources.ServiceMapNodePropertiesView_NoAccessPoints!;
+                return L10n.Instance.ServiceMapNodePropertiesView_NoAccessPoints.CurrentValue()!;
 
             return string.Join(
                 Environment.NewLine,
                 node.AccessPoints.Select(accessPoint => string.Format(
                     CultureInfo.CurrentCulture,
-                    Assets.Resources.ServiceMapNodePropertiesView_AccessPointFormat!,
+                    L10n.Instance.ServiceMapNodePropertiesView_AccessPointFormat.CurrentValue()!,
                     accessPoint.Protocol,
                     accessPoint.Port,
                     accessPoint.FlowCount,
                     accessPoint.DeniedCount,
                     accessPoint.ApplicationProtocols.Count == 0
-                        ? Assets.Resources.ServiceMapNodePropertiesView_NoApplicationProtocols
+                        ? L10n.Instance.ServiceMapNodePropertiesView_NoApplicationProtocols.CurrentValue()!
                         : string.Join(", ", accessPoint.ApplicationProtocols))));
         }
     }
@@ -37,7 +37,7 @@ public sealed partial class ServiceMapNodePropertiesViewModel : ViewModelBase
     public ServiceMapNodePropertiesViewModel()
     {
         Id = nameof(ServiceMapNodePropertiesViewModel);
-        Title = Assets.Resources.ServiceMapNodePropertiesView_Title!;
+        Title = L10n.Instance.ServiceMapNodePropertiesView_Title.CurrentValue()!;
         CanFloat = false;
         CanDockAsDocument = false;
     }
@@ -50,7 +50,7 @@ public sealed partial class ServiceMapNodePropertiesViewModel : ViewModelBase
         Node = node;
         Title = string.Format(
             CultureInfo.CurrentCulture,
-            Assets.Resources.ServiceMapNodePropertiesView_TitleFormat!,
+            L10n.Instance.ServiceMapNodePropertiesView_TitleFormat.CurrentValue()!,
             node.Name);
         OnPropertyChanged(nameof(AccessPoints));
     }

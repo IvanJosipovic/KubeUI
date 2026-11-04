@@ -27,19 +27,19 @@ public partial class PodContainerCellView : ViewBase<V1Pod>
                     {
                         new()
                         {
-                            Name = Assets.Resources.PodContainerCell_Stopped,
+                            Name = L10n.Instance.PodContainerCell_Stopped.CurrentValue()!,
                             Started = false,
                             Ready = false,
                         },
                         new()
                         {
-                            Name = Assets.Resources.PodContainerCell_Starting,
+                            Name = L10n.Instance.PodContainerCell_Starting.CurrentValue()!,
                             Started = true,
                             Ready = false,
                         },
                         new()
                         {
-                            Name = Assets.Resources.PodContainerCell_Ready,
+                            Name = L10n.Instance.PodContainerCell_Ready.CurrentValue()!,
                             Started = true,
                             Ready = true,
                         },
@@ -48,19 +48,19 @@ public partial class PodContainerCellView : ViewBase<V1Pod>
                     {
                         new()
                         {
-                            Name = Assets.Resources.PodContainerCell_InitStopped,
+                            Name = L10n.Instance.PodContainerCell_InitStopped.CurrentValue()!,
                             Started = false,
                             Ready = false,
                         },
                         new()
                         {
-                            Name = Assets.Resources.PodContainerCell_InitStarting,
+                            Name = L10n.Instance.PodContainerCell_InitStarting.CurrentValue()!,
                             Started = true,
                             Ready = false,
                         },
                         new()
                         {
-                            Name = Assets.Resources.PodContainerCell_InitReady,
+                            Name = L10n.Instance.PodContainerCell_InitReady.CurrentValue()!,
                             Started = true,
                             Ready = true,
                         },
@@ -97,15 +97,15 @@ public partial class PodContainerCellView : ViewBase<V1Pod>
                         new StackPanel()
                             .Children(
                                 new TextBlock()
-                                    .Text(string.Format(Assets.Resources.PodContainerCell_NameFormat, vm.Name)),
+                                    .Text(string.Format(L10n.Instance.PodContainerCell_NameFormat.CurrentValue()!, vm.Name)),
                                 new TextBlock()
-                                    .Text(string.Format(Assets.Resources.PodContainerCell_TypeFormat, vm.Type)),
+                                    .Text(string.Format(L10n.Instance.PodContainerCell_TypeFormat.CurrentValue()!, vm.Type)),
                                 new TextBlock()
-                                    .Text(string.Format(Assets.Resources.PodContainerCell_StatusFormat, vm.Status)),
+                                    .Text(string.Format(L10n.Instance.PodContainerCell_StatusFormat.CurrentValue()!, vm.Status)),
                                 new TextBlock()
-                                    .Text(string.Format(Assets.Resources.PodContainerCell_RestartsFormat, vm.Restarts)),
+                                    .Text(string.Format(L10n.Instance.PodContainerCell_RestartsFormat.CurrentValue()!, vm.Restarts)),
                                 new TextBlock()
-                                    .Text(string.Format(Assets.Resources.PodContainerCell_ImageFormat, vm.Image))))));
+                                    .Text(string.Format(L10n.Instance.PodContainerCell_ImageFormat.CurrentValue()!, vm.Image))))));
     }
 
     protected override void OnDataContextChanged(EventArgs e)

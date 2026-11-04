@@ -27,53 +27,53 @@ public sealed class SettingsView() : KubeUIView<SettingsViewModel>
             .Content(
                 new StackPanel()
                     .Children(
-                        CreateHeading(Assets.Resources.SettingsView_ApplicationHeading!),
+                        CreateHeading(SharedL10n.Instance.SettingsView_ApplicationHeading.CurrentValue()!),
                         CreateToggleRow(
                             vm,
-                            Assets.Resources.SettingsView_Logging_ToolTip,
-                            Assets.Resources.SettingsView_Logging_Label!,
+                            SharedL10n.Instance.SettingsView_Logging_ToolTip.CurrentValue()!,
+                            SharedL10n.Instance.SettingsView_Logging_Label.CurrentValue()!,
                             x => x.SettingsService.Settings.LoggingEnabled),
                         CreateToggleRow(
                             vm,
-                            Assets.Resources.SettingsView_Telemetry_ToolTip,
-                            Assets.Resources.SettingsView_Telemetry_Label!,
+                            SharedL10n.Instance.SettingsView_Telemetry_ToolTip.CurrentValue()!,
+                            SharedL10n.Instance.SettingsView_Telemetry_Label.CurrentValue()!,
                             x => x.SettingsService.Settings.TelemetryEnabled),
                         CreateToggleRow(
                             vm,
-                            Assets.Resources.SettingsView_PreRelease_ToolTip,
-                            Assets.Resources.SettingsView_PreRelease_Label!,
+                            SharedL10n.Instance.SettingsView_PreRelease_ToolTip.CurrentValue()!,
+                            SharedL10n.Instance.SettingsView_PreRelease_Label.CurrentValue()!,
                             x => x.SettingsService.Settings.PreReleaseChannel),
 
-                        CreateHeading(Assets.Resources.SettingsView_ClustersHeading!),
+                        CreateHeading(SharedL10n.Instance.SettingsView_ClustersHeading.CurrentValue()!),
                         CreateToggleRow(
                             vm,
-                            Assets.Resources.SettingsView_AutoDiscovery_ToolTip!,
-                            Assets.Resources.SettingsView_AutoDiscovery_Label!,
+                            SharedL10n.Instance.SettingsView_AutoDiscovery_ToolTip.CurrentValue()!,
+                            SharedL10n.Instance.SettingsView_AutoDiscovery_Label.CurrentValue()!,
                             x => x.KubeConfigAutoDiscoveryEnabled),
-                        CreateHeading(Assets.Resources.SettingsView_AppearanceHeading!),
+                        CreateHeading(SharedL10n.Instance.SettingsView_AppearanceHeading.CurrentValue()!),
                         CreateThemeRow(vm),
                         CreateNumericRow(
                             vm,
-                            Assets.Resources.SettingsView_FontSize_ToolTip,
-                            Assets.Resources.SettingsView_FontSize_Label!,
+                            SharedL10n.Instance.SettingsView_FontSize_ToolTip.CurrentValue()!,
+                            SharedL10n.Instance.SettingsView_FontSize_Label.CurrentValue()!,
                             x => x.SettingsService.Appearance.FontSize,
                             AppearanceSettings.MinimumFontSize,
                             AppearanceSettings.MaximumFontSize),
                         CreateNumericRow(
                             vm,
-                            Assets.Resources.SettingsView_ConsoleFontSize_ToolTip,
-                            Assets.Resources.SettingsView_ConsoleFontSize_Label!,
+                            SharedL10n.Instance.SettingsView_ConsoleFontSize_ToolTip.CurrentValue()!,
+                            SharedL10n.Instance.SettingsView_ConsoleFontSize_Label.CurrentValue()!,
                             x => x.SettingsService.Appearance.ConsoleFontSize),
-                        CreateHeading(Assets.Resources.SettingsView_AIHeading),
+                        CreateHeading(SharedL10n.Instance.SettingsView_AIHeading.CurrentValue()!),
                         CreateToggleRow(
                             vm,
-                            Assets.Resources.SettingsView_McpEnabled_ToolTip,
-                            Assets.Resources.SettingsView_McpEnabled_Label,
+                            SharedL10n.Instance.SettingsView_McpEnabled_ToolTip.CurrentValue()!,
+                            SharedL10n.Instance.SettingsView_McpEnabled_Label.CurrentValue()!,
                             x => x.SettingsService.Settings.McpServerEnabled),
                         CreateNumericRow(
                             vm,
-                            Assets.Resources.SettingsView_McpPort_ToolTip,
-                            Assets.Resources.SettingsView_McpPort_Label,
+                            SharedL10n.Instance.SettingsView_McpPort_ToolTip.CurrentValue()!,
+                            SharedL10n.Instance.SettingsView_McpPort_Label.CurrentValue()!,
                             x => x.McpServerPort,
                             1024,
                             65535)
@@ -81,26 +81,26 @@ public sealed class SettingsView() : KubeUIView<SettingsViewModel>
                         CreateAgentRow(vm),
                         CreateMcpClientGrants(vm),
 
-                        CreateHeading(Assets.Resources.SettingsView_FeaturesHeading!),
+                        CreateHeading(SharedL10n.Instance.SettingsView_FeaturesHeading.CurrentValue()!),
                         CreateToggleRow(
                             vm,
-                            Assets.Resources.SettingsView_HelmFeature_ToolTip,
-                            Assets.Resources.SettingsView_HelmFeature_Label!,
+                            SharedL10n.Instance.SettingsView_HelmFeature_ToolTip.CurrentValue()!,
+                            SharedL10n.Instance.SettingsView_HelmFeature_Label.CurrentValue()!,
                             x => x.SettingsService.Settings.PreviewFeatures.Helm),
                         CreateToggleRow(
                             vm,
-                            Assets.Resources.SettingsView_HubbleFeature_ToolTip,
-                            Assets.Resources.SettingsView_HubbleFeature_Label!,
+                            SharedL10n.Instance.SettingsView_HubbleFeature_ToolTip.CurrentValue()!,
+                            SharedL10n.Instance.SettingsView_HubbleFeature_Label.CurrentValue()!,
                             x => x.SettingsService.Settings.PreviewFeatures.Hubble),
                         CreateToggleRow(
                             vm,
-                            Assets.Resources.SettingsView_DisableJsonSerializationReflection_ToolTip!,
-                            Assets.Resources.SettingsView_DisableJsonSerializationReflection_Label!,
+                            SharedL10n.Instance.SettingsView_DisableJsonSerializationReflection_ToolTip.CurrentValue()!,
+                            SharedL10n.Instance.SettingsView_DisableJsonSerializationReflection_Label.CurrentValue()!,
                             x => x.SettingsService.Settings.PreviewFeatures.DisableJsonSerializationReflection),
                         CreateToggleRow(
                             vm,
-                            Assets.Resources.SettingsView_DisableYamlSerializationReflection_ToolTip!,
-                            Assets.Resources.SettingsView_DisableYamlSerializationReflection_Label!,
+                            SharedL10n.Instance.SettingsView_DisableYamlSerializationReflection_ToolTip.CurrentValue()!,
+                            SharedL10n.Instance.SettingsView_DisableYamlSerializationReflection_Label.CurrentValue()!,
                             x => x.SettingsService.Settings.PreviewFeatures.DisableYamlSerializationReflection)));
     }
 
@@ -123,11 +123,11 @@ public sealed class SettingsView() : KubeUIView<SettingsViewModel>
     {
         return new Grid()
             .Cols("*,2*")
-            .ToolTip_Tip(Assets.Resources.SettingsView_Agent_ToolTip)
+            .ToolTip_Tip(SharedL10n.Instance.SettingsView_Agent_ToolTip.ToBinding())
             .IsEnabled(vm, x => x.SettingsService.Settings.McpServerEnabled)
             .Children(
                 new Label()
-                    .Content(Assets.Resources.SettingsView_Agent_Label)
+                    .Content(SharedL10n.Instance.SettingsView_Agent_Label.ToBinding())
                     .Col(0),
                 new ComboBox()
                     .ItemsSource(vm, x => x.Agents)
@@ -143,39 +143,39 @@ public sealed class SettingsView() : KubeUIView<SettingsViewModel>
             IsReadOnly = true,
             TextWrapping = TextWrapping.NoWrap
         };
-        AutomationProperties.SetName(tokenTextBox, Assets.Resources.SettingsView_McpToken_AccessibleName!);
+        AutomationProperties.SetName(tokenTextBox, SharedL10n.Instance.SettingsView_McpToken_AccessibleName.CurrentValue()!);
 
         return new ExpandableSection()
             .Margin(8, 6, 0, 0)
             .IsEnabled(vm, x => x.SettingsService.Settings.McpServerEnabled)
-            .Header(CreateHeading(Assets.Resources.SettingsView_McpClients_Heading!).Margin(0).Padding(0))
+            .Header(CreateHeading(SharedL10n.Instance.SettingsView_McpClients_Heading.CurrentValue()!).Margin(0).Padding(0))
             .IsExpanded(true)
             .Content(
                 new StackPanel()
                     .Spacing(8)
                     .Children(
                         new TextBlock()
-                            .Text(Assets.Resources.SettingsView_McpServerUnavailable!)
+                            .Text(SharedL10n.Instance.SettingsView_McpServerUnavailable.ToBinding())
                             .TextWrapping(TextWrapping.Wrap)
                             .IsVisible(vm, x => x.IsMcpServerUnavailable),
                         new StackPanel()
                             .Spacing(8)
                             .IsEnabled(vm, x => x.CanCreateExternalMcpCredential)
                             .Children(
-                                CreateMcpSubheading(Assets.Resources.SettingsView_McpClients_CreateHeading!),
+                                CreateMcpSubheading(SharedL10n.Instance.SettingsView_McpClients_CreateHeading.CurrentValue()!),
                                 new TextBlock()
-                                    .Text(Assets.Resources.SettingsView_McpClients_Description!)
+                                    .Text(SharedL10n.Instance.SettingsView_McpClients_Description.ToBinding())
                                     .TextWrapping(TextWrapping.Wrap),
                                 CreateTextEntryRow(
-                                    Assets.Resources.SettingsView_McpClientName_Label!,
+                                    SharedL10n.Instance.SettingsView_McpClientName_Label.CurrentValue()!,
                                     vm,
                                     x => x.ExternalMcpClientName,
                                     controlName: nameof(SettingsViewModel.ExternalMcpClientName),
                                     maximumLength: 80,
-                                    watermark: Assets.Resources.SettingsView_McpClientName_Watermark),
+                                    watermark: SharedL10n.Instance.SettingsView_McpClientName_Watermark.CurrentValue()!),
                                 CreateMcpClusterScopeEditor(vm),
                                 new Button()
-                                    .Content(Assets.Resources.SettingsView_McpClientCreate!)
+                                    .Content(SharedL10n.Instance.SettingsView_McpClientCreate.ToBinding())
                                     .Command(vm, x => x.CreateExternalMcpCredentialCommand)
                                     .HorizontalAlignment(HorizontalAlignment.Right),
                                 new TextBlock()
@@ -185,10 +185,10 @@ public sealed class SettingsView() : KubeUIView<SettingsViewModel>
                                 tokenTextBox
                                     .Text(vm, x => x.NewlyCreatedMcpToken, BindingMode.OneWay)
                                     .IsVisible(vm, x => x.HasNewlyCreatedMcpToken)),
-                        CreateMcpSubheading(Assets.Resources.SettingsView_McpClients_ExistingHeading!)
+                        CreateMcpSubheading(SharedL10n.Instance.SettingsView_McpClients_ExistingHeading.CurrentValue()!)
                             .Margin(0, 8, 0, 0),
                         new TextBlock()
-                            .Text(Assets.Resources.SettingsView_McpClients_Empty!)
+                            .Text(SharedL10n.Instance.SettingsView_McpClients_Empty.ToBinding())
                             .IsVisible(vm, x => x.HasNoExternalMcpGrants),
                         CreateMcpGrantList(vm)));
     }
@@ -207,9 +207,9 @@ public sealed class SettingsView() : KubeUIView<SettingsViewModel>
             .Spacing(3)
             .Children(
                 new TextBlock()
-                    .Text(Assets.Resources.SettingsView_McpClientClusters_Label!),
+                    .Text(SharedL10n.Instance.SettingsView_McpClientClusters_Label.ToBinding()),
                 new TextBlock()
-                    .Text(Assets.Resources.SettingsView_McpClientClusters_Description!)
+                    .Text(SharedL10n.Instance.SettingsView_McpClientClusters_Description.ToBinding())
                     .TextWrapping(TextWrapping.Wrap),
                 new ItemsControl()
                     .ItemsSource(vm, x => x.ExternalMcpClusterOptions)
@@ -234,7 +234,7 @@ public sealed class SettingsView() : KubeUIView<SettingsViewModel>
                     return new TextBlock();
 
                 var clusterScope = grant.AllowedClusters.Count == 0
-                    ? Assets.Resources.SettingsView_McpGrant_AllClusters
+                    ? SharedL10n.Instance.SettingsView_McpGrant_AllClusters.CurrentValue()!
                     : string.Join(", ", grant.AllowedClusters);
                 return new Grid()
                     .Cols("*,Auto")
@@ -245,7 +245,7 @@ public sealed class SettingsView() : KubeUIView<SettingsViewModel>
                             .Text($"{grant.Name} — {clusterScope}"),
                         new Button()
                             .Col(1)
-                            .Content(Assets.Resources.SettingsView_McpClientRevoke!)
+                            .Content(SharedL10n.Instance.SettingsView_McpClientRevoke.ToBinding())
                             .Command(vm, x => x.RevokeExternalMcpCredentialCommand)
                             .CommandParameter(grant));
             }));
@@ -279,20 +279,20 @@ public sealed class SettingsView() : KubeUIView<SettingsViewModel>
             .Cols("*,2*")
             .Children(
                 new Label()
-                    .Content(Assets.Resources.SettingsView_Theme)
+                    .Content(SharedL10n.Instance.SettingsView_Theme.ToBinding())
                     .Col(0),
                 new StackPanel().Children(
                     CreateThemeChoice(
                         vm,
-                        Assets.Resources.SettingsView_Theme_Default,
+                        SharedL10n.Instance.SettingsView_Theme_Default.CurrentValue()!,
                         LocalThemeVariant.Default),
                     CreateThemeChoice(
                         vm,
-                        Assets.Resources.SettingsView_Theme_Light,
+                        SharedL10n.Instance.SettingsView_Theme_Light.CurrentValue()!,
                         LocalThemeVariant.Light),
                     CreateThemeChoice(
                         vm,
-                        Assets.Resources.SettingsView_Theme_Dark,
+                        SharedL10n.Instance.SettingsView_Theme_Dark.CurrentValue()!,
                         LocalThemeVariant.Dark))
                     .Col(1));
     }

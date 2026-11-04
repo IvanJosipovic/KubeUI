@@ -225,7 +225,7 @@ internal sealed class NavigationTreeBuilder
             target,
             cluster,
             id,
-            ResourceAssets.Resources.PortForwarderListView_Title!,
+            ResourceL10n.Instance.PortForwarderListView_Title.CurrentValue()!,
             -450,
             Icon.CloudFlow,
             resource: null,

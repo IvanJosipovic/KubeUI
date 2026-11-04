@@ -38,7 +38,7 @@
     <Project Path="tests/KubeUI.Testing/KubeUI.Testing.csproj" />
   </Folder>
   <Project Path="src/KubeUI.Features.AI/KubeUI.Features.AI.csproj" />
-  <Project Path="src/KubeUI.Avalonia/KubeUI.Avalonia.csproj" />
+  <Project Path="src/KubeUI.Foundation/KubeUI.Foundation.csproj" />
   <Project Path="src/KubeUI.Desktop/KubeUI.Desktop.csproj" />
   <Project Path="src/KubeUI.Kubernetes/KubeUI.Kubernetes.csproj" />
 </Solution>

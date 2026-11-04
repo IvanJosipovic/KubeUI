@@ -12,13 +12,13 @@ public sealed class PropertiesView : ViewBase<V1ServiceAccount>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(Assets.Resources.ServiceAccountPropertiesView_Automount_Token)
+                    .Key(L10n.Instance.ServiceAccountPropertiesView_Automount_Token.CurrentValue()!)
                     .Value(vm.AutomountServiceAccountToken),
                 new PropertyItem()
-                    .Key(Assets.Resources.ServiceAccountPropertiesView_Image_Pull_Secrets)
+                    .Key(L10n.Instance.ServiceAccountPropertiesView_Image_Pull_Secrets.CurrentValue()!)
                     .Value(vm.ImagePullSecrets.Count),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Secrets)
+                    .Key(SharedL10n.Instance.Shared_Secrets.CurrentValue()!)
                     .Value(vm.Secrets.Count));
     }
 }

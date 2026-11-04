@@ -29,11 +29,11 @@ public sealed class PropertiesView : ViewBase<V1Secret>, IResourcePropertiesRefr
         return new StackPanel()
             .Children(
                 new ExpandableSection()
-                    .Header(SharedAssets.Resources.Shared_Data)
+                    .Header(SharedL10n.Instance.Shared_Data.ToBinding())
                     .IsExpanded(true)
                     .Content(_dataDisplay),
                 new ExpandableSection()
-                    .Header(Assets.Resources.SecretPropertiesView_Certificates)
+                    .Header(L10n.Instance.SecretPropertiesView_Certificates.ToBinding())
                     .IsExpanded(true)
                     .Content(_certificateItems));
     }
