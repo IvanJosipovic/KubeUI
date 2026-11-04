@@ -8,7 +8,7 @@ using Azure.ResourceManager.ContainerService.Models;
 using k8s.KubeConfigModels;
 using KubeUI.Kubernetes.Serialization;
 
-namespace KubeUI.Kubernetes;
+namespace KubeUI.Features.Azure;
 
 /// <summary>
 /// Azure SDK backed AKS discovery and credential service.
@@ -19,6 +19,8 @@ public sealed class AksClusterService : IAksClusterService
     private readonly AzureCliCredential _azureCliCredential;
     private readonly IKubernetesYamlSerializer _yamlSerializer;
 
+    /// <summary>Creates the AKS integration service using Azure CLI credentials.</summary>
+    /// <param name="yamlSerializer">Serializer used to parse kubeconfig responses.</param>
     public AksClusterService(IKubernetesYamlSerializer yamlSerializer)
         : this(new AzureCliCredential(), yamlSerializer)
     {
@@ -44,92 +46,111 @@ public sealed class AksClusterService : IAksClusterService
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<AksSubscriptionInfo>> GetSubscriptionsAsync(CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<AksSubscriptionInfo>> GetSubscriptionsAsync(CancellationToken cancellationToken = default)
     {
-        var armClient = CreateArmClient();
-        List<AksSubscriptionInfo> result = [];
-
-        var subscriptions = armClient.GetSubscriptions();
-
-        await foreach (var subscription in subscriptions.GetAllAsync(cancellationToken).ConfigureAwait(false))
+        return TranslateCredentialUnavailableAsync<IReadOnlyList<AksSubscriptionInfo>>(async () =>
         {
-            result.Add(new AksSubscriptionInfo
-            {
-                SubscriptionId = subscription.Data.SubscriptionId,
-                DisplayName = subscription.Data.DisplayName ?? subscription.Data.SubscriptionId
-            });
-        }
+            var armClient = CreateArmClient();
+            List<AksSubscriptionInfo> result = [];
 
-        return result;
+            var subscriptions = armClient.GetSubscriptions();
+
+            await foreach (var subscription in subscriptions.GetAllAsync(cancellationToken).ConfigureAwait(false))
+            {
+                result.Add(new AksSubscriptionInfo
+                {
+                    SubscriptionId = subscription.Data.SubscriptionId,
+                    DisplayName = subscription.Data.DisplayName ?? subscription.Data.SubscriptionId
+                });
+            }
+
+            return result;
+        });
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<AksClusterInfo>> GetClustersAsync(
+    public Task<IReadOnlyList<AksClusterInfo>> GetClustersAsync(
         string subscriptionId,
         CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(subscriptionId);
-
-        var armClient = CreateArmClient();
-        var subscription = armClient.GetSubscriptionResource(new ResourceIdentifier($"/subscriptions/{subscriptionId}"));
-
-        List<AksClusterInfo> result = [];
-
-        await foreach (var resourceGroup in subscription.GetResourceGroups().GetAllAsync(cancellationToken: cancellationToken).ConfigureAwait(false))
+        return TranslateCredentialUnavailableAsync<IReadOnlyList<AksClusterInfo>>(async () =>
         {
-            var clusters = resourceGroup.GetContainerServiceManagedClusters();
+            ArgumentException.ThrowIfNullOrWhiteSpace(subscriptionId);
+            var armClient = CreateArmClient();
+            var subscription = armClient.GetSubscriptionResource(new ResourceIdentifier($"/subscriptions/{subscriptionId}"));
 
-            await foreach (var cluster in clusters.GetAllAsync(cancellationToken: cancellationToken).ConfigureAwait(false))
+            List<AksClusterInfo> result = [];
+
+            await foreach (var resourceGroup in subscription.GetResourceGroups().GetAllAsync(cancellationToken: cancellationToken).ConfigureAwait(false))
             {
-                result.Add(new AksClusterInfo
-                {
-                    SubscriptionId = subscriptionId,
-                    ResourceGroupName = resourceGroup.Data.Name,
-                    Name = cluster.Data.Name,
-                    Location = cluster.Data.Location.ToString(),
-                    KubernetesVersion = cluster.Data.KubernetesVersion,
-                    Fqdn = cluster.Data.Fqdn
-                });
-            }
-        }
+                var clusters = resourceGroup.GetContainerServiceManagedClusters();
 
-        return result;
+                await foreach (var cluster in clusters.GetAllAsync(cancellationToken: cancellationToken).ConfigureAwait(false))
+                {
+                    result.Add(new AksClusterInfo
+                    {
+                        SubscriptionId = subscriptionId,
+                        ResourceGroupName = resourceGroup.Data.Name,
+                        Name = cluster.Data.Name,
+                        Location = cluster.Data.Location.ToString(),
+                        KubernetesVersion = cluster.Data.KubernetesVersion,
+                        Fqdn = cluster.Data.Fqdn
+                    });
+                }
+            }
+
+            return result;
+        });
     }
 
     /// <inheritdoc />
-    public async Task<AksClusterCredentials> GetCredentialsAsync(
+    public Task<AksClusterCredentials> GetCredentialsAsync(
         AksClusterInfo cluster,
         AksCredentialKind credentialKind = AksCredentialKind.User,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(cluster);
-
-        var armClient = CreateArmClient();
-        ResourceIdentifier clusterId = new($"/subscriptions/{cluster.SubscriptionId}/resourceGroups/{cluster.ResourceGroupName}/providers/Microsoft.ContainerService/managedClusters/{cluster.Name}");
-        var clusterResource = armClient.GetContainerServiceManagedClusterResource(clusterId);
-
-        var response = credentialKind == AksCredentialKind.Admin
-            ? await clusterResource.GetClusterAdminCredentialsAsync(cluster.Fqdn, cancellationToken).ConfigureAwait(false)
-            : await clusterResource.GetClusterUserCredentialsAsync(cluster.Fqdn, KubeConfigFormat.Exec, cancellationToken).ConfigureAwait(false);
-
-        var firstKubeConfig = response.Value.Kubeconfigs.FirstOrDefault();
-        if (firstKubeConfig?.Value == null)
+        return TranslateCredentialUnavailableAsync(async () =>
         {
-            throw new InvalidOperationException("AKS did not return any kubeconfig data.");
+            ArgumentNullException.ThrowIfNull(cluster);
+            var armClient = CreateArmClient();
+            ResourceIdentifier clusterId = new($"/subscriptions/{cluster.SubscriptionId}/resourceGroups/{cluster.ResourceGroupName}/providers/Microsoft.ContainerService/managedClusters/{cluster.Name}");
+            var clusterResource = armClient.GetContainerServiceManagedClusterResource(clusterId);
+
+            var response = credentialKind == AksCredentialKind.Admin
+                ? await clusterResource.GetClusterAdminCredentialsAsync(cluster.Fqdn, cancellationToken).ConfigureAwait(false)
+                : await clusterResource.GetClusterUserCredentialsAsync(cluster.Fqdn, KubeConfigFormat.Exec, cancellationToken).ConfigureAwait(false);
+
+            var firstKubeConfig = response.Value.Kubeconfigs.FirstOrDefault();
+            if (firstKubeConfig?.Value == null)
+            {
+                throw new InvalidOperationException("AKS did not return any kubeconfig data.");
+            }
+
+            var decodedConfig = Encoding.UTF8.GetString(firstKubeConfig.Value);
+            var kubeConfig = _yamlSerializer.Deserialize<K8SConfiguration>(decodedConfig);
+            kubeConfig.FileName = string.Empty;
+            NormalizeKubeConfigNames(kubeConfig, cluster.Name);
+
+            return new AksClusterCredentials
+            {
+                Cluster = cluster,
+                CredentialKind = credentialKind,
+                KubeConfig = kubeConfig,
+                RequiresKubelogin = credentialKind == AksCredentialKind.User
+            };
+        });
+    }
+
+    internal static async Task<T> TranslateCredentialUnavailableAsync<T>(Func<Task<T>> operation)
+    {
+        try
+        {
+            return await operation().ConfigureAwait(false);
         }
-
-        var decodedConfig = Encoding.UTF8.GetString(firstKubeConfig.Value);
-        var kubeConfig = _yamlSerializer.Deserialize<K8SConfiguration>(decodedConfig);
-        kubeConfig.FileName = string.Empty;
-        NormalizeKubeConfigNames(kubeConfig, cluster.Name);
-
-        return new AksClusterCredentials
+        catch (CredentialUnavailableException exception)
         {
-            Cluster = cluster,
-            CredentialKind = credentialKind,
-            KubeConfig = kubeConfig,
-            RequiresKubelogin = credentialKind == AksCredentialKind.User
-        };
+            throw new AzureAuthenticationUnavailableException(exception);
+        }
     }
 
     internal static void NormalizeKubeConfigNames(K8SConfiguration kubeConfig, string clusterName)

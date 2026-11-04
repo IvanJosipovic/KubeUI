@@ -1,12 +1,10 @@
 using Avalonia.Markup.Xaml.MarkupExtensions;
-using KubeUI.App.Infrastructure.DependencyInjection;
-using KubeUI.App.Infrastructure.Presentation;
-using KubeUI.App.Styles;
-using KubeUI.Kubernetes;
+using KubeUI.Controls.Converters;
+using KubeUI.Features.Azure;
 using KubeUI.Features.Clusters.Presentation;
 
 
-namespace KubeUI.App.Shell.Documents.CloudClusters.Aks;
+namespace KubeUI.Features.Clusters.Cloud.Aks;
 
 public sealed class ImportAksClusterView : KubeUIView<ImportAksClusterViewModel>
 {

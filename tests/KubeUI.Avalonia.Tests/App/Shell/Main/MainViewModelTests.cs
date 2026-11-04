@@ -8,7 +8,7 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
 using KubeUI.App.Infrastructure.DependencyInjection;
-using KubeUI.App.Shell.Documents.CloudClusters.Aks;
+using KubeUI.Features.Clusters.Cloud.Aks;
 using KubeUI.App.Shell.Documents.Updates;
 using KubeUI.App.Shell.Main;
 using Microsoft.Extensions.DependencyInjection;

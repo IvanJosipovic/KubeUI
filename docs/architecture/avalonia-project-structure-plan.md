@@ -12,7 +12,7 @@ Feature projects should use reusable controls from `KubeUI.Controls` by default.
 
 The split is implemented. `KubeUI.Avalonia` owns shared framework packages, fonts, assets, resources, typography, and the public Avalonia extension provider. `KubeUI.Controls` owns reusable UI primitives. `KubeUI.App` owns the shell, cross-feature composition, and application theme composition. Feature views, view models, services, assets, and resources live in their matching `KubeUI.Features.*` projects. `KubeUI.AI` and `KubeUI.Cilium` were renamed to `KubeUI.Features.AI` and `KubeUI.Features.Cilium`.
 
-`KubeUI.Kubernetes` remains the shared Kubernetes runtime and contracts project. Feature tests live in dedicated test projects, with common setup shared through `KubeUI.Testing` and `tests/FeatureTests.props`. `KubeUI.Avalonia.Tests` retains App-shell, Controls, Desktop-startup, and cross-feature tests.
+`KubeUI.Kubernetes` remains the shared Kubernetes runtime and contracts project. Azure authentication and management-plane integrations live in `KubeUI.Features.Azure`; cluster-management UI and AKS import workflow live in `KubeUI.Features.Clusters`. Feature tests live in dedicated test projects, with common setup shared through `KubeUI.Testing` and `tests/FeatureTests.props`. `KubeUI.Avalonia.Tests` retains App-shell, Controls, Desktop-startup, and cross-feature tests.
 
 ## Target projects
 
@@ -22,6 +22,7 @@ src/
 ├── KubeUI.Avalonia/                # Avalonia foundation, fonts, assets, typography
 ├── KubeUI.Controls/                # Reusable controls and shared UI contracts
 ├── KubeUI.Features.AI/             # AI runtime, views, view models, local controls
+├── KubeUI.Features.Azure/          # Azure authentication and management-plane integrations
 ├── KubeUI.Features.Cilium/         # Cilium runtime, views, view models, local controls
 ├── KubeUI.Features.Clusters/       # Cluster workspace and cluster management UI
 ├── KubeUI.Features.Crossplane/     # Crossplane feature
@@ -39,6 +40,7 @@ flowchart BT
     Foundation["KubeUI.Avalonia<br/>fonts, assets, typography, public framework extensions"]
     Controls["KubeUI.Controls<br/>reusable shared controls"]
     AI["KubeUI.Features.AI"]
+    Azure["KubeUI.Features.Azure"]
     Cilium["KubeUI.Features.Cilium"]
     Clusters["KubeUI.Features.Clusters"]
     Crossplane["KubeUI.Features.Crossplane"]
@@ -50,6 +52,7 @@ flowchart BT
     Desktop --> App
     App --> Kubernetes
     App --> AI
+    App --> Azure
     App --> Cilium
     App --> Clusters
     App --> Crossplane
@@ -73,6 +76,8 @@ flowchart BT
     Resources --> Clusters
     Resources --> AI
     Clusters --> Controls
+    Clusters --> Azure
+    Azure --> Kubernetes
     AI -.->|when needed| Kubernetes
     Cilium -.->|when needed| Kubernetes
     Clusters -.->|when needed| Kubernetes
@@ -83,7 +88,7 @@ flowchart BT
     Controls --> Foundation
 ```
 
-`KubeUI.Avalonia` must not reference feature projects. `KubeUI.Controls` is the only project allowed to reference the foundation. App and feature projects do not add a project reference to the foundation; they keep direct NuGet references to Avalonia APIs and generators they compile against. Desktop references App only; App owns the Kubernetes runtime reference. Feature projects may reference `KubeUI.Kubernetes` when they use its runtime or contracts. A feature may reference another feature when it consumes an owned capability; keep those edges minimal and acyclic. `KubeUI.Features.Clusters` owns cluster-workspace contracts, and `KubeUI.Features.Resources` depends on Clusters to implement resource configuration. Clusters must not reference Resources.
+`KubeUI.Avalonia` must not reference feature projects. `KubeUI.Controls` is the only project allowed to reference the foundation. App and feature projects do not add a project reference to the foundation; they keep direct NuGet references to Avalonia APIs and generators they compile against. Desktop references App only; App owns Kubernetes and feature composition. Feature projects may reference `KubeUI.Kubernetes` when they use its runtime or contracts. A feature may reference another feature when it consumes an owned capability; keep those edges minimal and acyclic. `KubeUI.Features.Azure` owns Azure SDK integrations and depends on Kubernetes serialization contracts; Clusters owns the AKS import workflow and consumes Azure services. `KubeUI.Features.Clusters` owns cluster-workspace contracts, and `KubeUI.Features.Resources` depends on Clusters to implement resource configuration. Clusters must not reference Resources.
 
 ## Namespace conventions
 
@@ -115,6 +120,13 @@ Keep shared controls under `KubeUI.Controls.*`, foundation APIs under `KubeUI.Av
 - Reference `KubeUI.Avalonia`.
 - Do not reference feature projects or feature-specific packages.
 - Prefer concrete reusable behavior over wrappers that only rename Avalonia controls.
+
+### `KubeUI.Features.Azure`
+
+- Own Azure-specific authentication, management-plane integrations, and Azure service contracts.
+- Keep Azure SDK packages out of `KubeUI.Kubernetes`.
+- Keep cluster-management screens and workflows in `KubeUI.Features.Clusters`.
+- Depend on Kubernetes serialization/runtime contracts only where required.
 
 ### Feature projects
 
@@ -193,7 +205,7 @@ When assets move, update `avares://` assembly URIs and resource registration. Mo
 5. [x] Keep the shell and cross-feature UI composition in `KubeUI.App`; keep `KubeUI.Desktop` focused on the executable host and desktop output.
 6. [x] Update solution references, namespaces, asset URIs, and resource ownership. Remove duplicate package references and keep feature dependencies acyclic.
 7. [x] Split feature tests into matching test projects; keep common setup in `KubeUI.Testing` and `FeatureTests.props`, and App-shell/cross-feature tests in `KubeUI.Avalonia.Tests`.
-8. [x] Verify full solution Debug and Release builds, a Linux x64 Release desktop publish with trimming, and the full MTP suite (1,589 passed, 10 skipped).
+8. [x] Verify full solution Debug and Release builds, a Linux x64 Release desktop publish with trimming, and the full MTP suite (1,592 passed, 10 skipped).
 
 ## Completion checks
 
@@ -202,6 +214,7 @@ When assets move, update `avares://` assembly URIs and resource registration. Mo
 - Shared controls are consumed by feature projects; feature-only controls remain local.
 - Each feature has one `KubeUI.Features.*` project containing its feature code and UI.
 - `KubeUI.App` owns the main UI shell; `KubeUI.Desktop` owns desktop output and platform startup.
+- Azure SDK integrations live in `KubeUI.Features.Azure`; AKS import UI and workflow live in `KubeUI.Features.Clusters`.
 - Each Avalonia framework extension has one public provider; each external control assembly has one public generation owner.
 - Feature tests use dedicated test projects; shared Avalonia shell and cross-feature tests remain in `KubeUI.Avalonia.Tests`.
-- The full solution Debug and Release builds, Linux x64 Release trimmed publish, and local MTP suite pass (1,589 passed, 10 skipped).
+- The full solution Debug and Release builds, Linux x64 Release trimmed publish, and local MTP suite pass (1,592 passed, 10 skipped).

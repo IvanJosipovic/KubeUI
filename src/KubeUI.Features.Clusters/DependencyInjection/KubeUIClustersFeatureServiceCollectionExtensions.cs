@@ -1,3 +1,4 @@
+using KubeUI.Features.Clusters.Cloud.Aks;
 using KubeUI.Features.Clusters.Catalog;
 using KubeUI.Features.Clusters.Error;
 using KubeUI.Features.Clusters.Settings;
@@ -13,6 +14,8 @@ public static class KubeUIClustersFeatureServiceCollectionExtensions
 
         services.AddSingleton<ClusterWorkspacePreferences>();
         services.AddSingleton<ClusterWorkspaceCatalog>();
+        services.AddTransient<ImportAksClusterView>();
+        services.AddTransient<ImportAksClusterViewModel>();
         services.AddTransient<ClusterListView>();
         services.AddTransient<ClusterListViewModel>();
         services.AddTransient<ClusterErrorView>();

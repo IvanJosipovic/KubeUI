@@ -53,6 +53,7 @@
     <ProjectReference Include="..\KubeUI.Kubernetes\KubeUI.Kubernetes.csproj" />
     <ProjectReference Include="..\KubeUI.Controls\KubeUI.Controls.csproj" />
     <ProjectReference Include="..\KubeUI.Features.AI\KubeUI.Features.AI.csproj" />
+    <ProjectReference Include="..\KubeUI.Features.Azure\KubeUI.Features.Azure.csproj" />
     <ProjectReference Include="..\KubeUI.Features.Clusters\KubeUI.Features.Clusters.csproj" />
     <ProjectReference Include="..\KubeUI.Features.Resources\KubeUI.Features.Resources.csproj" />
     <ProjectReference Include="..\KubeUI.Features.Cilium\KubeUI.Features.Cilium.csproj" />

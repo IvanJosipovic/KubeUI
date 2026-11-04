@@ -32,6 +32,7 @@
     <InternalsVisibleTo Include="KubeUI.Features.Crossplane.Tests" />
     <ProjectCapability Include="Avalonia" />
     <ProjectReference Include="..\KubeUI.Controls\KubeUI.Controls.csproj" />
+    <ProjectReference Include="..\KubeUI.Features.Azure\KubeUI.Features.Azure.csproj" />
     <ProjectReference Include="..\KubeUI.Kubernetes\KubeUI.Kubernetes.csproj" />
   </ItemGroup>
 

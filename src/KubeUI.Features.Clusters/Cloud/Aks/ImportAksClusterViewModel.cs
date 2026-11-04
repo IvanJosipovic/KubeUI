@@ -1,8 +1,7 @@
-using Azure.Identity;
-using KubeUI.App.Infrastructure.Presentation;
+using KubeUI.Features.Azure;
 using KubeUI.Kubernetes;
 
-namespace KubeUI.App.Shell.Documents.CloudClusters.Aks;
+namespace KubeUI.Features.Clusters.Cloud.Aks;
 
 public sealed partial class ImportAksClusterViewModel : ViewModelBase
 {
@@ -127,7 +126,7 @@ public sealed partial class ImportAksClusterViewModel : ViewModelBase
                 StatusMessage = Assets.Resources.ImportAksClusterView_NoSubscriptions;
             }
         }
-        catch (CredentialUnavailableException ex)
+        catch (AzureAuthenticationUnavailableException ex)
         {
             _logger.LogInformation(ex, "AKS subscription discovery is unavailable because Azure CLI is not signed in.");
             StatusMessage = Assets.Resources.ImportAksClusterView_NoSubscriptions;
@@ -164,7 +163,7 @@ public sealed partial class ImportAksClusterViewModel : ViewModelBase
                 SelectedCluster = Clusters.FirstOrDefault();
             });
         }
-        catch (CredentialUnavailableException ex)
+        catch (AzureAuthenticationUnavailableException ex)
         {
             _logger.LogInformation(ex, "AKS cluster discovery is unavailable because Azure CLI is not signed in.");
             StatusMessage = Assets.Resources.ImportAksClusterView_NoSubscriptions;

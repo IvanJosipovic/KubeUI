@@ -1,6 +1,6 @@
 using k8s.KubeConfigModels;
 
-namespace KubeUI.Kubernetes;
+namespace KubeUI.Features.Azure;
 
 /// <summary>
 /// Describes an Azure Kubernetes Service subscription that can contain one or more clusters.

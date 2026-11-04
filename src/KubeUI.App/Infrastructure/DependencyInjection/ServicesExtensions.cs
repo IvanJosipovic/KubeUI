@@ -2,9 +2,11 @@ using Avalonia.Controls.Templates;
 using Avalonia.Logging;
 using KubeUI.Features.AI.Chat;
 using KubeUI.Features.AI.DependencyInjection;
+using KubeUI.Features.Azure.DependencyInjection;
 using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Features.Cilium;
 using KubeUI.Features.Clusters.Catalog;
+using KubeUI.Features.Clusters.Cloud.Aks;
 using KubeUI.Features.Clusters.DependencyInjection;
 using KubeUI.Features.Clusters.Error;
 using KubeUI.Features.Clusters.Settings;
@@ -72,6 +74,7 @@ public static partial class KubeUIShellServiceCollectionExtensions
             CreateViewFactory<ClusterListView>(),
             CreateViewFactory<ClusterErrorView>(),
             CreateViewFactory<ClusterSettingsView>(),
+            CreateViewFactory<ImportAksClusterView>(),
             CreateViewFactory<FlowListView>(),
             CreateViewFactory<ServiceMapView>(),
             CreateViewFactory<ServiceMapNodePropertiesView>(),
@@ -109,6 +112,7 @@ public static partial class KubeUIShellServiceCollectionExtensions
         services.AddTransient<Func<ResourceYamlViewModel>>(sp => () => sp.GetRequiredService<ResourceYamlViewModel>());
         services.AddSingleton<NavigationSectionCatalog>();
         services.AddKubeUIAIFeature();
+        services.AddKubeUIAzureFeature();
         services.AddKubeUIClustersFeature();
         services.AddKubeUICrossplaneFeature();
         services.AddKubeUIGatewayApiFeature();

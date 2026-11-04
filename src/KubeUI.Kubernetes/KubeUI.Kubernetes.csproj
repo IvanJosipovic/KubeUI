@@ -27,9 +27,6 @@
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" PrivateAssets="all" />
-    <PackageReference Include="Azure.Identity" />
-    <PackageReference Include="Azure.ResourceManager" />
-    <PackageReference Include="Azure.ResourceManager.ContainerService" />
     <PackageReference Include="DynamicData" />
     <PackageReference Include="Humanizer.Core" />
     <PackageReference Include="KubernetesClient" />

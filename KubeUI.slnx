@@ -15,6 +15,7 @@
   <Folder Name="/src/">
     <Project Path="src/KubeUI.App/KubeUI.App.csproj" />
     <Project Path="src/KubeUI.Features.Cilium/KubeUI.Features.Cilium.csproj" />
+    <Project Path="src/KubeUI.Features.Azure/KubeUI.Features.Azure.csproj" />
     <Project Path="src/KubeUI.Features.Clusters/KubeUI.Features.Clusters.csproj" />
     <Project Path="src/KubeUI.Features.Crossplane/KubeUI.Features.Crossplane.csproj" />
     <Project Path="src/KubeUI.Features.GatewayApi/KubeUI.Features.GatewayApi.csproj" />
@@ -25,6 +26,7 @@
   <Folder Name="/Tests/">
     <Project Path="tests/KubeUI.Avalonia.Tests/KubeUI.Avalonia.Tests.csproj" />
     <Project Path="tests/KubeUI.Features.AI.Tests/KubeUI.Features.AI.Tests.csproj" />
+    <Project Path="tests/KubeUI.Features.Azure.Tests/KubeUI.Features.Azure.Tests.csproj" />
     <Project Path="tests/KubeUI.Features.Cilium.Tests/KubeUI.Features.Cilium.Tests.csproj" />
     <Project Path="tests/KubeUI.Features.Clusters.Tests/KubeUI.Features.Clusters.Tests.csproj" />
     <Project Path="tests/KubeUI.Features.Crossplane.Tests/KubeUI.Features.Crossplane.Tests.csproj" />

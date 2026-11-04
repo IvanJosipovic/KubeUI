@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
+    <PackageReference Include="Microsoft.Testing.Extensions.CrashDump" />
+    <PackageReference Include="Microsoft.Testing.Extensions.HangDump" />
+    <PackageReference Include="xunit.v3.mtp-v2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\KubeUI.Features.Azure\KubeUI.Features.Azure.csproj" />
+    <ProjectReference Include="..\KubeUI.Testing\KubeUI.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="KubeUI.Features.Azure" />
+    <Using Include="Shouldly" />
+  </ItemGroup>
+</Project>

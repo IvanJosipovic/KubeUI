@@ -231,4 +231,72 @@
   <data name="ClusterListView_InvalidKubeConfig" xml:space="preserve">
     <value>"{0}" is not a kubeconfig file with at least one context.</value>
   </data>
+  <data name="ImportAksClusterView_Title" xml:space="preserve">
+    <value>Import AKS Cluster</value>
+    <comment/>
+  </data>
+  <data name="ImportAksClusterView_Description" xml:space="preserve">
+    <value>Select a subscription, choose an AKS cluster, and import its kubeconfig into KubeUI.</value>
+    <comment/>
+  </data>
+  <data name="ImportAksClusterView_Prerequisites" xml:space="preserve">
+    <value>Azure CLI must be installed and signed in and run az aks install-cli to install the Kubernetes tools.</value>
+    <comment/>
+  </data>
+  <data name="ImportAksClusterView_Subscription" xml:space="preserve">
+    <value>Subscription</value>
+    <comment/>
+  </data>
+  <data name="ImportAksClusterView_Tenant" xml:space="preserve">
+    <value>Tenant</value>
+    <comment/>
+  </data>
+  <data name="ImportAksClusterView_TenantId" xml:space="preserve">
+    <value>Tenant Id</value>
+    <comment/>
+  </data>
+  <data name="ImportAksClusterView_Cluster" xml:space="preserve">
+    <value>Cluster</value>
+    <comment/>
+  </data>
+  <data name="ImportAksClusterView_Refresh" xml:space="preserve">
+    <value>Refresh</value>
+    <comment/>
+  </data>
+  <data name="ImportAksClusterView_Import" xml:space="preserve">
+    <value>Import</value>
+    <comment/>
+  </data>
+  <data name="ImportAksClusterView_Importing" xml:space="preserve">
+    <value>Importing AKS cluster...</value>
+    <comment/>
+  </data>
+  <data name="ImportAksClusterView_Imported" xml:space="preserve">
+    <value>Imported {0}.</value>
+    <comment/>
+  </data>
+  <data name="ImportAksClusterView_ResourceGroupFormat" xml:space="preserve">
+    <value>Resource group: {0}</value>
+    <comment/>
+  </data>
+  <data name="ImportAksClusterView_VersionFormat" xml:space="preserve">
+    <value>Kubernetes version: {0}</value>
+    <comment/>
+  </data>
+  <data name="ImportAksClusterView_NoSubscriptions" xml:space="preserve">
+    <value>No Azure subscriptions were found. Sign in to Azure and refresh.</value>
+    <comment/>
+  </data>
+  <data name="ImportAksClusterView_AzureCliSignedIn" xml:space="preserve">
+    <value>Azure CLI is signed in.</value>
+    <comment/>
+  </data>
+  <data name="ImportAksClusterView_AzureCliNotSignedIn" xml:space="preserve">
+    <value>Azure CLI is not signed in.</value>
+    <comment/>
+  </data>
+  <data name="ImportAksClusterView_AccountFormat" xml:space="preserve">
+    <value>Account: {0} ({1})</value>
+    <comment/>
+  </data>
 </root>
