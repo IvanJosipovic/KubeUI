@@ -75,7 +75,7 @@ public sealed class NavigationSectionTests
             CreateBuilder(catalog).Reconcile(node);
             node.NavigationItems.Any(item => item.Id == $"{workspace.Runtime.Name}-section-helm").ShouldBe(expectedHelm);
             var cilium = node.NavigationItems.SingleOrDefault(item => item.Id == $"{workspace.Runtime.Name}-section-cilium");
-            (cilium?.NavigationItems.Any(item => item.Name == CiliumL10n.Instance.Hubble_GroupName.CurrentValue()) ?? false).ShouldBe(expectedHubble);
+            (cilium?.NavigationItems.Any(item => item.Name == CiliumL10n.Instance.HubbleNavigationSectionProvider_GroupName.CurrentValue()) ?? false).ShouldBe(expectedHubble);
         }
     }
 
@@ -133,8 +133,8 @@ public sealed class NavigationSectionTests
         builder.Reconcile(node);
 
         var cilium = node.NavigationItems.Single(item => item.Id == $"{workspace.Runtime.Name}-section-cilium");
-        cilium.Name.ShouldBe(CiliumL10n.Instance.NavigationView_Cilium.CurrentValue());
-        var hubble = cilium.NavigationItems.Single(item => item.Name == CiliumL10n.Instance.Hubble_GroupName.CurrentValue());
+        cilium.Name.ShouldBe(CiliumL10n.Instance.HubbleNavigationSectionProvider_SectionTitle.CurrentValue());
+        var hubble = cilium.NavigationItems.Single(item => item.Name == CiliumL10n.Instance.HubbleNavigationSectionProvider_GroupName.CurrentValue());
         hubble.NavigationItems.OfType<NavigationLink>().Select(link => link.DocumentId).OrderBy(id => id)
             .ShouldBe(new[] { HubbleNavigationSectionProvider.FlowsDocumentId, HubbleNavigationSectionProvider.ServiceMapDocumentId }.OrderBy(id => id));
     }
@@ -166,10 +166,10 @@ public sealed class NavigationSectionTests
         builder.Reconcile(node);
 
         var cilium = node.NavigationItems.Single(item => item.Id == $"{workspace.Runtime.Name}-section-cilium");
-        cilium.Name.ShouldBe(CiliumL10n.Instance.NavigationView_Cilium.CurrentValue());
+        cilium.Name.ShouldBe(CiliumL10n.Instance.HubbleNavigationSectionProvider_SectionTitle.CurrentValue());
         cilium.SvgIcon.ShouldBe(HubbleNavigationSectionProvider.CiliumIconAssetPath);
         cilium.SvgIconDark.ShouldBe(HubbleNavigationSectionProvider.CiliumIconDarkAssetPath);
-        var hubble = cilium.NavigationItems.Single(item => item.Name == CiliumL10n.Instance.Hubble_GroupName.CurrentValue());
+        var hubble = cilium.NavigationItems.Single(item => item.Name == CiliumL10n.Instance.HubbleNavigationSectionProvider_GroupName.CurrentValue());
         hubble.SvgIcon.ShouldBe(HubbleNavigationSectionProvider.HubbleIconAssetPath);
         hubble.SvgIconDark.ShouldBe(HubbleNavigationSectionProvider.HubbleIconDarkAssetPath);
         hubble.NavigationItems.OfType<NavigationLink>().Select(link => link.DocumentId).OrderBy(id => id)

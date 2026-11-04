@@ -2,7 +2,7 @@
 
 **Status:** Implemented (Phases 0–3; Phases 4–5 deferred)
 **Decisions:** Migrate call sites to Lingua observables; defer the POC hot-reload handler; invariant culture only for now.
-**Progress:** All eight resource-owning projects are on `Assets/Resources.json` behind per-project Lingua managers. No `.resx` remains under `src/`; the JSON contract test enforces flat-string files, key naming, and the no-resx invariant. `KubeUI.Avalonia` was renamed to `KubeUI.Foundation` while scaffolding, to remove the namespace collision with the global `Avalonia` namespace that broke XML doc crefs in every `KubeUI.*` namespace.
+**Progress:** All nine resource-owning projects (including `KubeUI.App`) are on `Assets/Resources.json` behind per-project Lingua managers. No `.resx` remains under `src/`; the JSON contract test enforces flat-string files, key naming, owner-prefix typing, JSON placement, and the no-resx invariant. `KubeUI.Avalonia` was renamed to `KubeUI.Foundation` while scaffolding, to remove the namespace collision with the global `Avalonia` namespace that broke XML doc crefs in every `KubeUI.*` namespace. App-shell view keys moved from the Foundation JSON into `KubeUI.App/Assets/Resources.json` behind `KubeUI.App.Assets.LanguageManager`; see [user-text-and-key-naming-plan.md](user-text-and-key-naming-plan.md).
 
 ## As-built notes (deviations from the original plan)
 

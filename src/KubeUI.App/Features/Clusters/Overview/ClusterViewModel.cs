@@ -18,7 +18,7 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
     public ClusterViewModel(
         ResourceListViewModel<Corev1Event> eventsVm)
     {
-        Title = SharedL10n.Instance.ClusterView_Title.CurrentValue()!;
+        Title = L10n.Instance.ClusterView_Title.CurrentValue()!;
         EventsVM = eventsVm;
     }
 

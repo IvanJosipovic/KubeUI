@@ -42,10 +42,10 @@ public sealed class PodStatusCellTests
             window.Show();
             await TestApplicationExtensions.WaitForUiAsync();
 
-            cell.Text.ShouldBe(ResourceL10n.Instance.PodStatusCell_Running.CurrentValue()!);
+            cell.Text.ShouldBe(ResourceL10n.Instance.PodStatusCellView_Running.CurrentValue()!);
             cell.DataContext = terminatingPod;
             await TestApplicationExtensions.WaitForUiAsync();
-            cell.Text.ShouldBe(ResourceL10n.Instance.PodStatusCell_Terminating.CurrentValue()!);
+            cell.Text.ShouldBe(ResourceL10n.Instance.PodStatusCellView_Terminating.CurrentValue()!);
         }
         finally
         {
@@ -76,7 +76,7 @@ public sealed class PodStatusCellTests
         {
             window.Show();
             await TestApplicationExtensions.WaitForUiAsync();
-            cell.Text.ShouldBe(ResourceL10n.Instance.PodStatusCell_Terminating.CurrentValue()!);
+            cell.Text.ShouldBe(ResourceL10n.Instance.PodStatusCellView_Terminating.CurrentValue()!);
 
             cell.DataContext = new V1Pod
             {
@@ -88,7 +88,7 @@ public sealed class PodStatusCellTests
             };
             await TestApplicationExtensions.WaitForUiAsync();
 
-            cell.Text.ShouldBe(ResourceL10n.Instance.PodStatusCell_Running.CurrentValue()!);
+            cell.Text.ShouldBe(ResourceL10n.Instance.PodStatusCellView_Running.CurrentValue()!);
         }
         finally
         {

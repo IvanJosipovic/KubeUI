@@ -318,7 +318,7 @@ public sealed partial class MainViewModel : ViewModelBase
     {
         var files = await _platformServices.OpenFilePickerAsync(new()
         {
-            Title = SharedL10n.Instance.MainView_Menu_File_LoadKubeConfig_Open.CurrentValue()!,
+            Title = L10n.Instance.MainView_Menu_File_LoadKubeConfig_Open.CurrentValue()!,
             AllowMultiple = true,
         });
 
@@ -428,7 +428,7 @@ public sealed partial class MainViewModel : ViewModelBase
         IEnumerable<(string Version, string? Markdown)> releases)
     {
         return (
-            currentVersion ?? SharedL10n.Instance.UpdateAvailableView_CurrentVersion_Unknown.CurrentValue()!,
+            currentVersion ?? L10n.Instance.UpdateAvailableView_CurrentVersion_Unknown.CurrentValue()!,
             latestVersion,
             UpdateAvailableViewModel.CreateReleaseNotesMarkdown(
                 releases.OrderByDescending(release => SemanticVersion.Parse(release.Version))));
@@ -528,9 +528,9 @@ public sealed partial class MainViewModel : ViewModelBase
     {
         ContentDialogSettings settings = new()
         {
-            Title = SharedL10n.Instance.MainView_CheckForUpdates_NoUpdates_Title.CurrentValue()!,
-            Content = SharedL10n.Instance.MainView_CheckForUpdates_NoUpdates_Content.CurrentValue()!,
-            PrimaryButtonText = SharedL10n.Instance.MainView_CheckForUpdates_NoUpdates_Primary.CurrentValue()!,
+            Title = L10n.Instance.MainView_CheckForUpdates_NoUpdates_Title.CurrentValue()!,
+            Content = L10n.Instance.MainView_CheckForUpdates_NoUpdates_Content.CurrentValue()!,
+            PrimaryButtonText = L10n.Instance.MainView_CheckForUpdates_NoUpdates_Primary.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Primary
         };
 
@@ -548,9 +548,9 @@ public sealed partial class MainViewModel : ViewModelBase
     {
         return new ContentDialogSettings
         {
-            Title = SharedL10n.Instance.MainView_CheckForUpdates_Unavailable_Title.CurrentValue()!,
-            Content = SharedL10n.Instance.MainView_CheckForUpdates_Unavailable_Content.CurrentValue()!,
-            PrimaryButtonText = SharedL10n.Instance.MainView_CheckForUpdates_Unavailable_Primary.CurrentValue()!,
+            Title = L10n.Instance.MainView_CheckForUpdates_Unavailable_Title.CurrentValue()!,
+            Content = L10n.Instance.MainView_CheckForUpdates_Unavailable_Content.CurrentValue()!,
+            PrimaryButtonText = L10n.Instance.MainView_CheckForUpdates_Unavailable_Primary.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Primary
         };
     }

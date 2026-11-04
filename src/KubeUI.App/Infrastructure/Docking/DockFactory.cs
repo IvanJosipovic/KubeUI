@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia.Platform;
 using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
@@ -251,7 +252,7 @@ public class DockFactory : Factory
         if (window is not null)
         {
             var floatingWindowCount = _rootDock?.Windows?.Count ?? HostWindows.Count;
-            window.Title = $"KubeUI {floatingWindowCount + 2}";
+            window.Title = string.Format(CultureInfo.CurrentCulture, L10n.Instance.DockFactory_FloatingWindowTitle.CurrentValue()!, floatingWindowCount + 2);
         }
 
         return window;

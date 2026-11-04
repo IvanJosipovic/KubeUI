@@ -13,9 +13,9 @@ public sealed class LanguageManagerTests
     {
         var seen = new List<string?>();
 
-        using var subscription = LanguageManager.Instance.NavigationView_Helm.Subscribe(seen.Add);
+        using var subscription = LanguageManager.Instance.HelmNavigationSectionProvider_SectionTitle.Subscribe(seen.Add);
 
-        LanguageManager.Instance.NavigationView_Helm.CurrentValue().ShouldBe("Helm");
+        LanguageManager.Instance.HelmNavigationSectionProvider_SectionTitle.CurrentValue().ShouldBe("Helm");
         seen.ShouldNotBeEmpty();
         seen[^1].ShouldBe("Helm");
     }

@@ -48,19 +48,19 @@ public sealed class MainWindowMenuTests
 
             Describe(NativeMenu.GetMenu(window).ShouldNotBeNull(), viewModel).ShouldBe(
             [
-                SharedL10n.Instance.MainView_Menu_File.CurrentValue()!,
-                $"  {SharedL10n.Instance.MainView_Menu_File_LoadKubeConfig.CurrentValue()!} -> {nameof(viewModel.LoadKubeConfigCommand)}",
-                $"  {SharedL10n.Instance.MainView_Menu_File_ImportAksCluster.CurrentValue()!} -> {nameof(viewModel.ImportAksClusterCommand)}",
-                $"  {SharedL10n.Instance.MainView_Menu_File_Clusters.CurrentValue()!} -> {nameof(viewModel.OpenClustersCommand)}",
-                $"  {SharedL10n.Instance.MainView_Menu_File_Settings.CurrentValue()!} -> {nameof(viewModel.OpenSettingsCommand)}",
+                AppL10n.Instance.MainView_Menu_File.CurrentValue()!,
+                $"  {AppL10n.Instance.MainView_Menu_File_LoadKubeConfig.CurrentValue()!} -> {nameof(viewModel.LoadKubeConfigCommand)}",
+                $"  {AppL10n.Instance.MainView_Menu_File_ImportAksCluster.CurrentValue()!} -> {nameof(viewModel.ImportAksClusterCommand)}",
+                $"  {AppL10n.Instance.MainView_Menu_File_Clusters.CurrentValue()!} -> {nameof(viewModel.OpenClustersCommand)}",
+                $"  {AppL10n.Instance.MainView_Menu_File_Settings.CurrentValue()!} -> {nameof(viewModel.OpenSettingsCommand)}",
                 "  ---",
-                $"  {SharedL10n.Instance.MainView_Menu_File_Exit.CurrentValue()!} -> {nameof(viewModel.CloseCommand)}",
-                SharedL10n.Instance.MainView_Menu_Window.CurrentValue()!,
-                $"  {SharedL10n.Instance.MainView_Menu_Window_ResetLayout.CurrentValue()!} -> {nameof(viewModel.ResetLayoutCommand)}",
-                $"  {SharedL10n.Instance.MainView_Menu_Window_SwitchTheme.CurrentValue()!} -> {nameof(viewModel.SwitchThemeCommand)}",
-                SharedL10n.Instance.MainView_Menu_Help.CurrentValue()!,
-                $"  {SharedL10n.Instance.MainView_Menu_Help_CheckForUpdates.CurrentValue()!} -> {nameof(viewModel.CheckForUpdatesCommand)}",
-                $"  {SharedL10n.Instance.MainView_Menu_Help_About.CurrentValue()!} -> {nameof(viewModel.OpenAboutCommand)}",
+                $"  {AppL10n.Instance.MainView_Menu_File_Exit.CurrentValue()!} -> {nameof(viewModel.CloseCommand)}",
+                AppL10n.Instance.MainView_Menu_Window.CurrentValue()!,
+                $"  {AppL10n.Instance.MainView_Menu_Window_ResetLayout.CurrentValue()!} -> {nameof(viewModel.ResetLayoutCommand)}",
+                $"  {AppL10n.Instance.MainView_Menu_Window_SwitchTheme.CurrentValue()!} -> {nameof(viewModel.SwitchThemeCommand)}",
+                AppL10n.Instance.MainView_Menu_Help.CurrentValue()!,
+                $"  {AppL10n.Instance.MainView_Menu_Help_CheckForUpdates.CurrentValue()!} -> {nameof(viewModel.CheckForUpdatesCommand)}",
+                $"  {AppL10n.Instance.MainView_Menu_Help_About.CurrentValue()!} -> {nameof(viewModel.OpenAboutCommand)}",
             ]);
         }
         finally

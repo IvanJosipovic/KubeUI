@@ -411,8 +411,8 @@ public sealed class NavigationViewTests
         clusterMenu.Items.OfType<MenuItem>()
             .Select(menuItem => menuItem.Header?.ToString())
             .ShouldBe([
-                SharedL10n.Instance.NavigationView_ContextMenu_Connect.CurrentValue()!,
-                SharedL10n.Instance.NavigationView_ContextMenu_Settings.CurrentValue()!
+                AppL10n.Instance.NavigationView_ContextMenu_Connect.CurrentValue()!,
+                AppL10n.Instance.NavigationView_ContextMenu_Settings.CurrentValue()!
             ]);
         tree.SelectedItem.ShouldBeNull();
         clusterMenu.Close();
@@ -427,8 +427,8 @@ public sealed class NavigationViewTests
         podsMenu.Items.OfType<MenuItem>()
             .Select(menuItem => menuItem.Header?.ToString())
             .ShouldBe([
-                SharedL10n.Instance.NavigationView_ContextMenu_Open.CurrentValue()!,
-                SharedL10n.Instance.NavigationView_ContextMenu_OpenNewTab.CurrentValue()!
+                AppL10n.Instance.NavigationView_ContextMenu_Open.CurrentValue()!,
+                AppL10n.Instance.NavigationView_ContextMenu_OpenNewTab.CurrentValue()!
             ]);
         tree.SelectedItem.ShouldBeNull();
     }

@@ -129,7 +129,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable, INot
         IClusterRuntimeCatalog? clusterCatalog = null,
         IMcpServerState? mcpServerState = null)
     {
-        Title = SharedL10n.Instance.SettingsView_Title.CurrentValue()!;
+        Title = L10n.Instance.SettingsView_Title.CurrentValue()!;
         Id = nameof(SettingsViewModel);
 
         SettingsService = settingsService;
@@ -166,7 +166,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable, INot
 
         if (_mcpServerState?.BoundPort is null)
         {
-            McpGrantMessage = SharedL10n.Instance.SettingsView_McpServerUnavailable.CurrentValue()!;
+            McpGrantMessage = L10n.Instance.SettingsView_McpServerUnavailable.CurrentValue()!;
             return;
         }
 
@@ -179,7 +179,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable, INot
             var created = _mcpCredentialService.CreateExternalCredential(ExternalMcpClientName, clusters);
             NewlyCreatedMcpToken = created.Token;
             SelectedExternalMcpGrant = created.Grant;
-            McpGrantMessage = SharedL10n.Instance.SettingsView_McpTokenCreated.CurrentValue()!;
+            McpGrantMessage = L10n.Instance.SettingsView_McpTokenCreated.CurrentValue()!;
             OnPropertyChanged(nameof(ExternalMcpGrants));
             OnPropertyChanged(nameof(HasNoExternalMcpGrants));
             ResetExternalMcpCredentialForm();
@@ -187,12 +187,12 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable, INot
         catch (ArgumentException)
         {
             NewlyCreatedMcpToken = null;
-            McpGrantMessage = SharedL10n.Instance.SettingsView_McpTokenInvalid.CurrentValue()!;
+            McpGrantMessage = L10n.Instance.SettingsView_McpTokenInvalid.CurrentValue()!;
         }
         catch (InvalidOperationException)
         {
             NewlyCreatedMcpToken = null;
-            McpGrantMessage = SharedL10n.Instance.SettingsView_McpTokenCreateFailed.CurrentValue()!;
+            McpGrantMessage = L10n.Instance.SettingsView_McpTokenCreateFailed.CurrentValue()!;
         }
     }
 
@@ -208,7 +208,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable, INot
             {
                 SelectedExternalMcpGrant = null;
                 NewlyCreatedMcpToken = null;
-                McpGrantMessage = SharedL10n.Instance.SettingsView_McpTokenRevoked.CurrentValue()!;
+                McpGrantMessage = L10n.Instance.SettingsView_McpTokenRevoked.CurrentValue()!;
                 OnPropertyChanged(nameof(ExternalMcpGrants));
                 OnPropertyChanged(nameof(HasNoExternalMcpGrants));
                 ValidateExternalMcpClientName();
@@ -216,7 +216,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable, INot
         }
         catch (InvalidOperationException)
         {
-            McpGrantMessage = SharedL10n.Instance.SettingsView_McpTokenRevokeFailed.CurrentValue()!;
+            McpGrantMessage = L10n.Instance.SettingsView_McpTokenRevokeFailed.CurrentValue()!;
         }
     }
 
@@ -273,12 +273,12 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable, INot
     {
         var normalizedName = ExternalMcpClientName.Trim();
         _externalMcpClientNameError = string.IsNullOrWhiteSpace(ExternalMcpClientName)
-            ? SharedL10n.Instance.SettingsView_McpClientName_Required.CurrentValue()!
+            ? L10n.Instance.SettingsView_McpClientName_Required.CurrentValue()!
             : normalizedName.Length > MaximumExternalMcpClientNameLength
-                ? SharedL10n.Instance.SettingsView_McpClientName_TooLong.CurrentValue()!
+                ? L10n.Instance.SettingsView_McpClientName_TooLong.CurrentValue()!
                 : SettingsService.Settings.McpExternalClientGrants.Any(grant =>
                     string.Equals(grant.Name.Trim(), normalizedName, StringComparison.OrdinalIgnoreCase))
-                    ? SharedL10n.Instance.SettingsView_McpClientName_Duplicate.CurrentValue()!
+                    ? L10n.Instance.SettingsView_McpClientName_Duplicate.CurrentValue()!
                     : null;
         OnPropertyChanged(nameof(HasErrors));
         ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(ExternalMcpClientName)));

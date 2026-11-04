@@ -1,4 +1,4 @@
 {
-  "NavigationView_GatewayApi": "Gateway",
-  "NavigationView_GatewayApiExperimental": "Experimental"
+  "GatewayApiCustomResourceConfig_ExperimentalGroup": "Experimental",
+  "GatewayApiCustomResourceConfig_GatewayGroup": "Gateway"
 }

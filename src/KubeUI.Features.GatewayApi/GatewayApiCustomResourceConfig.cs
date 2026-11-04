@@ -32,15 +32,15 @@ internal abstract class GatewayApiCustomResourceConfig : CustomResourceConfig
                 _cachedNavigation = NavigationPlacement.InSection(
                     NavigationSectionIds.Network,
                     [
-                        new NavigationGroup("gateway", L10n.Instance.NavigationView_GatewayApi.CurrentValue()!, 0, null),
-                        new NavigationGroup("experimental", L10n.Instance.NavigationView_GatewayApiExperimental.CurrentValue()!, int.MaxValue, Icon.Beaker),
+                        new NavigationGroup("gateway", L10n.Instance.GatewayApiCustomResourceConfig_GatewayGroup.CurrentValue()!, 0, null),
+                        new NavigationGroup("experimental", L10n.Instance.GatewayApiCustomResourceConfig_ExperimentalGroup.CurrentValue()!, int.MaxValue, Icon.Beaker),
                     ]);
             }
             else
             {
                 _cachedNavigation = NavigationPlacement.InSection(
                     NavigationSectionIds.Network,
-                    [new NavigationGroup("gateway", L10n.Instance.NavigationView_GatewayApi.CurrentValue()!, 0, null)]);
+                    [new NavigationGroup("gateway", L10n.Instance.GatewayApiCustomResourceConfig_GatewayGroup.CurrentValue()!, 0, null)]);
             }
 
             return _cachedNavigation;

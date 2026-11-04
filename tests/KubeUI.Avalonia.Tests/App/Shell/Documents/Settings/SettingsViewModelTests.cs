@@ -33,7 +33,7 @@ public sealed class SettingsViewModelTests
         using var window = Application.Current.CreateTestWindow(600, 900, view);
         window.Show();
         Dispatcher.UIThread.RunJobs();
-        var toggle = FindToggleRow(view, SharedL10n.Instance.SettingsView_AutoDiscovery_Label.CurrentValue()!).Children.OfType<CheckBox>().Single();
+        var toggle = FindToggleRow(view, AppL10n.Instance.SettingsView_AutoDiscovery_Label.CurrentValue()!).Children.OfType<CheckBox>().Single();
         try
         {
             toggle.IsChecked = false;
@@ -168,9 +168,9 @@ public sealed class SettingsViewModelTests
         Dispatcher.UIThread.RunJobs();
 
         var text = view.GetVisualDescendants().OfType<TextBlock>().Select(control => control.Text).ToList();
-        text.ShouldContain(SharedL10n.Instance.SettingsView_AppearanceHeading.CurrentValue()!);
-        text.ShouldContain(SharedL10n.Instance.SettingsView_AIHeading.CurrentValue()!);
-        text.ShouldContain(SharedL10n.Instance.SettingsView_ApplicationHeading.CurrentValue()!);
+        text.ShouldContain(AppL10n.Instance.SettingsView_AppearanceHeading.CurrentValue()!);
+        text.ShouldContain(AppL10n.Instance.SettingsView_AIHeading.CurrentValue()!);
+        text.ShouldContain(AppL10n.Instance.SettingsView_ApplicationHeading.CurrentValue()!);
 
         view.GetVisualDescendants().OfType<CheckBox>().Select(checkBox => checkBox.IsChecked).ShouldContain(true);
         view.GetVisualDescendants().OfType<NumericUpDown>().Select(control => control.Value).ShouldContain(63888);
@@ -203,12 +203,12 @@ public sealed class SettingsViewModelTests
         Dispatcher.UIThread.RunJobs();
 
         view.GetVisualDescendants().OfType<TextBlock>().Select(text => text.Text)
-            .ShouldContain(SharedL10n.Instance.SettingsView_FeaturesHeading.CurrentValue()!);
+            .ShouldContain(AppL10n.Instance.SettingsView_FeaturesHeading.CurrentValue()!);
 
-        var helmRow = FindToggleRow(view, SharedL10n.Instance.SettingsView_HelmFeature_Label.CurrentValue()!);
-        var hubbleRow = FindToggleRow(view, SharedL10n.Instance.SettingsView_HubbleFeature_Label.CurrentValue()!);
-        var jsonRow = FindToggleRow(view, SharedL10n.Instance.SettingsView_DisableJsonSerializationReflection_Label.CurrentValue()!);
-        var yamlRow = FindToggleRow(view, SharedL10n.Instance.SettingsView_DisableYamlSerializationReflection_Label.CurrentValue()!);
+        var helmRow = FindToggleRow(view, AppL10n.Instance.SettingsView_HelmFeature_Label.CurrentValue()!);
+        var hubbleRow = FindToggleRow(view, AppL10n.Instance.SettingsView_HubbleFeature_Label.CurrentValue()!);
+        var jsonRow = FindToggleRow(view, AppL10n.Instance.SettingsView_DisableJsonSerializationReflection_Label.CurrentValue()!);
+        var yamlRow = FindToggleRow(view, AppL10n.Instance.SettingsView_DisableYamlSerializationReflection_Label.CurrentValue()!);
         var helm = helmRow.Children.OfType<CheckBox>().Single();
         var hubble = hubbleRow.Children.OfType<CheckBox>().Single();
         var json = jsonRow.Children.OfType<CheckBox>().Single();
@@ -266,7 +266,7 @@ public sealed class SettingsViewModelTests
 
         viewModel.ExternalMcpClusterOptions.Single(option => option.Name == "prod").IsSelected.ShouldBeTrue();
         view.GetVisualDescendants().OfType<TextBlock>().Select(textBlock => textBlock.Text)
-            .ShouldContain(SharedL10n.Instance.SettingsView_McpClients_Heading.CurrentValue()!);
+            .ShouldContain(AppL10n.Instance.SettingsView_McpClients_Heading.CurrentValue()!);
     }
 
     [Fact]
@@ -342,7 +342,7 @@ public sealed class SettingsViewModelTests
         viewModel.HasErrors.ShouldBeTrue();
         viewModel.GetErrors(nameof(SettingsViewModel.ExternalMcpClientName))
             .Cast<object>()
-            .ShouldContain(SharedL10n.Instance.SettingsView_McpClientName_TooLong.CurrentValue()!);
+            .ShouldContain(AppL10n.Instance.SettingsView_McpClientName_TooLong.CurrentValue()!);
         settingsService.Verify(service => service.TrySaveSettings(), Times.Never);
     }
 
@@ -375,7 +375,7 @@ public sealed class SettingsViewModelTests
         viewModel.CreateExternalMcpCredentialCommand.Execute(null);
 
         viewModel.NewlyCreatedMcpToken.ShouldBeNull();
-        viewModel.McpGrantMessage.ShouldBe(SharedL10n.Instance.SettingsView_McpTokenInvalid.CurrentValue()!);
+        viewModel.McpGrantMessage.ShouldBe(AppL10n.Instance.SettingsView_McpTokenInvalid.CurrentValue()!);
         settings.McpExternalClientGrants.ShouldBeEmpty();
         settingsService.Verify(service => service.TrySaveSettings(), Times.Never);
     }
@@ -422,7 +422,7 @@ public sealed class SettingsViewModelTests
         viewModel.CreateExternalMcpCredentialCommand.Execute(null);
 
         viewModel.NewlyCreatedMcpToken.ShouldBeNull();
-        viewModel.McpGrantMessage.ShouldBe(SharedL10n.Instance.SettingsView_McpTokenCreateFailed.CurrentValue()!);
+        viewModel.McpGrantMessage.ShouldBe(AppL10n.Instance.SettingsView_McpTokenCreateFailed.CurrentValue()!);
         settings.McpExternalClientGrants.ShouldBeEmpty();
     }
 
@@ -443,7 +443,7 @@ public sealed class SettingsViewModelTests
 
         viewModel.RevokeExternalMcpCredentialCommand.Execute(null);
 
-        viewModel.McpGrantMessage.ShouldBe(SharedL10n.Instance.SettingsView_McpTokenRevokeFailed.CurrentValue()!);
+        viewModel.McpGrantMessage.ShouldBe(AppL10n.Instance.SettingsView_McpTokenRevokeFailed.CurrentValue()!);
         viewModel.NewlyCreatedMcpToken.ShouldBe(token);
         settings.McpExternalClientGrants.Count.ShouldBe(1);
     }
@@ -469,7 +469,7 @@ public sealed class SettingsViewModelTests
         var clientNameBox = view.GetVisualDescendants().OfType<TextBox>()
             .Single(textBox => textBox.Name == nameof(SettingsViewModel.ExternalMcpClientName));
 
-        clientNameBox.PlaceholderText.ShouldBe(SharedL10n.Instance.SettingsView_McpClientName_Watermark.CurrentValue()!);
+        clientNameBox.PlaceholderText.ShouldBe(AppL10n.Instance.SettingsView_McpClientName_Watermark.CurrentValue()!);
     }
 
     [Fact]

@@ -20,34 +20,34 @@ public sealed class AboutView() : KubeUIView<AboutViewModel>()
                 new TextBlock()
                     .HorizontalAlignment(HorizontalAlignment.Center)
                     .FontSize(new DynamicResourceExtension(Typography.TitleFontSizeResourceKey))
-                    .Text(SharedL10n.Instance.MainWindow_Title.ToBinding()),
+                    .Text(L10n.Instance.MainWindow_Title.ToBinding()),
                 new TextBlock()
                     .HorizontalAlignment(HorizontalAlignment.Center)
-                    .Text(string.Format(SharedL10n.Instance.AboutView_Version_StringFormat.CurrentValue()!, vm.Version ?? SharedL10n.Instance.AboutView_Version_FallbackValue.CurrentValue()!)),
+                    .Text(string.Format(L10n.Instance.AboutView_Version_StringFormat.CurrentValue()!, vm.Version ?? L10n.Instance.AboutView_Version_FallbackValue.CurrentValue()!)),
                 new TextBlock()
                     .Padding(0, 15, 0, 0)
                     .HorizontalAlignment(HorizontalAlignment.Center)
-                    .Text(SharedL10n.Instance.AboutView_CreatedBy.ToBinding()),
+                    .Text(L10n.Instance.AboutView_CreatedBy.ToBinding()),
                 new StackPanel()
                     .Margin(0, 15, 0, 0)
                     .HorizontalAlignment(HorizontalAlignment.Center)
                     .Orientation(Orientation.Horizontal)
                     .Children(
                         new TextBlock()
-                            .Text(SharedL10n.Instance.AboutView_Contact.ToBinding()),
+                            .Text(L10n.Instance.AboutView_Contact.ToBinding()),
                         new HyperlinkButton()
                             .Padding(2, -2, 0, 0)
-                            .Content(SharedL10n.Instance.AboutView_ContactEmailContent.ToBinding())
-                            .NavigateUri(new Uri(SharedL10n.Instance.AboutView_ContactEmailUri.CurrentValue()!))),
+                            .Content(L10n.Instance.AboutView_ContactEmailContent.ToBinding())
+                            .NavigateUri(new Uri(L10n.Instance.AboutView_ContactEmailUri.CurrentValue()!))),
                 new StackPanel()
                     .Margin(0, 5, 0, 0)
                     .HorizontalAlignment(HorizontalAlignment.Center)
                     .Orientation(Orientation.Horizontal)
                     .Children(
                         new TextBlock()
-                            .Text(SharedL10n.Instance.AboutView_Website.ToBinding()),
+                            .Text(L10n.Instance.AboutView_Website.ToBinding()),
                         new HyperlinkButton()
                             .Padding(2, -2, 0, 0)
-                            .Content(SharedL10n.Instance.AboutView_WebsiteContent.ToBinding())
-                            .NavigateUri(new Uri(SharedL10n.Instance.AboutView_WebsiteUri.CurrentValue()!))));
+                            .Content(L10n.Instance.AboutView_WebsiteContent.ToBinding())
+                            .NavigateUri(new Uri(L10n.Instance.AboutView_WebsiteUri.CurrentValue()!))));
 }

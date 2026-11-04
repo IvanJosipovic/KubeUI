@@ -15,7 +15,7 @@ internal sealed class CrossplaneNavigationSectionProvider : INavigationSectionPr
     {
         Section = new NavigationSection(
             "crossplane",
-            L10n.Instance.NavigationView_Crossplane.CurrentValue()!,
+            L10n.Instance.CrossplaneNavigationSectionProvider_SectionTitle.CurrentValue()!,
             NavigationSectionOrder.AfterCustomResources,
             null,
             IconAssetPath,

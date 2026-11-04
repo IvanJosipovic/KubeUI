@@ -13,9 +13,9 @@ public sealed class LanguageManagerTests
     {
         var seen = new List<string?>();
 
-        using var subscription = LanguageManager.Instance.NavigationView_Crossplane.Subscribe(seen.Add);
+        using var subscription = LanguageManager.Instance.CrossplaneNavigationSectionProvider_SectionTitle.Subscribe(seen.Add);
 
-        LanguageManager.Instance.NavigationView_Crossplane.CurrentValue().ShouldBe("Crossplane");
+        LanguageManager.Instance.CrossplaneNavigationSectionProvider_SectionTitle.CurrentValue().ShouldBe("Crossplane");
         LanguageManager.Instance.MRDiffDetectionView_Title.CurrentValue().ShouldBe("MR Diff Detection");
         seen.ShouldNotBeEmpty();
         seen[^1].ShouldBe("Crossplane");

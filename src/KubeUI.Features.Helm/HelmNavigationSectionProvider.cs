@@ -29,7 +29,7 @@ public sealed class HelmNavigationSectionProvider : INavigationSectionProvider
         _enabled = enabled;
         Section = new NavigationSection(
             "helm",
-            L10n.Instance.NavigationView_Helm.CurrentValue()!,
+            L10n.Instance.HelmNavigationSectionProvider_SectionTitle.CurrentValue()!,
             NavigationSectionOrder.AfterCustomResources,
             null,
             IconAssetPath,

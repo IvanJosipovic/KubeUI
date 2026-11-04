@@ -70,7 +70,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             sectionCatalog,
             _platformServices,
             dockable => Factory.AddToDocuments(dockable));
-        Title = SharedL10n.Instance.NavigationView_Title.CurrentValue()!;
+        Title = L10n.Instance.NavigationView_Title.CurrentValue()!;
         Id = nameof(NavigationViewModel);
 
         _clusterNavigation = new NavigationClusterCatalogSynchronizer(
@@ -216,9 +216,9 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
         var settings = new ContentDialogSettings
         {
-            Title = ClusterL10n.Instance.Cluster_Missing_Namespace_Permission_Title.CurrentValue()!,
-            Content = ClusterL10n.Instance.Cluster_Missing_Namespace_Permission_Content.CurrentValue()!,
-            PrimaryButtonText = ClusterL10n.Instance.Cluster_Missing_Namespace_Permission_Primary.CurrentValue()!,
+            Title = ClusterL10n.Instance.ClusterSettingsViewModel_Missing_Namespace_Permission_Title.CurrentValue()!,
+            Content = ClusterL10n.Instance.ClusterSettingsViewModel_Missing_Namespace_Permission_Content.CurrentValue()!,
+            PrimaryButtonText = ClusterL10n.Instance.ClusterSettingsViewModel_Missing_Namespace_Permission_Primary.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Primary
         };
 

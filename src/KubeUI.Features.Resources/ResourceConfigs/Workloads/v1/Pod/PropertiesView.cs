@@ -15,7 +15,7 @@ public sealed class PropertiesView : ViewBase<V1Pod>
             .Children(
                 new PropertyItem()
                     .Key(L10n.Instance.PodPropertiesView_ControlledBy.CurrentValue()!)
-                    .Value(vm.Metadata.OwnerReferences?.FirstOrDefault(x => x.Controller == true)?.Name ?? "N/A"),
+                    .Value(vm.Metadata.OwnerReferences?.FirstOrDefault(x => x.Controller == true)?.Name ?? SharedL10n.Instance.Shared_NotAvailable.CurrentValue()!),
                 new PropertyItem()
                     .Key(L10n.Instance.PodPropertiesView_Status.CurrentValue()!)
                     .Value(vm.Status?.Phase ?? ""),

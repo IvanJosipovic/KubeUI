@@ -72,7 +72,7 @@ public sealed class NavigationView : KubeUIView<NavigationViewModel>
                             .CommandParameter(node)
                             .Icon(new FluentIcon().Icon(node, x => x.ConnectionMenuIcon)),
                         new MenuItem()
-                            .Header(SharedL10n.Instance.NavigationView_ContextMenu_Settings.ToBinding())
+                            .Header(L10n.Instance.NavigationView_ContextMenu_Settings.ToBinding())
                             .Command(node, x => x.OpenSettingsCommand)
                             .CommandParameter(node)
                             .Icon(new FluentIcon().Icon(Icon.Settings))
@@ -97,10 +97,10 @@ public sealed class NavigationView : KubeUIView<NavigationViewModel>
                 {
                     return status switch
                     {
-                        ClusterStatus.None => SharedL10n.Instance.NavigationView_ToolTip_ClickToConnect.CurrentValue()!,
-                        ClusterStatus.Connecting => SharedL10n.Instance.NavigationView_ToolTip_Connecting.CurrentValue()!,
-                        ClusterStatus.Errored => SharedL10n.Instance.NavigationView_ToolTip_Errored.CurrentValue()!,
-                        ClusterStatus.Connected => SharedL10n.Instance.NavigationView_ToolTip_Connected.CurrentValue()!,
+                        ClusterStatus.None => L10n.Instance.NavigationView_ToolTip_ClickToConnect.CurrentValue()!,
+                        ClusterStatus.Connecting => L10n.Instance.NavigationView_ToolTip_Connecting.CurrentValue()!,
+                        ClusterStatus.Errored => L10n.Instance.NavigationView_ToolTip_Errored.CurrentValue()!,
+                        ClusterStatus.Connected => L10n.Instance.NavigationView_ToolTip_Connected.CurrentValue()!,
                         _ => string.Empty
                     };
                 })),
@@ -119,12 +119,12 @@ public sealed class NavigationView : KubeUIView<NavigationViewModel>
                         ? new ContextMenu()
                             .Items([
                                 new MenuItem()
-                                    .Header(SharedL10n.Instance.NavigationView_ContextMenu_Open.ToBinding())
+                                    .Header(L10n.Instance.NavigationView_ContextMenu_Open.ToBinding())
                                     .Command(link, x => x.OpenCommand)
                                     .CommandParameter(link)
                                     .Icon(new FluentIcon().Icon(Icon.DocumentEdit)),
                                 new MenuItem()
-                                    .Header(SharedL10n.Instance.NavigationView_ContextMenu_OpenNewTab.ToBinding())
+                                    .Header(L10n.Instance.NavigationView_ContextMenu_OpenNewTab.ToBinding())
                                     .Command(link, x => x.OpenInNewTabCommand)
                                     .CommandParameter(link)
                                     .Icon(new FluentIcon().Icon(Icon.AddSquare))
