@@ -101,7 +101,7 @@ public sealed class SettingsView() : ViewBase<SettingsViewModel>
                 new ComboBox()
                     .ItemsSource(vm, x => x.Agents)
                     .SelectedItem(vm, x => x.SelectedAgent, BindingMode.TwoWay)
-                    .ItemTemplate(new FuncDataTemplate<IAgent>((agent, _) => new TextBlock().Text(agent!.Name)))
+                    .ItemTemplate(new FuncDataTemplate<IAgent>((agent, _) => new TextBlock().Text(agent?.Name)))
                     .Col(1));
     }
 

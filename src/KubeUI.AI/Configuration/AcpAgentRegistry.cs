@@ -8,8 +8,7 @@ namespace KubeUI.AI.Configuration;
 public sealed class AcpAgentRegistry : IAgentRegistry
 {
     private readonly AcpAgentDefinition[] _definitions;
-    private readonly List<IAgent> _agents = [];
-    private readonly ReadOnlyCollection<IAgent> _readOnlyAgents;
+    private readonly Lazy<ReadOnlyCollection<IAgent>> _agents;
     private readonly IAgentPermissionService? _permissionService;
 
     public AcpAgentRegistry(IEnumerable<AcpAgentDefinition> definitions, IAgentPermissionService? permissionService = null)
@@ -17,20 +16,21 @@ public sealed class AcpAgentRegistry : IAgentRegistry
         ArgumentNullException.ThrowIfNull(definitions);
         _definitions = [.. definitions];
         _permissionService = permissionService;
-        _readOnlyAgents = _agents.AsReadOnly();
-        RebuildAvailableAgents();
+        _agents = new Lazy<ReadOnlyCollection<IAgent>>(CreateAvailableAgents);
     }
 
-    public IReadOnlyList<IAgent> Agents => _readOnlyAgents;
+    public IReadOnlyList<IAgent> Agents => _agents.Value;
 
-    private void RebuildAvailableAgents()
+    private ReadOnlyCollection<IAgent> CreateAvailableAgents()
     {
-        _agents.Clear();
+        List<IAgent> agents = [];
         foreach (var definition in _definitions)
         {
             if (IsExecutableAvailable(definition.Executable))
-                _agents.Add(new AcpAgent(definition, _permissionService));
+                agents.Add(new AcpAgent(definition, _permissionService));
         }
+
+        return agents.AsReadOnly();
     }
 
     private static bool IsExecutableAvailable(string executable)
