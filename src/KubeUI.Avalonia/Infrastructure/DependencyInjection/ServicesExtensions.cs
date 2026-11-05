@@ -85,9 +85,14 @@ public static partial class KubeUIShellServiceCollectionExtensions
         services.AddSingleton<NavigationSectionCatalog>();
         services.AddSingleton<CrossplaneDiffLogParser>();
         services.AddTransient<CrossplaneProviderLogMonitor>();
-        services.AddSingleton<IAgentRegistry>(sp => new AcpAgentRegistry(
-            AcpAgentDefaults.Definitions,
-            sp.GetRequiredService<IAgentPermissionService>()));
+        services.AddSingleton<IAgentRegistry>(sp =>
+        {
+            var settings = sp.GetRequiredService<ISettingsService>().Settings;
+            var definitions = settings.McpServerEnabled ? AcpAgentDefaults.Definitions : [];
+            return new AcpAgentRegistry(
+                definitions,
+                settings.McpServerEnabled ? sp.GetRequiredService<IAgentPermissionService>() : null);
+        });
         services.AddSingleton<IAgentPermissionService, AvaloniaAgentPermissionService>();
         services.AddSingleton<IAgentContextService, AgentContextService>();
         services.AddSingleton<IClusterSettingsStore>(sp => sp.GetRequiredService<ISettingsService>());
