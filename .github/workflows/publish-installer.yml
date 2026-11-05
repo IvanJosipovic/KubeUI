@@ -173,7 +173,7 @@ jobs:
 
       - name: Download Releases
         if: inputs.download_releases
-        run: vpk download github --outputDir "packed" --channel ${{ matrix.rid }} --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} --pre
+        run: vpk download github --outputDir "packed" --channel ${{ matrix.rid }} --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} ${{ github.ref != 'refs/heads/main' && '--pre' || '' }}
 
       - name: Create Package
         run: vpk pack --outputDir "packed" --channel ${{ matrix.rid }} --packId "KubeUI" --packVersion "${{ inputs.package_version }}" --packDir "src/KubeUI.Desktop/bin/publish" --packAuthors "Ivan Josipovic" --packTitle "KubeUI" --releaseNotes "CHANGELOG.md" --mainExe "${{ matrix.fileName }}" --icon "${{ matrix.icon }}" ${{ matrix.packParams }} ${{ inputs.enable_code_signing && matrix.signingParams || '' }}

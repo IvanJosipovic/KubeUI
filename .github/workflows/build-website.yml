@@ -1,0 +1,67 @@
+name: Build Website
+
+on:
+  workflow_call:
+    inputs:
+      publish_pages:
+        description: 'Deploy to GitHub Pages; otherwise upload the website as a workflow artifact'
+        required: true
+        type: boolean
+
+jobs:
+  build:
+    name: Build Website
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version-file: website/.nvmrc
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      - name: Install website dependencies
+        working-directory: website
+        run: npm ci
+
+      - name: Build documentation website
+        working-directory: website
+        run: npm run build
+
+      - name: Upload Website
+        if: ${{ !inputs.publish_pages }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: website
+          path: website/build/
+
+      - name: Upload Pages artifact
+        if: inputs.publish_pages
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b
+        with:
+          path: website/build
+
+  deploy-pages:
+    name: Deploy Documentation
+    if: inputs.publish_pages
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e
