@@ -145,6 +145,44 @@ public sealed class SettingsViewModelTests
     }
 
     [AvaloniaFact]
+    public void settings_view_does_not_crash_when_no_agent_cli_is_available()
+    {
+        var settingsService = new Mock<ISettingsService>();
+        settingsService.SetupGet(service => service.Settings).Returns(new AppSettings { McpServerEnabled = false });
+        var registry = new Mock<IAgentRegistry>();
+        registry.SetupGet(value => value.Agents).Returns([]);
+        using var viewModel = CreateViewModel(settingsService.Object, registry.Object);
+        var view = new SettingsView { DataContext = viewModel };
+        using var window = Application.Current.CreateTestWindow(500, 700, view);
+
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        view.GetVisualDescendants().OfType<ComboBox>()
+            .Single(control => control.ItemsSource is IReadOnlyList<IAgent>)
+            .ItemsView!.Count.ShouldBe(0);
+    }
+
+    [AvaloniaFact]
+    public void settings_view_does_not_crash_when_agent_registry_contains_null_entry()
+    {
+        var settingsService = new Mock<ISettingsService>();
+        settingsService.SetupGet(service => service.Settings).Returns(new AppSettings { McpServerEnabled = false });
+        var registry = new Mock<IAgentRegistry>();
+        registry.SetupGet(value => value.Agents).Returns([null!]);
+        using var viewModel = CreateViewModel(settingsService.Object, registry.Object);
+        var view = new SettingsView { DataContext = viewModel };
+        using var window = Application.Current.CreateTestWindow(500, 700, view);
+
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        view.GetVisualDescendants().OfType<ComboBox>()
+            .Single(control => control.ItemsSource is IReadOnlyList<IAgent>)
+            .ItemsView!.Count.ShouldBe(1);
+    }
+
+    [AvaloniaFact]
     public void settings_view_exposes_mcp_server_settings()
     {
         var settings = new AppSettings
