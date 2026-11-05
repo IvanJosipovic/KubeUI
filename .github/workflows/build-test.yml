@@ -67,4 +67,4 @@ jobs:
     name: Build Website
     uses: $/.github/workflows/build-website.yml
     with:
-      publish_pages: false
+      upload_pages_artifact: false

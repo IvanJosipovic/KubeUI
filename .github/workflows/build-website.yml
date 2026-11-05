@@ -3,8 +3,8 @@ name: Build Website
 on:
   workflow_call:
     inputs:
-      publish_pages:
-        description: 'Deploy to GitHub Pages; otherwise upload the website as a workflow artifact'
+      upload_pages_artifact:
+        description: 'Upload a Pages artifact for deployment instead of a regular workflow artifact'
         required: true
         type: boolean
 
@@ -34,34 +34,14 @@ jobs:
         run: npm run build
 
       - name: Upload Website
-        if: ${{ !inputs.publish_pages }}
+        if: ${{ !inputs.upload_pages_artifact }}
         uses: actions/upload-artifact@v7
         with:
           name: website
           path: website/build/
 
       - name: Upload Pages artifact
-        if: inputs.publish_pages
+        if: inputs.upload_pages_artifact
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b
         with:
           path: website/build
-
-  deploy-pages:
-    name: Deploy Documentation
-    if: inputs.publish_pages
-    needs: [build]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e
