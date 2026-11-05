@@ -25,6 +25,16 @@ jobs:
   publish-docs:
     if: github.ref == 'refs/heads/main'
     name: Publish Documentation
+    uses: $/.github/workflows/build-website.yml
+    with:
+      upload_pages_artifact: true
+    permissions:
+      contents: read
+
+  deploy-docs:
+    if: github.ref == 'refs/heads/main'
+    name: Deploy Documentation
+    needs: [publish-docs]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -34,30 +44,8 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version: current
-          cache: npm
-          cache-dependency-path: website/package-lock.json
-
-      - name: Install dependencies
-        working-directory: website
-        run: npm ci
-
-      - name: Build website
-        working-directory: website
-        run: npm run build
-
       - name: Configure GitHub Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b
-        with:
-          path: website/build
 
       - name: Deploy to GitHub Pages
         id: deployment
