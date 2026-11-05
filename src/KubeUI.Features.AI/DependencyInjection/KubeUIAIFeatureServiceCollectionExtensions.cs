@@ -17,9 +17,14 @@ public static partial class KubeUIAIFeatureServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddSingleton<IAgentRegistry>(serviceProvider => new AcpAgentRegistry(
-            AcpAgentDefaults.Definitions,
-            serviceProvider.GetRequiredService<IAgentPermissionService>()));
+        services.AddSingleton<IAgentRegistry>(serviceProvider =>
+        {
+            var settings = serviceProvider.GetRequiredService<IAgentChatSettings>();
+            var definitions = settings.McpServerEnabled ? AcpAgentDefaults.Definitions : [];
+            return new AcpAgentRegistry(
+                definitions,
+                settings.McpServerEnabled ? serviceProvider.GetRequiredService<IAgentPermissionService>() : null);
+        });
         services.AddSingleton<IAgentPermissionService, AvaloniaAgentPermissionService>();
         services.AddSingleton<IAgentContextService, AgentContextService>();
         services.AddTransient<AgentChatViewModel>();

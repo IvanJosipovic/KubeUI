@@ -101,10 +101,10 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable, INot
 
     public IAgent? SelectedAgent
     {
-        get => Agents.FirstOrDefault(agent => string.Equals(
+        get => Agents.FirstOrDefault(agent => agent is not null && string.Equals(
             agent.Id,
             SettingsService.Settings.SelectedAgentId,
-            StringComparison.Ordinal)) ?? Agents.FirstOrDefault();
+            StringComparison.Ordinal)) ?? Agents.FirstOrDefault(agent => agent is not null);
         set
         {
             var id = value?.Id;
