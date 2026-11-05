@@ -19,7 +19,7 @@ public sealed class SettingsViewModelTests
     [Fact]
     public void selected_agent_updates_persisted_agent_id()
     {
-        var settings = new AppSettings { SelectedAgentId = "missing" };
+        var settings = new AppSettings { SelectedAgentId = "missing", McpServerEnabled = true };
         var settingsService = new Mock<ISettingsService>();
         settingsService.SetupGet(service => service.Settings).Returns(settings);
         var first = new Mock<IAgent>();
@@ -103,11 +103,44 @@ public sealed class SettingsViewModelTests
         window.Show();
         Dispatcher.UIThread.RunJobs();
 
-        view.GetVisualDescendants().OfType<ComboBox>()
-            .Single(control => control.ItemsSource?.Cast<object>().FirstOrDefault() is IAgent)
-            .IsEffectivelyEnabled.ShouldBeFalse();
+        view.GetVisualDescendants().OfType<ComboBox>().Single().IsEffectivelyEnabled.ShouldBeFalse();
         view.GetVisualDescendants().OfType<NumericUpDown>().Single(control => control.Value == settings.McpServerPort)
             .IsEffectivelyEnabled.ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public void settings_view_does_not_enumerate_agents_when_mcp_is_disabled()
+    {
+        var settingsService = new Mock<ISettingsService>();
+        settingsService.SetupGet(service => service.Settings).Returns(new AppSettings { McpServerEnabled = false });
+        var registry = new Mock<IAgentRegistry>(MockBehavior.Strict);
+        using var viewModel = CreateViewModel(settingsService.Object, registry.Object);
+        var view = new SettingsView { DataContext = viewModel };
+        using var window = Application.Current.CreateTestWindow(500, 700, view);
+
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        registry.VerifyGet(value => value.Agents, Times.Never);
+    }
+
+    [AvaloniaFact]
+    public void settings_view_does_not_crash_when_no_agents_are_available()
+    {
+        var settingsService = new Mock<ISettingsService>();
+        settingsService.SetupGet(service => service.Settings).Returns(new AppSettings { McpServerEnabled = true });
+        var registry = new Mock<IAgentRegistry>();
+        registry.SetupGet(value => value.Agents).Returns([]);
+        using var viewModel = CreateViewModel(settingsService.Object, registry.Object);
+        var view = new SettingsView { DataContext = viewModel };
+        using var window = Application.Current.CreateTestWindow(500, 700, view);
+
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        view.GetVisualDescendants().OfType<ComboBox>()
+            .Single(control => control.ItemsSource is not null)
+            .ItemsView!.Count.ShouldBe(0);
     }
 
     [AvaloniaFact]

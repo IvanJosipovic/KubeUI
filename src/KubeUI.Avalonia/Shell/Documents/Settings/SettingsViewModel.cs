@@ -17,7 +17,9 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable, INot
     private string? _externalMcpClientNameError;
 
     public ISettingsService SettingsService { get; }
-    public IReadOnlyList<IAgent> Agents => _agentRegistry?.Agents ?? [];
+    public IReadOnlyList<IAgent> Agents => SettingsService.Settings.McpServerEnabled
+        ? _agentRegistry?.Agents ?? []
+        : [];
     public IReadOnlyList<McpExternalClientGrant> ExternalMcpGrants => SettingsService.Settings.McpExternalClientGrants;
 
     /// <summary>Gets whether the external MCP client list is empty.</summary>
@@ -212,7 +214,11 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable, INot
         else if (e.PropertyName == nameof(Options.Settings.McpServerPort))
             OnPropertyChanged(nameof(McpServerPort));
         else if (e.PropertyName == nameof(Options.Settings.McpServerEnabled))
+        {
             NotifyMcpServerAvailabilityChanged();
+            OnPropertyChanged(nameof(Agents));
+            OnPropertyChanged(nameof(SelectedAgent));
+        }
     }
 
     private void McpServerState_PropertyChanged(object? sender, PropertyChangedEventArgs e)
