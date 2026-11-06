@@ -32,6 +32,10 @@ internal static class TestApplicationExtensions
     {
         var services = application.GetTestServices();
         var config = services.GetRequiredService<TestClusterConfig>();
+        // Reset before applying the lambda so repeated calls on the shared singleton config
+        // never inherit settings (latency, ThrowOnConnect, AuthenticatedUser, fixtures) from
+        // an earlier cluster in the same test app.
+        config.Reset();
         configure?.Invoke(config);
         if (config.Type == KubernetesBackend.Fake)
         {
@@ -40,6 +44,11 @@ internal static class TestApplicationExtensions
 
         var cluster = await services.GetRequiredService<TestClusterGenerator>()
             .CreateAsync(config, TestContext.Current.CancellationToken);
+        if (application is TestApp testApp)
+        {
+            testApp.RegisterTestCluster(cluster);
+        }
+
         services.GetRequiredService<ClusterManager>().AddCluster(cluster.Cluster);
 
         var workspace = services.GetRequiredService<ClusterWorkspaceCatalog>().GetCluster(cluster.Cluster.Name)

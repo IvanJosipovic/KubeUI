@@ -1,7 +1,8 @@
 # Avalonia Tests
 
 ## Structure
-- Keep tests near the feature or resource behavior they verify.
+- Keep cross-feature, App-shell, Controls, Desktop startup, and Foundation tests in this shared headless assembly, grouped under `App/`, `Controls/`, `Desktop/`, and `Foundation/`.
+- Keep each feature's tests in a matching `KubeUI.Features.<Feature>.Tests` project under `tests/`, with test files grouped by feature. Use shared test infrastructure rather than copying setup across projects.
 - Keep shared Avalonia test setup in `Infra/`.
 - Shared Kubernetes test helpers are imported from `KubeUI.Testing.Kubernetes.Scenarios`, `KubeUI.Testing.Kubernetes.Transport`, and `KubeUI.Testing.Kubernetes.Infrastructure`; polling helpers are in `KubeUI.Testing.Utilities`.
 - Use the DI-registered `TestClusterGenerator` with `TestClusterConfig` for Kubernetes-backed tests. It creates the production `KubeUI.Kubernetes.Cluster` with the real Kubernetes client and fake HTTP/WebSocket transport.
@@ -12,7 +13,7 @@
 ## Coverage Focus
 - Tests that parse custom-resource starter templates must initialize the config with a test-owned workspace first, so parsing uses that workspace's serializer policy.
 - Every preview flag needs enabled and disabled behavior coverage through Settings. Exercise Helm/Hubble navigation with the real settings-backed feature provider, independent toggle combinations, and restart-only changes; serialization cases must exercise actual JSON/YAML operations with both reflection policies.
-- Serialization preview flags must cover actual JSON and YAML serialization and deserialization using an unregistered Kubernetes-like model. Test both reflection modes and verify generated Kubernetes models still round-trip. Start KubeUI with Settings overrides and use the configured serializers; do not construct serializer options in tests. Verify simultaneously alive hosts keep independent modes. Do not use environment variables or child test processes.
+- Serialization flag tests exercise real JSON/YAML round-trips for unregistered models in both reflection modes, generated-model round-trips, and simultaneous hosts with different Settings. Use configured serializers; do not create test-only options, environment overrides, or child processes.
 - The headless test app enables the Helm and Hubble preview flags by default so existing navigation tests keep their sections; cover disabled and default-off behavior with explicit feature clients.
 - Prefer behavior tests for view models, resource configs, and shared UI behaviors that are easy to drift.
 - Preserve tests when migrating them. If a test asserted an implementation detail through a wrapper, replace it with an observable behavior assertion or add the missing transport scenario; do not silently delete coverage.
@@ -44,5 +45,5 @@ Tests using Avalonia capabilities should use `[AvaloniaFact]`. Pure model, seria
 ## Opt-in live Helm visualization validation
 - `LiveHelmVisualizationTests` is opt-in and read-only: it checks an existing `authentik` release in namespace `authentik` through the production workspace and visualization pipeline. It must not create, update, or delete cluster resources.
 - Mark live-cluster tests with `[LiveClusterFact]`, not `Explicit = true`. An explicit test is reported as `NotRunnable` in the TRX file and the CI test reporter counts it as a failure; `[LiveClusterFact]` skips the test when `KUBEUI_LIVE_CONTEXT` is unset so it is reported as `NotExecuted` and counted as skipped.
-- Set `KUBEUI_LIVE_CONTEXT` to the host kubeconfig context, build first, then run `dotnet test --project tests\KubeUI.Avalonia.Tests\KubeUI.Avalonia.Tests.csproj --no-build --no-restore --filter-class '*LiveHelmVisualizationTests' --minimum-expected-tests 1`.
+- Set `KUBEUI_LIVE_CONTEXT` to the host kubeconfig context, build first, then run `dotnet test --project tests\KubeUI.Features.Helm.Tests\KubeUI.Features.Helm.Tests.csproj --no-build --no-restore --filter-class '*LiveHelmVisualizationTests' --minimum-expected-tests 1`.
 - Keep the graph-publication starvation regression deterministic with the fake backend and explicit build gates; the live test supplements, not replaces, that regression.

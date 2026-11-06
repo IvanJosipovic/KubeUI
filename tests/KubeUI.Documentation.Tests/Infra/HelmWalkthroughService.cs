@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
 using Helm.NET;
-using KubeUI.Kubernetes;
+using KubeUI.Features.Helm.Helm;
 using Moq;
 
 namespace KubeUI.Documentation.Tests.Infra;

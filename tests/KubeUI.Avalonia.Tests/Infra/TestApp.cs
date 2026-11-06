@@ -6,11 +6,12 @@ using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
-using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Infrastructure.Docking;
-using KubeUI.Avalonia.Infrastructure.Platform;
-using KubeUI.Avalonia.Services.Settings;
+using KubeUI.App.Infrastructure.Docking;
+using KubeUI.App.Infrastructure.Platform;
+using KubeUI.App.Services.Settings;
 using KubeUI.Desktop;
+using KubeUI.Features.Clusters.Workspace;
+using KubeUI.Features.Resources.Settings;
 using KubeUI.Kubernetes;
 using KubeUI.Testing.Kubernetes.Bootstrap;
 using KubeUI.Testing.Kubernetes.Infrastructure;
@@ -23,13 +24,29 @@ using Moq;
 
 namespace KubeUI.Avalonia.Tests.Infra;
 
-public class TestApp : App, IDisposable
+public class TestApp : KubeUIApplication, IDisposable
 {
     public Mock<IDialogManager>? DialogManager { get; private set; }
     public INotification? Notification { get; private set; }
     public ContentDialogSettings? ContentDialogSettings { get; private set; }
+    public Action<ContentDialogSettings>? ConfigureContentDialog { get; set; }
     private IHost? _host;
     private int _disposed;
+    private readonly List<TestCluster> _testClusters = [];
+    private readonly Lock _testClustersLock = new();
+
+    /// <summary>
+    /// Registers a generated <see cref="TestCluster"/> so it is disposed when the app is
+    /// disposed, instead of living until the generator's process-exit cleanup. A disposed
+    /// cluster is a no-op (idempotent), so this is safe alongside the generator cleanup.
+    /// </summary>
+    internal void RegisterTestCluster(TestCluster cluster)
+    {
+        lock (_testClustersLock)
+        {
+            _testClusters.Add(cluster);
+        }
+    }
 
     public TestApp() : this(null)
     {
@@ -59,6 +76,18 @@ public class TestApp : App, IDisposable
 
         DisposeApplication();
 
+        TestCluster[] clusters;
+        lock (_testClustersLock)
+        {
+            clusters = [.. _testClusters];
+            _testClusters.Clear();
+        }
+
+        for (var index = clusters.Length - 1; index >= 0; index--)
+        {
+            await clusters[index].DisposeAsync().ConfigureAwait(false);
+        }
+
         if (_host is IAsyncDisposable asyncDisposableHost)
         {
             await asyncDisposableHost.DisposeAsync().ConfigureAwait(false);
@@ -86,7 +115,11 @@ public class TestApp : App, IDisposable
         dialogManager.SetupProperty(x => x.AllowConcurrentDialogs);
         dialogManager
             .Setup(x => x.ShowFrameworkDialogAsync(It.IsAny<System.ComponentModel.INotifyPropertyChanged?>(), It.IsAny<ContentDialogSettings>(), It.IsAny<Func<object?, string>?>()))
-            .Callback<System.ComponentModel.INotifyPropertyChanged?, ContentDialogSettings, Func<object?, string>?>((_, settings, _) => ContentDialogSettings = settings)
+            .Callback<System.ComponentModel.INotifyPropertyChanged?, ContentDialogSettings, Func<object?, string>?>((_, settings, _) =>
+            {
+                ContentDialogSettings = settings;
+                ConfigureContentDialog?.Invoke(settings);
+            })
             .ReturnsAsync(FAContentDialogResult.Primary);
         DialogManager = dialogManager;
 
@@ -102,6 +135,8 @@ public class TestApp : App, IDisposable
         {
             services.AddKubernetesTestRuntime();
             services.Replace(ServiceDescriptor.Singleton<ISettingsService, TestSettingsService>());
+            services.Replace(ServiceDescriptor.Singleton(sp =>
+                (IResourceAppearanceSettings)sp.GetRequiredService<ISettingsService>()));
             services.Replace(ServiceDescriptor.Singleton<ISettingsPersistence, TestSettingsPersistence>());
             services.Replace(ServiceDescriptor.Singleton<IPlatformServices, TestPlatformServices>());
             services.Replace(ServiceDescriptor.Singleton<TimeProvider>(new TestTimeProvider(DateTimeOffset.UnixEpoch)));
@@ -120,6 +155,7 @@ public class TestApp : App, IDisposable
                         var generator = sp.GetRequiredService<TestClusterGenerator>();
                         var cluster = generator.CreateAsync(config).GetAwaiter().GetResult();
                         cluster.Cluster.EnsureOpenApiSchemasAsync().GetAwaiter().GetResult();
+                        RegisterTestCluster(cluster);
                         manager.AddCluster(cluster.Cluster);
                     }
                 }

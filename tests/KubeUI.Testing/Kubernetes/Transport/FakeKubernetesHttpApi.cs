@@ -849,7 +849,13 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
                 resource["metadata"]!["generation"] = 1;
             }
 
-            _resources[resourceKey] = resource;
+            // TryAdd keeps create atomic under concurrency: a lost race returns 409 like a
+            // real API server instead of silently overwriting the existing resource.
+            if (!_resources.TryAdd(resourceKey, resource))
+            {
+                return AlreadyExistsStatus(route, name);
+            }
+
             if (route.PluralName == "customresourcedefinitions")
             {
                 RegisterCustomResourceDefinition(resource);
@@ -1150,9 +1156,15 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
         if (route.Subresource == "log")
         {
-            return request.Method == HttpMethod.Get
-                ? Text(string.Empty)
-                : Error(HttpStatusCode.MethodNotAllowed, "Only GET is supported for the log subresource.");
+            if (request.Method != HttpMethod.Get)
+            {
+                return Error(HttpStatusCode.MethodNotAllowed, "Only GET is supported for the log subresource.");
+            }
+
+            // Tests inject log content through the pod annotation "kubeui.testing/log";
+            // pods without it log an empty stream like a quiesced container.
+            var log = existing["metadata"]?["annotations"]?["kubeui.testing/log"]?.GetValue<string>();
+            return Text(log ?? string.Empty);
         }
 
         if (route.Subresource == "ephemeralcontainers")
@@ -1181,6 +1193,58 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
             _resources[key] = updated;
             PublishWatch(collectionKey, "MODIFIED", updated);
             return Json(updated);
+        }
+
+        if (route.Subresource == "eviction")
+        {
+            if (request.Method != HttpMethod.Post)
+            {
+                return Error(HttpStatusCode.MethodNotAllowed, "Only POST is supported for the eviction subresource.");
+            }
+
+            var body = await ReadBodyAsync(request, cancellationToken).ConfigureAwait(false);
+            if (!TryParseObject(body, out var eviction))
+            {
+                return BadRequestStatus("the body of the request was in an unknown format");
+            }
+
+            var evictionMetadata = eviction["metadata"] as JsonObject;
+            var evictionName = evictionMetadata?["name"]?.GetValue<string>();
+            var evictionNamespace = evictionMetadata?["namespace"]?.GetValue<string>();
+            if (!string.Equals(evictionName, route.ResourceName, StringComparison.Ordinal)
+                || !string.IsNullOrEmpty(evictionNamespace)
+                    && !string.Equals(evictionNamespace, route.Namespace, StringComparison.Ordinal))
+            {
+                return BadRequestStatus("eviction metadata must match the targeted Pod");
+            }
+
+            if (HasFinalizers(existing) && existing["metadata"]?["deletionTimestamp"] is null)
+            {
+                var updated = existing.DeepClone().AsObject();
+                updated["metadata"]!["deletionTimestamp"] = DateTime.UtcNow;
+                updated["metadata"]!["resourceVersion"] = CurrentResourceVersion();
+                _resources[key] = updated;
+                PublishWatch(collectionKey, "MODIFIED", updated);
+            }
+            else
+            {
+                _resources.TryRemove(key, out _);
+                PublishWatch(collectionKey, "DELETED", existing);
+            }
+
+            return Json(new JsonObject
+            {
+                ["apiVersion"] = "v1",
+                ["kind"] = "Status",
+                ["status"] = "Success",
+                ["details"] = new JsonObject
+                {
+                    ["name"] = existing["metadata"]?["name"]?.DeepClone(),
+                    ["kind"] = "pods",
+                    ["uid"] = existing["metadata"]?["uid"]?.DeepClone(),
+                },
+                ["code"] = (int)HttpStatusCode.Created,
+            }, HttpStatusCode.Created);
         }
 
         if (route.Subresource == "status")
@@ -1251,11 +1315,8 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     {
         var replicas = resource["spec"]?["replicas"]?.GetValue<int?>() ?? 0;
         var statusReplicas = resource["status"]?["replicas"]?.GetValue<int?>() ?? replicas;
-        var selector = resource["status"]?["selector"]?.DeepClone()
-            ?? new JsonObject
-            {
-                ["matchLabels"] = resource["spec"]?["selector"]?["matchLabels"]?.DeepClone() ?? new JsonObject(),
-            };
+        var selector = resource["status"]?["selector"]?.GetValue<string>()
+            ?? FormatScaleSelector(resource["spec"]?["selector"]?["matchLabels"]?.AsObject());
 
         return new JsonObject
         {
@@ -1276,6 +1337,12 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
             },
         };
     }
+
+    private static string FormatScaleSelector(JsonObject? matchLabels)
+        => matchLabels is null
+            ? string.Empty
+            : string.Join(",", matchLabels.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+                .Select(pair => $"{pair.Key}={pair.Value?.ToString() ?? string.Empty}"));
 
     private HttpResponseMessage ListResponse(HttpRequestMessage request, Route route, ResourceDefinition definition)
     {
@@ -1946,7 +2013,8 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
                 label.Length is > 0 and <= 63
                 && label[0] != '-'
                 && label[^1] != '-'
-                && label.All(character => char.IsAsciiLetterOrDigit(character) || character == '-'));
+                // RFC 1123 subdomains are lowercase; a real API server rejects uppercase names.
+                && label.All(character => char.IsAsciiDigit(character) || character is (>= 'a' and <= 'z') or '-'));
 
     private static string EncodeContinueToken(int offset)
         => Convert.ToBase64String(Encoding.UTF8.GetBytes(offset.ToString(System.Globalization.CultureInfo.InvariantCulture)));
@@ -2478,7 +2546,14 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
     private void RegisterPolicyResource(string group, string resourceName)
     {
-        const string apiVersion = "v1";
+        // RBAC rules may reference resources in groups the fake does not otherwise serve.
+        // Register them at the version a real cluster exposes for the group; unknown groups
+        // stay unregistered so discovery is not polluted with versions Kind will not have.
+        if (!PolicyGroupVersions.TryGetValue(group, out var apiVersion))
+        {
+            return;
+        }
+
         var key = DefinitionKey(group, apiVersion, resourceName);
         _definitions.TryAdd(
             key,
@@ -2486,6 +2561,24 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
                 new GroupApiVersionKind(group, apiVersion, InferKind(resourceName), resourceName),
                 IsNamespacedResource(resourceName)));
     }
+
+    /// <summary>Serving versions for groups commonly referenced by RBAC rules, matching Kind.</summary>
+    private static readonly Dictionary<string, string> PolicyGroupVersions = new(StringComparer.Ordinal)
+    {
+        [string.Empty] = "v1",
+        ["apps"] = "v1",
+        ["autoscaling"] = "v2",
+        ["batch"] = "v1",
+        ["coordination.k8s.io"] = "v1",
+        ["discovery.k8s.io"] = "v1",
+        ["events.k8s.io"] = "v1",
+        ["apiextensions.k8s.io"] = "v1",
+        ["networking.k8s.io"] = "v1",
+        ["policy"] = "v1",
+        ["rbac.authorization.k8s.io"] = "v1",
+        ["storage.k8s.io"] = "v1",
+        ["metrics.k8s.io"] = "v1beta1",
+    };
 
     private static bool IsNamespacedResource(string resource)
         => resource is not ("namespaces"

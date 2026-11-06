@@ -2,7 +2,7 @@ using Avalonia.Controls;
 using Avalonia.LogicalTree;
 using AvaloniaEdit.Folding;
 using BenchmarkDotNet.Attributes;
-using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
+using KubeUI.Features.Resources.Yaml.Behaviors;
 
 namespace KubeUI.Benchmarks;
 

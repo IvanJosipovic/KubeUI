@@ -1,5 +1,7 @@
 using System.Net;
-using KubeUI.Avalonia.Infrastructure.Mcp;
+using KubeUI.App.Infrastructure.Mcp;
+using KubeUI.Features.AI.Mcp;
+using KubeUI.Features.AI.Mcp.Hosting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Http;
@@ -17,11 +19,6 @@ internal sealed class McpServerHostedService(
     IServiceProvider desktopServices,
     int port) : IHostedService, IAsyncDisposable
 {
-    internal const string ClientRateLimitPolicyName = "KubeUI.Mcp.Client";
-    internal const int MaximumConcurrentRequests = 16;
-    internal const int MaximumRequestsPerMinute = 120;
-    internal const int MaximumRequestsPerMinutePerAddress = 600;
-
     private readonly IServiceProvider _desktopServices = desktopServices;
     private readonly int _port = port;
     private readonly ILogger<McpServerHostedService> _logger =
@@ -57,7 +54,7 @@ internal sealed class McpServerHostedService(
         applicationBuilder.UseRateLimiter();
         applicationBuilder.UseEndpoints(endpoints =>
             endpoints.MapMcp(McpServerConfiguration.Path)
-                .RequireRateLimiting(ClientRateLimitPolicyName));
+                .RequireRateLimiting(McpServerRateLimits.ClientRateLimitPolicyName));
 
         var application = new KestrelHttpApplication(
             applicationBuilder.Build(),

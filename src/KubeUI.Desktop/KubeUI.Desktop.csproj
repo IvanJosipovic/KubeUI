@@ -18,15 +18,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia.Desktop" Version="12.1.4" />
-    <PackageReference Include="ModelContextProtocol.AspNetCore" Version="2.3.0" />
-    <PackageReference Include="NReco.Logging.File" Version="1.4.0" />
-    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.20.1" />
-    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.20.1" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.20.1" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.Process" Version="1.20.1-rc.1" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.20.1" />
-    <PackageReference Include="OpenTelemetry.Resources.OperatingSystem" Version="1.20.1-beta.1" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="NReco.Logging.File" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Process" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
+    <PackageReference Include="OpenTelemetry.Resources.OperatingSystem" />
   </ItemGroup>
 
   <ItemGroup>
@@ -44,12 +43,11 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)' == 'Debug'">
-    <PackageReference Include="Declarative.Avalonia.AgentTools" Version="12.1.1" />
+    <PackageReference Include="Declarative.Avalonia.AgentTools" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\KubeUI.Avalonia\KubeUI.Avalonia.csproj" />
-    <ProjectReference Include="..\KubeUI.Kubernetes\KubeUI.Kubernetes.csproj" />
+    <ProjectReference Include="..\KubeUI.App\KubeUI.App.csproj" />
   </ItemGroup>
 
   <ItemGroup>

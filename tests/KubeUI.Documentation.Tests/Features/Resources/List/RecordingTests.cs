@@ -1,14 +1,13 @@
 using Avalonia.VisualTree;
-using KubeUI.Avalonia.Features.Resources.Yaml;
-using KubeUI.Avalonia.Shell.Main;
+using KubeUI.App.Shell.Main;
 using KubeUI.Documentation.Tests.Infra;
+using KubeUI.Features.Resources.Yaml;
 
 namespace KubeUI.Documentation.Tests.Features.Resources.List;
 
 public sealed class RecordingTests
 {
     [DocumentationVideoTheory]
-    [Obsolete]
     public Task Browse_pods_video(string theme)
     {
         return KubeUIWalkthrough.Create(theme, "browse-pods")

@@ -1,22 +1,22 @@
 namespace KubeUI.Avalonia.Styles;
 
-internal static class Typography
+public static class Typography
 {
-    internal const string AppFontFamilyResourceKey = "KubeUIAppFontFamily";
-    internal const string AppFontSizeResourceKey = "KubeUIAppFontSize";
-    internal const string DockFontSizeResourceKey = "DockFontSizeNormal";
-    internal const string CodeFontFamilyResourceKey = "KubeUICodeFontFamily";
-    internal const string CodeFontSizeResourceKey = "KubeUICodeFontSize";
-    internal const string TitleFontSizeResourceKey = "KubeUITitleFontSize";
-    internal const string MetadataFontSizeResourceKey = "KubeUIMetadataFontSize";
-    internal const string AppFontFamilyName = "Inter";
-    internal const string CodeFontFamilyName = "Cascadia Mono";
-    internal const double DefaultAppFontSize = 13d;
-    internal const double DefaultCodeFontSize = 12d;
-    internal const double DefaultTitleFontSize = 24d;
-    internal const double DefaultMetadataFontSize = 11d;
-    internal const string IconFontSizeOneCharacter = "14";
-    internal const string IconFontSizeTwoCharacters = "10";
-    internal const string IconFontSizeThreeOrMoreCharacters = "8";
+    public const string AppFontFamilyResourceKey = "KubeUIAppFontFamily";
+    public const string AppFontSizeResourceKey = "KubeUIAppFontSize";
+    public const string DockFontSizeResourceKey = "DockFontSizeNormal";
+    public const string CodeFontFamilyResourceKey = "KubeUICodeFontFamily";
+    public const string CodeFontSizeResourceKey = "KubeUICodeFontSize";
+    public const string TitleFontSizeResourceKey = "KubeUITitleFontSize";
+    public const string MetadataFontSizeResourceKey = "KubeUIMetadataFontSize";
+    public const string AppFontFamilyName = "Inter";
+    public const string CodeFontFamilyName = "Cascadia Mono";
+    public const double DefaultAppFontSize = 13d;
+    public const double DefaultCodeFontSize = 12d;
+    public const double DefaultTitleFontSize = 24d;
+    public const double DefaultMetadataFontSize = 11d;
+    public const string IconFontSizeOneCharacter = "14";
+    public const string IconFontSizeTwoCharacters = "10";
+    public const string IconFontSizeThreeOrMoreCharacters = "8";
 
 }

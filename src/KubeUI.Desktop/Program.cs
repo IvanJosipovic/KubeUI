@@ -10,15 +10,16 @@ using Avalonia.Threading;
 #if DEBUG
 using Declarative.Avalonia.AgentTools;
 #endif
-using KubeUI.Avalonia;
-using KubeUI.AI.Diagnostics;
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Infrastructure.DependencyInjection;
-using KubeUI.Avalonia.Infrastructure.Platform;
-using KubeUI.Avalonia.Options;
-using KubeUI.Avalonia.Services.Settings;
-using KubeUI.Kubernetes;
-using KubeUI.Kubernetes.Serialization;
+using KubeUI.App;
+using KubeUI.Features.AI.Diagnostics;
+using KubeUI.Features.AI.Mcp;
+using KubeUI.Features.AI.Mcp.Hosting;
+using KubeUI.App.Infrastructure;
+using KubeUI.App.Infrastructure.DependencyInjection;
+using KubeUI.App.Infrastructure.Mcp;
+using KubeUI.App.Infrastructure.Platform;
+using KubeUI.App.Options;
+using KubeUI.App.Services.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -28,6 +29,9 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Velopack;
+using KubeUIApplication = KubeUI.App.App;
+
+[assembly: GenerateMarkupExtensionsForAvalonia(false)]
 
 namespace KubeUI.Desktop;
 
@@ -76,7 +80,7 @@ internal static class Program
     {
         RegisterAvaloniaShutdown(services);
 
-        var builder = AppBuilder.Configure(() => new App(services));
+        var builder = AppBuilder.Configure(() => new KubeUIApplication(services));
         builder = (configurePlatform ?? (static builder => builder.UsePlatformDetect()))(builder);
 
         builder = builder
@@ -181,7 +185,10 @@ internal static class Program
         builder.Services.AddKubeUIAppServices(features);
 
         if (mcpEnabledOverride ?? settings.Settings.McpServerEnabled)
-            builder.Services.AddKubeUIMcpServer(mcpPortOverride ?? settings.Settings.McpServerPort);
+            builder.Services.AddKubeUIMcpServer<McpTools>(
+                mcpPortOverride ?? settings.Settings.McpServerPort,
+                McpToolJsonSerializationContext.CreateSerializerOptions(),
+                static (services, port) => new McpServerHostedService(services, port));
 
         if (includeOptionalServices && settings.Settings.TelemetryEnabled)
             builder.Services.AddTelemetry();
@@ -309,7 +316,7 @@ internal static class Program
                 tracingProvider
                     .AddSource(Source.Name)
                     .AddSource(AgentActivitySource.SourceName)
-                    .AddSource(Kubernetes.Client.KubeInstrumentation.SourceName)
+                    .AddSource(KubeUIAvaloniaServiceCollectionExtensions.KubernetesActivitySourceName)
                     .AddSource(Instrumentation.SourceName)
                     .AddHttpClientInstrumentation()
                     .AddOtlpExporter(e =>

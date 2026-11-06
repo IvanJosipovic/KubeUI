@@ -1,6 +1,6 @@
 ---
 sidebar_position: 6
-description: Use KubeUI workload tools to inspect logs, open consoles, forward ports, and manage Kubernetes workloads.
+description: Use KubeUI workload tools to inspect logs, open consoles, forward ports, scale workloads, and manage rollouts.
 ---
 
 # Workload tools
@@ -17,7 +17,18 @@ Use port forwarding to access a pod or service port from the local machine. Stop
 
 ## Resource operations
 
-KubeUI exposes resource-specific actions such as cordon, uncordon, and drain for nodes. Review the target and the effect before confirming an operation. Secret certificate details can be inspected from the corresponding secret view.
+KubeUI exposes resource-specific actions for common workload operations:
+
+- Scale Deployments, StatefulSets, and ReplicaSets. Bulk scaling applies one desired replica count to every selected workload.
+- Pause or resume Deployments. Pausing stops new rollouts; it does not stop existing Pods.
+- Inspect Deployment rollout history and undo to a selected ReplicaSet revision. Undo restores that revision's Pod template and can start a new rollout; it does not restore the old replica count.
+- Suspend or resume CronJobs. Suspending stops new scheduling but does not stop Jobs that already started.
+- Evict Pods through the Kubernetes eviction API. PodDisruptionBudgets and admission policies can reject an eviction; KubeUI does not bypass those rejections.
+- Cordon, uncordon, and drain nodes.
+
+Actions appear only when the connected identity has the required permissions. Scaling requires `patch` on the workload's `scale` subresource. Rollout history requires Deployment `get` and ReplicaSet `list`; undo also requires Deployment `patch`. CronJob suspend/resume requires CronJob `patch`. Pod eviction requires `create` on `pods/eviction` in each Pod namespace.
+
+Review the target and effect before confirming an operation. Multi-resource actions report individual failures and continue with remaining resources. Secret certificate details can be inspected from the corresponding secret view.
 
 ## Metrics
 

@@ -29,6 +29,39 @@ public sealed class TestClusterGeneratorTests
     }
 
     [Fact]
+    public void ResetRestoresDefaultsOnASharedConfigInstance()
+    {
+        V1Namespace resource = new() { Metadata = new V1ObjectMeta { Name = "seeded" } };
+        using RecordingHandler handler = new();
+        var config = new TestClusterConfig
+        {
+            Type = KubernetesBackend.Kind,
+            Name = "kind-cluster",
+            KubeConfig = new K8SConfiguration(),
+            InitialResources = [resource],
+            InitialYaml = "apiVersion: v1\r\nkind: Namespace\r\n",
+            HttpHandlers = [handler],
+            ResponseLatency = TimeSpan.FromSeconds(3),
+            ThrowOnConnect = true,
+            AuthenticatedUser = "system:serviceaccount:default:viewer",
+        };
+
+        config.Reset();
+
+        config.Type.ShouldBe(KubernetesBackend.Fake);
+        config.Name.ShouldBeNull();
+        config.KubeConfig.ShouldBeNull();
+        config.Resources.ShouldBeEmpty();
+        config.InitialYaml.ShouldBeNull();
+        config.HttpHandlers.ShouldBeEmpty();
+        config.HttpHandlerFactory.ShouldBeNull();
+        config.FirstMessageHandlerSetup.ShouldBeNull();
+        config.ResponseLatency.ShouldBe(TimeSpan.Zero);
+        config.ThrowOnConnect.ShouldBeFalse();
+        config.AuthenticatedUser.ShouldBe("system:admin");
+    }
+
+    [Fact]
     public void LiveFactoryRequiresAnExplicitClusterName()
     {
         Should.Throw<ArgumentException>(() => TestClusterConfig.Live(" "));

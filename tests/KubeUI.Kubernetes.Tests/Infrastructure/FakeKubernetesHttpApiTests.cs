@@ -137,7 +137,7 @@ public sealed class FakeKubernetesHttpApiTests
         var activities = new ConcurrentQueue<Activity>();
         using var listener = new ActivityListener
         {
-            ShouldListenTo = source => source.Name == Client.KubeInstrumentation.SourceName,
+            ShouldListenTo = source => source.Name == Kubernetes.Client.KubeInstrumentation.SourceName,
             Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
             ActivityStarted = activity => activities.Enqueue(activity),
         };
@@ -587,6 +587,87 @@ public sealed class FakeKubernetesHttpApiTests
 
         (await client.DeleteAsync("/api/v1/namespaces/default/configmaps/missing", TestContext.Current.CancellationToken))
             .StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task ConcurrentCreateReturnsConflictForExactlyOneWinner()
+    {
+        using var api = new FakeKubernetesHttpApi();
+        api.Register<V1ConfigMap>();
+        using var first = CreateHttpClient(api.CreateClient());
+        using var second = CreateHttpClient(api.CreateClient());
+
+        var payload = new
+        {
+            apiVersion = "v1",
+            kind = "ConfigMap",
+            metadata = new { name = "cm-race", @namespace = "default" },
+        };
+
+        var firstCreate = first.PostAsync(
+            "/api/v1/namespaces/default/configmaps",
+            CreateJsonContent(payload),
+            TestContext.Current.CancellationToken);
+        var secondCreate = second.PostAsync(
+            "/api/v1/namespaces/default/configmaps",
+            CreateJsonContent(payload),
+            TestContext.Current.CancellationToken);
+        var responses = await Task.WhenAll(firstCreate, secondCreate);
+
+        responses.Select(response => response.StatusCode)
+            .OrderBy(status => status)
+            .ShouldBe([HttpStatusCode.Created, HttpStatusCode.Conflict]);
+    }
+
+    [Fact]
+    public async Task CreateRejectsUppercaseObjectNames()
+    {
+        using var api = new FakeKubernetesHttpApi();
+        api.Register<V1ConfigMap>();
+        using var client = CreateHttpClient(api);
+
+        var create = await client.PostAsync(
+            "/api/v1/namespaces/default/configmaps",
+            CreateJsonContent(new { apiVersion = "v1", kind = "ConfigMap", metadata = new { name = "CM-UPPERCASE", @namespace = "default" } }),
+            TestContext.Current.CancellationToken);
+
+        create.StatusCode.ShouldBe(HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Fact]
+    public async Task PolicyRulesRegisterResourcesAtTheRealGroupVersion()
+    {
+        using var api = new FakeKubernetesHttpApi();
+        api.Register<V1Role>();
+        api.Register<V1Pod>();
+        api.Register<V1Namespace>();
+        api.Add(new V1Namespace { Metadata = new() { Name = "default" } });
+        api.Add(new V1Role
+        {
+            ApiVersion = "rbac.authorization.k8s.io/v1",
+            Kind = V1Role.KubeKind,
+            Metadata = new() { Name = "viewer", NamespaceProperty = "default" },
+            Rules =
+            [
+                new V1PolicyRule
+                {
+                    ApiGroups = ["metrics.k8s.io"],
+                    Resources = ["pods"],
+                    Verbs = ["get", "list"],
+                },
+            ],
+        });
+        using var client = CreateHttpClient(api);
+
+        var metrics = await client.GetAsync(
+            "/apis/metrics.k8s.io/v1beta1/namespaces/default/pods",
+            TestContext.Current.CancellationToken);
+        metrics.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        var wrongVersion = await client.GetAsync(
+            "/apis/metrics.k8s.io/v1/namespaces/default/pods",
+            TestContext.Current.CancellationToken);
+        wrongVersion.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
     [Fact]

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\FeatureTests.props" />
+
+  <ItemGroup>
+    <PackageReference Include="Moq" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Helm.NET" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\KubeUI.Features.Helm\KubeUI.Features.Helm.csproj" />
+    <ProjectReference Include="..\..\src\KubeUI.Features.Clusters\KubeUI.Features.Clusters.csproj" />
+    <ProjectReference Include="..\..\src\KubeUI.Features.Resources\KubeUI.Features.Resources.csproj" />
+    <ProjectReference Include="..\..\src\KubeUI.App\KubeUI.App.csproj" />
+    <ProjectReference Include="..\..\src\KubeUI.Desktop\KubeUI.Desktop.csproj" />
+    <ProjectReference Include="..\KubeUI.Testing\KubeUI.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+  </ItemGroup>
+</Project>

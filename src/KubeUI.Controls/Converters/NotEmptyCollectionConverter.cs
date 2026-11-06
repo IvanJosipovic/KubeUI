@@ -1,0 +1,28 @@
+using System.Globalization;
+using Avalonia.Data.Converters;
+
+namespace KubeUI.Controls.Converters;
+
+public class NotEmptyCollectionConverter : IValueConverter
+{
+    public static readonly NotEmptyCollectionConverter Instance = new();
+
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is ICollection coll)
+        {
+            if (coll.Count > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+

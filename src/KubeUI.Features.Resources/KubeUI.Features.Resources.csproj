@@ -1,0 +1,99 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>embedded</DebugType>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="Avalonia" />
+    <Using Include="Avalonia.Collections" />
+    <Using Include="Avalonia.Controls" />
+    <Using Include="Avalonia.Controls.Notifications" />
+    <Using Include="Avalonia.Data" />
+    <Using Include="Avalonia.Interactivity" />
+    <Using Include="Avalonia.Layout" />
+    <Using Include="Avalonia.Markup.Declarative" />
+    <Using Include="Avalonia.Media" />
+    <Using Include="Avalonia.Styling" />
+    <Using Include="Avalonia.Threading" />
+    <Using Include="KubeUI.Avalonia.Styles" />
+    <Using Include="CommunityToolkit.Mvvm.ComponentModel" />
+    <Using Include="CommunityToolkit.Mvvm.Input" />
+    <Using Include="KubeUI.Avalonia.Assets" Alias="SharedAssets" />
+    <Using Include="KubeUI.Controls.Presentation" />
+    <Using Include="KubeUI.Controls.Converters" />
+    <Using Include="KubeUI.Controls.Styles" />
+    <Using Include="KubeUI.Controls.DependencyInjection" />
+    <Using Include="KubeUI.Controls.Docking" />
+    <Using Include="KubeUI.Controls.Platform" />
+    <Using Include="KubeUI.Controls.Threading" />
+    <Using Include="KubeUI.Features.Resources.Assets" Alias="Assets" />
+    <Using Include="KubeUI.Features.Resources.Contracts" />
+    <Using Include="KubeUI.Kubernetes" />
+    <Using Include="Microsoft.Extensions.DependencyInjection" />
+    <Using Include="Microsoft.Extensions.Logging" />
+    <Using Include="SvcSystems.Avalonia.DynamicTableView" />
+    <Using Include="PropertyGenerator.Avalonia" />
+    <Using Include="System.Collections" />
+    <Using Include="System.Collections.ObjectModel" />
+    <Using Include="System.ComponentModel" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="KubeUI.Avalonia.Tests" />
+    <InternalsVisibleTo Include="KubeUI.Features.Resources.Tests" />
+    <InternalsVisibleTo Include="KubeUI.Features.GatewayApi.Tests" />
+    <InternalsVisibleTo Include="KubeUI.Features.Helm.Tests" />
+    <InternalsVisibleTo Include="KubeUI.Benchmarks" />
+    <InternalsVisibleTo Include="KubeUI.Documentation.Tests" />
+    <ProjectCapability Include="Avalonia" />
+    <ProjectReference Include="..\KubeUI.Controls\KubeUI.Controls.csproj" />
+    <ProjectReference Include="..\KubeUI.Features.AI\KubeUI.Features.AI.csproj" />
+    <ProjectReference Include="..\KubeUI.Features.Clusters\KubeUI.Features.Clusters.csproj" />
+    <ProjectReference Include="..\KubeUI.Kubernetes\KubeUI.Kubernetes.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(BaseIntermediateOutputPath)\Resources.Designer.cs" Condition="'$(DesignTimeBuild)' == 'true'" AutoGen="true" DesignTime="true" Visible="false" />
+    <EmbeddedResource Update="Assets\Resources.resx">
+      <PublicClass>true</PublicClass>
+      <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
+      <StronglyTypedNamespace>KubeUI.Features.Resources.Assets</StronglyTypedNamespace>
+      <StronglyTypedClassName>Resources</StronglyTypedClassName>
+      <StronglyTypedFileName>$(BaseIntermediateOutputPath)\Resources.Designer.cs</StronglyTypedFileName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.AvaloniaEdit" />
+    <PackageReference Include="Avalonia.Markup.Declarative" />
+    <PackageReference Include="AvaloniaEdit.TextMate" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Dock.Avalonia" />
+    <PackageReference Include="Dock.Model.Mvvm" />
+    <PackageReference Include="DynamicData" />
+    <PackageReference Include="FluentAvaloniaUI" />
+    <PackageReference Include="FluentIcons.Avalonia" />
+    <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia.Fluent" />
+    <PackageReference Include="Humanizer.Core" />
+    <PackageReference Include="Irihi.Ursa" />
+    <PackageReference Include="Irihi.Ursa.Themes.Semi" />
+    <PackageReference Include="JsonPathLINQ" />
+    <PackageReference Include="ServiceScan.SourceGenerator" PrivateAssets="all" />
+    <PackageReference Include="PropertyGenerator.Avalonia">
+      <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Svg.Controls.Skia.Avalonia" />
+    <PackageReference Include="SvcSystems.Avalonia.DynamicTableView" />
+    <PackageReference Include="SvcSystems.UI.Terminal" />
+    <PackageReference Include="System.Reactive" />
+    <PackageReference Include="TextMateSharp" />
+    <PackageReference Include="TextMateSharp.Grammars" />
+    <PackageReference Include="Westermo.GraphX.Controls.Avalonia" />
+    <PackageReference Include="Westermo.GraphX.Controls.Avalonia.Themes.Fluent" />
+    <PackageReference Include="Westermo.GraphX.Logic" />
+    <PackageReference Include="Xaml.Behaviors.Avalonia" />
+  </ItemGroup>
+</Project>

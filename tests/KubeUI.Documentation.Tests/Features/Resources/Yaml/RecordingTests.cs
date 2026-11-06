@@ -1,13 +1,12 @@
 using k8s.Models;
-using KubeUI.Avalonia.Features.Resources.Yaml;
 using KubeUI.Documentation.Tests.Infra;
+using KubeUI.Features.Resources.Yaml;
 
 namespace KubeUI.Documentation.Tests.Features.Resources.Yaml;
 
 public sealed class RecordingTests
 {
     [DocumentationVideoTheory]
-    [Obsolete]
     public Task Inspect_pod_yaml_video(string theme)
     {
         return KubeUIWalkthrough.Create(theme, "inspect-pod-yaml")

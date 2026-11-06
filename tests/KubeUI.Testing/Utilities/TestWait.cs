@@ -66,6 +66,12 @@ public static class TestWait
         }
     }
 
+    /// <summary>
+    /// Polls a value factory until it returns a non-null value. Unlike
+    /// <see cref="UntilAsync(Func{bool}, TimeSpan, TimeSpan?, CancellationToken, Action?)"/>,
+    /// a timeout does NOT throw: the last value is returned and callers must assert it
+    /// (e.g. <c>result.ShouldNotBeNull()</c>).
+    /// </summary>
     public static async Task<T?> UntilValueAsync<T>(
         Func<T?> valueFactory,
         TimeSpan timeout,

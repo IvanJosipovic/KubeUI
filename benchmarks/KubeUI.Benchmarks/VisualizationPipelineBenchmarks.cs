@@ -1,6 +1,6 @@
 using BenchmarkDotNet.Attributes;
 using k8s.Models;
-using KubeUI.Avalonia.Features.Resources.Visualization;
+using KubeUI.Features.Resources.Visualization;
 using KubeUI.Kubernetes.Resources.Relationships;
 
 namespace KubeUI.Benchmarks;

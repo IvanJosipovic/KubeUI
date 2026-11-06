@@ -29,6 +29,8 @@ KubeUI is a desktop workspace for everyday Kubernetes exploration and operations
 
 - View pod logs and open a pod console where permitted.
 - Forward pod and service ports.
+- Scale Deployments, StatefulSets, and ReplicaSets; manage Deployment rollouts and CronJob scheduling.
+- Request Pod eviction through Kubernetes disruption controls.
 - View pod CPU and memory metrics when the cluster provides metrics.
 - Cordon, uncordon, or drain nodes.
 - Inspect certificates represented in Kubernetes secrets.
