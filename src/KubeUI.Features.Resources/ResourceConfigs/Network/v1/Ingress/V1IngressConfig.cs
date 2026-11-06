@@ -20,14 +20,14 @@ public sealed partial class V1IngressConfig : ResourceConfig<V1Ingress>
             new ResourceListColumn<V1Ingress, string>()
             {
                 Key = "load-balancers",
-                Name = Assets.Resources.V1IngressConfig_Load_Balancers!,
+                Name = L10n.Instance.V1IngressConfig_Load_Balancers.CurrentValue()!,
                 Field = x => x.Status?.LoadBalancer?.Ingress is { Count: > 0 } ingress ? string.Join(", ", ingress.Select(x => x.Ip ?? x.Hostname).Where(x => !string.IsNullOrEmpty(x))) : "",
                 Width = 1, WidthMode = DynamicTableViewWidthMode.Star,
             },
             new ResourceListColumn<V1Ingress, string>()
             {
                 Key = "rules",
-                Name = Assets.Resources.V1IngressConfig_Rules!,
+                Name = L10n.Instance.V1IngressConfig_Rules.CurrentValue()!,
                 Field = x => x.Spec?.Rules is { Count: > 0 } rules ? string.Join(", ", rules.Select(x => x.Http?.Paths is { Count: > 0 } paths ? $"http://{x.Host}{paths[0].Path}" : $"http://{x.Host}")) : "",
                 WidthMode = DynamicTableViewWidthMode.Cells
             },

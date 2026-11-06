@@ -64,9 +64,9 @@ public sealed partial class HelmChartsViewModel : ViewModelBase, IInitializeClus
         _tableSource = new DynamicTableViewSource<HelmChartSearchResult, string>(
             _charts, chart => chart.Reference,
             [
-                CreateColumn("chart", Assets.Resources.HelmChartsView_Chart!, static chart => chart.ChartName, 2),
-                CreateColumn("description", Assets.Resources.HelmChartsView_Description!, static chart => chart.Description, 1),
-                CreateColumn("version", Assets.Resources.HelmChartsView_LatestVersion!, static chart => chart.Version, 1)
+                CreateColumn("chart", L10n.Instance.HelmChartsView_Chart.CurrentValue()!, static chart => chart.ChartName, 2),
+                CreateColumn("description", L10n.Instance.HelmChartsView_Description.CurrentValue()!, static chart => chart.Description, 1),
+                CreateColumn("version", L10n.Instance.HelmChartsView_LatestVersion.CurrentValue()!, static chart => chart.Version, 1)
             ],
             options: new DynamicTableViewSourceOptions { SelectionIdentityMode = DynamicTableViewSelectionIdentityMode.Key });
         _tableSource.SelectionModel.SingleSelect = true;
@@ -78,7 +78,7 @@ public sealed partial class HelmChartsViewModel : ViewModelBase, IInitializeClus
             _itemsNotifications.CollectionChanged += ItemsOnCollectionChanged;
         }
 
-        Title = Assets.Resources.HelmChartsView_Title;
+        Title = L10n.Instance.HelmChartsView_Title.CurrentValue()!;
     }
 
     /// <inheritdoc />
@@ -117,13 +117,13 @@ public sealed partial class HelmChartsViewModel : ViewModelBase, IInitializeClus
                 ? selected : Repositories.FirstOrDefault();
             _matches = await _helmService.ListChartsAsync(_connection, cancellationToken: cancellationToken);
             ApplyRepositoryFilter();
-            Status = _charts.Count == 0 ? SharedAssets.Resources.Shared_NoCharts! : string.Empty;
+            Status = _charts.Count == 0 ? SharedL10n.Instance.Shared_NoCharts.CurrentValue()! : string.Empty;
         }
         catch (Exception exception)
         {
             _matches = [];
             ApplyRepositoryFilter();
-            Status = SharedAssets.Resources.Shared_ErrorOccurred;
+            Status = SharedL10n.Instance.Shared_ErrorOccurred.CurrentValue()!;
             _logger?.LogError(exception, "Helm refresh failed");
         }
         finally
@@ -161,7 +161,7 @@ public sealed partial class HelmChartsViewModel : ViewModelBase, IInitializeClus
         }
         catch (Exception exception)
         {
-            Status = SharedAssets.Resources.Shared_ErrorOccurred;
+            Status = SharedL10n.Instance.Shared_ErrorOccurred.CurrentValue()!;
             _logger?.LogError(exception, "Failed to open install editor");
         }
     }

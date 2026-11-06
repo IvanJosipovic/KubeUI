@@ -87,8 +87,8 @@ public sealed partial class ResourceNodeViewModel : ViewModelBase
             if (IsPreview)
             {
                 return config.GetDefaultMenuItems(selectedItems)
-                    .Where(item => item.Title == Assets.Resources.ResourceConfigBase_MenuItem_View
-                        || item.Title == Assets.Resources.ResourceConfigBase_MenuItem_ViewYaml);
+                    .Where(item => item.Title == L10n.Instance.ResourceConfigBase_MenuItem_View.CurrentValue()!
+                        || item.Title == L10n.Instance.ResourceConfigBase_MenuItem_ViewYaml.CurrentValue()!);
             }
 
             return ResourceActionPresenter.Compose(config, selectedItems);

@@ -12,55 +12,55 @@ public sealed class PropertiesView : ViewBase<V1StatefulSet>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Replicas!)
+                    .Key(SharedL10n.Instance.Shared_Replicas.CurrentValue()!)
                     .Value(vm.Spec?.Replicas ?? 0),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Ready_Replicas!)
+                    .Key(SharedL10n.Instance.Shared_Ready_Replicas.CurrentValue()!)
                     .Value(vm.Status?.ReadyReplicas ?? 0),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Current_Replicas!)
+                    .Key(SharedL10n.Instance.Shared_Current_Replicas.CurrentValue()!)
                     .Value(vm.Status?.CurrentReplicas ?? 0),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Updated_Replicas!)
+                    .Key(SharedL10n.Instance.Shared_Updated_Replicas.CurrentValue()!)
                     .Value(vm.Status?.UpdatedReplicas ?? 0),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Available_Replicas!)
+                    .Key(SharedL10n.Instance.Shared_Available_Replicas.CurrentValue()!)
                     .Value(vm.Status?.AvailableReplicas ?? 0),
                 new PropertyItem()
-                    .Key(Assets.Resources.StatefulSetPropertiesView_Service_Name!)
+                    .Key(L10n.Instance.StatefulSetPropertiesView_Service_Name.CurrentValue()!)
                     .Value(vm.Spec?.ServiceName ?? ""),
                 new ExpandableSection()
-                    .Header(SharedAssets.Resources.Shared_Status!)
+                    .Header(SharedL10n.Instance.Shared_Status.ToBinding())
                     .IsExpanded(true)
                     .Content(
                         new StackPanel()
                             .Children(
                                 new PropertyItem()
-                                    .Key(Assets.Resources.StatefulSetPropertiesView_Current_Revision!)
+                                    .Key(L10n.Instance.StatefulSetPropertiesView_Current_Revision.CurrentValue()!)
                                     .Value(vm.Status?.CurrentRevision ?? ""),
                                 new PropertyItem()
-                                    .Key(Assets.Resources.StatefulSetPropertiesView_Update_Revision!)
+                                    .Key(L10n.Instance.StatefulSetPropertiesView_Update_Revision.CurrentValue()!)
                                     .Value(vm.Status?.UpdateRevision ?? ""),
                                 new PropertyItem()
-                                    .Key(SharedAssets.Resources.Shared_Conditions!)
+                                    .Key(SharedL10n.Instance.Shared_Conditions.CurrentValue()!)
                                     .Value(vm.Status?.Conditions?.Count ?? 0))),
                 new ExpandableSection()
-                    .Header(SharedAssets.Resources.Shared_Configuration!)
+                    .Header(SharedL10n.Instance.Shared_Configuration.ToBinding())
                     .IsExpanded(true)
                     .Content(
                         new StackPanel()
                             .Children(
                                 new PropertyItem()
-                                    .Key(Assets.Resources.StatefulSetPropertiesView_Pod_Management_Policy!)
+                                    .Key(L10n.Instance.StatefulSetPropertiesView_Pod_Management_Policy.CurrentValue()!)
                                     .Value(vm.Spec?.PodManagementPolicy ?? ""),
                                 new PropertyItem()
-                                    .Key(Assets.Resources.StatefulSetPropertiesView_Update_Strategy!)
+                                    .Key(L10n.Instance.StatefulSetPropertiesView_Update_Strategy.CurrentValue()!)
                                     .Value(vm.Spec?.UpdateStrategy?.Type ?? ""),
                                 new PropertyItem()
-                                    .Key(SharedAssets.Resources.Shared_Revision_History_Limit!)
+                                    .Key(SharedL10n.Instance.Shared_Revision_History_Limit.CurrentValue()!)
                                     .Value(vm.Spec?.RevisionHistoryLimit ?? 0),
                                 new PropertyItem()
-                                    .Key(SharedAssets.Resources.Shared_Min_Ready_Seconds!)
+                                    .Key(SharedL10n.Instance.Shared_Min_Ready_Seconds.CurrentValue()!)
                                     .Value(vm.Spec?.MinReadySeconds ?? 0))));
     }
 }

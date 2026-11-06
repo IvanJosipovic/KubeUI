@@ -3,6 +3,8 @@
   <Import Project="..\FeatureTests.props" />
 
   <ItemGroup>
+    <Using Include="KubeUI.Features.Cilium.Assets.LanguageManager" Alias="CiliumL10n" />
+    <Using Include="KubeUI.Features.Resources.Assets.LanguageManager" Alias="ResourceL10n" />
     <PackageReference Include="Moq" />
   </ItemGroup>
 

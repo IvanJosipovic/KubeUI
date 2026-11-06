@@ -12,25 +12,25 @@ public sealed class PropertiesView : ViewBase<V1PodDisruptionBudget>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(Assets.Resources.PodDisruptionBudgetPropertiesView_Min_Available)
+                    .Key(L10n.Instance.PodDisruptionBudgetPropertiesView_Min_Available.CurrentValue()!)
                     .Value(vm.Spec.MinAvailable),
                 new PropertyItem()
-                    .Key(Assets.Resources.PodDisruptionBudgetPropertiesView_Max_Unavailable)
+                    .Key(L10n.Instance.PodDisruptionBudgetPropertiesView_Max_Unavailable.CurrentValue()!)
                     .Value(vm.Spec.MaxUnavailable),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Selector_Labels)
+                    .Key(SharedL10n.Instance.Shared_Selector_Labels.CurrentValue()!)
                     .Value(vm.Spec.Selector?.MatchLabels.Count ?? 0),
                 new PropertyItem()
-                    .Key(Assets.Resources.PodDisruptionBudgetPropertiesView_Disruptions_Allowed)
+                    .Key(L10n.Instance.PodDisruptionBudgetPropertiesView_Disruptions_Allowed.CurrentValue()!)
                     .Value(vm.Status.DisruptionsAllowed),
                 new PropertyItem()
-                    .Key(Assets.Resources.PodDisruptionBudgetPropertiesView_Current_Healthy)
+                    .Key(L10n.Instance.PodDisruptionBudgetPropertiesView_Current_Healthy.CurrentValue()!)
                     .Value(vm.Status.CurrentHealthy),
                 new PropertyItem()
-                    .Key(Assets.Resources.PodDisruptionBudgetPropertiesView_Desired_Healthy)
+                    .Key(L10n.Instance.PodDisruptionBudgetPropertiesView_Desired_Healthy.CurrentValue()!)
                     .Value(vm.Status.DesiredHealthy),
                 new PropertyItem()
-                    .Key(Assets.Resources.PodDisruptionBudgetPropertiesView_Expected_Pods)
+                    .Key(L10n.Instance.PodDisruptionBudgetPropertiesView_Expected_Pods.CurrentValue()!)
                     .Value(vm.Status.ExpectedPods));
     }
 }

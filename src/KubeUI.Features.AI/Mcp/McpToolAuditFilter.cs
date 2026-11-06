@@ -86,7 +86,7 @@ internal static partial class McpToolAuditFilter
                     IsError = true,
                     Content = [new TextContentBlock
                     {
-                        Text = "MCP output exceeds the 1 MiB response limit. Narrow the request and retry."
+                        Text = L10n.Instance.McpToolAuditFilter_OutputLimitMessage.CurrentValue()!
                     }]
                 });
             }
@@ -110,7 +110,7 @@ internal static partial class McpToolAuditFilter
             return new McpToolAuditOutcome(outcome, new CallToolResult
             {
                 IsError = true,
-                Content = [new TextContentBlock { Text = "The MCP tool request was denied by KubeUI." }]
+                Content = [new TextContentBlock { Text = L10n.Instance.McpToolAuditFilter_RequestDeniedMessage.CurrentValue()! }]
             });
         }
         catch (ArgumentException exception)

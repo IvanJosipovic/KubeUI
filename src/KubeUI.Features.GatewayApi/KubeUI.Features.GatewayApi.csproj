@@ -8,7 +8,8 @@
   <ItemGroup>
     <Using Include="Avalonia.Markup.Declarative" />
     <Using Include="FluentIcons.Common" />
-    <Using Include="KubeUI.Features.GatewayApi.Assets" Alias="Assets" />
+    <Using Include="KubeUI.Features.GatewayApi.Assets.LanguageManager" Alias="L10n" />
+    <Using Include="KubeUI.Foundation.Localization" />
     <Using Include="KubeUI.Features.Resources" />
     <Using Include="KubeUI.Features.Resources.Assets" Alias="ResourceAssets" />
     <Using Include="KubeUI.Kubernetes" />
@@ -26,18 +27,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="$(BaseIntermediateOutputPath)\Resources.Designer.cs" Condition="'$(DesignTimeBuild)' == 'true'" AutoGen="true" DesignTime="true" Visible="false" />
-    <EmbeddedResource Update="Assets\Resources.resx">
-      <PublicClass>true</PublicClass>
-      <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
-      <StronglyTypedNamespace>KubeUI.Features.GatewayApi.Assets</StronglyTypedNamespace>
-      <StronglyTypedClassName>Resources</StronglyTypedClassName>
-      <StronglyTypedFileName>$(BaseIntermediateOutputPath)\Resources.Designer.cs</StronglyTypedFileName>
-    </EmbeddedResource>
+    <AdditionalFiles Include="Assets\Resources*.json" />
+    <Watch Include="Assets\Resources*.json" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Avalonia" />
+    <PackageReference Include="Irihi.Lingua" />
     <PackageReference Include="Avalonia.Markup.Declarative" />
     <PackageReference Include="FluentIcons.Avalonia" />
     <PackageReference Include="ServiceScan.SourceGenerator" PrivateAssets="all" />

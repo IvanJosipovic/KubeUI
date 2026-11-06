@@ -12,13 +12,13 @@ public sealed class PropertiesView : ViewBase<V1Namespace>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Phase!)
+                    .Key(SharedL10n.Instance.Shared_Phase.CurrentValue()!)
                     .Value(vm.Status?.Phase ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.NamespacePropertiesView_Finalizers!)
+                    .Key(L10n.Instance.NamespacePropertiesView_Finalizers.CurrentValue()!)
                     .Value(vm.Spec?.Finalizers?.Count ?? 0),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Conditions!)
+                    .Key(SharedL10n.Instance.Shared_Conditions.CurrentValue()!)
                     .Value(vm.Status?.Conditions?.Count ?? 0));
     }
 }

@@ -12,7 +12,7 @@ public sealed class PropertiesView : ViewBase<V1LimitRange>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Limits)
+                    .Key(SharedL10n.Instance.Shared_Limits.CurrentValue()!)
                     .Value(vm.Spec.Limits.Count));
     }
 }

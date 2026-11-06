@@ -26,11 +26,11 @@ public sealed partial class ClusterListView : KubeUIView<ClusterListViewModel>
                     .Children(
                         new Button()
                             .Content(new FluentIcon().Icon(Icon.AddSquare))
-                            .ToolTip_Tip(Assets.Resources.ClusterListView_AddKubeConfig)
+                            .ToolTip_Tip(L10n.Instance.ClusterListView_AddKubeConfig.ToBinding())
                             .Command(vm, x => x.AddKubeConfigCommand),
                         new DropDownButton()
                             .Content(new FluentIcon().Icon(Icon.Delete))
-                            .ToolTip_Tip(Assets.Resources.ClusterListView_RemoveKubeConfig)
+                            .ToolTip_Tip(L10n.Instance.ClusterListView_RemoveKubeConfig.ToBinding())
                             .IsEnabled(vm, x => x.RemovableKubeConfigs.Count, BindingMode.OneWay, new FuncValueConverter<int, bool>(count => count > 0))
                             .Flyout(new MenuFlyout()
                                 .ItemsSource(vm.RemovableKubeConfigs)
@@ -65,7 +65,7 @@ public sealed partial class ClusterListView : KubeUIView<ClusterListViewModel>
             yield return new MenuItem()
                 .Command(vm, x => x.DeleteCommand)
                 .CommandParameter(cluster)
-                .Header(Assets.Resources.ClusterListView_Delete)
+                .Header(L10n.Instance.ClusterListView_Delete.ToBinding())
                 .InputGesture(new KeyGesture(Key.Delete))
                 .Icon(new FluentIcon().Icon(Icon.Delete));
         }

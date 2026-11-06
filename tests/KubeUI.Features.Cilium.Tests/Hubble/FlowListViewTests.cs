@@ -66,11 +66,11 @@ public sealed class FlowListViewTests
             .OfType<Grid>()
             .Single(grid => grid.Classes.Contains("toolbar"));
         var namespaceSelector = toolbar.GetVisualDescendants().OfType<MultiComboBox>().Single();
-        namespaceSelector.PlaceholderText.ShouldBe(ResourceAssets.Resources.ResourceListView_SelectNamespace);
+        namespaceSelector.PlaceholderText.ShouldBe(ResourceL10n.Instance.ResourceListView_SelectNamespace.CurrentValue()!);
 
         var searchBox = toolbar.GetVisualDescendants()
             .OfType<TextBox>()
-            .Single(textBox => textBox.PlaceholderText == CiliumAssets.Resources.FlowListView_SearchWatermark);
+            .Single(textBox => textBox.PlaceholderText == CiliumL10n.Instance.FlowListView_SearchWatermark.CurrentValue());
         var filterControls = (StackPanel)namespaceSelector.Parent!;
         filterControls.Children.IndexOf(searchBox).ShouldBeLessThan(filterControls.Children.IndexOf(namespaceSelector));
 
@@ -79,7 +79,7 @@ public sealed class FlowListViewTests
 
         var linkToggle = toolbar.GetVisualDescendants()
             .OfType<ToggleButton>()
-            .Single(toggle => Equals(ToolTip.GetTip(toggle), ResourceAssets.Resources.ResourceListView_NamespaceLink));
+            .Single(toggle => Equals(ToolTip.GetTip(toggle), ResourceL10n.Instance.ResourceListView_NamespaceLink.CurrentValue()!));
         linkToggle.IsChecked.ShouldBe(true);
 
         toolbar.GetVisualDescendants().OfType<ComboBox>().ShouldBeEmpty();
@@ -88,6 +88,6 @@ public sealed class FlowListViewTests
         toolbar.GetVisualDescendants().OfType<ToggleButton>().ShouldHaveSingleItem();
         toolbar.GetVisualDescendants()
             .OfType<Button>()
-            .ShouldNotContain(button => Equals(ToolTip.GetTip(button), CiliumAssets.Resources.FlowListView_ButtonResetFilter));
+            .ShouldNotContain(button => Equals(ToolTip.GetTip(button), CiliumL10n.Instance.FlowListView_ButtonResetFilter.CurrentValue()));
     }
 }

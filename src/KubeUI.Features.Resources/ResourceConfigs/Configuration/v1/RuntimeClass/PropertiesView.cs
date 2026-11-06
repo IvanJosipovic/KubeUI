@@ -12,16 +12,16 @@ public sealed class PropertiesView : ViewBase<V1RuntimeClass>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(Assets.Resources.RuntimeClassPropertiesView_Handler)
+                    .Key(L10n.Instance.RuntimeClassPropertiesView_Handler.CurrentValue()!)
                     .Value(vm.Handler),
                 new PropertyItem()
-                    .Key(Assets.Resources.RuntimeClassPropertiesView_Overhead_Entries)
+                    .Key(L10n.Instance.RuntimeClassPropertiesView_Overhead_Entries.CurrentValue()!)
                     .Value(vm.Overhead?.PodFixed.Count ?? 0),
                 new PropertyItem()
-                    .Key(Assets.Resources.RuntimeClassPropertiesView_Node_Selector_Entries)
+                    .Key(L10n.Instance.RuntimeClassPropertiesView_Node_Selector_Entries.CurrentValue()!)
                     .Value(vm.Scheduling?.NodeSelector.Count ?? 0),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Tolerations)
+                    .Key(SharedL10n.Instance.Shared_Tolerations.CurrentValue()!)
                     .Value(vm.Scheduling?.Tolerations.Count ?? 0));
     }
 }

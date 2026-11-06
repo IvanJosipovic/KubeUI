@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using Avalonia.Controls.Templates;
 using Dock.Model.Core;
 using KubeUI.App.Infrastructure.Platform;
@@ -42,7 +43,10 @@ sealed class ViewLocator : IDataTemplate
         }
 
         _logger.LogCritical("Unable to load View for ViewModel: {ViewModel}", modelType.FullName);
-        return new TextBlock { Text = "Unable to load View for ViewModel: " + modelType.FullName };
+        return new TextBlock
+        {
+            Text = string.Format(CultureInfo.CurrentCulture, L10n.Instance.ViewLocator_UnableToLoadView.CurrentValue()!, modelType.FullName)
+        };
     }
 
     public bool Match(object? data)

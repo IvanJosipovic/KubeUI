@@ -26,7 +26,7 @@ public sealed class PodLogExportServiceTests
 
         Encoding.UTF8.GetString(output.ToArray()).ShouldBe("first\nsecond");
         capturedOptions.ShouldNotBeNull();
-        capturedOptions.Title.ShouldBe(ResourceAssets.Resources.PodLogsView_Download);
+        capturedOptions.Title.ShouldBe(ResourceL10n.Instance.PodLogsView_Download.CurrentValue()!);
         capturedOptions.SuggestedFileName.ShouldBe("api.log");
         capturedOptions.FileTypeChoices.ShouldHaveSingleItem()
             .Patterns.ShouldBe(["*.log", "*.txt"]);

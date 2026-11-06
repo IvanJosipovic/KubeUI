@@ -12,7 +12,7 @@ public sealed class PropertiesView : ViewBase<V1Role>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Rules)
+                    .Key(SharedL10n.Instance.Shared_Rules.CurrentValue()!)
                     .Value(vm.Rules.Count));
     }
 }

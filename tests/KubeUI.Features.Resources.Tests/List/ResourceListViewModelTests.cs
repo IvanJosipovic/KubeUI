@@ -21,15 +21,15 @@ public sealed class ResourceListViewModelTests
         viewModel.Initialize(cluster);
 
         var items = viewModel.GetContextMenuItems(null).ToArray();
-        items.Single(item => item.Title == Assets.Resources.ResourceConfigBase_MenuItem_View)
+        items.Single(item => item.Title == ResourceL10n.Instance.ResourceConfigBase_MenuItem_View.CurrentValue())
             .InputGesture.ShouldBe(new KeyGesture(Key.Enter));
-        items.Single(item => item.Title == Assets.Resources.ResourceConfigBase_MenuItem_Delete)
+        items.Single(item => item.Title == ResourceL10n.Instance.ResourceConfigBase_MenuItem_Delete.CurrentValue())
             .InputGesture.ShouldBe(new KeyGesture(Key.Delete));
 
         var flyoutItems = ResourceActionPresenter.CreateFlyout(items).Items.OfType<MenuItem>().ToArray();
-        flyoutItems.Single(item => item.Header?.ToString() == Assets.Resources.ResourceConfigBase_MenuItem_View)
+        flyoutItems.Single(item => item.Header?.ToString() == ResourceL10n.Instance.ResourceConfigBase_MenuItem_View.CurrentValue())
             .InputGesture.ShouldBe(new KeyGesture(Key.Enter));
-        flyoutItems.Single(item => item.Header?.ToString() == Assets.Resources.ResourceConfigBase_MenuItem_Delete)
+        flyoutItems.Single(item => item.Header?.ToString() == ResourceL10n.Instance.ResourceConfigBase_MenuItem_Delete.CurrentValue())
             .InputGesture.ShouldBe(new KeyGesture(Key.Delete));
     }
 

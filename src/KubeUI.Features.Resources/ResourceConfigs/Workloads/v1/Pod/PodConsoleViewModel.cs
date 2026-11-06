@@ -19,7 +19,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IClusterWorkspa
     public PodConsoleViewModel(ILogger<PodConsoleViewModel> logger)
     {
         _logger = logger;
-        Title = Assets.Resources.PodConsoleView_Title;
+        Title = L10n.Instance.PodConsoleView_Title.CurrentValue()!;
 
         Model.UserInput += Input;
         Model.SizeChanged += Terminal_SizeChanged;

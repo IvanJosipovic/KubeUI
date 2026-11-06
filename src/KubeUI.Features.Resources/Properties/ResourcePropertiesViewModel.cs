@@ -40,7 +40,7 @@ public sealed partial class ResourcePropertiesViewModel<[DynamicallyAccessedMemb
 
     public ResourcePropertiesViewModel()
     {
-        Title = Assets.Resources.ResourcePropertiesView_Title;
+        Title = L10n.Instance.ResourcePropertiesView_Title.CurrentValue()!;
         Id = nameof(ResourcePropertiesViewModel<>);
     }
 

@@ -1,0 +1,4 @@
+{
+  "GatewayApiCustomResourceConfig_ExperimentalGroup": "Experimental",
+  "GatewayApiCustomResourceConfig_GatewayGroup": "Gateway"
+}

@@ -38,7 +38,7 @@ public abstract partial class ScalableWorkloadConfig<[DynamicallyAccessedMembers
         var selected = selectedItems?.ToList();
         return new MenuItemViewModel
         {
-            Title = Assets.Resources.ScalableWorkloadConfig_Scale,
+            Title = L10n.Instance.ScalableWorkloadConfig_Scale.CurrentValue()!,
             FluentIcon = Icon.Resize,
             Command = ScaleCommand,
             CommandParameter = selected,
@@ -73,18 +73,18 @@ public abstract partial class ScalableWorkloadConfig<[DynamicallyAccessedMembers
         {
             content.Children.Add(new TextBlock
             {
-                Text = string.Format(CultureInfo.CurrentCulture, Assets.Resources.ScalableWorkloadConfig_BulkPrompt!, selected.Count),
-                TextWrapping = TextWrapping.Wrap,
+                Text = string.Format(CultureInfo.CurrentCulture, L10n.Instance.ScalableWorkloadConfig_BulkPrompt.CurrentValue()!, selected.Count),
+                TextWrapping = global::Avalonia.Media.TextWrapping.Wrap,
             });
         }
-        content.Children.Add(new TextBlock { Text = Assets.Resources.ScalableWorkloadConfig_ReplicaCount });
+        content.Children.Add(new TextBlock { Text = L10n.Instance.ScalableWorkloadConfig_ReplicaCount.CurrentValue()! });
         content.Children.Add(replicasInput);
 
         var settings = new ContentDialogSettings(content)
         {
-            Title = Assets.Resources.ScalableWorkloadConfig_ScaleTitle,
-            PrimaryButtonText = Assets.Resources.ScalableWorkloadConfig_Apply,
-            SecondaryButtonText = SharedAssets.Resources.Shared_Cancel,
+            Title = L10n.Instance.ScalableWorkloadConfig_ScaleTitle.CurrentValue()!,
+            PrimaryButtonText = L10n.Instance.ScalableWorkloadConfig_Apply.CurrentValue()!,
+            SecondaryButtonText = SharedL10n.Instance.Shared_Cancel.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary,
         };
         var result = await _dialogService.ShowContentDialogAsync(this, settings);
@@ -94,6 +94,7 @@ public abstract partial class ScalableWorkloadConfig<[DynamicallyAccessedMembers
         }
 
         selected = GetEligibleWorkloads(selected);
+        var exceptions = new List<Exception>();
         foreach (var workload in selected)
         {
             try
@@ -102,8 +103,14 @@ public abstract partial class ScalableWorkloadConfig<[DynamicallyAccessedMembers
             }
             catch (Exception ex)
             {
-                ResourceUtilities.HandleException(_logger, _notificationManager, ex, string.Format(CultureInfo.CurrentCulture, Assets.Resources.ScalableWorkloadConfig_ScaleError!, workload.Namespace(), workload.Name()), sendNotification: true);
+                exceptions.Add(ex);
+                ResourceUtilities.HandleException(_logger, _notificationManager, ex, string.Format(CultureInfo.CurrentCulture, L10n.Instance.ScalableWorkloadConfig_ScaleError.CurrentValue()!, workload.Namespace(), workload.Name()), sendNotification: true);
             }
+        }
+
+        if (exceptions.Count > 0)
+        {
+            _logger.LogError(new AggregateException(exceptions), "Error scaling {WorkloadKind} resources", Kind.Kind);
         }
     }
 

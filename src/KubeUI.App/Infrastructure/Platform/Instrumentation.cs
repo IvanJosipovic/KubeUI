@@ -13,7 +13,7 @@ public class Instrumentation : IDisposable, IClusterInstrumentation
 
     public static string MeterName { get; set; } = "kubeui";
 
-    public static string SourceName => "com.KubeUI.Avalonia";
+    public static string SourceName => "com.KubeUI.Foundation";
 
     public Counter<long> AppOpened { get; }
 

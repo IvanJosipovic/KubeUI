@@ -12,13 +12,13 @@ public sealed class PropertiesView : ViewBase<V1RoleBinding>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Role_Kind)
+                    .Key(SharedL10n.Instance.Shared_Role_Kind.CurrentValue()!)
                     .Value(vm.RoleRef.Kind),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Role_Name)
+                    .Key(SharedL10n.Instance.Shared_Role_Name.CurrentValue()!)
                     .Value(vm.RoleRef.Name),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Subjects)
+                    .Key(SharedL10n.Instance.Shared_Subjects.CurrentValue()!)
                     .Value(vm.Subjects.Count));
     }
 }

@@ -105,7 +105,7 @@ public sealed class HelmRepositoriesViewModelTests : IDisposable
             It.Is<HelmConnection>(connection => connection.KubeConfigPath == workspace.Runtime.KubeConfigPath),
             It.IsAny<CancellationToken>()), Times.AtLeastOnce);
         helmService.Verify(service => service.UpdateRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()), Times.Once);
-        viewModel.Status.ShouldBe(HelmAssets.Resources.HelmRepositoriesView_IndexesUpdated);
+        viewModel.Status.ShouldBe(HelmL10n.Instance.HelmRepositoriesView_IndexesUpdated.CurrentValue());
     }
 
     [AvaloniaFact]

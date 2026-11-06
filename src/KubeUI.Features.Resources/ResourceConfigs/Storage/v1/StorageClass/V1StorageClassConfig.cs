@@ -18,21 +18,21 @@ public sealed partial class V1StorageClassConfig : ResourceConfig<V1StorageClass
             new ResourceListColumn<V1StorageClass, string>()
             {
                 Key = "provisioner",
-                Name = Assets.Resources.V1StorageClassConfig_Provisioner!,
+                Name = L10n.Instance.V1StorageClassConfig_Provisioner.CurrentValue()!,
                 Field = x => x.Provisioner,
                 Width = 1, WidthMode = DynamicTableViewWidthMode.Star,
             },
             new ResourceListColumn<V1StorageClass, string>()
             {
                 Key = "reclaim-policy",
-                Name = Assets.Resources.V1StorageClassConfig_Reclaim_Policy!,
+                Name = L10n.Instance.V1StorageClassConfig_Reclaim_Policy.CurrentValue()!,
                 Field = x => x.ReclaimPolicy,
                 WidthMode = DynamicTableViewWidthMode.Cells
             },
             new ResourceListColumn<V1StorageClass, string>()
             {
                 Key = "default",
-                Name = Assets.Resources.V1StorageClassConfig_Default!, // "storageclass.kubernetes.io/is-default-class":"true"
+                Name = L10n.Instance.V1StorageClassConfig_Default.CurrentValue()!, // "storageclass.kubernetes.io/is-default-class":"true"
                 Field = x => x.Metadata.Annotations?.ContainsKey("storageclass.kubernetes.io/is-default-class") == true ?
                                 x.Metadata.Annotations["storageclass.kubernetes.io/is-default-class"] : "false",
                 WidthMode = DynamicTableViewWidthMode.Cells

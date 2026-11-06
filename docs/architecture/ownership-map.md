@@ -9,8 +9,8 @@ The application keeps one project per feature. The existing split is the boundar
 | Project | Owns | References |
 |---|---|---|
 | `KubeUI.Kubernetes` | Kubernetes runtime, model and serialization catalogs, shared non-UI contracts | Runtime dependencies only |
-| `KubeUI.Avalonia` | Shared Avalonia foundation, fonts, assets, typography, framework extension provider | No KubeUI project |
-| `KubeUI.Controls` | Reusable controls, presentation and docking primitives, shared UI contracts | `KubeUI.Avalonia` only |
+| `KubeUI.Foundation` | Shared Avalonia foundation, fonts, assets, typography, framework extension provider | No KubeUI project |
+| `KubeUI.Controls` | Reusable controls, presentation and docking primitives, shared UI contracts | `KubeUI.Foundation` only |
 | `KubeUI.Features.AI` | AI runtime, chat, MCP feature contracts and views | Controls |
 | `KubeUI.Features.Azure` | Azure authentication and management-plane integrations | Kubernetes |
 | `KubeUI.Features.Clusters` | Cluster catalog, workspace/session lifecycle, permissions, settings and cluster errors | Controls, Azure, Kubernetes |
@@ -37,7 +37,7 @@ flowchart BT
     App --> Gateway["KubeUI.Features.GatewayApi"]
     App --> Helm["KubeUI.Features.Helm"]
     App --> Resources["KubeUI.Features.Resources"]
-    Controls --> Foundation["KubeUI.Avalonia"]
+    Controls --> Foundation["KubeUI.Foundation"]
     Azure --> Kubernetes
     Clusters --> Controls
     Clusters --> Azure

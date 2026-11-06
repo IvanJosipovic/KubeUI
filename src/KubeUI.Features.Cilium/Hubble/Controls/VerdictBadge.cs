@@ -36,10 +36,10 @@ public sealed class VerdictBadge : Border
             {
                 Text = v switch
                 {
-                    FlowVerdict.Forwarded => Assets.Resources.FlowVerdict_Allowed,
-                    FlowVerdict.Dropped => Assets.Resources.FlowVerdict_Dropped,
-                    FlowVerdict.Error => Assets.Resources.FlowVerdict_Error,
-                    _ => Assets.Resources.FlowVerdict_Unknown
+                    FlowVerdict.Forwarded => L10n.Instance.FlowVerdict_Allowed.CurrentValue()!,
+                    FlowVerdict.Dropped => L10n.Instance.FlowVerdict_Dropped.CurrentValue()!,
+                    FlowVerdict.Error => L10n.Instance.FlowVerdict_Error.CurrentValue()!,
+                    _ => L10n.Instance.FlowVerdict_Unknown.CurrentValue()!
                 },
                 Foreground = ApplicationBrushResources.GetBrush("SystemBaseHighBrush"),
                 FontSize = 11,

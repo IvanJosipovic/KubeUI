@@ -12,19 +12,19 @@ public sealed class PropertiesView : ViewBase<V1IngressClass>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(Assets.Resources.IngressClassPropertiesView_Controller!)
+                    .Key(L10n.Instance.IngressClassPropertiesView_Controller.CurrentValue()!)
                     .Value(vm.Spec?.Controller ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.IngressClassPropertiesView_Parameters_Kind!)
+                    .Key(L10n.Instance.IngressClassPropertiesView_Parameters_Kind.CurrentValue()!)
                     .Value(vm.Spec?.Parameters?.Kind ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.IngressClassPropertiesView_Parameters_Name!)
+                    .Key(L10n.Instance.IngressClassPropertiesView_Parameters_Name.CurrentValue()!)
                     .Value(vm.Spec?.Parameters?.Name ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.IngressClassPropertiesView_Parameters_Scope!)
+                    .Key(L10n.Instance.IngressClassPropertiesView_Parameters_Scope.CurrentValue()!)
                     .Value(vm.Spec?.Parameters?.Scope ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.IngressClassPropertiesView_Parameters_Namespace!)
+                    .Key(L10n.Instance.IngressClassPropertiesView_Parameters_Namespace.CurrentValue()!)
                     .Value(vm.Spec?.Parameters?.NamespaceProperty ?? ""));
     }
 }

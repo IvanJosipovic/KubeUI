@@ -9,38 +9,38 @@ public sealed class ServiceMapNodePropertiesView : KubeUIView<ServiceMapNodeProp
     {
         var node = viewModel.Node;
         if (node is null)
-            return new TextBlock().Text(Assets.Resources.ServiceMapNodePropertiesView_NoNode!);
+            return new TextBlock().Text(L10n.Instance.ServiceMapNodePropertiesView_NoNode.CurrentValue()!);
 
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(Assets.Resources.ServiceMapNodePropertiesView_Id!)
+                    .Key(L10n.Instance.ServiceMapNodePropertiesView_Id.CurrentValue()!)
                     .Value(node.Id),
                 new PropertyItem()
-                    .Key(Assets.Resources.ServiceMapNodePropertiesView_Name!)
+                    .Key(L10n.Instance.ServiceMapNodePropertiesView_Name.CurrentValue()!)
                     .Value(node.Name),
                 new PropertyItem()
-                    .Key(Assets.Resources.ServiceMapNodePropertiesView_Namespace!)
+                    .Key(L10n.Instance.ServiceMapNodePropertiesView_Namespace.CurrentValue()!)
                     .Value(string.IsNullOrEmpty(node.Namespace)
-                        ? Assets.Resources.ServiceMapGraphControl_External!
+                        ? L10n.Instance.ServiceMapGraphControl_External.CurrentValue()!
                         : node.Namespace),
                 new PropertyItem()
-                    .Key(Assets.Resources.ServiceMapNodePropertiesView_WorkloadType!)
+                    .Key(L10n.Instance.ServiceMapNodePropertiesView_WorkloadType.CurrentValue()!)
                     .Value(node.WorkloadType ?? string.Empty),
                 new PropertyItem()
-                    .Key(Assets.Resources.ServiceMapNodePropertiesView_IngressFlows!)
+                    .Key(L10n.Instance.ServiceMapNodePropertiesView_IngressFlows.CurrentValue()!)
                     .Value(node.IngressFlowCount),
                 new PropertyItem()
-                    .Key(Assets.Resources.ServiceMapNodePropertiesView_EgressFlows!)
+                    .Key(L10n.Instance.ServiceMapNodePropertiesView_EgressFlows.CurrentValue()!)
                     .Value(node.EgressFlowCount),
                 new PropertyItem()
-                    .Key(Assets.Resources.ServiceMapNodePropertiesView_AllowedFlows!)
+                    .Key(L10n.Instance.ServiceMapNodePropertiesView_AllowedFlows.CurrentValue()!)
                     .Value(node.AllowedCount),
                 new PropertyItem()
-                    .Key(Assets.Resources.ServiceMapNodePropertiesView_DeniedFlows!)
+                    .Key(L10n.Instance.ServiceMapNodePropertiesView_DeniedFlows.CurrentValue()!)
                     .Value(node.DeniedCount),
                 new PropertyItem()
-                    .Key(Assets.Resources.ServiceMapNodePropertiesView_AccessPoints!)
+                    .Key(L10n.Instance.ServiceMapNodePropertiesView_AccessPoints.CurrentValue()!)
                     .Value(viewModel.AccessPoints));
     }
 }

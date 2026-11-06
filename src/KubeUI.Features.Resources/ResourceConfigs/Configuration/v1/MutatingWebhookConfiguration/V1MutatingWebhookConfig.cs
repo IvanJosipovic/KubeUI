@@ -18,7 +18,7 @@ public sealed partial class V1MutatingWebhookConfig : ResourceConfig<V1MutatingW
             new ResourceListColumn<V1MutatingWebhookConfiguration, int>()
             {
                 Key = "webhooks",
-                Name = Assets.Resources.V1MutatingWebhookConfig_Webhooks!,
+                Name = L10n.Instance.V1MutatingWebhookConfig_Webhooks.CurrentValue()!,
                 Field = x => x.Webhooks?.Count ?? 0,
                 WidthMode = DynamicTableViewWidthMode.Header
             },

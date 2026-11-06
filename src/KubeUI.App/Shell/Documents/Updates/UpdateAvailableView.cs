@@ -43,7 +43,7 @@ public sealed class UpdateAvailableView : KubeUIView<UpdateAvailableViewModel>
                     .IsVisible(vm, x => x.IsUpdating)
                     .Row(3),
                 new Button()
-                    .Content(Assets.Resources.UpdateAvailableView_Update)
+                    .Content(L10n.Instance.UpdateAvailableView_Update.ToBinding())
                     .Command(vm, x => x.UpdateCommand)
                     .IsEnabled(vm, x => !x.IsUpdating)
                     .HorizontalAlignment(HorizontalAlignment.Right)

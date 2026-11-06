@@ -1,4 +1,4 @@
-namespace KubeUI.Avalonia.Styles;
+namespace KubeUI.Foundation.Styles;
 
 public static class Typography
 {

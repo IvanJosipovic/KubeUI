@@ -20,7 +20,7 @@ public sealed partial class V1LeaseConfig : ResourceConfig<V1Lease>
             new ResourceListColumn<V1Lease, string>()
             {
                 Key = "holder",
-                Name = Assets.Resources.V1LeaseConfig_Holder!,
+                Name = L10n.Instance.V1LeaseConfig_Holder.CurrentValue()!,
                 Field = x => x.Spec.HolderIdentity ?? "",
                 WidthMode = DynamicTableViewWidthMode.Cells
             },

@@ -12,7 +12,7 @@ public sealed class PropertiesView : ViewBase<V1ValidatingWebhookConfiguration>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Webhooks)
+                    .Key(SharedL10n.Instance.Shared_Webhooks.CurrentValue()!)
                     .Value(vm.Webhooks.Count));
     }
 }

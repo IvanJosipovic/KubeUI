@@ -131,14 +131,14 @@ public sealed partial class FlowListView : KubeUIView<FlowListViewModel>
                     .Col(0)
                     .Margin(2, 0, 0, 0)
                     .Command(vm.ClearCommand)
-                    .ToolTip_Tip(Assets.Resources.FlowListView_TooltipClear)
+                    .ToolTip_Tip(L10n.Instance.FlowListView_TooltipClear.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.Delete)),
                 new Label()
                     .Col(1)
                     .Margin(2, 0, 0, 0)
                     .VerticalContentAlignment(VerticalAlignment.Center)
                     .Content(CompiledBinding.Create<FlowListViewModel, int>(x => x.FlowCount,
-                        stringFormat: Assets.Resources.FlowListView_ItemsFormat)),
+                        stringFormat: L10n.Instance.FlowListView_ItemsFormat.CurrentValue()!)),
                 new TextBlock()
                     .Col(2)
                     .Margin(8, 0)
@@ -161,13 +161,13 @@ public sealed partial class FlowListView : KubeUIView<FlowListViewModel>
                             .VerticalAlignment(VerticalAlignment.Stretch)
                             .VerticalContentAlignment(VerticalAlignment.Center)
                             .Background(Brushes.Transparent)
-                            .PlaceholderText(Assets.Resources.FlowListView_SearchWatermark)
+                            .PlaceholderText(L10n.Instance.FlowListView_SearchWatermark.ToBinding())
                             .Text(CompiledBinding.Create<FlowListViewModel, string>(x => x.SearchQuery, mode: BindingMode.TwoWay)),
                         CreateNamespaceSelector(vm),
                         new ToggleButton()
                             .Margin(0, 0, 2, 0)
                             .IsChecked(CompiledBinding.Create<FlowListViewModel, bool>(x => x.IsNamespaceSelectionLinked, source: vm, mode: BindingMode.TwoWay))
-                            .ToolTip_Tip(ResourceAssets.Resources.ResourceListView_NamespaceLink)
+                            .ToolTip_Tip(ResourceL10n.Instance.ResourceListView_NamespaceLink.ToBinding())
                             .Content(new FluentIcon().Icon(Icon.Link))));
     }
 
@@ -184,7 +184,7 @@ public sealed partial class FlowListView : KubeUIView<FlowListViewModel>
             .HorizontalAlignment(HorizontalAlignment.Stretch)
             .Classes("ClearButton")
             .ItemsSource(CompiledBinding.Create<FlowListViewModel, IEnumerable>(x => x.Cluster!.Runtime.Namespaces, source: viewModel))
-            .PlaceholderText(ResourceAssets.Resources.ResourceListView_SelectNamespace)
+            .PlaceholderText(ResourceL10n.Instance.ResourceListView_SelectNamespace.ToBinding())
             .SelectedItems(CompiledBinding.Create<FlowListViewModel, IList>(x => x.SelectedNamespaces, source: viewModel))
             .ItemTemplate(template)
             .SelectedItemTemplate(template);
