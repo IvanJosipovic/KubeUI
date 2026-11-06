@@ -76,14 +76,13 @@ public sealed partial class FlowListView : KubeUIView<FlowListViewModel>
 
     private DynamicTableView CreateTable(FlowListViewModel viewModel)
     {
-        var table = new DynamicTableView
+        return new DynamicTableView
         {
-            GridLinesVisibility = DynamicTableViewGridLinesVisibility.All,
-            ContextMenuItemsFactory = viewModel.GetContextMenuItems,
-            Source = viewModel.TableSource,
-            ContextMenu = CreateContextMenu()
-        };
-        return table;
+            ContextMenuItemsFactory = viewModel.GetContextMenuItems
+        }
+            .GridLinesVisibility(DynamicTableViewGridLinesVisibility.All)
+            .Source(viewModel.TableSource)
+            .ContextMenu(CreateContextMenu());
     }
 
     private void TryRestoreState()

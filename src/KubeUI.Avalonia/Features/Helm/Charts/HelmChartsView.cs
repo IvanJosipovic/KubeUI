@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Avalonia.Input;
 using Avalonia.Xaml.Interactions.Core;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
@@ -16,18 +17,6 @@ public sealed class HelmChartsView : KubeUIView<HelmChartsViewModel>
     protected override object Build(HelmChartsViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);
-        DynamicTableView table = new()
-        {
-            GridLinesVisibility = DynamicTableViewGridLinesVisibility.All,
-            Source = vm.TableSource,
-            ContextMenu = new ContextMenu(),
-            ContextMenuItemsFactory = targets => targets.OfType<HelmChartSearchResult>().Select(chart =>
-                new MenuItem()
-                    .Header(Assets.Resources.HelmChartsView_Install)
-                    .Command(vm, x => x.InstallChartCommand)
-                    .CommandParameter(chart)
-                    .Icon(new FluentIcon().Icon(Icon.AddSquare)))
-        };
         return new Grid()
             .Behaviors(new EventTriggerBehavior
             {
@@ -68,7 +57,24 @@ public sealed class HelmChartsView : KubeUIView<HelmChartsViewModel>
                             .Command(vm, x => x.RefreshCommand)
                             .Content(new FluentIcon().Icon(Icon.ArrowSync))
                             .ToolTip_Tip(Assets.Resources.Shared_Refresh))),
-            table.Row(1));
+            new DynamicTableView
+            {
+                ContextMenuItemsFactory = targets => targets.OfType<HelmChartSearchResult>().Select(chart =>
+                    new MenuItem()
+                        .Header(Assets.Resources.HelmChartsView_Install)
+                        .Command(vm, x => x.InstallChartCommand)
+                        .CommandParameter(chart)
+                        .InputGesture(new KeyGesture(Key.Enter))
+                        .Icon(new FluentIcon().Icon(Icon.AddSquare)))
+            }
+            .GridLinesVisibility(DynamicTableViewGridLinesVisibility.All)
+            .Source(vm.TableSource)
+            .ContextMenu(new ContextMenu())
+            .KeyBindings(SelectionKeyBindingFactory.Create(
+                Key.Enter,
+                vm.InstallChartCommand,
+                () => vm.TableSource.SelectionModel.SelectedItem))
+            .Row(1));
     }
 
 }

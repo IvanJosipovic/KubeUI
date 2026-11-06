@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Avalonia.Collections;
 using Avalonia.Controls.Notifications;
+using Avalonia.Input;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
@@ -293,6 +294,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             Title = Assets.Resources.ResourceConfigBase_MenuItem_View,
             Command = ViewCommand,
             CommandParameter = selectedItems?.ToList(),
+            InputGesture = new KeyGesture(Key.Enter),
             FluentIcon = Icon.PanelRight,
             ShowInPropertiesView = false,
         },
@@ -315,6 +317,7 @@ public abstract partial class ResourceConfigBase<T> : ObservableObject, IResourc
             Title = Assets.Resources.ResourceConfigBase_MenuItem_Delete,
             Command = DeleteCommand,
             CommandParameter = selectedItems?.ToList(),
+            InputGesture = new KeyGesture(Key.Delete),
             FluentIcon = Icon.Delete,
         }
     ];

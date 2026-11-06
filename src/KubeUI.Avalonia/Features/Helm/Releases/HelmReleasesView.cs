@@ -1,10 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
+using Avalonia.Input;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Xaml.Interactions.Core;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using Helm.NET;
+using KubeUI.Avalonia.Infrastructure.Presentation;
 using k8s.Models;
 using KubeUI.Avalonia.Infrastructure;
 using KubeUI.Avalonia.Infrastructure.Presentation;
@@ -18,14 +20,6 @@ public sealed class HelmReleasesView : KubeUIView<HelmReleasesViewModel>
     protected override object Build(HelmReleasesViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);
-
-        DynamicTableView table = new()
-        {
-            GridLinesVisibility = DynamicTableViewGridLinesVisibility.All,
-            Source = vm.TableSource,
-            ContextMenu = new ContextMenu(),
-            ContextMenuItemsFactory = targets => CreateContextMenuItems(vm, targets)
-        };
 
         return new Grid()
             .Behaviors(new EventTriggerBehavior
@@ -76,7 +70,17 @@ public sealed class HelmReleasesView : KubeUIView<HelmReleasesViewModel>
                                     .Command(vm, x => x.RefreshCommand)
                                     .Content(new FluentIcon().Icon(Icon.ArrowSync))
                                     .ToolTip_Tip(Assets.Resources.Shared_Refresh))),
-                table.Row(1));
+                new DynamicTableView
+                {
+                    ContextMenuItemsFactory = targets => CreateContextMenuItems(vm, targets)
+                }
+                    .GridLinesVisibility(DynamicTableViewGridLinesVisibility.All)
+                    .Source(vm.TableSource)
+                    .ContextMenu(new ContextMenu())
+                    .KeyBindings(
+                        SelectionKeyBindingFactory.Create(Key.Enter, vm.VisualizeReleaseCommand, () => vm.SelectedRelease),
+                        SelectionKeyBindingFactory.Create(Key.Delete, vm.UninstallCommand, () => vm.SelectedRelease))
+                    .Row(1));
     }
 
     private static MultiComboBox CreateNamespaceSelector(HelmReleasesViewModel viewModel)
@@ -106,6 +110,7 @@ public sealed class HelmReleasesView : KubeUIView<HelmReleasesViewModel>
                 .Header(Assets.Resources.HelmReleasesView_Visualize)
                 .Command(vm, x => x.VisualizeReleaseCommand)
                 .CommandParameter(release)
+                .InputGesture(new KeyGesture(Key.Enter))
                 .Icon(new FluentIcon().Icon(Icon.DataUsage));
             yield return new MenuItem()
                 .Header(Assets.Resources.HelmReleasesView_Values)
@@ -126,6 +131,7 @@ public sealed class HelmReleasesView : KubeUIView<HelmReleasesViewModel>
                 .Header(Assets.Resources.HelmReleasesView_Uninstall)
                 .Command(vm, x => x.UninstallCommand)
                 .CommandParameter(release)
+                .InputGesture(new KeyGesture(Key.Delete))
                 .Icon(new FluentIcon().Icon(Icon.Delete));
         }
     }

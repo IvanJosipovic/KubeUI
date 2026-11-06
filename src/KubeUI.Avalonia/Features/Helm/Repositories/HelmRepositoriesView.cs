@@ -1,5 +1,6 @@
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
+using Avalonia.Input;
 using Helm.NET;
 using KubeUI.Avalonia.Infrastructure.Presentation;
 
@@ -10,14 +11,6 @@ public sealed class HelmRepositoriesView : KubeUIView<HelmRepositoriesViewModel>
     protected override object Build(HelmRepositoriesViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);
-
-        DynamicTableView table = new()
-        {
-            GridLinesVisibility = DynamicTableViewGridLinesVisibility.All,
-            Source = vm.TableSource,
-            ContextMenu = new ContextMenu(),
-            ContextMenuItemsFactory = targets => CreateContextMenuItems(vm, targets)
-        };
 
         return new Grid()
             .Rows("Auto,*")
@@ -61,7 +54,19 @@ public sealed class HelmRepositoriesView : KubeUIView<HelmRepositoriesViewModel>
                                     .Command(vm, x => x.RefreshCommand)
                                     .Content(new FluentIcon().Icon(Icon.ArrowSync))
                                     .ToolTip_Tip(Assets.Resources.Shared_Refresh))),
-                table.Row(1));
+                new DynamicTableView
+                {
+                    ContextMenuItemsFactory = targets => CreateContextMenuItems(vm, targets),
+                    KeyBindings =
+                    {
+                        SelectionKeyBindingFactory.Create(Key.Enter, vm.ViewChartsCommand, () => vm.SelectedRepository),
+                        SelectionKeyBindingFactory.Create(Key.Delete, vm.DeleteRepositoryCommand, () => vm.SelectedRepository)
+                    }
+                }
+                    .GridLinesVisibility(DynamicTableViewGridLinesVisibility.All)
+                    .Source(vm.TableSource)
+                    .ContextMenu(new ContextMenu())
+                    .Row(1));
     }
 
     private static IEnumerable<MenuItem> CreateContextMenuItems(HelmRepositoriesViewModel vm, IReadOnlyList<object> targets)
@@ -72,6 +77,7 @@ public sealed class HelmRepositoriesView : KubeUIView<HelmRepositoriesViewModel>
                 .Header(Assets.Resources.HelmRepositoriesView_ViewCharts)
                 .Command(vm, x => x.ViewChartsCommand)
                 .CommandParameter(repository)
+                .InputGesture(new KeyGesture(Key.Enter))
                 .Icon(new FluentIcon().Icon(Icon.DataUsage));
             yield return new MenuItem()
                 .Header(Assets.Resources.HelmRepositoriesView_Edit)
@@ -82,6 +88,7 @@ public sealed class HelmRepositoriesView : KubeUIView<HelmRepositoriesViewModel>
                 .Header(Assets.Resources.HelmRepositoriesView_Delete)
                 .Command(vm, x => x.DeleteRepositoryCommand)
                 .CommandParameter(repository)
+                .InputGesture(new KeyGesture(Key.Delete))
                 .Icon(new FluentIcon().Icon(Icon.Delete));
         }
     }

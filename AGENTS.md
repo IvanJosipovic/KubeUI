@@ -44,9 +44,10 @@ Docker
 
 ## 5) Reflection and source generation
 
-- Avoid reflection whenever possible.
-- Prefer source generators before any reflection-based approach.
-- If reflection is the only viable option, ask the user explicitly before introducing it.
+- Never introduce reflection or reflection-dependent dynamic dispatch without asking the user and getting explicit approval first.
+- This includes indirect reflection through third-party actions, string-named methods/events, runtime member lookup, `Activator`, and `MethodInfo.Invoke`.
+- Prefer direct calls/delegates, interfaces, static registration, or source generation.
+- Release builds use full trimming. A method invoked only through reflection may be removed even when Debug works; linker annotations or assembly roots do not replace user approval.
 
 ## 6) Testing and validation
 

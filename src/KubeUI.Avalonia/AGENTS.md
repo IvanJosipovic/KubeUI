@@ -44,6 +44,8 @@ Reference: https://github.com/wieslawsoltes/Xaml.Behaviors
 - Prefer source-generator-based behaviors/actions wherever available.
 - Use trigger behaviors for lifecycles and state transitions.
 - Code-behind must not contain event handlers or direct ViewModel calls.
+- Contextual Enter/Delete shortcuts belong to the focused list/editor control, not window-wide hotkeys. Keep menu gesture hints display-only and mirror only the matching primary action; honor command eligibility and confirmation paths.
+- Editor shortcuts must be registered on the editor itself so they do not fire when focus is elsewhere. Do not use `MenuItem.HotKey` as a substitute for focused-control bindings.
 
 ## 5) Docking layout with Dock for Avalonia
 
