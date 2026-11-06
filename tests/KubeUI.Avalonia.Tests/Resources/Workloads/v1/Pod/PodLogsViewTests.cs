@@ -2,6 +2,7 @@ using System.Text;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Avalonia.Xaml.Interactivity;
@@ -31,11 +32,15 @@ public sealed class PodLogsViewTests
         await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
 
         var editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
+        editor.KeyBindings.ShouldContain(binding => binding.Gesture == new KeyGesture(Key.C, KeyModifiers.Control));
+        view.KeyBindings.ShouldBeEmpty();
         var contextMenu = editor.ContextMenu.ShouldBeOfType<ContextMenu>();
         var copyItem = contextMenu.Items.OfType<MenuItem>().Single();
 
         copyItem.Command.ShouldNotBeNull();
         Interaction.GetBehaviors(copyItem).ShouldBeEmpty();
+        copyItem.HotKey.ShouldBeNull();
+        copyItem.InputGesture.ShouldBe(new KeyGesture(Key.C, KeyModifiers.Control));
     }
 
     [AvaloniaTheory]

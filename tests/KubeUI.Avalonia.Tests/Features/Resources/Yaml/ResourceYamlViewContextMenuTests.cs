@@ -44,6 +44,9 @@ public sealed class ResourceYamlViewContextMenuTests
 
         var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
+        editor.KeyBindings.ShouldContain(binding => binding.Gesture == new KeyGesture(Key.Y, KeyModifiers.Control));
+        editor.KeyBindings.ShouldContain(binding => binding.Gesture == new KeyGesture(Key.Z, KeyModifiers.Control));
+        view.KeyBindings.ShouldBeEmpty();
         editor.Select(0, editor.Text.Length);
         await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
 
@@ -58,6 +61,8 @@ public sealed class ResourceYamlViewContextMenuTests
             .Single(item => string.Equals(item.Header?.ToString(), "Copy", StringComparison.Ordinal));
         copyMenuItem.IsVisible.ShouldBeTrue();
         copyMenuItem.IsAttachedToVisualTree().ShouldBeTrue();
+        copyMenuItem.HotKey.ShouldBeNull();
+        copyMenuItem.InputGesture.ShouldBe(new KeyGesture(Key.C, KeyModifiers.Control));
 
         ClickMenuItemWithPointer(copyMenuItem);
         await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);

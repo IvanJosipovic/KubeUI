@@ -1,6 +1,7 @@
 using System.Collections.Specialized;
 using System.Windows.Input;
 using Avalonia.Collections;
+using Avalonia.Input;
 using FluentIcons.Common;
 
 namespace KubeUI.Avalonia.Features.Resources.Common;
@@ -15,6 +16,9 @@ public sealed partial class MenuItemViewModel : ObservableObject
 
     [ObservableProperty]
     public partial object? CommandParameter { get; set; }
+
+    [ObservableProperty]
+    public partial KeyGesture? InputGesture { get; set; }
 
     [ObservableProperty]
     public partial AvaloniaList<MenuItemViewModel>? Items { get; set; }

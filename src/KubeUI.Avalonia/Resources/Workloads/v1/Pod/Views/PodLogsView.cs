@@ -209,6 +209,12 @@ public sealed partial class PodLogsView : KubeUIView<PodLogsViewModel>
             })
             .Behaviors(behavior);
 
+        editor.KeyBindings.Add(new KeyBinding
+        {
+            Command = new RelayCommand(editor.Copy),
+            Gesture = new KeyGesture(Key.C, KeyModifiers.Control)
+        });
+
         editor.ContextMenu = CreateContextMenu(editor);
         return editor;
     }
@@ -219,7 +225,7 @@ public sealed partial class PodLogsView : KubeUIView<PodLogsViewModel>
             .Items(
                 new MenuItem()
                     .Header(Assets.Resources.Shared_Action_Copy)
-                    .HotKey(new KeyGesture(Key.C, KeyModifiers.Control))
+                    .InputGesture(new KeyGesture(Key.C, KeyModifiers.Control))
                     .Icon(new FluentIcon().Icon(Icon.Copy))
                     .Command(new RelayCommand(editor.Copy)));
     }

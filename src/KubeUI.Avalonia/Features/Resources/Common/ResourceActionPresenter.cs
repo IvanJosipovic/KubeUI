@@ -53,6 +53,7 @@ internal static class ResourceActionPresenter
             Header = item.Title,
             Command = item.Command,
             CommandParameter = item.CommandParameter,
+            InputGesture = item.InputGesture,
             Icon = CreateIcon(item),
             IsVisible = item.IsVisible,
         };

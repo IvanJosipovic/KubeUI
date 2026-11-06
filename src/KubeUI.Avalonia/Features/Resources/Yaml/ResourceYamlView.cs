@@ -143,14 +143,37 @@ public sealed partial class ResourceYamlView : KubeUIView<ResourceYamlViewModel>
                 new YamlSyntaxHighlightingBehavior(),
                 new YamlDiagnosticRenderingBehavior(),
                 new YamlHoverToolTipBehavior(hoverPopup),
-                new YamlEditorScrollBehavior())
-            .KeyBindings(
-                [
-                    .. CodeFontSizeKeyBindings.Create(
-                        ((IServiceProviderHost)Application.Current!).Services.GetRequiredService<ISettingsService>()),
-                    new KeyBinding { Command = vm.RequestCompletionCommand, Gesture = new KeyGesture(Key.Space, KeyModifiers.Control) },
-                    new KeyBinding { Command = vm.UndoCommand, Gesture = new KeyGesture(Key.Z, KeyModifiers.Control) }
-                ]);
+                new YamlEditorScrollBehavior());
+
+        foreach (var keyBinding in CodeFontSizeKeyBindings.Create(
+                     ((IServiceProviderHost)Application.Current!).Services.GetRequiredService<ISettingsService>()))
+        {
+            editor.KeyBindings.Add(keyBinding);
+        }
+
+        editor.KeyBindings.Add(new KeyBinding
+        {
+            Command = vm.RequestCompletionCommand,
+            Gesture = new KeyGesture(Key.Space, KeyModifiers.Control)
+        });
+        editor.KeyBindings.Add(new KeyBinding
+        {
+            Command = vm.UndoCommand,
+            Gesture = new KeyGesture(Key.Z, KeyModifiers.Control)
+        });
+        editor.KeyBindings.Add(new KeyBinding
+        {
+            Command = new RelayCommand(
+                () =>
+                {
+                    if (vm.EditMode)
+                    {
+                        editor.Redo();
+                    }
+                },
+                () => vm.EditMode && editor.Document?.UndoStack.CanRedo == true),
+            Gesture = new KeyGesture(Key.Y, KeyModifiers.Control)
+        });
 
         editor.ContextMenu = CreateEditorContextMenu(vm, editor);
         return editor;
@@ -175,7 +198,7 @@ public sealed partial class ResourceYamlView : KubeUIView<ResourceYamlViewModel>
             .Header(header)
             .Icon(new FluentIcon().Icon(icon))
             .Command(new RelayCommand(execute))
-            .HotKey(hotKey);
+            .InputGesture(hotKey);
 
 
         return requiresEditMode

@@ -3,6 +3,7 @@ using System.Reactive.Linq;
 using Avalonia.Controls.Shapes;
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
+using Avalonia.Input;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using KubeUI.Avalonia.Features.Clusters.Catalog.Behaviors;
@@ -69,6 +70,7 @@ public sealed class NavigationView : KubeUIView<NavigationViewModel>
                             .Header(node, x => x.ConnectionMenuHeader)
                             .Command(node, x => x.ToggleConnectionCommand)
                             .CommandParameter(node)
+                            .InputGesture(new KeyGesture(Key.Enter))
                             .Icon(new FluentIcon().Icon(node, x => x.ConnectionMenuIcon)),
                         new MenuItem()
                             .Header(Assets.Resources.NavigationView_ContextMenu_Settings)
@@ -121,6 +123,7 @@ public sealed class NavigationView : KubeUIView<NavigationViewModel>
                                     .Header(Assets.Resources.NavigationView_ContextMenu_Open)
                                     .Command(link, x => x.OpenCommand)
                                     .CommandParameter(link)
+                                    .InputGesture(new KeyGesture(Key.Enter))
                                     .Icon(new FluentIcon().Icon(Icon.DocumentEdit)),
                                 new MenuItem()
                                     .Header(Assets.Resources.NavigationView_ContextMenu_OpenNewTab)
