@@ -1,4 +1,5 @@
 using Avalonia.Controls.Templates;
+using Avalonia.Input;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using KubeUI.Controls.Presentation;
@@ -11,14 +12,6 @@ public sealed class MRDiffDetectionView : KubeUIView<MRDiffDetectionViewModel>
     protected override object Build(MRDiffDetectionViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);
-
-        DynamicTableView table = new()
-        {
-            GridLinesVisibility = DynamicTableViewGridLinesVisibility.All,
-            Source = vm.TableSource,
-            ContextMenu = new ContextMenu(),
-            ContextMenuItemsFactory = targets => CreateContextMenuItems(vm, targets)
-        };
 
         return new Grid()
             .Rows("Auto,*")
@@ -61,7 +54,21 @@ public sealed class MRDiffDetectionView : KubeUIView<MRDiffDetectionViewModel>
                             .Command(vm, x => x.ClearCommand)
                             .ToolTip_Tip(L10n.Instance.MRDiffDetectionView_Clear.ToBinding())
                             .Content(new FluentIcon().Icon(Icon.Broom))),
-                table.Row(1));
+                new DynamicTableView
+                {
+                    ContextMenuItemsFactory = targets => CreateContextMenuItems(vm, targets),
+                    KeyBindings =
+                    {
+                        SelectionKeyBindingFactory.Create(
+                            Key.Enter,
+                            vm.ViewYamlCommand,
+                            () => vm.TableSource.SelectionModel.SelectedItem)
+                    }
+                }
+                    .GridLinesVisibility(DynamicTableViewGridLinesVisibility.All)
+                    .Source(vm.TableSource)
+                    .ContextMenu(new ContextMenu())
+                    .Row(1));
     }
 
     private static IEnumerable<MenuItem> CreateContextMenuItems(
@@ -73,7 +80,8 @@ public sealed class MRDiffDetectionView : KubeUIView<MRDiffDetectionViewModel>
             yield return new MenuItem()
                 .Header(ResourceL10n.Instance.ResourceConfigBase_MenuItem_ViewYaml.ToBinding())
                 .Command(viewModel, x => x.ViewYamlCommand)
-                .CommandParameter(row);
+                .CommandParameter(row)
+                .InputGesture(new KeyGesture(Key.Enter));
         }
     }
 }

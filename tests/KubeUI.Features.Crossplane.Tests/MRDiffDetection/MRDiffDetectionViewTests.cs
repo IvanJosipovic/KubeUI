@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Dock.Model.Core;
 using KubeUI.Features.Crossplane.MRDiffDetection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -74,6 +75,9 @@ public sealed class MRDiffDetectionViewTests
         menuItem.Header.ShouldBe(ResourceL10n.Instance.ResourceConfigBase_MenuItem_ViewYaml.CurrentValue()!);
         menuItem.Command.ShouldBe(viewModel.ViewYamlCommand);
         menuItem.CommandParameter.ShouldBeSameAs(row);
+        menuItem.InputGesture.ShouldBe(new KeyGesture(Key.Enter));
+        var binding = table.KeyBindings.ShouldHaveSingleItem();
+        binding.Gesture.ShouldBe(new KeyGesture(Key.Enter));
         table.ContextMenuItemsFactory!([new object()])!.Cast<object>().ShouldBeEmpty();
     }
 }

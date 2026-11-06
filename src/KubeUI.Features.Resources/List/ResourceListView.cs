@@ -79,13 +79,13 @@ public partial class ResourceListView : KubeUIView<IResourceListViewModel>
 
     private DynamicTableView CreateTable(IResourceListViewModel viewModel)
     {
-        DynamicTableView table = new()
+        var table = new DynamicTableView
         {
-            GridLinesVisibility = DynamicTableViewGridLinesVisibility.All,
-            ContextMenuItemsFactory = viewModel.GetContextMenuItems,
-            Source = viewModel.TableSource,
-            ContextMenu = CreateContextMenu()
-        };
+            ContextMenuItemsFactory = viewModel.GetContextMenuItems
+        }
+            .GridLinesVisibility(DynamicTableViewGridLinesVisibility.All)
+            .Source(viewModel.TableSource)
+            .ContextMenu(CreateContextMenu());
         ConfigureActionBindings(table, viewModel);
         table.DoubleTapped += TableOnDoubleTapped;
         return table;
@@ -111,22 +111,7 @@ public partial class ResourceListView : KubeUIView<IResourceListViewModel>
         Key key,
         IResourceListViewModel viewModel,
         ICommand command)
-    {
-        return new KeyBinding
-        {
-            Gesture = new KeyGesture(key),
-            Command = new RelayCommand(
-                () => ExecuteForSelection(viewModel, command),
-                () => command.CanExecute(GetSelectedItems(viewModel)))
-        };
-    }
-
-    private static void ExecuteForSelection(IResourceListViewModel viewModel, ICommand command)
-    {
-        var selectedItems = GetSelectedItems(viewModel);
-        if (command.CanExecute(selectedItems))
-            command.Execute(selectedItems);
-    }
+        => SelectionKeyBindingFactory.Create(key, command, () => GetSelectedItems(viewModel));
 
     private static IList GetSelectedItems(IResourceListViewModel viewModel)
         => viewModel.SelectionModel.SelectedItems.OfType<object>().ToList();
@@ -252,6 +237,7 @@ public partial class ResourceListView : KubeUIView<IResourceListViewModel>
                     .Setter(HeaderedItemsControl.HeaderProperty, CompiledBinding.Create<MenuItemViewModel, string?>(x => x.Title))
                     .Setter(MenuItem.CommandProperty, CompiledBinding.Create<MenuItemViewModel, ICommand?>(x => x.Command))
                     .Setter(MenuItem.CommandParameterProperty, CompiledBinding.Create<MenuItemViewModel, object?>(x => x.CommandParameter))
+                    .Setter(MenuItem.InputGestureProperty, CompiledBinding.Create<MenuItemViewModel, KeyGesture?>(x => x.InputGesture))
                     .Setter(ItemsControl.ItemsSourceProperty, CompiledBinding.Create<MenuItemViewModel, IEnumerable?>(x => x.Items))
                     .Setter(TagProperty, CompiledBinding.Create<MenuItemViewModel, bool>(x => x.IsSeparator))
                     .Setter(MenuItem.IconProperty,

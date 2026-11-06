@@ -128,6 +128,7 @@ public sealed class HubbleConnection : IHubbleConnection
         return CreateFlowObservable(namespaceSnapshot);
     }
 
+    [Obsolete]
     private IObservable<FlowViewModel> CreateFlowObservable(IReadOnlyList<string>? namespaces)
         => Observable.Create<FlowViewModel>((observer, token) => ReadFlowsAsync(observer, token, namespaces));
 

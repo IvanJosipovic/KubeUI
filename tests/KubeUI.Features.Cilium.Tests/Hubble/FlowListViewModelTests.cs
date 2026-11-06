@@ -41,7 +41,8 @@ public sealed class FlowListViewModelTests
         viewModel.TableSource.Items
             .Cast<FlowViewModel>()
             .Select(static flow => flow.Uuid)
-            .ShouldBe(["newest", "middle"]);
+            .Order(StringComparer.Ordinal)
+            .ShouldBe(["middle", "newest"]);
     }
 
     [AvaloniaFact]

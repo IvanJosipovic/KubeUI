@@ -172,7 +172,7 @@ public sealed class ProjectBoundaryTests
                 .Where(static element => element.Name.LocalName == "ProjectReference")
                 .Select(static element => (string?)element.Attribute("Include"))
                 .Where(static include => !string.IsNullOrWhiteSpace(include))
-                .Select(include => Path.GetFullPath(Path.Combine(projectDirectory, include!.Replace('\\', '/'))))
+                .Select(include => Path.GetFullPath(Path.Combine(projectDirectory, include!.Replace('\\', Path.DirectorySeparatorChar))))
                 .Select(path => projectNamesByPath.TryGetValue(path, out var name)
                     ? name
                     : throw new InvalidDataException($"{projectPath} references a project outside src or a missing project: {path}"))

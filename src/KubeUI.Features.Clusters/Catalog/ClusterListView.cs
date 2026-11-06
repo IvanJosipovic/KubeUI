@@ -1,7 +1,9 @@
 using Avalonia.Data.Converters;
+using Avalonia.Input;
 using Avalonia.Styling;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
+using KubeUI.Controls.Presentation;
 using KubeUI.Features.Clusters.Workspace;
 
 
@@ -44,11 +46,16 @@ public sealed partial class ClusterListView : KubeUIView<ClusterListViewModel>
                                 }))),
                 new DynamicTableView
                 {
-                    GridLinesVisibility = DynamicTableViewGridLinesVisibility.All,
-                    Source = vm.TableSource,
-                    ContextMenu = new ContextMenu(),
-                    ContextMenuItemsFactory = targets => CreateContextMenuItems(vm, targets)
-                }.Row(1));
+                    ContextMenuItemsFactory = targets => CreateContextMenuItems(vm, targets),
+                    KeyBindings =
+                    {
+                        SelectionKeyBindingFactory.Create(Key.Delete, vm.DeleteCommand, () => vm.SelectedItem)
+                    }
+                }
+                    .GridLinesVisibility(DynamicTableViewGridLinesVisibility.All)
+                    .Source(vm.TableSource)
+                    .ContextMenu(new ContextMenu())
+                    .Row(1));
     }
 
     private static IEnumerable<MenuItem> CreateContextMenuItems(ClusterListViewModel vm, IReadOnlyList<object> targets)
@@ -59,6 +66,7 @@ public sealed partial class ClusterListView : KubeUIView<ClusterListViewModel>
                 .Command(vm, x => x.DeleteCommand)
                 .CommandParameter(cluster)
                 .Header(L10n.Instance.ClusterListView_Delete.ToBinding())
+                .InputGesture(new KeyGesture(Key.Delete))
                 .Icon(new FluentIcon().Icon(Icon.Delete));
         }
     }

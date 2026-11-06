@@ -2,6 +2,7 @@
 using System.Text.Json;
 using Avalonia.Collections;
 using Avalonia.Controls.Notifications;
+using Avalonia.Input;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
@@ -307,6 +308,7 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
             Title = L10n.Instance.ResourceConfigBase_MenuItem_View.CurrentValue()!,
             Command = ViewCommand,
             CommandParameter = selectedItems?.ToList(),
+            InputGesture = new KeyGesture(Key.Enter),
             FluentIcon = Icon.PanelRight,
             ShowInPropertiesView = false,
         },
@@ -336,6 +338,7 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
             Title = L10n.Instance.ResourceConfigBase_MenuItem_Delete.CurrentValue()!,
             Command = DeleteCommand,
             CommandParameter = selectedItems?.ToList(),
+            InputGesture = new KeyGesture(Key.Delete),
             FluentIcon = Icon.Delete,
         }
     ];
