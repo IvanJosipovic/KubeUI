@@ -3,8 +3,8 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml.MarkupExtensions;
-using Avalonia.Xaml.Interactions.Core;
 using AvaloniaEdit;
+using CommunityToolkit.Mvvm.Input;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using KubeUI.Avalonia.Converters;
@@ -182,7 +182,6 @@ public sealed partial class PodLogsView : KubeUIView<PodLogsViewModel>
                     .Content(new FluentIcon().Icon(Icon.TextWrap)));
     }
 
-    [RequiresUnreferencedCode("Calls KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views.PodLogsView.CreateContextMenu(TextEditor)")]
     private TextEditor CreateEditor(PodLogsViewModel vm)
     {
         PodLogsEditorBehavior behavior = new();
@@ -214,7 +213,6 @@ public sealed partial class PodLogsView : KubeUIView<PodLogsViewModel>
         return editor;
     }
 
-    [RequiresUnreferencedCode("Calls Avalonia.Xaml.Interactions.Core.EventTriggerBehavior.EventTriggerBehavior()")]
     private static ContextMenu CreateContextMenu(TextEditor editor)
     {
         return new ContextMenu()
@@ -223,18 +221,7 @@ public sealed partial class PodLogsView : KubeUIView<PodLogsViewModel>
                     .Header(Assets.Resources.Shared_Action_Copy)
                     .HotKey(new KeyGesture(Key.C, KeyModifiers.Control))
                     .Icon(new FluentIcon().Icon(Icon.Copy))
-                    .Behaviors(new EventTriggerBehavior
-                    {
-                        EventName = nameof(MenuItem.Click),
-                        Actions =
-                        [
-                            new CallMethodAction
-                            {
-                                TargetObject = editor,
-                                MethodName = nameof(TextEditor.Copy),
-                            },
-                        ],
-                    }));
+                    .Command(new RelayCommand(editor.Copy)));
     }
 
 }
