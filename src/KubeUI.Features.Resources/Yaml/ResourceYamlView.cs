@@ -5,6 +5,7 @@ using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Xaml.Interactions.Core;
 using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
+using CommunityToolkit.Mvvm.Input;
 using FluentAvalonia.UI.Controls;
 using FluentAvalonia.UI.Controls.Primitives;
 using FluentIcons.Avalonia;
@@ -157,6 +158,19 @@ public sealed partial class ResourceYamlView : KubeUIView<ResourceYamlViewModel>
 
         editor.KeyBindings.Add(new KeyBinding { Command = vm.RequestCompletionCommand, Gesture = new KeyGesture(Key.Space, KeyModifiers.Control) });
         editor.KeyBindings.Add(new KeyBinding { Command = vm.UndoCommand, Gesture = new KeyGesture(Key.Z, KeyModifiers.Control) });
+        editor.KeyBindings.Add(new KeyBinding
+        {
+            Command = new RelayCommand(
+                () =>
+                {
+                    if (vm.EditMode)
+                    {
+                        editor.Redo();
+                    }
+                },
+                () => vm.EditMode && editor.Document?.UndoStack.CanRedo == true),
+            Gesture = new KeyGesture(Key.Y, KeyModifiers.Control)
+        });
 
         editor.ContextMenu = CreateEditorContextMenu(vm, editor);
         return editor;
@@ -167,35 +181,23 @@ public sealed partial class ResourceYamlView : KubeUIView<ResourceYamlViewModel>
     {
         return new ContextMenu()
             .Items(
-                CreateEditorMenuItem(vm, editor, Assets.Resources.ResourceYamlView_Action_Cut, new KeyGesture(Key.X, KeyModifiers.Control), Icon.Cut, "Cut", requiresEditMode: true),
-                CreateEditorMenuItem(vm, editor, SharedAssets.Resources.Shared_Action_Copy, new KeyGesture(Key.C, KeyModifiers.Control), Icon.Copy, "Copy", requiresEditMode: false),
-                CreateEditorMenuItem(vm, editor, Assets.Resources.ResourceYamlView_Action_Paste, new KeyGesture(Key.V, KeyModifiers.Control), Icon.ClipboardPaste, "Paste", requiresEditMode: true),
-                CreateEditorMenuItem(vm, editor, Assets.Resources.ResourceYamlView_Action_Delete, null, Icon.Delete, "Delete", requiresEditMode: true),
+                CreateEditorMenuItem(vm, Assets.Resources.ResourceYamlView_Action_Cut, new KeyGesture(Key.X, KeyModifiers.Control), Icon.Cut, editor.Cut, requiresEditMode: true),
+                CreateEditorMenuItem(vm, SharedAssets.Resources.Shared_Action_Copy, new KeyGesture(Key.C, KeyModifiers.Control), Icon.Copy, editor.Copy, requiresEditMode: false),
+                CreateEditorMenuItem(vm, Assets.Resources.ResourceYamlView_Action_Paste, new KeyGesture(Key.V, KeyModifiers.Control), Icon.ClipboardPaste, editor.Paste, requiresEditMode: true),
+                CreateEditorMenuItem(vm, Assets.Resources.ResourceYamlView_Action_Delete, null, Icon.Delete, editor.Delete, requiresEditMode: true),
                 new Separator().IsVisible(vm, x => x.EditMode),
-                CreateEditorMenuItem(vm, editor, Assets.Resources.ResourceYamlView_Action_Undo, new KeyGesture(Key.Z, KeyModifiers.Control), Icon.ArrowUndo, "Undo", requiresEditMode: true),
-                CreateEditorMenuItem(vm, editor, Assets.Resources.ResourceYamlView_Action_Redo, new KeyGesture(Key.Y, KeyModifiers.Control), Icon.ArrowRedo, "Redo", requiresEditMode: true));
+                CreateEditorMenuItem(vm, Assets.Resources.ResourceYamlView_Action_Undo, new KeyGesture(Key.Z, KeyModifiers.Control), Icon.ArrowUndo, () => editor.Undo(), requiresEditMode: true),
+                CreateEditorMenuItem(vm, Assets.Resources.ResourceYamlView_Action_Redo, new KeyGesture(Key.Y, KeyModifiers.Control), Icon.ArrowRedo, () => editor.Redo(), requiresEditMode: true));
     }
 
     [RequiresUnreferencedCode("Calls Avalonia.Xaml.Interactions.Core.EventTriggerBehavior.EventTriggerBehavior()")]
-    private static MenuItem CreateEditorMenuItem(ResourceYamlViewModel vm, TextEditor editor, string header, KeyGesture? hotKey, Icon icon, string methodName, bool requiresEditMode)
+    private static MenuItem CreateEditorMenuItem(ResourceYamlViewModel vm, string header, KeyGesture? hotKey, Icon icon, System.Action execute, bool requiresEditMode)
     {
         var item = new MenuItem()
             .Header(header)
             .Icon(new FluentIcon().Icon(icon))
-            .HotKey(hotKey);
-
-        Interaction.GetBehaviors(item).Add(new EventTriggerBehavior
-        {
-            EventName = nameof(MenuItem.Click),
-            Actions =
-            [
-                new CallMethodAction
-                {
-                    TargetObject = editor,
-                    MethodName = methodName
-                }
-            ]
-        });
+            .Command(new RelayCommand(execute))
+            .InputGesture(hotKey);
 
 
         return requiresEditMode

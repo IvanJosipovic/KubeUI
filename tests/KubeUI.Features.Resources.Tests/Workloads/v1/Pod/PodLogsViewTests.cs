@@ -2,6 +2,7 @@ using System.Text;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Avalonia.Xaml.Interactivity;
@@ -19,6 +20,29 @@ namespace KubeUI.Features.Resources.Tests.Workloads.v1.Pod;
 
 public sealed class PodLogsViewTests
 {
+    [AvaloniaFact]
+    public async Task copy_context_menu_item_uses_a_direct_command()
+    {
+        using var viewModel = Application.Current.GetRequiredTestService<PodLogsViewModel>();
+        using var window = Application.Current.CreateTestWindow(width: 800, height: 600);
+        PodLogsView view = new() { DataContext = viewModel };
+
+        window.Content = view;
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
+
+        var editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
+        editor.KeyBindings.ShouldContain(binding => binding.Gesture == new KeyGesture(Key.C, KeyModifiers.Control));
+        view.KeyBindings.ShouldBeEmpty();
+        var contextMenu = editor.ContextMenu.ShouldBeOfType<ContextMenu>();
+        var copyItem = contextMenu.Items.OfType<MenuItem>().Single();
+
+        copyItem.Command.ShouldNotBeNull();
+        Interaction.GetBehaviors(copyItem).ShouldBeEmpty();
+        copyItem.HotKey.ShouldBeNull();
+        copyItem.InputGesture.ShouldBe(new KeyGesture(Key.C, KeyModifiers.Control));
+    }
+
     [AvaloniaTheory]
     [InlineData("", "keep", false, "")]
     [InlineData("skip\nkeep", "", false, "skip\nkeep")]

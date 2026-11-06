@@ -14,13 +14,13 @@ public partial class PortForwarderListView : KubeUIView<PortForwarderListViewMod
     protected override object Build(PortForwarderListViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);
-        DynamicTableView table = new()
+        var table = new DynamicTableView
         {
-            GridLinesVisibility = DynamicTableViewGridLinesVisibility.All,
-            Source = vm.TableSource,
-            ContextMenu = new ContextMenu(),
             ContextMenuItemsFactory = targets => CreateContextMenuItems(vm, targets)
-        };
+        }
+            .GridLinesVisibility(DynamicTableViewGridLinesVisibility.All)
+            .Source(vm.TableSource)
+            .ContextMenu(new ContextMenu());
         table.KeyBindings.Add(CreateSelectionKeyBinding(Key.Enter, vm, vm.OpenCommand));
         table.KeyBindings.Add(CreateSelectionKeyBinding(Key.Delete, vm, vm.RemoveCommand));
         table.DoubleTapped += (_, e) =>
@@ -32,19 +32,7 @@ public partial class PortForwarderListView : KubeUIView<PortForwarderListViewMod
     }
 
     private static KeyBinding CreateSelectionKeyBinding(Key key, PortForwarderListViewModel viewModel, ICommand command)
-        => new()
-        {
-            Gesture = new KeyGesture(key),
-            Command = new RelayCommand(
-                () => ExecuteForSelection(viewModel, command),
-                () => viewModel.SelectedItem is { } selected && command.CanExecute(selected))
-        };
-
-    private static void ExecuteForSelection(PortForwarderListViewModel viewModel, ICommand command)
-    {
-        if (viewModel.SelectedItem is { } selected && command.CanExecute(selected))
-            command.Execute(selected);
-    }
+        => SelectionKeyBindingFactory.Create(key, command, () => viewModel.SelectedItem);
 
     private static TableViewRow? FindRow(object? source)
         => source is Visual visual ? visual.GetSelfAndVisualAncestors().OfType<TableViewRow>().FirstOrDefault() : null;
@@ -57,11 +45,13 @@ public partial class PortForwarderListView : KubeUIView<PortForwarderListViewMod
                 .Header(Assets.Resources.PortForwarderListView_OpenInBrowser)
                 .Command(vm, x => x.OpenCommand)
                 .CommandParameter(portForwarder)
+                .InputGesture(new KeyGesture(Key.Enter))
                 .Icon(new FluentIcon().Icon(Icon.Open));
             yield return new MenuItem()
                 .Header(Assets.Resources.PortForwarderListView_Remove)
                 .Command(vm, x => x.RemoveCommand)
                 .CommandParameter(portForwarder)
+                .InputGesture(new KeyGesture(Key.Delete))
                 .Icon(new FluentIcon().Icon(Icon.Delete));
         }
     }

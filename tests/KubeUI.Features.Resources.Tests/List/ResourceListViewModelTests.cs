@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.Threading;
 using DynamicData;
 using k8s.Models;
@@ -12,6 +13,26 @@ namespace KubeUI.Features.Resources.Tests.List;
 
 public sealed class ResourceListViewModelTests
 {
+    [AvaloniaFact]
+    public async Task Default_resource_actions_advertise_their_table_shortcuts_in_context_menus_and_flyouts()
+    {
+        using var cluster = await Application.Current.CreateClusterAsync();
+        using var viewModel = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
+        viewModel.Initialize(cluster);
+
+        var items = viewModel.GetContextMenuItems(null).ToArray();
+        items.Single(item => item.Title == Assets.Resources.ResourceConfigBase_MenuItem_View)
+            .InputGesture.ShouldBe(new KeyGesture(Key.Enter));
+        items.Single(item => item.Title == Assets.Resources.ResourceConfigBase_MenuItem_Delete)
+            .InputGesture.ShouldBe(new KeyGesture(Key.Delete));
+
+        var flyoutItems = ResourceActionPresenter.CreateFlyout(items).Items.OfType<MenuItem>().ToArray();
+        flyoutItems.Single(item => item.Header?.ToString() == Assets.Resources.ResourceConfigBase_MenuItem_View)
+            .InputGesture.ShouldBe(new KeyGesture(Key.Enter));
+        flyoutItems.Single(item => item.Header?.ToString() == Assets.Resources.ResourceConfigBase_MenuItem_Delete)
+            .InputGesture.ShouldBe(new KeyGesture(Key.Delete));
+    }
+
     [AvaloniaFact]
     public async Task Namespace_scope_search_filter_and_sort_compose_in_the_library_source()
     {
