@@ -6,4 +6,4 @@ namespace KubeUI.Features.GatewayApi.Assets;
 /// The Lingua manager for the Gateway API feature's resource files.
 /// </summary>
 [LinguaManager("./Resources.json")]
-internal sealed partial class LanguageManager;
+internal sealed partial class GatewayApiLanguageManager;

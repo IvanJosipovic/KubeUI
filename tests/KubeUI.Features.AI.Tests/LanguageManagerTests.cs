@@ -13,9 +13,9 @@ public sealed class LanguageManagerTests
     {
         var seen = new List<string?>();
 
-        using var subscription = LanguageManager.Instance.AgentChatView_Title.Subscribe(seen.Add);
+        using var subscription = AiLanguageManager.Instance.AgentChatView_Title.Subscribe(seen.Add);
 
-        LanguageManager.Instance.AgentChatView_Title.CurrentValue().ShouldBe("AI Assistant");
+        AiLanguageManager.Instance.AgentChatView_Title.CurrentValue().ShouldBe("AI Assistant");
         seen.ShouldNotBeEmpty();
         seen[^1].ShouldBe("AI Assistant");
     }

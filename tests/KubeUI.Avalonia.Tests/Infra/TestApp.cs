@@ -24,7 +24,7 @@ using Moq;
 
 namespace KubeUI.Avalonia.Tests.Infra;
 
-public class TestApp : KubeUIApplication, IDisposable
+public class TestApp : global::KubeUI.App.App, IDisposable
 {
     public Mock<IDialogManager>? DialogManager { get; private set; }
     public INotification? Notification { get; private set; }

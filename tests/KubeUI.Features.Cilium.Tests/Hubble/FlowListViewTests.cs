@@ -70,7 +70,7 @@ public sealed class FlowListViewTests
 
         var searchBox = toolbar.GetVisualDescendants()
             .OfType<TextBox>()
-            .Single(textBox => textBox.PlaceholderText == CiliumL10n.Instance.FlowListView_SearchWatermark.CurrentValue());
+            .Single(textBox => textBox.PlaceholderText == CiliumLanguageManager.Instance.FlowListView_SearchWatermark.CurrentValue());
         var picker = toolbar.GetVisualDescendants().OfType<NamespaceScopePicker>().Single();
         var filterControls = (StackPanel)picker.Parent!;
         filterControls.Children.IndexOf(searchBox).ShouldBeLessThan(filterControls.Children.IndexOf(picker));
@@ -90,6 +90,6 @@ public sealed class FlowListViewTests
         toolbar.GetVisualDescendants().OfType<ToggleButton>().ShouldHaveSingleItem();
         toolbar.GetVisualDescendants()
             .OfType<Button>()
-            .ShouldNotContain(button => Equals(ToolTip.GetTip(button), CiliumL10n.Instance.FlowListView_ButtonResetFilter.CurrentValue()));
+            .ShouldNotContain(button => Equals(ToolTip.GetTip(button), CiliumLanguageManager.Instance.FlowListView_ButtonResetFilter.CurrentValue()));
     }
 }

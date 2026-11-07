@@ -33,13 +33,13 @@ public sealed class HelmReleasesView : KubeUIView<HelmReleasesViewModel>
                     Leading = new Button()
                         .Command(vm, x => x.NewReleaseCommand)
                         .Content(new FluentIcon().Icon(Icon.AddSquare))
-                        .ToolTip_Tip(L10n.Instance.HelmReleasesView_Install.ToBinding()),
+                        .ToolTip_Tip(HelmLanguageManager.Instance.HelmReleasesView_Install.ToBinding()),
                     Count = new Label()
                         .VerticalContentAlignment(VerticalAlignment.Center)
                         .Content(CompiledBinding.Create<HelmReleasesViewModel, int>(
                             x => x.ItemCount,
                             source: vm,
-                            stringFormat: L10n.Instance.HelmReleasesView_ItemsFormat.CurrentValue()!)),
+                            stringFormat: HelmLanguageManager.Instance.HelmReleasesView_ItemsFormat.CurrentValue()!)),
                     Trailing = new StackPanel()
                         .MaxWidth(700)
                         .HorizontalAlignment(HorizontalAlignment.Right)
@@ -54,7 +54,7 @@ public sealed class HelmReleasesView : KubeUIView<HelmReleasesViewModel>
                             new Button()
                                 .Command(vm, x => x.RefreshCommand)
                                 .Content(new FluentIcon().Icon(Icon.ArrowSync))
-                                .ToolTip_Tip(SharedL10n.Instance.Shared_Refresh.ToBinding()))
+                                .ToolTip_Tip(FoundationLanguageManager.Instance.Shared_Refresh.ToBinding()))
                 },
                 table.Row(1));
         Interaction.GetBehaviors(root).Add(new EventTriggerBehavior
@@ -79,27 +79,27 @@ public sealed class HelmReleasesView : KubeUIView<HelmReleasesViewModel>
         foreach (var release in targets.OfType<HelmRelease>())
         {
             yield return new MenuItem()
-                .Header(L10n.Instance.HelmReleasesView_Visualize.ToBinding())
+                .Header(HelmLanguageManager.Instance.HelmReleasesView_Visualize.ToBinding())
                 .Command(vm, x => x.VisualizeReleaseCommand)
                 .CommandParameter(release)
                 .Icon(new FluentIcon().Icon(Icon.DataUsage));
             yield return new MenuItem()
-                .Header(L10n.Instance.HelmReleasesView_Values.ToBinding())
+                .Header(HelmLanguageManager.Instance.HelmReleasesView_Values.ToBinding())
                 .Command(vm, x => x.ViewValuesCommand)
                 .CommandParameter(release)
                 .Icon(new FluentIcon().Icon(Icon.Code));
             yield return new MenuItem()
-                .Header(L10n.Instance.HelmReleasesView_Upgrade.ToBinding())
+                .Header(HelmLanguageManager.Instance.HelmReleasesView_Upgrade.ToBinding())
                 .Command(vm, x => x.UpgradeReleaseCommand)
                 .CommandParameter(release)
                 .Icon(new FluentIcon().Icon(Icon.Edit));
             yield return new MenuItem()
-                .Header(L10n.Instance.HelmReleasesView_Rollback.ToBinding())
+                .Header(HelmLanguageManager.Instance.HelmReleasesView_Rollback.ToBinding())
                 .Command(vm, x => x.RollbackCommand)
                 .CommandParameter(release)
                 .Icon(new FluentIcon().Icon(Icon.ArrowUndo));
             yield return new MenuItem()
-                .Header(L10n.Instance.HelmReleasesView_Uninstall.ToBinding())
+                .Header(HelmLanguageManager.Instance.HelmReleasesView_Uninstall.ToBinding())
                 .Command(vm, x => x.UninstallCommand)
                 .CommandParameter(release)
                 .Icon(new FluentIcon().Icon(Icon.Delete));

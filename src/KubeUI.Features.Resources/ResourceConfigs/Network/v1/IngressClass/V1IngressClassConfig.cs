@@ -1,4 +1,4 @@
-﻿using k8s.Models;
+using k8s.Models;
 
 namespace KubeUI.Features.Resources.Network.v1.IngressClass;
 
@@ -18,28 +18,28 @@ public sealed partial class V1IngressClassConfig : ResourceConfig<V1IngressClass
             new ResourceListColumn<V1IngressClass, string>()
             {
                 Key = "controller",
-                Name = L10n.Instance.V1IngressClassConfig_Controller.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1IngressClassConfig_Controller.CurrentValue()!,
                 Field = x => x.Spec.Controller,
                 Width = 1, WidthMode = DynamicTableViewWidthMode.Star,
             },
             new ResourceListColumn<V1IngressClass, string>()
             {
                 Key = "api-group",
-                Name = L10n.Instance.V1IngressClassConfig_API_Group.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1IngressClassConfig_API_Group.CurrentValue()!,
                 Field = x => x.Spec?.Parameters?.ApiGroup ?? "",
                 Width = 1, WidthMode = DynamicTableViewWidthMode.Star,
             },
             new ResourceListColumn<V1IngressClass, string>()
             {
                 Key = "scope",
-                Name = L10n.Instance.V1IngressClassConfig_Scope.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1IngressClassConfig_Scope.CurrentValue()!,
                 Field = x => x.Spec.Parameters?.Scope ?? "",
                 Width = 1, WidthMode = DynamicTableViewWidthMode.Star,
             },
             new ResourceListColumn<V1IngressClass, string>()
             {
                 Key = "kind",
-                Name = L10n.Instance.V1IngressClassConfig_Kind.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1IngressClassConfig_Kind.CurrentValue()!,
                 Field = x => x.Spec.Parameters?.Kind ?? "",
                 Width = 1, WidthMode = DynamicTableViewWidthMode.Star,
             },

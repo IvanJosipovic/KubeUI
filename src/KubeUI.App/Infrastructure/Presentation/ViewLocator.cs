@@ -45,7 +45,7 @@ sealed class ViewLocator : IDataTemplate
         _logger.LogCritical("Unable to load View for ViewModel: {ViewModel}", modelType.FullName);
         return new TextBlock
         {
-            Text = string.Format(CultureInfo.CurrentCulture, L10n.Instance.ViewLocator_UnableToLoadView.CurrentValue()!, modelType.FullName)
+            Text = string.Format(CultureInfo.CurrentCulture, AppLanguageManager.Instance.ViewLocator_UnableToLoadView.CurrentValue()!, modelType.FullName)
         };
     }
 

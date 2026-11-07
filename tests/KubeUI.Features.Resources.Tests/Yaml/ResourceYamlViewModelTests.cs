@@ -65,7 +65,7 @@ public class ResourceYamlViewModelTests
         viewModel.Initialize(cluster, resource);
         viewModel.IsReadOnlyLocked.ShouldBeFalse();
         viewModel.YamlDocument.Text.ShouldContain("kind: Pod");
-        viewModel.Title.ShouldBe(ResourceL10n.Instance.ResourceYamlView_Title.CurrentValue()!);
+        viewModel.Title.ShouldBe(ResourcesLanguageManager.Instance.ResourceYamlView_Title.CurrentValue()!);
     }
 
     [AvaloniaFact]

@@ -24,10 +24,10 @@
   <ItemGroup>
     <Using Include="Xunit" />
     <Using Include="KubeUI.App" />
-    <Using Include="KubeUI.App.Assets.LanguageManager" Alias="AppL10n" />
-    <Using Include="KubeUI.Foundation.Assets.LanguageManager" Alias="SharedL10n" />
-    <Using Include="KubeUI.Features.Cilium.Assets.LanguageManager" Alias="CiliumL10n" />
-    <Using Include="KubeUI.Features.Clusters.Assets.LanguageManager" Alias="ClusterL10n" />
+    <Using Include="KubeUI.App.Assets" />
+    <Using Include="KubeUI.Foundation.Assets" />
+    <Using Include="KubeUI.Features.Cilium.Assets" />
+    <Using Include="KubeUI.Features.Clusters.Assets" />
     <Using Include="KubeUI.Controls.Converters" />
     <Using Include="KubeUI.Controls.Presentation" />
     <Using Include="KubeUI.Controls.DependencyInjection" />

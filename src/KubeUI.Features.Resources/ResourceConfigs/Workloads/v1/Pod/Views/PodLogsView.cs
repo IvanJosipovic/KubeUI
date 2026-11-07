@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Input;
@@ -110,7 +110,7 @@ public sealed partial class PodLogsView : KubeUIView<PodLogsViewModel>
                         new Button()
                             .VerticalAlignment(VerticalAlignment.Center)
                             .Command(vm, x => x.FollowLogsCommand)
-                            .Content(L10n.Instance.PodLogsView_ResumeFollowing.ToBinding())));
+                            .Content(ResourcesLanguageManager.Instance.PodLogsView_ResumeFollowing.ToBinding())));
     }
 
     private static TreeComboBox CreateSourcesSelector(PodLogsViewModel vm)
@@ -137,7 +137,7 @@ public sealed partial class PodLogsView : KubeUIView<PodLogsViewModel>
             .MaxHeight(32)
             .MaxDropDownHeight(500)
             .VerticalAlignment(VerticalAlignment.Center)
-            .PlaceholderText(L10n.Instance.PodLogsView_Sources.ToBinding())
+            .PlaceholderText(ResourcesLanguageManager.Instance.PodLogsView_Sources.ToBinding())
             .ItemsSource(vm, x => x.SourceTreeItems)
             .ItemTemplate(template)
             .Styles(
@@ -155,37 +155,37 @@ public sealed partial class PodLogsView : KubeUIView<PodLogsViewModel>
             .Children(
                 new Button()
                     .Command(vm, x => x.ClearCommand)
-                    .ToolTip_Tip(L10n.Instance.PodLogsView_Clear.ToBinding())
+                    .ToolTip_Tip(ResourcesLanguageManager.Instance.PodLogsView_Clear.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.Broom)),
                 new Button()
                     .Command(vm, x => x.DownloadLogsCommand)
-                    .ToolTip_Tip(L10n.Instance.PodLogsView_Download.ToBinding())
+                    .ToolTip_Tip(ResourcesLanguageManager.Instance.PodLogsView_Download.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.Save)),
                 new ToggleButton()
                     .IsChecked(vm, x => x.AutoScrollToBottom, BindingMode.TwoWay)
-                    .ToolTip_Tip(L10n.Instance.PodLogsView_FollowLogs.ToBinding())
+                    .ToolTip_Tip(ResourcesLanguageManager.Instance.PodLogsView_FollowLogs.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.ArrowDownload)),
                 new Button()
                     .Command(vm, x => x.JumpToControlledByLogsCommand)
                     .IsVisible(vm, x => x.CanJumpToController)
-                    .ToolTip_Tip(L10n.Instance.PodLogsView_Controller.ToBinding())
+                    .ToolTip_Tip(ResourcesLanguageManager.Instance.PodLogsView_Controller.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.ArrowUp)),
                 new ToggleButton()
                     .IsChecked(vm, x => x.Previous, BindingMode.TwoWay)
-                    .ToolTip_Tip(L10n.Instance.PodLogsView_Previous.ToBinding())
+                    .ToolTip_Tip(ResourcesLanguageManager.Instance.PodLogsView_Previous.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.ArrowUndo)),
                 new ToggleButton()
                     .IsChecked(vm, x => x.Timestamps, BindingMode.TwoWay)
-                    .ToolTip_Tip(L10n.Instance.PodLogsView_Timestamps.ToBinding())
+                    .ToolTip_Tip(ResourcesLanguageManager.Instance.PodLogsView_Timestamps.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.Timer)),
                 new ToggleButton()
                     .IsChecked(vm, x => x.ShowResourceNames, BindingMode.TwoWay)
                     .IsEnabled(vm, x => x.CanShowResourceNames)
-                    .ToolTip_Tip(L10n.Instance.PodLogsView_ShowResourceNames.ToBinding())
+                    .ToolTip_Tip(ResourcesLanguageManager.Instance.PodLogsView_ShowResourceNames.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.Tag)),
                 new ToggleButton()
                     .IsChecked(vm, x => x.WordWrap, BindingMode.TwoWay)
-                    .ToolTip_Tip(L10n.Instance.PodLogsView_WordWrap.ToBinding())
+                    .ToolTip_Tip(ResourcesLanguageManager.Instance.PodLogsView_WordWrap.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.TextWrap)));
     }
 
@@ -231,7 +231,7 @@ public sealed partial class PodLogsView : KubeUIView<PodLogsViewModel>
     private static ContextMenu CreateContextMenu(TextEditor editor)
     {
         var item = new MenuItem()
-            .Header(SharedL10n.Instance.Shared_Action_Copy.ToBinding())
+            .Header(FoundationLanguageManager.Instance.Shared_Action_Copy.ToBinding())
             .InputGesture(new KeyGesture(Key.C, KeyModifiers.Control))
             .Icon(new FluentIcon().Icon(Icon.Copy));
 

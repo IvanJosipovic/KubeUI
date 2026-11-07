@@ -1,4 +1,4 @@
-﻿using k8s.Models;
+using k8s.Models;
 using KubeUI.Controls.Presentation;
 
 namespace KubeUI.Features.Resources.Workloads.v1.StatefulSet;
@@ -12,55 +12,55 @@ public sealed class PropertiesView : ViewBase<V1StatefulSet>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(SharedL10n.Instance.Shared_Replicas.CurrentValue()!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Replicas.CurrentValue()!)
                     .Value(vm.Spec?.Replicas ?? 0),
                 new PropertyItem()
-                    .Key(SharedL10n.Instance.Shared_Ready_Replicas.CurrentValue()!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Ready_Replicas.CurrentValue()!)
                     .Value(vm.Status?.ReadyReplicas ?? 0),
                 new PropertyItem()
-                    .Key(SharedL10n.Instance.Shared_Current_Replicas.CurrentValue()!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Current_Replicas.CurrentValue()!)
                     .Value(vm.Status?.CurrentReplicas ?? 0),
                 new PropertyItem()
-                    .Key(SharedL10n.Instance.Shared_Updated_Replicas.CurrentValue()!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Updated_Replicas.CurrentValue()!)
                     .Value(vm.Status?.UpdatedReplicas ?? 0),
                 new PropertyItem()
-                    .Key(SharedL10n.Instance.Shared_Available_Replicas.CurrentValue()!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Available_Replicas.CurrentValue()!)
                     .Value(vm.Status?.AvailableReplicas ?? 0),
                 new PropertyItem()
-                    .Key(L10n.Instance.StatefulSetPropertiesView_Service_Name.CurrentValue()!)
+                    .Key(ResourcesLanguageManager.Instance.StatefulSetPropertiesView_Service_Name.CurrentValue()!)
                     .Value(vm.Spec?.ServiceName ?? ""),
                 new ExpandableSection()
-                    .Header(SharedL10n.Instance.Shared_Status.ToBinding())
+                    .Header(FoundationLanguageManager.Instance.Shared_Status.ToBinding())
                     .IsExpanded(true)
                     .Content(
                         new StackPanel()
                             .Children(
                                 new PropertyItem()
-                                    .Key(L10n.Instance.StatefulSetPropertiesView_Current_Revision.CurrentValue()!)
+                                    .Key(ResourcesLanguageManager.Instance.StatefulSetPropertiesView_Current_Revision.CurrentValue()!)
                                     .Value(vm.Status?.CurrentRevision ?? ""),
                                 new PropertyItem()
-                                    .Key(L10n.Instance.StatefulSetPropertiesView_Update_Revision.CurrentValue()!)
+                                    .Key(ResourcesLanguageManager.Instance.StatefulSetPropertiesView_Update_Revision.CurrentValue()!)
                                     .Value(vm.Status?.UpdateRevision ?? ""),
                                 new PropertyItem()
-                                    .Key(SharedL10n.Instance.Shared_Conditions.CurrentValue()!)
+                                    .Key(FoundationLanguageManager.Instance.Shared_Conditions.CurrentValue()!)
                                     .Value(vm.Status?.Conditions?.Count ?? 0))),
                 new ExpandableSection()
-                    .Header(SharedL10n.Instance.Shared_Configuration.ToBinding())
+                    .Header(FoundationLanguageManager.Instance.Shared_Configuration.ToBinding())
                     .IsExpanded(true)
                     .Content(
                         new StackPanel()
                             .Children(
                                 new PropertyItem()
-                                    .Key(L10n.Instance.StatefulSetPropertiesView_Pod_Management_Policy.CurrentValue()!)
+                                    .Key(ResourcesLanguageManager.Instance.StatefulSetPropertiesView_Pod_Management_Policy.CurrentValue()!)
                                     .Value(vm.Spec?.PodManagementPolicy ?? ""),
                                 new PropertyItem()
-                                    .Key(L10n.Instance.StatefulSetPropertiesView_Update_Strategy.CurrentValue()!)
+                                    .Key(ResourcesLanguageManager.Instance.StatefulSetPropertiesView_Update_Strategy.CurrentValue()!)
                                     .Value(vm.Spec?.UpdateStrategy?.Type ?? ""),
                                 new PropertyItem()
-                                    .Key(SharedL10n.Instance.Shared_Revision_History_Limit.CurrentValue()!)
+                                    .Key(FoundationLanguageManager.Instance.Shared_Revision_History_Limit.CurrentValue()!)
                                     .Value(vm.Spec?.RevisionHistoryLimit ?? 0),
                                 new PropertyItem()
-                                    .Key(SharedL10n.Instance.Shared_Min_Ready_Seconds.CurrentValue()!)
+                                    .Key(FoundationLanguageManager.Instance.Shared_Min_Ready_Seconds.CurrentValue()!)
                                     .Value(vm.Spec?.MinReadySeconds ?? 0))));
     }
 }

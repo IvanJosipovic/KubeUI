@@ -19,16 +19,16 @@ public sealed class PodStatusCellView : RefreshingCellTextBlock
         }
 
         var status = pod.Metadata?.DeletionTimestamp.HasValue == true
-            ? L10n.Instance.PodStatusCellView_Terminating.CurrentValue()!
+            ? ResourcesLanguageManager.Instance.PodStatusCellView_Terminating.CurrentValue()!
             : pod.Status?.Conditions?.FirstOrDefault(condition => condition.Type == "Ready") is { } ready
                 ? ready.Status == "True"
-                    ? L10n.Instance.PodStatusCellView_Running.CurrentValue()!
+                    ? ResourcesLanguageManager.Instance.PodStatusCellView_Running.CurrentValue()!
                     : ready.Reason == "PodCompleted"
-                        ? L10n.Instance.PodStatusCellView_PodCompleted.CurrentValue()!
-                        : ready.Reason ?? L10n.Instance.PodStatusCellView_Unknown.CurrentValue()!
-                : L10n.Instance.PodStatusCellView_Unknown.CurrentValue()!;
+                        ? ResourcesLanguageManager.Instance.PodStatusCellView_PodCompleted.CurrentValue()!
+                        : ready.Reason ?? ResourcesLanguageManager.Instance.PodStatusCellView_Unknown.CurrentValue()!
+                : ResourcesLanguageManager.Instance.PodStatusCellView_Unknown.CurrentValue()!;
 
-        Foreground = status == L10n.Instance.PodStatusCellView_PodCompleted.CurrentValue()! || status == L10n.Instance.PodStatusCellView_Running.CurrentValue()!
+        Foreground = status == ResourcesLanguageManager.Instance.PodStatusCellView_PodCompleted.CurrentValue()! || status == ResourcesLanguageManager.Instance.PodStatusCellView_Running.CurrentValue()!
             ? ApplicationBrushResources.GetBrush("PodStatusReadyBrush")
             : ApplicationBrushResources.GetBrush("PodStatusWarningBrush");
         return status;

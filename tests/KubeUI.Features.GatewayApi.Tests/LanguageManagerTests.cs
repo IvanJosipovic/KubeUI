@@ -13,10 +13,10 @@ public sealed class LanguageManagerTests
     {
         var seen = new List<string?>();
 
-        using var subscription = LanguageManager.Instance.GatewayApiCustomResourceConfig_GatewayGroup.Subscribe(seen.Add);
+        using var subscription = GatewayApiLanguageManager.Instance.GatewayApiCustomResourceConfig_GatewayGroup.Subscribe(seen.Add);
 
-        LanguageManager.Instance.GatewayApiCustomResourceConfig_GatewayGroup.CurrentValue().ShouldBe("Gateway");
-        LanguageManager.Instance.GatewayApiCustomResourceConfig_ExperimentalGroup.CurrentValue().ShouldBe("Experimental");
+        GatewayApiLanguageManager.Instance.GatewayApiCustomResourceConfig_GatewayGroup.CurrentValue().ShouldBe("Gateway");
+        GatewayApiLanguageManager.Instance.GatewayApiCustomResourceConfig_ExperimentalGroup.CurrentValue().ShouldBe("Experimental");
         seen.ShouldNotBeEmpty();
         seen[^1].ShouldBe("Gateway");
     }

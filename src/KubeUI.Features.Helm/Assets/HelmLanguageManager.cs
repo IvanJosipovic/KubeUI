@@ -6,4 +6,4 @@ namespace KubeUI.Features.Helm.Assets;
 /// The Lingua manager for the Helm feature's resource files.
 /// </summary>
 [LinguaManager("./Resources.json")]
-internal sealed partial class LanguageManager;
+internal sealed partial class HelmLanguageManager;

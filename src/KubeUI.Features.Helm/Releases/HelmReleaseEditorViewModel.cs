@@ -108,7 +108,7 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase, INotifyD
     public partial string? SelectedVersion { get; set; }
 
     /// <summary>Explains that Helm uses the selected version for install, upgrade, and preview.</summary>
-    public string ChartVersionNotice => L10n.Instance.HelmReleaseEditorView_ChartVersionNotice.CurrentValue()!;
+    public string ChartVersionNotice => HelmLanguageManager.Instance.HelmReleaseEditorView_ChartVersionNotice.CurrentValue()!;
 
     [ObservableProperty]
     public partial string ReleaseName { get; set; } = string.Empty;
@@ -182,7 +182,7 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase, INotifyD
         ValuesYaml = string.Empty;
         _applyingChartDefaults = false;
         Namespace = release?.Namespace ?? connection.Namespace ?? "default";
-        Title = release is null ? L10n.Instance.HelmReleaseEditorView_InstallTitle.CurrentValue()! : L10n.Instance.HelmReleaseEditorView_UpgradeTitle.CurrentValue()!;
+        Title = release is null ? HelmLanguageManager.Instance.HelmReleaseEditorView_InstallTitle.CurrentValue()! : HelmLanguageManager.Instance.HelmReleaseEditorView_UpgradeTitle.CurrentValue()!;
         Id = release is null
             ? $"{nameof(HelmReleaseEditorViewModel)}-{cluster.Runtime.Name}-{Guid.NewGuid():N}"
             : $"{nameof(HelmReleaseEditorViewModel)}-{cluster.Runtime.Name}-{release.Namespace}-{release.Name}";
@@ -254,7 +254,7 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase, INotifyD
                 else
                 {
                     UpdateAvailableVersions();
-                    SetChartError(L10n.Instance.HelmReleaseEditorView_ChooseChartReference.CurrentValue()!);
+                    SetChartError(HelmLanguageManager.Instance.HelmReleaseEditorView_ChooseChartReference.CurrentValue()!);
                 }
             }
         }
@@ -299,7 +299,7 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase, INotifyD
             UpdateAvailableCharts();
             if (IsRepositorySource && !string.IsNullOrWhiteSpace(value) && SelectedChart is null)
             {
-                SetFieldError(nameof(SelectedChart), L10n.Instance.HelmReleaseEditorView_ChartRequired.CurrentValue()!);
+                SetFieldError(nameof(SelectedChart), HelmLanguageManager.Instance.HelmReleaseEditorView_ChartRequired.CurrentValue()!);
             }
         }
     }
@@ -353,7 +353,7 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase, INotifyD
 
         if (!_updatingChartSelection && IsRepositorySource && !string.IsNullOrWhiteSpace(SelectedRepository))
         {
-            SetRequiredError(nameof(SelectedChart), value, L10n.Instance.HelmReleaseEditorView_ChartRequired.CurrentValue()!);
+            SetRequiredError(nameof(SelectedChart), value, HelmLanguageManager.Instance.HelmReleaseEditorView_ChartRequired.CurrentValue()!);
         }
 
         if (IsRepositorySource)
@@ -367,7 +367,7 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase, INotifyD
                 SetRequiredError(
                     nameof(SelectedVersion),
                     SelectedVersion,
-                    L10n.Instance.HelmReleaseEditorView_VersionRequired.CurrentValue()!);
+                    HelmLanguageManager.Instance.HelmReleaseEditorView_VersionRequired.CurrentValue()!);
             }
         }
     }
@@ -413,7 +413,7 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase, INotifyD
 
         if (IsUpgrade && string.IsNullOrWhiteSpace(Chart))
         {
-            SetChartError(L10n.Instance.HelmReleaseEditorView_ChooseChartReference.CurrentValue()!);
+            SetChartError(HelmLanguageManager.Instance.HelmReleaseEditorView_ChooseChartReference.CurrentValue()!);
             return;
         }
 
@@ -426,17 +426,17 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase, INotifyD
         var confirmation = await _dialogService.ShowContentDialogAsync(this, new ContentDialogSettings
         {
             Title = _editing
-                ? L10n.Instance.HelmReleaseEditorView_ConfirmUpgradeTitle.CurrentValue()!
-                : L10n.Instance.HelmReleaseEditorView_ConfirmInstallTitle.CurrentValue()!,
+                ? HelmLanguageManager.Instance.HelmReleaseEditorView_ConfirmUpgradeTitle.CurrentValue()!
+                : HelmLanguageManager.Instance.HelmReleaseEditorView_ConfirmInstallTitle.CurrentValue()!,
             Content = string.Format(
                 _editing
-                    ? L10n.Instance.HelmReleaseEditorView_ConfirmUpgradeContent.CurrentValue()!
-                    : L10n.Instance.HelmReleaseEditorView_ConfirmInstallContent.CurrentValue()!,
+                    ? HelmLanguageManager.Instance.HelmReleaseEditorView_ConfirmUpgradeContent.CurrentValue()!
+                    : HelmLanguageManager.Instance.HelmReleaseEditorView_ConfirmInstallContent.CurrentValue()!,
                 ReleaseName.Trim(),
                 Chart.Trim(),
                 Namespace.Trim()),
-            PrimaryButtonText = L10n.Instance.HelmReleaseEditorView_InstallUpgrade.CurrentValue()!,
-            SecondaryButtonText = SharedL10n.Instance.Shared_Cancel.CurrentValue()!,
+            PrimaryButtonText = HelmLanguageManager.Instance.HelmReleaseEditorView_InstallUpgrade.CurrentValue()!,
+            SecondaryButtonText = FoundationLanguageManager.Instance.Shared_Cancel.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary
         });
 
@@ -559,7 +559,7 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase, INotifyD
 
     partial void OnReleaseNameChanged(string value)
     {
-        SetRequiredError(nameof(ReleaseName), value, L10n.Instance.HelmReleaseEditorView_ReleaseNameRequired.CurrentValue()!);
+        SetRequiredError(nameof(ReleaseName), value, HelmLanguageManager.Instance.HelmReleaseEditorView_ReleaseNameRequired.CurrentValue()!);
         SaveCommand.NotifyCanExecuteChanged();
         PreviewCommand.NotifyCanExecuteChanged();
     }
@@ -569,7 +569,7 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase, INotifyD
         ClearChartError();
         if (IsOciSource)
         {
-            SetRequiredError(nameof(Chart), value, L10n.Instance.HelmReleaseEditorView_ChartRequired.CurrentValue()!);
+            SetRequiredError(nameof(Chart), value, HelmLanguageManager.Instance.HelmReleaseEditorView_ChartRequired.CurrentValue()!);
         }
 
         OnPropertyChanged(nameof(CanEditOciChartVersion));
@@ -660,7 +660,7 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase, INotifyD
     {
         if (IsRepositorySource && SelectedChart is not null)
         {
-            SetRequiredError(nameof(SelectedVersion), value, L10n.Instance.HelmReleaseEditorView_VersionRequired.CurrentValue()!);
+            SetRequiredError(nameof(SelectedVersion), value, HelmLanguageManager.Instance.HelmReleaseEditorView_VersionRequired.CurrentValue()!);
         }
         else
         {
@@ -679,7 +679,7 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase, INotifyD
 
     partial void OnNamespaceChanged(string value)
     {
-        SetRequiredError(nameof(Namespace), value, L10n.Instance.HelmReleaseEditorView_NamespaceRequired.CurrentValue()!);
+        SetRequiredError(nameof(Namespace), value, HelmLanguageManager.Instance.HelmReleaseEditorView_NamespaceRequired.CurrentValue()!);
         SaveCommand.NotifyCanExecuteChanged();
         PreviewCommand.NotifyCanExecuteChanged();
     }

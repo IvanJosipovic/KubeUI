@@ -36,10 +36,10 @@ public sealed class VerdictBadge : Border
             {
                 Text = v switch
                 {
-                    FlowVerdict.Forwarded => L10n.Instance.FlowVerdict_Allowed.CurrentValue()!,
-                    FlowVerdict.Dropped => L10n.Instance.FlowVerdict_Dropped.CurrentValue()!,
-                    FlowVerdict.Error => L10n.Instance.FlowVerdict_Error.CurrentValue()!,
-                    _ => L10n.Instance.FlowVerdict_Unknown.CurrentValue()!
+                    FlowVerdict.Forwarded => CiliumLanguageManager.Instance.FlowVerdict_Allowed.CurrentValue()!,
+                    FlowVerdict.Dropped => CiliumLanguageManager.Instance.FlowVerdict_Dropped.CurrentValue()!,
+                    FlowVerdict.Error => CiliumLanguageManager.Instance.FlowVerdict_Error.CurrentValue()!,
+                    _ => CiliumLanguageManager.Instance.FlowVerdict_Unknown.CurrentValue()!
                 },
                 Foreground = ApplicationBrushResources.GetBrush("SystemBaseHighBrush"),
                 FontSize = 11,

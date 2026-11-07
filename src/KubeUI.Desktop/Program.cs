@@ -29,7 +29,6 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Velopack;
-using KubeUIApplication = KubeUI.App.App;
 
 [assembly: GenerateMarkupExtensionsForAvalonia(false)]
 
@@ -80,7 +79,7 @@ internal static class Program
     {
         RegisterAvaloniaShutdown(services);
 
-        var builder = AppBuilder.Configure(() => new KubeUIApplication(services));
+        var builder = AppBuilder.Configure(() => new global::KubeUI.App.App(services));
         builder = (configurePlatform ?? (static builder => builder.UsePlatformDetect()))(builder);
 
         builder = builder

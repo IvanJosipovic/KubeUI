@@ -1,4 +1,4 @@
-﻿using k8s.Models;
+using k8s.Models;
 using KubeUI.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Features.Resources.Configuration.v1.LimitRange;
@@ -12,7 +12,7 @@ public sealed class PropertiesView : ViewBase<V1LimitRange>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(SharedL10n.Instance.Shared_Limits.CurrentValue()!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Limits.CurrentValue()!)
                     .Value(vm.Spec.Limits.Count));
     }
 }

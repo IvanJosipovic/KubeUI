@@ -6,4 +6,4 @@ namespace KubeUI.Features.Cilium.Assets;
 /// The Lingua manager for the Cilium feature's resource files.
 /// </summary>
 [LinguaManager("./Resources.json")]
-internal sealed partial class LanguageManager;
+internal sealed partial class CiliumLanguageManager;

@@ -1,4 +1,4 @@
-﻿using k8s.Models;
+using k8s.Models;
 
 namespace KubeUI.Features.Resources.Configuration.v1.RuntimeClass;
 
@@ -18,7 +18,7 @@ public sealed partial class V1RuntimeClassConfig : ResourceConfig<V1RuntimeClass
             new ResourceListColumn<V1RuntimeClass, string>()
             {
                 Key = "handler",
-                Name = L10n.Instance.V1RuntimeClassConfig_Handler.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1RuntimeClassConfig_Handler.CurrentValue()!,
                 Field = x => x.Handler,
                 WidthMode = DynamicTableViewWidthMode.Cells
             },

@@ -1,4 +1,4 @@
-﻿using k8s.Models;
+using k8s.Models;
 
 namespace KubeUI.Features.Resources.Configuration.v1.ValidatingWebhookConfiguration;
 
@@ -19,7 +19,7 @@ public sealed partial class V1ValidatingWebhookConfigurationConfig : ResourceCon
             new ResourceListColumn<V1ValidatingWebhookConfiguration, int>()
             {
                 Key = "webhooks",
-                Name = L10n.Instance.V1ValidatingWebhookConfigurationConfig_Webhooks.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1ValidatingWebhookConfigurationConfig_Webhooks.CurrentValue()!,
                 Field = x => x.Webhooks.Count,
                 WidthMode = DynamicTableViewWidthMode.Header
             },

@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Animation;
 using Avalonia.Controls.Primitives;
 using Avalonia.Data.Converters;
@@ -46,17 +46,17 @@ public sealed partial class VisualizationView : KubeUIView<VisualizationViewMode
             .Children(
                 new ToggleButton()
                     .IsChecked(vm, x => x.HideNoise, BindingMode.TwoWay)
-                    .ToolTip_Tip(L10n.Instance.VisualizationView_HideNoiseTooltip.ToBinding())
+                    .ToolTip_Tip(ResourcesLanguageManager.Instance.VisualizationView_HideNoiseTooltip.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.EyeOff)),
                 new ToggleButton()
                     .IsChecked(vm, x => x.ShowNotReadyOnly, BindingMode.TwoWay)
-                    .ToolTip_Tip(L10n.Instance.VisualizationView_ShowNotReadyOnlyTooltip.ToBinding())
+                    .ToolTip_Tip(ResourcesLanguageManager.Instance.VisualizationView_ShowNotReadyOnlyTooltip.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.Warning)),
                 new Label()
                     .VerticalContentAlignment(VerticalAlignment.Center)
                     .Content(CompiledBinding.Create<VisualizationViewModel, int>(x => x.Graph!.Resources.Count,
                         source: vm,
-                        stringFormat: L10n.Instance.VisualizationView_ItemsFormat.CurrentValue()!)),
+                        stringFormat: ResourcesLanguageManager.Instance.VisualizationView_ItemsFormat.CurrentValue()!)),
                 new Label()
                     .Content(vm, x => x.RootResourceDisplay)
                     .VerticalContentAlignment(VerticalAlignment.Center)
@@ -74,7 +74,7 @@ public sealed partial class VisualizationView : KubeUIView<VisualizationViewMode
                     .Width(200)
                     .MaxHeight(20)
                     .Classes("ClearButton")
-                    .ToolTip_Tip(L10n.Instance.VisualizationView_ResourceTypesTooltip.ToBinding())
+                    .ToolTip_Tip(ResourcesLanguageManager.Instance.VisualizationView_ResourceTypesTooltip.ToBinding())
                     .ItemsSource(vm, x => x.ResourceTypes)
                     .SelectedItems(vm, x => x.SelectedResourceTypes)
                     .IsEnabled(vm, x => x.HasResourceTypes),
@@ -106,7 +106,7 @@ public sealed partial class VisualizationView : KubeUIView<VisualizationViewMode
                 .Children(
                     new TextBlock()
                         .Row(0)
-                        .Text(L10n.Instance.VisualizationView_ErrorHeader.ToBinding()),
+                        .Text(ResourcesLanguageManager.Instance.VisualizationView_ErrorHeader.ToBinding()),
                     new SelectableTextBlock()
                         .Row(1)
                         .Text(vm, x => x.ErrorMessage)

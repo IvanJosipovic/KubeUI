@@ -73,7 +73,7 @@ public sealed class NavigationView : KubeUIView<NavigationViewModel>
                             .InputGesture(new KeyGesture(Key.Enter))
                             .Icon(new FluentIcon().Icon(node, x => x.ConnectionMenuIcon)),
                         new MenuItem()
-                            .Header(L10n.Instance.NavigationView_ContextMenu_Settings.ToBinding())
+                            .Header(AppLanguageManager.Instance.NavigationView_ContextMenu_Settings.ToBinding())
                             .Command(node, x => x.OpenSettingsCommand)
                             .CommandParameter(node)
                             .Icon(new FluentIcon().Icon(Icon.Settings))
@@ -98,10 +98,10 @@ public sealed class NavigationView : KubeUIView<NavigationViewModel>
                 {
                     return status switch
                     {
-                        ClusterStatus.None => L10n.Instance.NavigationView_ToolTip_ClickToConnect.CurrentValue()!,
-                        ClusterStatus.Connecting => L10n.Instance.NavigationView_ToolTip_Connecting.CurrentValue()!,
-                        ClusterStatus.Errored => L10n.Instance.NavigationView_ToolTip_Errored.CurrentValue()!,
-                        ClusterStatus.Connected => L10n.Instance.NavigationView_ToolTip_Connected.CurrentValue()!,
+                        ClusterStatus.None => AppLanguageManager.Instance.NavigationView_ToolTip_ClickToConnect.CurrentValue()!,
+                        ClusterStatus.Connecting => AppLanguageManager.Instance.NavigationView_ToolTip_Connecting.CurrentValue()!,
+                        ClusterStatus.Errored => AppLanguageManager.Instance.NavigationView_ToolTip_Errored.CurrentValue()!,
+                        ClusterStatus.Connected => AppLanguageManager.Instance.NavigationView_ToolTip_Connected.CurrentValue()!,
                         _ => string.Empty
                     };
                 })),
@@ -120,13 +120,13 @@ public sealed class NavigationView : KubeUIView<NavigationViewModel>
                         ? new ContextMenu()
                             .Items([
                                 new MenuItem()
-                                    .Header(L10n.Instance.NavigationView_ContextMenu_Open.ToBinding())
+                                    .Header(AppLanguageManager.Instance.NavigationView_ContextMenu_Open.ToBinding())
                                     .Command(link, x => x.OpenCommand)
                                     .CommandParameter(link)
                                     .InputGesture(new KeyGesture(Key.Enter))
                                     .Icon(new FluentIcon().Icon(Icon.DocumentEdit)),
                                 new MenuItem()
-                                    .Header(L10n.Instance.NavigationView_ContextMenu_OpenNewTab.ToBinding())
+                                    .Header(AppLanguageManager.Instance.NavigationView_ContextMenu_OpenNewTab.ToBinding())
                                     .Command(link, x => x.OpenInNewTabCommand)
                                     .CommandParameter(link)
                                     .Icon(new FluentIcon().Icon(Icon.AddSquare))

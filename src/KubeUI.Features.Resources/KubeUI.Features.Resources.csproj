@@ -20,7 +20,7 @@
     <Using Include="KubeUI.Foundation.Styles" />
     <Using Include="CommunityToolkit.Mvvm.ComponentModel" />
     <Using Include="CommunityToolkit.Mvvm.Input" />
-    <Using Include="KubeUI.Foundation.Assets.LanguageManager" Alias="SharedL10n" />
+    <Using Include="KubeUI.Foundation.Assets" />
     <Using Include="KubeUI.Foundation.Localization" />
     <Using Include="KubeUI.Controls.Presentation" />
     <Using Include="KubeUI.Controls.Editors" />
@@ -30,7 +30,7 @@
     <Using Include="KubeUI.Controls.Docking" />
     <Using Include="KubeUI.Controls.Platform" />
     <Using Include="KubeUI.Controls.Threading" />
-    <Using Include="KubeUI.Features.Resources.Assets.LanguageManager" Alias="L10n" />
+    <Using Include="KubeUI.Features.Resources.Assets" />
     <Using Include="KubeUI.Features.Resources.Contracts" />
     <Using Include="KubeUI.Kubernetes" />
     <Using Include="Microsoft.Extensions.DependencyInjection" />

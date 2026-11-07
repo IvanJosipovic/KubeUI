@@ -218,7 +218,7 @@ public sealed class ApplicationShutdownTests
         }
     }
 
-    private sealed class TestApp(IServiceProvider services) : KubeUIApplication(services), IDisposable
+    private sealed class TestApp(IServiceProvider services) : global::KubeUI.App.App(services), IDisposable
     {
         public bool TelemetryWasFlushed => services.GetRequiredService<RecordingTelemetryFlusher>().FlushCount > 0;
 

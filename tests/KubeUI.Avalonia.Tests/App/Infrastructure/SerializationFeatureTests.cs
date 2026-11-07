@@ -37,7 +37,7 @@ public sealed class SerializationFeatureTests
         var resources = workspace.GetResourceConfigs();
         resources.ShouldNotBeEmpty();
         var nestedKubernetesTypes = new HashSet<Type>();
-        nestedKubernetesTypes.Add(typeof(GenericKubernetesObject));
+        nestedKubernetesTypes.Add(typeof(global::KubeUI.Kubernetes.GenericKubernetesObject));
         nestedKubernetesTypes.Add(typeof(KubernetesObject));
         AddNestedKubernetesModelTypes(typeof(k8s.KubeConfigModels.K8SConfiguration), nestedKubernetesTypes);
         AddNestedKubernetesModelTypes(typeof(V1PodTemplate), nestedKubernetesTypes);
