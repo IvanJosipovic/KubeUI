@@ -3,7 +3,7 @@ using Avalonia.VisualTree;
 using Avalonia.Xaml.Interactivity;
 using Ursa.Controls;
 
-namespace KubeUI.App.Styles;
+namespace KubeUI.Controls.Styles;
 
 internal sealed class ToggleMultiComboBoxBehavior : Behavior<MultiComboBoxSelectedItemList>
 {

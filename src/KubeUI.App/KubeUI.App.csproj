@@ -22,6 +22,7 @@
     <Using Include="KubeUI.App.Assets.LanguageManager" Alias="L10n" />
     <Using Include="KubeUI.Foundation.Assets.LanguageManager" Alias="SharedL10n" />
     <Using Include="KubeUI.Controls.Presentation" />
+    <Using Include="KubeUI.Controls.Behaviors" />
     <Using Include="KubeUI.Controls.DependencyInjection" />
     <Using Include="KubeUI.Controls.Docking" />
     <Using Include="KubeUI.Controls.Platform" />

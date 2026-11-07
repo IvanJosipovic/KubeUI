@@ -6,13 +6,12 @@ using Avalonia.Markup.Declarative;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
-using k8s.Models;
 using KubeUI.Controls.Presentation;
 using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Features.Cilium.Hubble.Controls;
+using KubeUI.Features.Clusters.Presentation;
 using SvcSystems.Avalonia.DynamicTableView;
 using Westermo.GraphX.Common.Enums;
-using UrsaControls = Ursa.Controls;
 
 namespace KubeUI.Features.Cilium.Hubble;
 
@@ -94,12 +93,13 @@ public sealed partial class ServiceMapView : KubeUIView<ServiceMapViewModel>
                     .VerticalAlignment(VerticalAlignment.Center)
                     .Children(
                         CreateLayoutSelector(vm),
-                        CreateNamespaceSelector(vm),
-                        new ToggleButton()
-                            .Margin(0, 0, 2, 0)
-                            .IsChecked(CompiledBinding.Create<ServiceMapViewModel, bool>(x => x.IsNamespaceSelectionLinked, source: vm, mode: BindingMode.TwoWay))
-                            .ToolTip_Tip(ResourceL10n.Instance.ResourceListView_NamespaceLink.ToBinding())
-                            .Content(new FluentIcon().Icon(Icon.Link))));
+                        new NamespaceScopePicker()
+                            .BindValue(NamespaceScopePicker.NamespacesProperty,
+                                CompiledBinding.Create<ServiceMapViewModel, IEnumerable>(x => x.Cluster!.Runtime.Namespaces, source: vm))
+                            .BindValue(NamespaceScopePicker.SelectedNamespacesProperty,
+                                CompiledBinding.Create<ServiceMapViewModel, IList>(x => x.SelectedNamespaces, source: vm, mode: BindingMode.OneWay))
+                            .BindValue(NamespaceScopePicker.IsSelectionLinkedProperty,
+                                CompiledBinding.Create<ServiceMapViewModel, bool>(x => x.IsNamespaceSelectionLinked, source: vm, mode: BindingMode.TwoWay))));
     }
 
     private static ComboBox CreateLayoutSelector(ServiceMapViewModel viewModel)
@@ -137,25 +137,6 @@ public sealed partial class ServiceMapView : KubeUIView<ServiceMapViewModel>
             LayoutAlgorithmTypeEnum.Tree => L10n.Instance.ServiceMapView_Layout_Tree.CurrentValue()!,
             _ => algorithm.ToString()
         };
-    }
-
-    private static UrsaControls.MultiComboBox CreateNamespaceSelector(ServiceMapViewModel viewModel)
-    {
-        var template = new FuncDataTemplate<V1Namespace>((ns, _) =>
-            new TextBlock().Text(ns?.Metadata?.Name ?? string.Empty));
-
-        return new UrsaControls.MultiComboBox()
-            .Width(200)
-            .MinWidth(140)
-            .MaxHeight(20)
-            .Margin(0, 0, 2, 0)
-            .HorizontalAlignment(HorizontalAlignment.Stretch)
-            .Classes("ClearButton")
-            .ItemsSource(CompiledBinding.Create<ServiceMapViewModel, IEnumerable>(x => x.Cluster!.Runtime.Namespaces, source: viewModel))
-            .PlaceholderText(ResourceL10n.Instance.ResourceListView_SelectNamespace.ToBinding())
-            .SelectedItems(CompiledBinding.Create<ServiceMapViewModel, IList>(x => x.SelectedNamespaces, source: viewModel))
-            .ItemTemplate(template)
-            .SelectedItemTemplate(template);
     }
 
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Graph control ownership is transferred to the visual tree via the fluent builder.")]

@@ -14,6 +14,6 @@ public sealed class EventLastSeenCell : RelativeTimeCellBase
 
     protected override DateTime? ResolveTimestamp(object? dataContext)
         => dataContext is Corev1Event resource
-            ? RelativeTimeFormatter.ResolveTimestamp(resource)
+            ? KubernetesEventTimestampResolver.Resolve(resource)
             : null;
 }

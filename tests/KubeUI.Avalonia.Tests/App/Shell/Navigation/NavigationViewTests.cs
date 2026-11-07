@@ -420,6 +420,7 @@ public sealed class NavigationViewTests
                 AppL10n.Instance.NavigationView_ContextMenu_Settings.CurrentValue()!
             ]);
         tree.SelectedItem.ShouldBeNull();
+
         clusterMenu.Close();
         clusterMenu.IsOpen.ShouldBeFalse();
 
@@ -436,6 +437,8 @@ public sealed class NavigationViewTests
                 AppL10n.Instance.NavigationView_ContextMenu_OpenNewTab.CurrentValue()!
             ]);
         tree.SelectedItem.ShouldBeNull();
+        window.Content = null;
+        podsMenu.IsOpen.ShouldBeFalse();
     }
 
     [AvaloniaFact]

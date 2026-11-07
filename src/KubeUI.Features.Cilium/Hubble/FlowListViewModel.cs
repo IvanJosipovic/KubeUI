@@ -232,8 +232,8 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
                     {
                         Text = flow.MatchedPolicyName ?? L10n.Instance.FlowListView_NoPolicy.CurrentValue()!,
                         Foreground = flow.Verdict == FlowVerdict.Dropped
-                            ? ApplicationBrushResources.GetBrush("ContainerStatusErrorBrush")
-                            : ApplicationBrushResources.GetBrush("SubtleOutlineBrush")
+                            ? ApplicationBrushResources.GetBrush("SemanticErrorBrush")
+                            : ApplicationBrushResources.GetBrush("SemanticMutedBrush")
                     }))
         ];
 

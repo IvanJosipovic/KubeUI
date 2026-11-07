@@ -1,7 +1,19 @@
-﻿namespace KubeUI.Features.Resources.Properties.Controls;
+using Avalonia.Controls.Primitives;
 
+namespace KubeUI.Controls.Presentation;
+
+/// <summary>An initially expanded section with compact header, chevron, and content spacing.</summary>
+/// <remarks>
+/// Uses the host's <see cref="Expander"/> theme without requiring application-specific styles.
+/// Compact defaults are local resources named <c>ExpanderMinHeight</c>,
+/// <c>ExpanderHeaderPadding</c>, <c>ExpanderChevronMargin</c>,
+/// <c>ExpanderChevronButtonSize</c>, and <c>ExpanderContentPadding</c>.
+/// Callers can replace these resources to customize an individual section.
+/// Header, content, and expansion state use the inherited <see cref="Expander"/> API.
+/// </remarks>
 public partial class ExpandableSection : Expander, IDeclarativeViewBase
 {
+    /// <summary>Initializes a new expandable section with default compact styling.</summary>
     public ExpandableSection()
     {
         HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -30,7 +42,6 @@ public partial class ExpandableSection : Expander, IDeclarativeViewBase
 #endif
     }
 
+    /// <inheritdoc />
     protected override Type StyleKeyOverride => typeof(Expander);
 }
-
-

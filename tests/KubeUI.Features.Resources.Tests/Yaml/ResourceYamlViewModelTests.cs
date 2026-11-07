@@ -23,6 +23,8 @@ using KubernetesClient.Informer.Client;
 using KubeUI.App.Infrastructure.Platform;
 using KubeUI.App.Shell.Documents.About;
 using KubeUI.App.Shell.Main;
+using KubeUI.Controls.Editors;
+using KubeUI.Controls.Editors.Behaviors;
 using KubeUI.Features.Resources.Yaml.Behaviors;
 using KubeUI.Kubernetes.Serialization;
 using Microsoft.Extensions.DependencyInjection;
@@ -178,7 +180,7 @@ public class ResourceYamlViewModelTests
             """.ReplaceLineEndings("\n");
 
 
-        var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
+        var foldings = YamlIndentationFoldingStrategy.CreateNewFoldings(text, out _).ToList();
         foldings.Count.ShouldBe(2);
         foldings[0].Name.TrimEnd().ShouldBe($"prop2:");
         foldings[1].Name.TrimEnd().ShouldBe($"  prop2Nested:");
@@ -200,7 +202,7 @@ public class ResourceYamlViewModelTests
                   operation: Apply
             """.ReplaceLineEndings("\n"));
 
-        var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
+        var foldings = YamlIndentationFoldingStrategy.CreateNewFoldings(text, out _).ToList();
         foldings.Select(folding => folding.Name.Trim()).ShouldBe(
         [
             "metadata:",
@@ -230,7 +232,7 @@ public class ResourceYamlViewModelTests
                 kubectl.kubernetes.io/last-applied-configuration: compact
             """.ReplaceLineEndings("\n"));
 
-        var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
+        var foldings = YamlIndentationFoldingStrategy.CreateNewFoldings(text, out _).ToList();
 
         foldings.Any(folding => YamlFoldingStrategy.IsNoisyFieldFolding(text, folding)).ShouldBeFalse();
     }
@@ -472,7 +474,7 @@ public class ResourceYamlViewModelTests
             """.ReplaceLineEndings("\n");
 
 
-        var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
+        var foldings = YamlIndentationFoldingStrategy.CreateNewFoldings(text, out _).ToList();
         foldings.Count.ShouldBe(1);
         foldings[0].Name.TrimEnd().ShouldBe($"prop1:");
     }
@@ -494,7 +496,7 @@ public class ResourceYamlViewModelTests
             """.ReplaceLineEndings("\n");
 
 
-        var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
+        var foldings = YamlIndentationFoldingStrategy.CreateNewFoldings(text, out _).ToList();
         foldings.Count.ShouldBe(4);
         foldings[0].Name.TrimEnd().ShouldBe($"prop1:");
         foldings[1].Name.TrimEnd().ShouldBe($"- prop1Nested1:");
@@ -517,7 +519,7 @@ public class ResourceYamlViewModelTests
             prop2: val
             """.ReplaceLineEndings("\n");
 
-        var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
+        var foldings = YamlIndentationFoldingStrategy.CreateNewFoldings(text, out _).ToList();
         foldings.Count.ShouldBe(1);
         foldings[0].Name.TrimEnd().ShouldBe($"prop1:");
     }
@@ -531,7 +533,7 @@ public class ResourceYamlViewModelTests
             prop2: val
             """.ReplaceLineEndings("\n");
 
-        var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
+        var foldings = YamlIndentationFoldingStrategy.CreateNewFoldings(text, out _).ToList();
         foldings.Count.ShouldBe(0);
     }
 
@@ -557,7 +559,7 @@ public class ResourceYamlViewModelTests
             - item2
             """.ReplaceLineEndings("\n");
 
-        var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
+        var foldings = YamlIndentationFoldingStrategy.CreateNewFoldings(text, out _).ToList();
         foldings.Count.ShouldBe(0);
     }
 
@@ -571,7 +573,7 @@ public class ResourceYamlViewModelTests
             - item2
             """.ReplaceLineEndings("\n");
 
-        var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
+        var foldings = YamlIndentationFoldingStrategy.CreateNewFoldings(text, out _).ToList();
         foldings.Count.ShouldBe(1);
         foldings[0].Name.TrimEnd().ShouldBe($"- item1:");
     }

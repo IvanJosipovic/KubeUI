@@ -19,7 +19,6 @@ using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Helm;
 using KubeUI.Features.Helm.Helm;
 using KubeUI.Features.Resources.Infrastructure;
-using KubeUI.Features.Resources.List.Controls;
 using KubeUI.Features.Resources.Properties.Controls;
 using KubeUI.Features.Resources.Yaml;
 using KubeUI.Kubernetes;
@@ -427,7 +426,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
     }
 
     internal static string FormatUpdated(DateTimeOffset updated, DateTime utcNow)
-        => RelativeTimeFormatter.FormatPrettyAge(updated.UtcDateTime, utcNow);
+        => RelativeAgeFormatter.FormatPrettyAge(updated.UtcDateTime, utcNow);
 
     internal static string FormatTimestamp(DateTimeOffset updated)
         => updated.UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);

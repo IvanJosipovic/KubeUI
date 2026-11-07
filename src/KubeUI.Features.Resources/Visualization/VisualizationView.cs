@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Avalonia.Animation;
 using Avalonia.Controls.Primitives;
-using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using FluentIcons.Avalonia;
@@ -10,7 +9,7 @@ using k8s.Models;
 using KubeUI.Controls.DependencyInjection;
 using KubeUI.Controls.Presentation;
 using KubeUI.Features.Clusters.Presentation;
-using KubeUI.Features.Resources.Common;
+
 namespace KubeUI.Features.Resources.Visualization;
 
 public sealed partial class VisualizationView : KubeUIView<VisualizationViewModel>
@@ -66,9 +65,6 @@ public sealed partial class VisualizationView : KubeUIView<VisualizationViewMode
 
     private static StackPanel CreateRightToolbar(VisualizationViewModel vm)
     {
-        var template = new FuncDataTemplate<V1Namespace>((ns, _) =>
-            new TextBlock().Text(ns?.Metadata?.Name ?? string.Empty));
-
         return new StackPanel()
             .Row(0)
             .HorizontalAlignment(HorizontalAlignment.Right)
@@ -82,25 +78,12 @@ public sealed partial class VisualizationView : KubeUIView<VisualizationViewMode
                     .ItemsSource(vm, x => x.ResourceTypes)
                     .SelectedItems(vm, x => x.SelectedResourceTypes)
                     .IsEnabled(vm, x => x.HasResourceTypes),
-                new Ursa.Controls.MultiComboBox()
-                    .Width(200)
-                    .MinWidth(140)
-                    .MaxHeight(20)
-                    .Margin(0, 0, 2, 0)
-                    .Classes("ClearButton")
-                    .ItemsSource(vm, x => x.Cluster.Runtime.Namespaces)
-                    .SelectedItems(vm, x => x.SelectedNamespaces)
-                    .PlaceholderText(L10n.Instance.ResourceListView_SelectNamespace.ToBinding())
-                    .SelectedItemTemplate(template)
-                    .ItemTemplate(template)
-                    .IsEnabled(vm, x => x.IsNamespaceSelectionEnabled)
-                    .IsVisible(vm, x => x.IsNamespaceSelectorVisible),
-                new ToggleButton()
-                    .Margin(0, 0, 2, 0)
-                    .IsChecked(vm, x => x.IsNamespaceSelectionLinked, BindingMode.TwoWay)
-                    .ToolTip_Tip(L10n.Instance.ResourceListView_NamespaceLink.ToBinding())
-                    .Content(new FluentIcon().Icon(Icon.Link))
-                    .IsEnabled(vm, x => x.IsNamespaceSelectionEnabled)
+                new NamespaceScopePicker()
+                    .BindValue(NamespaceScopePicker.NamespacesProperty, CompiledBinding.Create<VisualizationViewModel, IEnumerable>(x => x.Cluster.Runtime.Namespaces, source: vm, mode: BindingMode.OneWay))
+                    .BindValue(NamespaceScopePicker.SelectedNamespacesProperty, CompiledBinding.Create<VisualizationViewModel, IList>(x => x.SelectedNamespaces, source: vm, mode: BindingMode.OneWay))
+                    .BindValue(NamespaceScopePicker.IsSelectionLinkedProperty, CompiledBinding.Create<VisualizationViewModel, bool>(x => x.IsNamespaceSelectionLinked, source: vm, mode: BindingMode.TwoWay))
+                    .BindValue(NamespaceScopePicker.IsSelectionEnabledProperty, CompiledBinding.Create<VisualizationViewModel, bool>(x => x.IsNamespaceSelectionEnabled, source: vm))
+                    .BindValue(NamespaceScopePicker.IsLinkEnabledProperty, CompiledBinding.Create<VisualizationViewModel, bool>(x => x.IsNamespaceSelectionEnabled, source: vm))
                     .IsVisible(vm, x => x.IsNamespaceSelectorVisible));
     }
 
@@ -181,7 +164,7 @@ public sealed partial class VisualizationView : KubeUIView<VisualizationViewMode
                                 new TextBlock().Text(node, x => x.Resource.Kind),
                                 new TextBlock().Text(node, x => x.Resource.Metadata.Name))
                             .ToolTip_Tip(content)
-                            .ContextFlyout(ResourceActionPresenter.CreateFlyout(node.ContextMenuItems))));
+                            .ContextFlyout(MenuPresenter.CreateFlyout(node.ContextMenuItems))));
     }
 
     private async Task InitializeDesignTimeDataAsync()

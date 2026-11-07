@@ -1,30 +1,38 @@
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using Avalonia.Xaml.Interactivity;
 
-namespace KubeUI.Features.Clusters.Catalog.Behaviors;
+namespace KubeUI.Controls.Behaviors;
 
+/// <summary>Opens row-owned context menus on right-click without selecting TreeView rows.</summary>
+/// <remarks>
+/// Right-clicks on rows without a context menu remain inert. Detaching closes an open popup and
+/// releases its close-event subscription.
+/// </remarks>
 public sealed class TreeViewItemContextMenuBehavior : Behavior<TreeView>
 {
     private ContextMenu? _openContextMenu;
 
+    /// <inheritdoc />
     protected override void OnAttached()
     {
         base.OnAttached();
 
-        if (AssociatedObject != null)
+        if (AssociatedObject is { } tree)
         {
-            AssociatedObject.AddHandler(InputElement.PointerPressedEvent, OnPointerPressed, RoutingStrategies.Tunnel);
+            tree.AddHandler(InputElement.PointerPressedEvent, OnPointerPressed, RoutingStrategies.Tunnel);
         }
     }
 
+    /// <inheritdoc />
     protected override void OnDetaching()
     {
         CloseOpenContextMenu();
 
-        if (AssociatedObject != null)
+        if (AssociatedObject is { } tree)
         {
-            AssociatedObject.RemoveHandler(InputElement.PointerPressedEvent, OnPointerPressed);
+            tree.RemoveHandler(InputElement.PointerPressedEvent, OnPointerPressed);
         }
 
         base.OnDetaching();
@@ -32,7 +40,8 @@ public sealed class TreeViewItemContextMenuBehavior : Behavior<TreeView>
 
     private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (e.GetCurrentPoint(AssociatedObject).Properties.PointerUpdateKind != PointerUpdateKind.RightButtonPressed)
+        var tree = AssociatedObject;
+        if (tree is null || e.GetCurrentPoint(tree).Properties.PointerUpdateKind != PointerUpdateKind.RightButtonPressed)
         {
             return;
         }
@@ -48,13 +57,11 @@ public sealed class TreeViewItemContextMenuBehavior : Behavior<TreeView>
             return;
         }
 
-        // Right-click on any navigation item should never flow into the tree's
-        // default selection behavior. Only items with an actual context menu
-        // get a popup; all other items remain inert.
+        // Right-click on any row must not trigger TreeView selection. Only rows with an actual
+        // context menu get a popup; rows without one remain inert.
         e.Handled = true;
 
         var host = FindContextMenuHost(item);
-
         if (host?.ContextMenu == null)
         {
             return;
@@ -69,7 +76,7 @@ public sealed class TreeViewItemContextMenuBehavior : Behavior<TreeView>
         CloseOpenContextMenu();
         _openContextMenu = host.ContextMenu;
         _openContextMenu.Closed += OnContextMenuClosed;
-        host.ContextMenu.Open(host);
+        _openContextMenu.Open(host);
     }
 
     private static Control? FindContextMenuHost(TreeViewItem item)

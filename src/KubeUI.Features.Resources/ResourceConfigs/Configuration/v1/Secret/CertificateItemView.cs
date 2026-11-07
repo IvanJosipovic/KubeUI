@@ -2,7 +2,7 @@
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using Avalonia.Controls.Templates;
-using KubeUI.Features.Resources.Properties.Controls;
+using KubeUI.Controls.Presentation;
 
 namespace KubeUI.Features.Resources.Configuration.v1.Secret;
 

@@ -6,6 +6,8 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Controls.Layout;
+using KubeUI.Features.Clusters.Presentation;
 using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Testing.Utilities;
@@ -62,24 +64,24 @@ public sealed class FlowListViewTests
         window.Show();
         await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
 
-        var toolbar = view.GetVisualDescendants()
-            .OfType<Grid>()
-            .Single(grid => grid.Classes.Contains("toolbar"));
+        var toolbar = view.GetVisualDescendants().OfType<CompactToolbar>().Single();
         var namespaceSelector = toolbar.GetVisualDescendants().OfType<MultiComboBox>().Single();
-        namespaceSelector.PlaceholderText.ShouldBe(ResourceL10n.Instance.ResourceListView_SelectNamespace.CurrentValue()!);
+        namespaceSelector.PlaceholderText.ShouldBe("Filter Namespace(s)");
 
         var searchBox = toolbar.GetVisualDescendants()
             .OfType<TextBox>()
             .Single(textBox => textBox.PlaceholderText == CiliumL10n.Instance.FlowListView_SearchWatermark.CurrentValue());
-        var filterControls = (StackPanel)namespaceSelector.Parent!;
-        filterControls.Children.IndexOf(searchBox).ShouldBeLessThan(filterControls.Children.IndexOf(namespaceSelector));
+        var picker = toolbar.GetVisualDescendants().OfType<NamespaceScopePicker>().Single();
+        var filterControls = (StackPanel)picker.Parent!;
+        filterControls.Children.IndexOf(searchBox).ShouldBeLessThan(filterControls.Children.IndexOf(picker));
+        picker.PickerWidth.ShouldBe(190);
 
-        var status = toolbar.Children.OfType<TextBlock>().Single();
-        Grid.GetColumn(status).ShouldBe(2);
+        toolbar.Count!.GetVisualDescendants().OfType<TextBlock>()
+            .ShouldContain(textBlock => textBlock.Text == viewModel.ConnectionStatus);
 
         var linkToggle = toolbar.GetVisualDescendants()
             .OfType<ToggleButton>()
-            .Single(toggle => Equals(ToolTip.GetTip(toggle), ResourceL10n.Instance.ResourceListView_NamespaceLink.CurrentValue()!));
+            .Single(toggle => Equals(ToolTip.GetTip(toggle), "Linked namespace selection"));
         linkToggle.IsChecked.ShouldBe(true);
 
         toolbar.GetVisualDescendants().OfType<ComboBox>().ShouldBeEmpty();

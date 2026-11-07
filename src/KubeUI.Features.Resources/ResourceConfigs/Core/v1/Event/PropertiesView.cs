@@ -1,5 +1,5 @@
 ﻿using k8s.Models;
-using KubeUI.Features.Resources.Properties.Controls;
+using KubeUI.Controls.Presentation;
 
 namespace KubeUI.Features.Resources.Core.v1.Event;
 

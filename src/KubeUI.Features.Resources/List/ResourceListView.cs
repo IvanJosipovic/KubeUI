@@ -1,15 +1,13 @@
 ﻿using System.Windows.Input;
-using Avalonia.Controls.Primitives;
-using Avalonia.Controls.Templates;
 using Avalonia.Input;
 using Avalonia.VisualTree;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using k8s.Models;
 using KubeUI.Controls.DependencyInjection;
+using KubeUI.Controls.Layout;
 using KubeUI.Controls.Presentation;
 using KubeUI.Features.Clusters.Presentation;
-using KubeUI.Features.Resources.Common;
 using KubeUI.Features.Resources.Infrastructure;
 using Ursa.Controls;
 
@@ -18,8 +16,7 @@ namespace KubeUI.Features.Resources.List;
 public partial class ResourceListView : KubeUIView<IResourceListViewModel>
 {
     private DynamicTableView _table = null!;
-    private DynamicTableView? _restoredTable;
-    private IResourceListViewModel? _restoredViewModel;
+    private readonly TableStateRestoreCoordinator<DynamicTableViewState> _stateRestore = new();
     private readonly List<KeyBinding> _actionKeyBindings = [];
 
     public ResourceListView()
@@ -85,7 +82,7 @@ public partial class ResourceListView : KubeUIView<IResourceListViewModel>
         }
             .GridLinesVisibility(DynamicTableViewGridLinesVisibility.All)
             .Source(viewModel.TableSource)
-            .ContextMenu(CreateContextMenu());
+            .ContextMenu(MenuPresenter.CreateContextMenu());
         ConfigureActionBindings(table, viewModel);
         table.DoubleTapped += TableOnDoubleTapped;
         return table;
@@ -136,114 +133,56 @@ public partial class ResourceListView : KubeUIView<IResourceListViewModel>
         if (DataContext is not IResourceListViewModel vm)
             return;
 
-        var restoreTableState = !ReferenceEquals(_restoredTable, _table) || !ReferenceEquals(_restoredViewModel, vm);
-        var state = restoreTableState ? vm.TableViewRuntimeState : null;
-        if (restoreTableState)
-        {
-            _restoredTable = _table;
-            _restoredViewModel = vm;
-        }
-
-        if (state is null)
-        {
-            Dispatcher.UIThread.Post(() =>
-            {
-                if (ReferenceEquals(DataContext, vm) && VisualRoot is not null && ReferenceEquals(_table.Source, vm.TableSource))
-                    vm.RestoreSelectionState();
-            }, DispatcherPriority.Background);
-            return;
-        }
-
-        Dispatcher.UIThread.Post(() =>
-        {
-            if (ReferenceEquals(DataContext, vm) && VisualRoot is not null && ReferenceEquals(_table.Source, vm.TableSource))
-            {
-                _table.RestoreState(state);
-                vm.RestoreSelectionState();
-            }
-        }, DispatcherPriority.Background);
+        _stateRestore.Restore(
+            _table,
+            vm,
+            vm.TableViewRuntimeState,
+            () => ReferenceEquals(DataContext, vm)
+                && VisualRoot is not null
+                && ReferenceEquals(_table.Source, vm.TableSource),
+            _table.RestoreState,
+            vm.RestoreSelectionState);
     }
 
-    private static Grid CreateTopBar()
+    private static CompactToolbar CreateTopBar()
     {
-        return new Grid()
-            .Row(0)
-            .MinHeight(32)
-            .Margin(0, 2, 0, 2)
-            .Cols("Auto,Auto,*,Auto")
-            .Children(
-                new Button()
-                    .Col(0)
-                    .Margin(2, 0, 0, 0)
-                    .Command(CompiledBinding.Create<IResourceListViewModel, ICommand?>(x => x.ResourceConfig.NewResourceCommand))
-                    .IsVisible(CompiledBinding.Create<IResourceListViewModel, bool>(x => x.ResourceConfig.ShowNewResource))
-                    .ToolTip_Tip(L10n.Instance.ResourceListView_NewResource.ToBinding())
-                    .Content(new FluentIcon().Icon(Icon.AddSquare)),
-                new Label()
-                    .Col(1)
-                    .Margin(2, 0, 0, 0)
-                    .VerticalContentAlignment(VerticalAlignment.Center)
-                    .Content(CompiledBinding.Create<IResourceListViewModel, int>(x => x.ItemCount,
-                        stringFormat: L10n.Instance.ResourceListView_ItemsFormat.CurrentValue()!)),
-                new StackPanel()
-                    .Col(3)
-                    .MaxWidth(456)
-                    .HorizontalAlignment(HorizontalAlignment.Right)
-                    .Orientation(Orientation.Horizontal)
-                    .Children(
-                        new TextBox()
-                            .Width(200)
-                            .MinWidth(120)
-                            .Margin(0, 0, 2, 0)
-                            .HorizontalAlignment(HorizontalAlignment.Stretch)
-                            .VerticalAlignment(VerticalAlignment.Stretch)
-                            .VerticalContentAlignment(VerticalAlignment.Center)
-                            .Background(Brushes.Transparent)
-                            .PlaceholderText(L10n.Instance.ResourceListView_SearchWatermark.ToBinding())
-                            .Text(CompiledBinding.Create<IResourceListViewModel, string>(x => x.SearchQuery, mode: BindingMode.TwoWay)),
-                        CreateNamespaceSelector(),
-                        new ToggleButton()
-                            .Margin(0, 0, 2, 0)
-                            .IsChecked(CompiledBinding.Create<IResourceListViewModel, bool>(x => x.IsNamespaceSelectionLinked, mode: BindingMode.TwoWay))
-                            .IsVisible(CompiledBinding.Create<IResourceListViewModel, bool>(x => x.ResourceConfig.IsNamespaced))
-                            .ToolTip_Tip(L10n.Instance.ResourceListView_NamespaceLink.ToBinding())
-                            .Content(new FluentIcon().Icon(Icon.Link))));
+        return new CompactToolbar
+        {
+            Leading = new Button()
+                .Command(CompiledBinding.Create<IResourceListViewModel, ICommand?>(x => x.ResourceConfig.NewResourceCommand))
+                .IsVisible(CompiledBinding.Create<IResourceListViewModel, bool>(x => x.ResourceConfig.ShowNewResource))
+                .ToolTip_Tip(L10n.Instance.ResourceListView_NewResource.ToBinding())
+                .Content(new FluentIcon().Icon(Icon.AddSquare)),
+            Count = new Label()
+                .VerticalContentAlignment(VerticalAlignment.Center)
+                .Content(CompiledBinding.Create<IResourceListViewModel, int>(x => x.ItemCount,
+                    stringFormat: L10n.Instance.ResourceListView_ItemsFormat.CurrentValue()!)),
+            Trailing = new StackPanel()
+                .MaxWidth(456)
+                .Orientation(Orientation.Horizontal)
+                .Children(
+                    new TextBox()
+                        .Width(200)
+                        .MinWidth(120)
+                        .Margin(0, 0, 2, 0)
+                        .HorizontalAlignment(HorizontalAlignment.Stretch)
+                        .VerticalAlignment(VerticalAlignment.Stretch)
+                        .VerticalContentAlignment(VerticalAlignment.Center)
+                        .Background(Brushes.Transparent)
+                        .PlaceholderText(L10n.Instance.ResourceListView_SearchWatermark.ToBinding())
+                        .Text(CompiledBinding.Create<IResourceListViewModel, string>(x => x.SearchQuery, mode: BindingMode.TwoWay)),
+                    CreateNamespaceSelector())
+        }.Row(0);
     }
 
-    private static MultiComboBox CreateNamespaceSelector()
+    private static NamespaceScopePicker CreateNamespaceSelector()
     {
-        FuncDataTemplate<V1Namespace> template = new((ns, _) => new TextBlock().Text(ns?.Metadata?.Name ?? string.Empty));
-        return new MultiComboBox()
-            .Width(200)
-            .MinWidth(140)
-            .MaxHeight(20)
-            .Margin(0, 0, 2, 0)
+        return new NamespaceScopePicker()
             .HorizontalAlignment(HorizontalAlignment.Stretch)
-            .Classes("ClearButton")
             .IsVisible(CompiledBinding.Create<IResourceListViewModel, bool>(x => x.ResourceConfig.IsNamespaced))
-            .ItemsSource(CompiledBinding.Create<IResourceListViewModel, IEnumerable>(x => x.Cluster.Runtime.Namespaces))
-            .PlaceholderText(L10n.Instance.ResourceListView_SelectNamespace.ToBinding())
-            .SelectedItems(CompiledBinding.Create<IResourceListViewModel, IList>(x => x.SelectedNamespaces))
-            .ItemTemplate(template)
-            .SelectedItemTemplate(template);
-    }
-
-    private static ContextMenu CreateContextMenu()
-    {
-        return new ContextMenu()
-            .Styles(
-                new Style<MenuItem>()
-                    .Setter(IsVisibleProperty, CompiledBinding.Create<MenuItemViewModel, bool>(x => x.IsVisible))
-                    .Setter(HeaderedItemsControl.HeaderProperty, CompiledBinding.Create<MenuItemViewModel, string?>(x => x.Title))
-                    .Setter(MenuItem.CommandProperty, CompiledBinding.Create<MenuItemViewModel, ICommand?>(x => x.Command))
-                    .Setter(MenuItem.CommandParameterProperty, CompiledBinding.Create<MenuItemViewModel, object?>(x => x.CommandParameter))
-                    .Setter(MenuItem.InputGestureProperty, CompiledBinding.Create<MenuItemViewModel, KeyGesture?>(x => x.InputGesture))
-                    .Setter(ItemsControl.ItemsSourceProperty, CompiledBinding.Create<MenuItemViewModel, IEnumerable?>(x => x.Items))
-                    .Setter(TagProperty, CompiledBinding.Create<MenuItemViewModel, bool>(x => x.IsSeparator))
-                    .Setter(MenuItem.IconProperty,
-                        CompiledBinding.Create<MenuItemViewModel, MenuItemViewModel>(x => x, converter: ResourceMenuItemIconConverter.Instance)),
-                new Style<MenuItem>(x => x.PropertyEquals(TagProperty, true))
-                    .Setter(TemplatedControl.TemplateProperty, new FuncControlTemplate((_, _) => new Separator())));
+            .BindValue(NamespaceScopePicker.NamespacesProperty, CompiledBinding.Create<IResourceListViewModel, IEnumerable>(x => x.Cluster.Runtime.Namespaces, mode: BindingMode.OneWay))
+            .BindValue(NamespaceScopePicker.SelectedNamespacesProperty, CompiledBinding.Create<IResourceListViewModel, IList>(x => x.SelectedNamespaces, mode: BindingMode.OneWay))
+            .BindValue(NamespaceScopePicker.IsSelectionLinkedProperty, CompiledBinding.Create<IResourceListViewModel, bool>(x => x.IsNamespaceSelectionLinked, mode: BindingMode.TwoWay));
     }
 
     private async Task InitializePreviewDataAsync()

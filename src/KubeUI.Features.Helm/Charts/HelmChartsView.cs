@@ -3,6 +3,7 @@ using Avalonia.Xaml.Interactions.Core;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using Helm.NET;
+using KubeUI.Controls.Layout;
 using KubeUI.Controls.Presentation;
 
 namespace KubeUI.Features.Helm.Charts;
@@ -29,11 +30,13 @@ public sealed class HelmChartsView : KubeUIView<HelmChartsViewModel>
         };
         var root = new Grid()
             .Rows("Auto,*").Children(
-            new Grid().Row(0).MinHeight(32).Margin(0, 2, 0, 2).Cols("Auto,*,Auto").Children(
-                new Label().Margin(2, 0, 0, 0).VerticalContentAlignment(VerticalAlignment.Center)
+            new CompactToolbar
+            {
+                Count = new Label()
+                    .VerticalContentAlignment(VerticalAlignment.Center)
                     .Content(CompiledBinding.Create<HelmChartsViewModel, int>(x => x.ItemCount,
                         source: vm, stringFormat: L10n.Instance.HelmChartsView_ItemsFormat.CurrentValue()!)),
-                new StackPanel().Col(2).MaxWidth(760)
+                Trailing = new StackPanel().MaxWidth(760)
                     .HorizontalAlignment(HorizontalAlignment.Right)
                     .Orientation(Orientation.Horizontal)
                     .Children(
@@ -61,7 +64,8 @@ public sealed class HelmChartsView : KubeUIView<HelmChartsViewModel>
                             .Margin(0, 0, 2, 0)
                             .Command(vm, x => x.RefreshCommand)
                             .Content(new FluentIcon().Icon(Icon.ArrowSync))
-                            .ToolTip_Tip(SharedL10n.Instance.Shared_Refresh.ToBinding()))),
+                            .ToolTip_Tip(SharedL10n.Instance.Shared_Refresh.ToBinding()))
+            },
             table.Row(1));
         Interaction.GetBehaviors(root).Add(new EventTriggerBehavior
         {

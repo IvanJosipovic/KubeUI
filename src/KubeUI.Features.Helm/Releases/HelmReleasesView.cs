@@ -1,12 +1,11 @@
 using System.Diagnostics.CodeAnalysis;
-using Avalonia.Controls.Primitives;
-using Avalonia.Controls.Templates;
 using Avalonia.Xaml.Interactions.Core;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using Helm.NET;
-using k8s.Models;
+using KubeUI.Controls.Layout;
 using KubeUI.Controls.Presentation;
+using KubeUI.Features.Clusters.Presentation;
 using Ursa.Controls;
 
 namespace KubeUI.Features.Helm.Releases;
@@ -29,47 +28,34 @@ public sealed class HelmReleasesView : KubeUIView<HelmReleasesViewModel>
         var root = new Grid()
             .Rows("Auto,*")
             .Children(
-                new Grid()
-                    .Row(0)
-                    .MinHeight(32)
-                    .Margin(0, 2, 0, 2)
-                    .Cols("Auto,Auto,*,Auto")
-                    .Children(
-                        new Button()
-                            .Col(0)
-                            .Margin(2, 0, 0, 0)
-                            .Command(vm, x => x.NewReleaseCommand)
-                            .Content(new FluentIcon().Icon(Icon.AddSquare))
-                            .ToolTip_Tip(L10n.Instance.HelmReleasesView_Install.ToBinding()),
-                        new Label()
-                            .Col(1)
-                            .Margin(2, 0, 0, 0)
-                            .VerticalContentAlignment(VerticalAlignment.Center)
-                            .Content(CompiledBinding.Create<HelmReleasesViewModel, int>(
-                                x => x.ItemCount,
-                                source: vm,
-                                stringFormat: L10n.Instance.HelmReleasesView_ItemsFormat.CurrentValue()!)),
-                        new StackPanel()
-                            .Col(3)
-                            .MaxWidth(700)
-                            .HorizontalAlignment(HorizontalAlignment.Right)
-                            .Orientation(Orientation.Horizontal)
-                            .Children(
-                                new TextBlock()
-                                    .MaxWidth(300)
-                                    .VerticalAlignment(VerticalAlignment.Center)
-                                    .TextWrapping(TextWrapping.Wrap)
-                                    .Text(vm, x => x.Status),
-                                CreateNamespaceSelector(vm),
-                                new ToggleButton()
-                                    .Margin(0, 0, 2, 0)
-                                    .IsChecked(vm, x => x.IsNamespaceSelectionLinked, BindingMode.TwoWay)
-                                    .ToolTip_Tip(ResourceL10n.Instance.ResourceListView_NamespaceLink.ToBinding())
-                                    .Content(new FluentIcon().Icon(Icon.Link)),
-                                new Button()
-                                    .Command(vm, x => x.RefreshCommand)
-                                    .Content(new FluentIcon().Icon(Icon.ArrowSync))
-                                    .ToolTip_Tip(SharedL10n.Instance.Shared_Refresh.ToBinding()))),
+                new CompactToolbar
+                {
+                    Leading = new Button()
+                        .Command(vm, x => x.NewReleaseCommand)
+                        .Content(new FluentIcon().Icon(Icon.AddSquare))
+                        .ToolTip_Tip(L10n.Instance.HelmReleasesView_Install.ToBinding()),
+                    Count = new Label()
+                        .VerticalContentAlignment(VerticalAlignment.Center)
+                        .Content(CompiledBinding.Create<HelmReleasesViewModel, int>(
+                            x => x.ItemCount,
+                            source: vm,
+                            stringFormat: L10n.Instance.HelmReleasesView_ItemsFormat.CurrentValue()!)),
+                    Trailing = new StackPanel()
+                        .MaxWidth(700)
+                        .HorizontalAlignment(HorizontalAlignment.Right)
+                        .Orientation(Orientation.Horizontal)
+                        .Children(
+                            new TextBlock()
+                                .MaxWidth(300)
+                                .VerticalAlignment(VerticalAlignment.Center)
+                                .TextWrapping(TextWrapping.Wrap)
+                                .Text(vm, x => x.Status),
+                            CreateNamespaceSelector(vm),
+                            new Button()
+                                .Command(vm, x => x.RefreshCommand)
+                                .Content(new FluentIcon().Icon(Icon.ArrowSync))
+                                .ToolTip_Tip(SharedL10n.Instance.Shared_Refresh.ToBinding()))
+                },
                 table.Row(1));
         Interaction.GetBehaviors(root).Add(new EventTriggerBehavior
         {
@@ -79,23 +65,13 @@ public sealed class HelmReleasesView : KubeUIView<HelmReleasesViewModel>
         return root;
     }
 
-    private static MultiComboBox CreateNamespaceSelector(HelmReleasesViewModel viewModel)
+    private static NamespaceScopePicker CreateNamespaceSelector(HelmReleasesViewModel viewModel)
     {
-        var template = new FuncDataTemplate<V1Namespace>((ns, _) =>
-            new TextBlock().Text(ns?.Metadata?.Name ?? string.Empty));
-
-        return new MultiComboBox()
-            .Width(200)
-            .MinWidth(140)
-            .MaxHeight(20)
-            .Margin(0, 0, 2, 0)
+        return new NamespaceScopePicker()
             .HorizontalAlignment(HorizontalAlignment.Stretch)
-            .Classes("ClearButton")
-            .ItemsSource(CompiledBinding.Create<HelmReleasesViewModel, IEnumerable>(x => x.Cluster!.Runtime.Namespaces, source: viewModel))
-            .PlaceholderText(ResourceL10n.Instance.ResourceListView_SelectNamespace.ToBinding())
-            .SelectedItems(CompiledBinding.Create<HelmReleasesViewModel, IList>(x => x.SelectedNamespaces, source: viewModel))
-            .ItemTemplate(template)
-            .SelectedItemTemplate(template);
+            .BindValue(NamespaceScopePicker.NamespacesProperty, CompiledBinding.Create<HelmReleasesViewModel, IEnumerable>(x => x.Cluster!.Runtime.Namespaces, source: viewModel, mode: BindingMode.OneWay))
+            .BindValue(NamespaceScopePicker.SelectedNamespacesProperty, CompiledBinding.Create<HelmReleasesViewModel, IList>(x => x.SelectedNamespaces, source: viewModel, mode: BindingMode.OneWay))
+            .BindValue(NamespaceScopePicker.IsSelectionLinkedProperty, CompiledBinding.Create<HelmReleasesViewModel, bool>(x => x.IsNamespaceSelectionLinked, source: viewModel, mode: BindingMode.TwoWay));
     }
 
     private static IEnumerable<MenuItem> CreateContextMenuItems(HelmReleasesViewModel vm, IReadOnlyList<object> targets)

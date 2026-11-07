@@ -1,6 +1,7 @@
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using Helm.NET;
+using KubeUI.Controls.Layout;
 using KubeUI.Controls.Presentation;
 
 namespace KubeUI.Features.Helm.Repositories;
@@ -22,45 +23,36 @@ public sealed class HelmRepositoriesView : KubeUIView<HelmRepositoriesViewModel>
         return new Grid()
             .Rows("Auto,*")
             .Children(
-                new Grid()
-                    .Row(0)
-                    .MinHeight(32)
-                    .Margin(0, 2, 0, 2)
-                    .Cols("Auto,Auto,*,Auto")
-                    .Children(
-                        new Button()
-                            .Col(0)
-                            .Margin(2, 0, 0, 0)
-                            .Command(vm, x => x.NewRepositoryCommand)
-                            .Content(new FluentIcon().Icon(Icon.AddSquare))
-                            .ToolTip_Tip(L10n.Instance.HelmRepositoriesView_New.ToBinding()),
-                        new Label()
-                            .Col(1)
-                            .Margin(2, 0, 0, 0)
-                            .VerticalContentAlignment(VerticalAlignment.Center)
-                            .Content(CompiledBinding.Create<HelmRepositoriesViewModel, int>(
-                                x => x.ItemCount, source: vm,
-                                stringFormat: L10n.Instance.HelmRepositoriesView_ItemsFormat.CurrentValue()!)),
-                        new StackPanel()
-                            .Col(3)
-                            .MaxWidth(700)
-                            .HorizontalAlignment(HorizontalAlignment.Right)
-                            .Orientation(Orientation.Horizontal)
-                            .Children(
-                                new TextBlock()
-                                    .MaxWidth(300)
-                                    .VerticalAlignment(VerticalAlignment.Center)
-                                    .TextWrapping(TextWrapping.Wrap)
-                                    .Text(vm, x => x.Status),
-                                new Button()
-                                    .Margin(0, 0, 2, 0)
-                                    .Command(vm, x => x.UpdateIndexesCommand)
-                                    .Content(new FluentIcon().Icon(Icon.ArrowDownload))
-                                    .ToolTip_Tip(L10n.Instance.HelmRepositoriesView_UpdateIndexes.ToBinding()),
-                                new Button()
-                                    .Command(vm, x => x.RefreshCommand)
-                                    .Content(new FluentIcon().Icon(Icon.ArrowSync))
-                                    .ToolTip_Tip(SharedL10n.Instance.Shared_Refresh.ToBinding()))),
+                new CompactToolbar
+                {
+                    Leading = new Button()
+                        .Command(vm, x => x.NewRepositoryCommand)
+                        .Content(new FluentIcon().Icon(Icon.AddSquare))
+                        .ToolTip_Tip(L10n.Instance.HelmRepositoriesView_New.ToBinding()),
+                    Count = new Label()
+                        .VerticalContentAlignment(VerticalAlignment.Center)
+                        .Content(CompiledBinding.Create<HelmRepositoriesViewModel, int>(
+                            x => x.ItemCount, source: vm,
+                            stringFormat: L10n.Instance.HelmRepositoriesView_ItemsFormat.CurrentValue()!)),
+                    Trailing = new StackPanel()
+                        .MaxWidth(700)
+                        .Orientation(Orientation.Horizontal)
+                        .Children(
+                            new TextBlock()
+                                .MaxWidth(300)
+                                .VerticalAlignment(VerticalAlignment.Center)
+                                .TextWrapping(TextWrapping.Wrap)
+                                .Text(vm, x => x.Status),
+                            new Button()
+                                .Margin(0, 0, 2, 0)
+                                .Command(vm, x => x.UpdateIndexesCommand)
+                                .Content(new FluentIcon().Icon(Icon.ArrowDownload))
+                                .ToolTip_Tip(L10n.Instance.HelmRepositoriesView_UpdateIndexes.ToBinding()),
+                            new Button()
+                                .Command(vm, x => x.RefreshCommand)
+                                .Content(new FluentIcon().Icon(Icon.ArrowSync))
+                                .ToolTip_Tip(SharedL10n.Instance.Shared_Refresh.ToBinding()))
+                }.Row(0),
                 table.Row(1));
     }
 

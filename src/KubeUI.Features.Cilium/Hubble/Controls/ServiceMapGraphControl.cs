@@ -193,14 +193,14 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
             .Opacity(0.35d)
             .Template(ResourceGraphStyles.CreateDirectedEdgeTemplate()));
         _area.Styles.Add(new Style<EdgeControl>(style => style.OfType<EdgeControl>().Class("ServiceMapDeniedFlow"))
-            .Foreground(new DynamicResourceExtension("ContainerStatusErrorBrush")).Opacity(0.9d));
+            .Foreground(new DynamicResourceExtension("SemanticErrorBrush")).Opacity(0.9d));
         _area.Styles.Add(new Style<Border>(style => style.OfType<Border>().Class("ServiceMapNode"))
             .Background(new DynamicResourceExtension("SystemBaseLowColor"))
             .BorderBrush(new DynamicResourceExtension("VisualizationRelationshipOwnerBrush"))
             .BorderThickness(new Thickness(1.5))
             .CornerRadius(new CornerRadius(8)));
         _area.Styles.Add(new Style<Border>(style => style.OfType<Border>().Class("ServiceMapDeniedNode"))
-            .BorderBrush(new DynamicResourceExtension("ContainerStatusErrorBrush")));
+            .BorderBrush(new DynamicResourceExtension("SemanticErrorBrush")));
         _area.Styles.Add(new Style<FluentIcon>(style => style.OfType<FluentIcon>().Class("ServiceMapExternalIcon"))
             .Foreground(new DynamicResourceExtension("VisualizationRelationshipOwnerBrush")));
         _area.Styles.Add(new Style<VertexControl>(style => style.OfType<VertexControl>())

@@ -18,6 +18,7 @@ using KubeUI.Features.Clusters.Presentation;
 using KubeUI.Features.Resources.Infrastructure;
 using KubeUI.Features.Resources.Settings;
 using KubeUI.Features.Resources.Yaml.Behaviors;
+using KubeUI.Controls.Editors.Behaviors;
 using SharedConverters = KubeUI.Controls.Converters.Converters;
 
 
@@ -123,25 +124,14 @@ public sealed partial class ResourceYamlView : KubeUIView<ResourceYamlViewModel>
     [RequiresUnreferencedCode("Calls KubeUI.Features.Resources.Yaml.ResourceYamlView.CreateEditorContextMenu(ResourceYamlViewModel, TextEditor)")]
     private static TextEditor CreateEditor(ResourceYamlViewModel vm, Popup hoverPopup)
     {
-        var editor = new TextEditor()
+        var editor = new TextEditor();
+        YamlEditorDefaults.Apply(editor);
+        editor
             .Row(2)
             .FontFamily(new DynamicResourceExtension(Typography.CodeFontFamilyResourceKey))
             .FontSize(new DynamicResourceExtension(Typography.CodeFontSizeResourceKey))
-            .FontWeight(FontWeight.Normal)
-            .HorizontalScrollBarVisibility(ScrollBarVisibility.Auto)
             .IsReadOnly(vm, x => x.EditMode, BindingMode.OneWay, SharedConverters.Not)
-            .ShowLineNumbers(true)
-            .VerticalScrollBarVisibility(ScrollBarVisibility.Visible)
-            .WordWrap(vm, x => x.WordWrap)
-            .Options(new TextEditorOptions
-            {
-                ConvertTabsToSpaces = true,
-                EnableEmailHyperlinks = false,
-                EnableHyperlinks = false,
-                HighlightCurrentLine = true,
-                IndentationSize = 2,
-                ShowBoxForControlCharacters = false
-            });
+            .WordWrap(vm, x => x.WordWrap);
 
         var behaviors = Interaction.GetBehaviors(editor);
         behaviors.Add(new YamlEditorBehavior());

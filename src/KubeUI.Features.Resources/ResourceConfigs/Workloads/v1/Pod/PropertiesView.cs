@@ -1,6 +1,7 @@
 ﻿using Avalonia.Controls.Templates;
 using k8s.Models;
 using KubeUI.Controls.Converters;
+using KubeUI.Controls.Presentation;
 using KubeUI.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Features.Resources.Workloads.v1.Pod;
