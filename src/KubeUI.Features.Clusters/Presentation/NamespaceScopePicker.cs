@@ -59,7 +59,7 @@ public sealed class NamespaceScopePicker : UserControl
             MaxHeight = 20,
             Margin = new Thickness(0, 0, 2, 0),
             HorizontalAlignment = HorizontalAlignment.Stretch,
-            PlaceholderText = L10n.Instance.NamespaceScopePicker_SelectNamespace.CurrentValue()!,
+            PlaceholderText = ClustersLanguageManager.Instance.NamespaceScopePicker_SelectNamespace.CurrentValue()!,
             ItemTemplate = template,
             SelectedItemTemplate = template
         };
@@ -74,7 +74,7 @@ public sealed class NamespaceScopePicker : UserControl
             Margin = new Thickness(0, 0, 2, 0),
             Content = new FluentIcon { Icon = Icon.Link }
         };
-        ToolTip.SetTip(link, L10n.Instance.NamespaceScopePicker_LinkNamespaces.CurrentValue()!);
+        ToolTip.SetTip(link, ClustersLanguageManager.Instance.NamespaceScopePicker_LinkNamespaces.CurrentValue()!);
         link.Bind(ToggleButton.IsCheckedProperty, CompiledBinding.Create<NamespaceScopePicker, bool>(x => x.IsSelectionLinked, source: this, mode: BindingMode.TwoWay));
         link.Bind(IsEnabledProperty, CompiledBinding.Create<NamespaceScopePicker, bool>(x => x.IsLinkEnabled, source: this));
 

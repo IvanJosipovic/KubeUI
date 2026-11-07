@@ -28,11 +28,11 @@ public sealed class ResourceListToolbarTests
         await WaitForAsync(() => HasCount(view, 2));
 
         var add = view.GetVisualDescendants().OfType<Button>()
-            .Single(button => Equals(ToolTip.GetTip(button), ResourceL10n.Instance.ResourceListView_NewResource.CurrentValue()));
+            .Single(button => Equals(ToolTip.GetTip(button), ResourcesLanguageManager.Instance.ResourceListView_NewResource.CurrentValue()));
         add.Command.ShouldBeSameAs(viewModel.ResourceConfig.NewResourceCommand);
         add.IsVisible.ShouldBe(viewModel.ResourceConfig.ShowNewResource);
         var search = view.GetVisualDescendants().OfType<TextBox>()
-            .Single(text => text.PlaceholderText == ResourceL10n.Instance.ResourceListView_SearchWatermark.CurrentValue());
+            .Single(text => text.PlaceholderText == ResourcesLanguageManager.Instance.ResourceListView_SearchWatermark.CurrentValue());
         search.IsEffectivelyVisible.ShouldBeTrue();
         search.Text = "api";
         await WaitForAsync(() => viewModel.SearchQuery == "api" && viewModel.ItemCount == 1 && HasCount(view, 1));
@@ -78,7 +78,7 @@ public sealed class ResourceListToolbarTests
 
     private static bool HasCount(Control view, int count)
         => view.GetVisualDescendants().OfType<Label>()
-            .Any(label => Equals(label.Content, string.Format(ResourceL10n.Instance.ResourceListView_ItemsFormat.CurrentValue()!, count)));
+            .Any(label => Equals(label.Content, string.Format(ResourcesLanguageManager.Instance.ResourceListView_ItemsFormat.CurrentValue()!, count)));
 
     private static V1Pod Pod(string name)
         => new()

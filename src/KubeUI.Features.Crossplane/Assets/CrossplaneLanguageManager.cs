@@ -6,4 +6,4 @@ namespace KubeUI.Features.Crossplane.Assets;
 /// The Lingua manager for the Crossplane feature's resource files.
 /// </summary>
 [LinguaManager("./Resources.json")]
-internal sealed partial class LanguageManager;
+internal sealed partial class CrossplaneLanguageManager;

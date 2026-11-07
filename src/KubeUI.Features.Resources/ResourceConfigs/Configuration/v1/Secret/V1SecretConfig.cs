@@ -1,4 +1,4 @@
-﻿namespace KubeUI.Features.Resources.Configuration.v1.Secret;
+namespace KubeUI.Features.Resources.Configuration.v1.Secret;
 
 public sealed partial class V1SecretConfig : ResourceConfig<k8s.Models.V1Secret>
 {
@@ -18,21 +18,21 @@ public sealed partial class V1SecretConfig : ResourceConfig<k8s.Models.V1Secret>
             new ResourceListColumn<k8s.Models.V1Secret, string>()
             {
                 Key = "labels",
-                Name = L10n.Instance.V1SecretConfig_Labels.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1SecretConfig_Labels.CurrentValue()!,
                 Field = x => x.Metadata?.Labels is { Count: > 0 } labels ? string.Join(", ", labels.Keys) : "",
                 WidthMode = DynamicTableViewWidthMode.Header
             },
             new ResourceListColumn<k8s.Models.V1Secret, string>()
             {
                 Key = "keys",
-                Name = L10n.Instance.V1SecretConfig_Keys.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1SecretConfig_Keys.CurrentValue()!,
                 Field = x => x.Data is { Count: > 0 } data ? string.Join(", ", data.Keys) : "",
                 WidthMode = DynamicTableViewWidthMode.Header
             },
             new ResourceListColumn<k8s.Models.V1Secret, string>()
             {
                 Key = "type",
-                Name = L10n.Instance.V1SecretConfig_Type.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1SecretConfig_Type.CurrentValue()!,
                 Field = x => x.Type,
                 WidthMode = DynamicTableViewWidthMode.Header
             },

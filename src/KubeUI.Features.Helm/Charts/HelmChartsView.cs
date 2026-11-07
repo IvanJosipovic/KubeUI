@@ -23,7 +23,7 @@ public sealed class HelmChartsView : KubeUIView<HelmChartsViewModel>
             ContextMenu = new ContextMenu(),
             ContextMenuItemsFactory = targets => targets.OfType<HelmChartSearchResult>().Select(chart =>
                 new MenuItem()
-                    .Header(L10n.Instance.HelmChartsView_Install.ToBinding())
+                    .Header(HelmLanguageManager.Instance.HelmChartsView_Install.ToBinding())
                     .Command(vm, x => x.InstallChartCommand)
                     .CommandParameter(chart)
                     .Icon(new FluentIcon().Icon(Icon.AddSquare)))
@@ -35,7 +35,7 @@ public sealed class HelmChartsView : KubeUIView<HelmChartsViewModel>
                 Count = new Label()
                     .VerticalContentAlignment(VerticalAlignment.Center)
                     .Content(CompiledBinding.Create<HelmChartsViewModel, int>(x => x.ItemCount,
-                        source: vm, stringFormat: L10n.Instance.HelmChartsView_ItemsFormat.CurrentValue()!)),
+                        source: vm, stringFormat: HelmLanguageManager.Instance.HelmChartsView_ItemsFormat.CurrentValue()!)),
                 Trailing = new StackPanel().MaxWidth(760)
                     .HorizontalAlignment(HorizontalAlignment.Right)
                     .Orientation(Orientation.Horizontal)
@@ -46,7 +46,7 @@ public sealed class HelmChartsView : KubeUIView<HelmChartsViewModel>
                             .Height(32)
                             .Margin(0, 0, 2, 0)
                             .VerticalContentAlignment(VerticalAlignment.Center)
-                            .PlaceholderText(L10n.Instance.HelmChartsView_SearchPlaceholder.ToBinding())
+                            .PlaceholderText(HelmLanguageManager.Instance.HelmChartsView_SearchPlaceholder.ToBinding())
                             .Text(vm, x => x.SearchText, BindingMode.TwoWay),
                         new ComboBox().Name("Repository", Scope)
                             .Width(200)
@@ -56,7 +56,7 @@ public sealed class HelmChartsView : KubeUIView<HelmChartsViewModel>
                             .HorizontalAlignment(HorizontalAlignment.Stretch)
                             .VerticalContentAlignment(VerticalAlignment.Center)
                             .Classes("ClearButton")
-                            .PlaceholderText(L10n.Instance.HelmReleaseEditorView_Repository.ToBinding())
+                            .PlaceholderText(HelmLanguageManager.Instance.HelmReleaseEditorView_Repository.ToBinding())
                             .IsEnabled(vm, x => !x.IsLoading)
                             .ItemsSource(vm, x => x.Repositories)
                             .SelectedItem(vm, x => x.SelectedRepository, BindingMode.TwoWay),
@@ -64,7 +64,7 @@ public sealed class HelmChartsView : KubeUIView<HelmChartsViewModel>
                             .Margin(0, 0, 2, 0)
                             .Command(vm, x => x.RefreshCommand)
                             .Content(new FluentIcon().Icon(Icon.ArrowSync))
-                            .ToolTip_Tip(SharedL10n.Instance.Shared_Refresh.ToBinding()))
+                            .ToolTip_Tip(FoundationLanguageManager.Instance.Shared_Refresh.ToBinding()))
             },
             table.Row(1));
         Interaction.GetBehaviors(root).Add(new EventTriggerBehavior

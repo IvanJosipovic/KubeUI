@@ -1,4 +1,4 @@
-﻿using System.Net.WebSockets;
+using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -19,7 +19,7 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IClusterWorkspa
     public PodConsoleViewModel(ILogger<PodConsoleViewModel> logger)
     {
         _logger = logger;
-        Title = L10n.Instance.PodConsoleView_Title.CurrentValue()!;
+        Title = ResourcesLanguageManager.Instance.PodConsoleView_Title.CurrentValue()!;
 
         Model.UserInput += Input;
         Model.SizeChanged += Terminal_SizeChanged;

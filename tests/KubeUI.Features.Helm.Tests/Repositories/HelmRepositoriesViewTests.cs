@@ -37,7 +37,7 @@ public sealed class HelmRepositoriesViewTests
         using var window = Application.Current.CreateTestWindow(content: view);
         window.Show();
         await WaitForAsync(() => view.GetVisualDescendants().OfType<Label>()
-            .Any(label => Equals(label.Content, string.Format(HelmL10n.Instance.HelmRepositoriesView_ItemsFormat.CurrentValue()!, 1))));
+            .Any(label => Equals(label.Content, string.Format(HelmLanguageManager.Instance.HelmRepositoriesView_ItemsFormat.CurrentValue()!, 1))));
 
         var buttons = view.GetVisualDescendants().OfType<Button>().ToArray();
         var add = buttons.Single(button => ReferenceEquals(button.Command, viewModel.NewRepositoryCommand));
@@ -47,13 +47,13 @@ public sealed class HelmRepositoriesViewTests
         add.Content.ShouldBeOfType<FluentIcon>().Icon.ShouldBe(Icon.AddSquare);
         update.Content.ShouldBeOfType<FluentIcon>().Icon.ShouldBe(Icon.ArrowDownload);
         refresh.Content.ShouldBeOfType<FluentIcon>().Icon.ShouldBe(Icon.ArrowSync);
-        ToolTip.GetTip(add).ShouldBe(HelmL10n.Instance.HelmRepositoriesView_New.CurrentValue());
-        ToolTip.GetTip(update).ShouldBe(HelmL10n.Instance.HelmRepositoriesView_UpdateIndexes.CurrentValue());
+        ToolTip.GetTip(add).ShouldBe(HelmLanguageManager.Instance.HelmRepositoriesView_New.CurrentValue());
+        ToolTip.GetTip(update).ShouldBe(HelmLanguageManager.Instance.HelmRepositoriesView_UpdateIndexes.CurrentValue());
 
         Click(window, update);
         await viewModel.UpdateIndexesCommand.ExecutionTask!.WaitAsync(TestContext.Current.CancellationToken);
         await WaitForAsync(() => view.GetVisualDescendants().OfType<TextBlock>()
-            .Any(text => text.Text == HelmL10n.Instance.HelmRepositoriesView_IndexesUpdated.CurrentValue()));
+            .Any(text => text.Text == HelmLanguageManager.Instance.HelmRepositoriesView_IndexesUpdated.CurrentValue()));
         helm.Verify(service => service.UpdateRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()), Times.Once);
 
         helm.Setup(service => service.ListRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
@@ -61,7 +61,7 @@ public sealed class HelmRepositoriesViewTests
         Click(window, refresh);
         await viewModel.RefreshCommand.ExecutionTask!.WaitAsync(TestContext.Current.CancellationToken);
         await WaitForAsync(() => view.GetVisualDescendants().OfType<Label>()
-            .Any(label => Equals(label.Content, string.Format(HelmL10n.Instance.HelmRepositoriesView_ItemsFormat.CurrentValue()!, 0))));
+            .Any(label => Equals(label.Content, string.Format(HelmLanguageManager.Instance.HelmRepositoriesView_ItemsFormat.CurrentValue()!, 0))));
         viewModel.ItemCount.ShouldBe(0);
         viewModel.Status.ShouldBeEmpty();
     }

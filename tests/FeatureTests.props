@@ -19,7 +19,6 @@
     <Compile Include="..\KubeUI.Avalonia.Tests\Infra\Initializer.cs" Link="Infra\Initializer.cs" />
     <Compile Include="..\KubeUI.Avalonia.Tests\Infra\LiveClusterFactAttribute.cs" Link="Infra\LiveClusterFactAttribute.cs" />
     <Compile Include="..\KubeUI.Avalonia.Tests\GlobalUsings.cs" Link="GlobalUsings.cs" />
-    <Compile Include="..\KubeUI.Avalonia.Tests\GlobalUsings.GenericKubernetesObject.cs" Link="GlobalUsings.GenericKubernetesObject.cs" />
     <Using Include="Xunit" />
     <Using Include="KubeUI.Controls.Converters" />
     <Using Include="KubeUI.Controls.Presentation" />
@@ -32,7 +31,7 @@
     <Using Include="KubeUI.Kubernetes.Client" />
     <Using Include="KubeUI.Kubernetes" />
     <Using Include="KubernetesClient.Informer.Client" />
-    <Using Include="KubeUI.Foundation.Assets.LanguageManager" Alias="SharedL10n" />
+    <Using Include="KubeUI.Foundation.Assets" />
   </ItemGroup>
 
   <ItemGroup>

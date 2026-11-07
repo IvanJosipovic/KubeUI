@@ -51,8 +51,8 @@ public sealed class DirectionIcon : Border
             {
                 var tooltip = d switch
                 {
-                    KubeUIFlowDirection.Ingress => L10n.Instance.FlowDirection_Ingress.CurrentValue()!,
-                    KubeUIFlowDirection.Egress => L10n.Instance.FlowDirection_Egress.CurrentValue()!,
+                    KubeUIFlowDirection.Ingress => CiliumLanguageManager.Instance.FlowDirection_Ingress.CurrentValue()!,
+                    KubeUIFlowDirection.Egress => CiliumLanguageManager.Instance.FlowDirection_Egress.CurrentValue()!,
                     _ => null
                 };
 

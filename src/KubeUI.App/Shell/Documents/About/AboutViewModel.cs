@@ -7,7 +7,7 @@ public sealed partial class AboutViewModel : ViewModelBase
 {
     public AboutViewModel()
     {
-        Title = L10n.Instance.AboutView_Title.CurrentValue()!;
+        Title = AppLanguageManager.Instance.AboutView_Title.CurrentValue()!;
         Id = nameof(AboutViewModel);
     }
 

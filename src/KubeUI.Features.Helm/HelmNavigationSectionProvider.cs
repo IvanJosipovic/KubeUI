@@ -29,7 +29,7 @@ public sealed class HelmNavigationSectionProvider : INavigationSectionProvider
         _enabled = enabled;
         Section = new NavigationSection(
             "helm",
-            L10n.Instance.HelmNavigationSectionProvider_SectionTitle.CurrentValue()!,
+            HelmLanguageManager.Instance.HelmNavigationSectionProvider_SectionTitle.CurrentValue()!,
             NavigationSectionOrder.AfterCustomResources,
             null,
             IconAssetPath,
@@ -39,7 +39,7 @@ public sealed class HelmNavigationSectionProvider : INavigationSectionProvider
         [
             new NavigationDocument(
                 ChartsDocumentId,
-                L10n.Instance.HelmChartsView_Title.CurrentValue()!,
+                HelmLanguageManager.Instance.HelmChartsView_Title.CurrentValue()!,
                 150,
                 null,
                 IsAvailable,
@@ -51,7 +51,7 @@ public sealed class HelmNavigationSectionProvider : INavigationSectionProvider
                 }),
             new NavigationDocument(
                 RepositoriesDocumentId,
-                L10n.Instance.HelmRepositoriesView_Title.CurrentValue()!,
+                HelmLanguageManager.Instance.HelmRepositoriesView_Title.CurrentValue()!,
                 200,
                 null,
                 IsAvailable,
@@ -63,7 +63,7 @@ public sealed class HelmNavigationSectionProvider : INavigationSectionProvider
                 }),
             new NavigationDocument(
                 ReleasesDocumentId,
-                L10n.Instance.HelmReleasesView_Title.CurrentValue()!,
+                HelmLanguageManager.Instance.HelmReleasesView_Title.CurrentValue()!,
                 100,
                 null,
                 IsAvailable,

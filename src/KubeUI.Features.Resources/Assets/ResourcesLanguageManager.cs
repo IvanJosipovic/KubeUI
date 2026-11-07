@@ -6,4 +6,4 @@ namespace KubeUI.Features.Resources.Assets;
 /// The Lingua manager for the Resources feature's resource files.
 /// </summary>
 [LinguaManager("./Resources.json")]
-internal sealed partial class LanguageManager;
+internal sealed partial class ResourcesLanguageManager;

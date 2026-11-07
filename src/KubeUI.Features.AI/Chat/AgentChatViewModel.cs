@@ -68,7 +68,7 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
         _contextService.ContextChanged += ContextServiceOnContextChanged;
         SelectedAgent = ResolveConfiguredAgent();
         Id = nameof(AgentChatViewModel);
-        Title = L10n.Instance.AgentChatView_Title.CurrentValue()!;
+        Title = AiLanguageManager.Instance.AgentChatView_Title.CurrentValue()!;
         CanClose = true;
         CanPin = true;
     }
@@ -80,7 +80,7 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
         if (text.Length == 0 || SelectedAgent is null || IsBusy)
             return;
         Prompt = string.Empty;
-        Messages.Add(new AgentChatMessage(L10n.Instance.AgentChatView_User.CurrentValue()!, text));
+        Messages.Add(new AgentChatMessage(AiLanguageManager.Instance.AgentChatView_User.CurrentValue()!, text));
         IsBusy = true;
         Task? promptTask = null;
         try
@@ -122,15 +122,15 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
             {
                 if (item is SessionUpdateEvent { Update.Value: SessionUpdateVariant0UserMessageChunk userChunk }
                     && userChunk.Content.Value is TextContent userText)
-                    Messages.Add(new AgentChatMessage(L10n.Instance.AgentChatView_User.CurrentValue()!, userText.Text));
+                    Messages.Add(new AgentChatMessage(AiLanguageManager.Instance.AgentChatView_User.CurrentValue()!, userText.Text));
                 else if (item is SessionUpdateEvent { Update.Value: SessionUpdateVariant1AgentMessageChunk assistantChunk }
                     && assistantChunk.Content.Value is TextContent assistantText)
                     AddAgentMessage(assistantText.Text);
                 else if (item is SessionUpdateEvent { Update.Value: ToolCall toolStarted })
                     Messages.Add(new AgentChatMessage(
-                        L10n.Instance.AgentChatView_Tool.CurrentValue()!,
+                        AiLanguageManager.Instance.AgentChatView_Tool.CurrentValue()!,
                         string.Format(
-                            L10n.Instance.AgentChatView_ToolStartedFormat.CurrentValue()!,
+                            AiLanguageManager.Instance.AgentChatView_ToolStartedFormat.CurrentValue()!,
                             toolStarted.Title ?? toolStarted.Name ?? toolStarted.ToolCallId,
                             FormatInput(toolStarted.RawInput))));
                 else if (item is SessionUpdateEvent { Update.Value: ToolCallUpdate toolCompleted }
@@ -146,20 +146,20 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
                             toolName);
                     }
                     Messages.Add(new AgentChatMessage(
-                        L10n.Instance.AgentChatView_Tool.CurrentValue()!,
+                        AiLanguageManager.Instance.AgentChatView_Tool.CurrentValue()!,
                         string.Format(
-                            L10n.Instance.AgentChatView_ToolCompletedFormat.CurrentValue()!,
+                            AiLanguageManager.Instance.AgentChatView_ToolCompletedFormat.CurrentValue()!,
                             succeeded
-                                ? L10n.Instance.AgentChatView_ToolSucceeded.CurrentValue()!
-                                : L10n.Instance.AgentChatView_ToolFailed.CurrentValue()!,
+                                ? AiLanguageManager.Instance.AgentChatView_ToolSucceeded.CurrentValue()!
+                                : AiLanguageManager.Instance.AgentChatView_ToolFailed.CurrentValue()!,
                             toolName)));
                 }
                 else if (item is SessionUpdateEvent { Update.Value: Plan plan })
                     Messages.Add(new AgentChatMessage(
-                        L10n.Instance.AgentChatView_Plan.CurrentValue()!,
+                        AiLanguageManager.Instance.AgentChatView_Plan.CurrentValue()!,
                         string.Join(
                             Environment.NewLine,
-                            plan.Entries.Select(entry => string.Format(L10n.Instance.AgentChatView_PlanStepFormat.CurrentValue()!, entry.Content)))));
+                            plan.Entries.Select(entry => string.Format(AiLanguageManager.Instance.AgentChatView_PlanStepFormat.CurrentValue()!, entry.Content)))));
                 else if (item is Completed)
                     break;
             }
@@ -168,11 +168,11 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
         catch (Exception ex)
         {
             if (_turnCancellation?.IsCancellationRequested == true)
-                Messages.Add(new AgentChatMessage(L10n.Instance.AgentChatView_Status.CurrentValue()!, L10n.Instance.AgentChatView_Canceled.CurrentValue()!));
+                Messages.Add(new AgentChatMessage(AiLanguageManager.Instance.AgentChatView_Status.CurrentValue()!, AiLanguageManager.Instance.AgentChatView_Canceled.CurrentValue()!));
             else
             {
                 _logger?.LogError(ex, "AI chat turn failed for agent {AgentId}", SelectedAgent?.Id);
-                Messages.Add(new AgentChatMessage(L10n.Instance.AgentChatView_Error.CurrentValue()!, ex.Message));
+                Messages.Add(new AgentChatMessage(AiLanguageManager.Instance.AgentChatView_Error.CurrentValue()!, ex.Message));
             }
         }
         finally
@@ -268,7 +268,7 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
         var raw = element.GetRawText();
         return string.IsNullOrWhiteSpace(raw)
             ? string.Empty
-            : string.Format(L10n.Instance.AgentChatView_ToolInputFormat.CurrentValue()!, raw);
+            : string.Format(AiLanguageManager.Instance.AgentChatView_ToolInputFormat.CurrentValue()!, raw);
     }
 
     private void MessagesOnCollectionChanged(object? _, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)

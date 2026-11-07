@@ -26,7 +26,7 @@
     <Using Include="FluentIcons.Avalonia" />
     <Using Include="FluentIcons.Common" />
     <Using Include="Helm.NET" />
-    <Using Include="KubeUI.Foundation.Assets.LanguageManager" Alias="SharedL10n" />
+    <Using Include="KubeUI.Foundation.Assets" />
     <Using Include="KubeUI.Foundation.Styles" />
     <Using Include="KubeUI.Controls.Converters" />
     <Using Include="KubeUI.Controls.DependencyInjection" />
@@ -36,10 +36,10 @@
     <Using Include="KubeUI.Controls.Editors" />
     <Using Include="KubeUI.Controls.Threading" />
     <Using Include="KubeUI.Controls.Styles" />
-    <Using Include="KubeUI.Features.Helm.Assets.LanguageManager" Alias="L10n" />
+    <Using Include="KubeUI.Features.Helm.Assets" />
     <Using Include="KubeUI.Foundation.Localization" />
     <Using Include="KubeUI.Features.Resources" />
-    <Using Include="KubeUI.Features.Resources.Assets.LanguageManager" Alias="ResourceL10n" />
+    <Using Include="KubeUI.Features.Resources.Assets" />
     <Using Include="KubeUI.Kubernetes" />
     <Using Include="Microsoft.Extensions.DependencyInjection" />
     <Using Include="Microsoft.Extensions.Logging" />

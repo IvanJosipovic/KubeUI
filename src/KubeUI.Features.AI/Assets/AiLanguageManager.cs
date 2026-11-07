@@ -6,4 +6,4 @@ namespace KubeUI.Features.AI.Assets;
 /// The Lingua manager for the AI feature's resource files.
 /// </summary>
 [LinguaManager("./Resources.json")]
-internal sealed partial class LanguageManager;
+internal sealed partial class AiLanguageManager;

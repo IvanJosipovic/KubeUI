@@ -33,8 +33,8 @@ public sealed class NamespaceScopePickerTests
         picker.IsEnabled.ShouldBeTrue();
         link.IsEnabled.ShouldBeTrue();
         link.IsChecked.ShouldBe(true);
-        picker.PlaceholderText.ShouldBe(ClusterL10n.Instance.NamespaceScopePicker_SelectNamespace.CurrentValue());
-        ToolTip.GetTip(link).ShouldBe(ClusterL10n.Instance.NamespaceScopePicker_LinkNamespaces.CurrentValue());
+        picker.PlaceholderText.ShouldBe(ClustersLanguageManager.Instance.NamespaceScopePicker_SelectNamespace.CurrentValue());
+        ToolTip.GetTip(link).ShouldBe(ClustersLanguageManager.Instance.NamespaceScopePicker_LinkNamespaces.CurrentValue());
 
         control.PickerWidth = 280;
         Dispatcher.UIThread.RunJobs();
@@ -249,7 +249,7 @@ public sealed class NamespaceScopePickerTests
 
     private static ToggleButton Link(NamespaceScopePicker control)
         => control.GetVisualDescendants().OfType<ToggleButton>()
-            .Single(toggle => Equals(ToolTip.GetTip(toggle), ClusterL10n.Instance.NamespaceScopePicker_LinkNamespaces.CurrentValue()));
+            .Single(toggle => Equals(ToolTip.GetTip(toggle), ClustersLanguageManager.Instance.NamespaceScopePicker_LinkNamespaces.CurrentValue()));
 
     private static V1Namespace Namespace(string name)
         => new() { Metadata = new V1ObjectMeta { Name = name } };

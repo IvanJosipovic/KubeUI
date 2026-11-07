@@ -57,20 +57,20 @@ public sealed partial class ServiceMapView : KubeUIView<ServiceMapViewModel>
                             .ItemsSource(new[] { TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(60) })
                             .SelectedItem(CompiledBinding.Create<ServiceMapViewModel, TimeSpan>(x => x.TimeWindow, mode: BindingMode.TwoWay))
                             .ItemTemplate(new FuncDataTemplate<TimeSpan>((timeWindow, _) => new TextBlock()
-                                .Text($"{timeWindow.TotalMinutes} {L10n.Instance.ServiceMapView_TimeWindowMinutes.CurrentValue()!}"))),
+                                .Text($"{timeWindow.TotalMinutes} {CiliumLanguageManager.Instance.ServiceMapView_TimeWindowMinutes.CurrentValue()!}"))),
                         new ToggleButton()
                             .Width(32)
                             .Height(32)
                             .VerticalAlignment(VerticalAlignment.Center)
                             .IsChecked(CompiledBinding.Create<ServiceMapViewModel, bool>(x => x.AggregateByNamespace, mode: BindingMode.TwoWay))
-                            .ToolTip_Tip(L10n.Instance.ServiceMapView_TooltipAggregate.ToBinding())
+                            .ToolTip_Tip(CiliumLanguageManager.Instance.ServiceMapView_TooltipAggregate.ToBinding())
                             .Content(new FluentIcon().Icon(Icon.DataUsage)),
                         new ToggleButton()
                             .Width(32)
                             .Height(32)
                             .VerticalAlignment(VerticalAlignment.Center)
                             .IsChecked(CompiledBinding.Create<ServiceMapViewModel, bool>(x => x.ShowOnlyErrors, mode: BindingMode.TwoWay))
-                            .ToolTip_Tip(L10n.Instance.ServiceMapView_TooltipErrorsOnly.ToBinding())
+                            .ToolTip_Tip(CiliumLanguageManager.Instance.ServiceMapView_TooltipErrorsOnly.ToBinding())
                             .Content(new FluentIcon().Icon(Icon.Warning))),
                 new StackPanel()
                     .Col(1)
@@ -117,24 +117,24 @@ public sealed partial class ServiceMapView : KubeUIView<ServiceMapViewModel>
                 mode: BindingMode.TwoWay))
             .ItemTemplate(new FuncDataTemplate<LayoutAlgorithmTypeEnum>((algorithm, _) =>
                 new TextBlock().Text(GetLayoutAlgorithmName(algorithm))))
-            .ToolTip_Tip(L10n.Instance.ServiceMapView_LayoutAlgorithm.CurrentValue()!);
+            .ToolTip_Tip(CiliumLanguageManager.Instance.ServiceMapView_LayoutAlgorithm.CurrentValue()!);
     }
 
     private static string GetLayoutAlgorithmName(LayoutAlgorithmTypeEnum algorithm)
     {
         return algorithm switch
         {
-            LayoutAlgorithmTypeEnum.BoundedFR => L10n.Instance.ServiceMapView_Layout_BoundedFR.CurrentValue()!,
-            LayoutAlgorithmTypeEnum.Circular => L10n.Instance.ServiceMapView_Layout_Circular.CurrentValue()!,
-            LayoutAlgorithmTypeEnum.CompoundFDP => L10n.Instance.ServiceMapView_Layout_CompoundFDP.CurrentValue()!,
-            LayoutAlgorithmTypeEnum.EfficientSugiyama => L10n.Instance.ServiceMapView_Layout_EfficientSugiyama.CurrentValue()!,
-            LayoutAlgorithmTypeEnum.FR => L10n.Instance.ServiceMapView_Layout_FR.CurrentValue()!,
-            LayoutAlgorithmTypeEnum.ISOM => L10n.Instance.ServiceMapView_Layout_ISOM.CurrentValue()!,
-            LayoutAlgorithmTypeEnum.KK => L10n.Instance.ServiceMapView_Layout_KK.CurrentValue()!,
-            LayoutAlgorithmTypeEnum.LinLog => L10n.Instance.ServiceMapView_Layout_LinLog.CurrentValue()!,
-            LayoutAlgorithmTypeEnum.SimpleRandom => L10n.Instance.ServiceMapView_Layout_Random.CurrentValue()!,
-            LayoutAlgorithmTypeEnum.Sugiyama => L10n.Instance.ServiceMapView_Layout_Sugiyama.CurrentValue()!,
-            LayoutAlgorithmTypeEnum.Tree => L10n.Instance.ServiceMapView_Layout_Tree.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.BoundedFR => CiliumLanguageManager.Instance.ServiceMapView_Layout_BoundedFR.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.Circular => CiliumLanguageManager.Instance.ServiceMapView_Layout_Circular.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.CompoundFDP => CiliumLanguageManager.Instance.ServiceMapView_Layout_CompoundFDP.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.EfficientSugiyama => CiliumLanguageManager.Instance.ServiceMapView_Layout_EfficientSugiyama.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.FR => CiliumLanguageManager.Instance.ServiceMapView_Layout_FR.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.ISOM => CiliumLanguageManager.Instance.ServiceMapView_Layout_ISOM.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.KK => CiliumLanguageManager.Instance.ServiceMapView_Layout_KK.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.LinLog => CiliumLanguageManager.Instance.ServiceMapView_Layout_LinLog.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.SimpleRandom => CiliumLanguageManager.Instance.ServiceMapView_Layout_Random.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.Sugiyama => CiliumLanguageManager.Instance.ServiceMapView_Layout_Sugiyama.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.Tree => CiliumLanguageManager.Instance.ServiceMapView_Layout_Tree.CurrentValue()!,
             _ => algorithm.ToString()
         };
     }

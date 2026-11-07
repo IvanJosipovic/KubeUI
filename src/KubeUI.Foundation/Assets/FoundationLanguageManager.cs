@@ -7,4 +7,4 @@ namespace KubeUI.Foundation.Assets;
 /// manager; feature managers stay internal to their feature assemblies.
 /// </summary>
 [LinguaManager("./Resources.json")]
-public sealed partial class LanguageManager;
+public sealed partial class FoundationLanguageManager;

@@ -138,11 +138,11 @@ public sealed class FlowListViewModelTests
     public void Direction_column_displays_localized_text_without_an_icon_template()
     {
         FlowListViewModel.FormatDirection(FlowDirection.Ingress)
-            .ShouldBe(CiliumL10n.Instance.FlowDirection_Ingress.CurrentValue());
+            .ShouldBe(CiliumLanguageManager.Instance.FlowDirection_Ingress.CurrentValue());
         FlowListViewModel.FormatDirection(FlowDirection.Egress)
-            .ShouldBe(CiliumL10n.Instance.FlowDirection_Egress.CurrentValue());
+            .ShouldBe(CiliumLanguageManager.Instance.FlowDirection_Egress.CurrentValue());
         FlowListViewModel.FormatDirection(FlowDirection.Unknown)
-            .ShouldBe(CiliumL10n.Instance.FlowDirection_Unknown.CurrentValue());
+            .ShouldBe(CiliumLanguageManager.Instance.FlowDirection_Unknown.CurrentValue());
 
         FlowListViewModel.CreateColumns()
             .Single(static column => column.Key == "Direction")
@@ -153,13 +153,13 @@ public sealed class FlowListViewModelTests
     public void Verdict_column_displays_localized_text_without_a_badge_template()
     {
         FlowListViewModel.FormatVerdict(FlowVerdict.Forwarded)
-            .ShouldBe(CiliumL10n.Instance.FlowVerdict_Allowed.CurrentValue());
+            .ShouldBe(CiliumLanguageManager.Instance.FlowVerdict_Allowed.CurrentValue());
         FlowListViewModel.FormatVerdict(FlowVerdict.Dropped)
-            .ShouldBe(CiliumL10n.Instance.FlowVerdict_Dropped.CurrentValue());
+            .ShouldBe(CiliumLanguageManager.Instance.FlowVerdict_Dropped.CurrentValue());
         FlowListViewModel.FormatVerdict(FlowVerdict.Error)
-            .ShouldBe(CiliumL10n.Instance.FlowVerdict_Error.CurrentValue());
+            .ShouldBe(CiliumLanguageManager.Instance.FlowVerdict_Error.CurrentValue());
         FlowListViewModel.FormatVerdict(FlowVerdict.Unknown)
-            .ShouldBe(CiliumL10n.Instance.FlowVerdict_Unknown.CurrentValue());
+            .ShouldBe(CiliumLanguageManager.Instance.FlowVerdict_Unknown.CurrentValue());
 
         FlowListViewModel.CreateColumns()
             .Single(static column => column.Key == "Verdict")

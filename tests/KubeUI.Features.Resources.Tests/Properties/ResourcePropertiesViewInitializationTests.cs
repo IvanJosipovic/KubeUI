@@ -76,7 +76,7 @@ public sealed class ResourcePropertiesViewInitializationTests
             await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
 
             var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
-            var nameItem = items.Single(item => item.Key == ResourceL10n.Instance.ResourcePropertiesView_Name.CurrentValue()!);
+            var nameItem = items.Single(item => item.Key == ResourcesLanguageManager.Instance.ResourcePropertiesView_Name.CurrentValue()!);
             nameItem.Value.ShouldBe("example-1");
         }
         finally
@@ -164,7 +164,7 @@ public sealed class ResourcePropertiesViewInitializationTests
             var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
 
             items.ShouldNotBeEmpty();
-            items.Any(x => x.Key == ResourceL10n.Instance.ResourcePropertiesView_Name.CurrentValue()!).ShouldBeTrue();
+            items.Any(x => x.Key == ResourcesLanguageManager.Instance.ResourcePropertiesView_Name.CurrentValue()!).ShouldBeTrue();
         }
         finally
         {

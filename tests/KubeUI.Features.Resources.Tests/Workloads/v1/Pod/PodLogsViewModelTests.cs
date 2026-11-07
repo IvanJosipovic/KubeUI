@@ -2334,7 +2334,7 @@ public sealed class PodLogsViewModelTests
         viewModel.AutoScrollToBottom = false;
 
         viewModel.IsDisplayPaused.ShouldBeTrue();
-        viewModel.LogUpdateStatus.ShouldBe(ResourceL10n.Instance.PodLogsView_UpdatesPaused.CurrentValue()!);
+        viewModel.LogUpdateStatus.ShouldBe(ResourcesLanguageManager.Instance.PodLogsView_UpdatesPaused.CurrentValue()!);
 
         viewModel.FollowLogs();
 
@@ -2767,7 +2767,7 @@ public sealed class PodLogsViewModelTests
 
         viewModel.ScopeItems.ShouldBeEmpty();
         viewModel.Object.ShouldBeNull();
-        viewModel.ConnectionError.ShouldBe(ResourceL10n.Instance.PodLogsView_NoResources.CurrentValue()!);
+        viewModel.ConnectionError.ShouldBe(ResourcesLanguageManager.Instance.PodLogsView_NoResources.CurrentValue()!);
     }
 
     [AvaloniaFact]
@@ -2806,7 +2806,7 @@ public sealed class PodLogsViewModelTests
 
         viewModel.ScopeItems.ShouldBeEmpty();
         viewModel.Object.ShouldBeNull();
-        viewModel.ConnectionError.ShouldBe(ResourceL10n.Instance.PodLogsView_NoResources.CurrentValue()!);
+        viewModel.ConnectionError.ShouldBe(ResourcesLanguageManager.Instance.PodLogsView_NoResources.CurrentValue()!);
     }
 
     [AvaloniaFact]
@@ -2826,7 +2826,7 @@ public sealed class PodLogsViewModelTests
         viewModel.ScopeItems.ShouldBeEmpty();
         viewModel.SelectedScopeItems.ShouldBeEmpty();
         viewModel.Object.ShouldBeNull();
-        viewModel.ConnectionError.ShouldBe(ResourceL10n.Instance.PodLogsView_NoResources.CurrentValue()!);
+        viewModel.ConnectionError.ShouldBe(ResourcesLanguageManager.Instance.PodLogsView_NoResources.CurrentValue()!);
     }
 
     [AvaloniaFact]
@@ -2916,7 +2916,7 @@ public sealed class PodLogsViewModelTests
 
         viewModel.SelectedScopeItems.Count.ShouldBe(1);
         ReferenceEquals(viewModel.SelectedScopeItems[0], viewModel.ScopeItems[0]).ShouldBeTrue();
-        viewModel.SelectedScopeItems[0].ResolutionStatus.ShouldBe(ResourceL10n.Instance.PodLogsView_Active.CurrentValue()!);
+        viewModel.SelectedScopeItems[0].ResolutionStatus.ShouldBe(ResourcesLanguageManager.Instance.PodLogsView_Active.CurrentValue()!);
     }
 
     [AvaloniaFact]
@@ -3049,7 +3049,7 @@ public sealed class PodLogsViewModelTests
 
         await viewModel.Connect();
         await WaitForAsync(() => viewModel.Logs.Text.Contains("older app line", StringComparison.Ordinal), timeoutMs: 60000);
-        viewModel.Title.ShouldBe(ResourceL10n.Instance.PodLogsView_Title.CurrentValue()!);
+        viewModel.Title.ShouldBe(ResourcesLanguageManager.Instance.PodLogsView_Title.CurrentValue()!);
         viewModel.IsPodScope.ShouldBeTrue();
         viewModel.IsControllerScope.ShouldBeFalse();
         viewModel.ScopeResourceName.ShouldBe(olderPod.Name());

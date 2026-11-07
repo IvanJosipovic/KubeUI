@@ -6,4 +6,4 @@ namespace KubeUI.Features.Clusters.Assets;
 /// The Lingua manager for the Clusters feature's resource files.
 /// </summary>
 [LinguaManager("./Resources.json")]
-internal sealed partial class LanguageManager;
+internal sealed partial class ClustersLanguageManager;

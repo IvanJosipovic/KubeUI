@@ -17,19 +17,19 @@ public sealed partial class ServiceMapNodePropertiesViewModel : ViewModelBase
         get
         {
             if (Node is not { } node || node.AccessPoints.Count == 0)
-                return L10n.Instance.ServiceMapNodePropertiesView_NoAccessPoints.CurrentValue()!;
+                return CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_NoAccessPoints.CurrentValue()!;
 
             return string.Join(
                 Environment.NewLine,
                 node.AccessPoints.Select(accessPoint => string.Format(
                     CultureInfo.CurrentCulture,
-                    L10n.Instance.ServiceMapNodePropertiesView_AccessPointFormat.CurrentValue()!,
+                    CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_AccessPointFormat.CurrentValue()!,
                     accessPoint.Protocol,
                     accessPoint.Port,
                     accessPoint.FlowCount,
                     accessPoint.DeniedCount,
                     accessPoint.ApplicationProtocols.Count == 0
-                        ? L10n.Instance.ServiceMapNodePropertiesView_NoApplicationProtocols.CurrentValue()!
+                        ? CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_NoApplicationProtocols.CurrentValue()!
                         : string.Join(", ", accessPoint.ApplicationProtocols))));
         }
     }
@@ -37,7 +37,7 @@ public sealed partial class ServiceMapNodePropertiesViewModel : ViewModelBase
     public ServiceMapNodePropertiesViewModel()
     {
         Id = nameof(ServiceMapNodePropertiesViewModel);
-        Title = L10n.Instance.ServiceMapNodePropertiesView_Title.CurrentValue()!;
+        Title = CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_Title.CurrentValue()!;
         CanFloat = false;
         CanDockAsDocument = false;
     }
@@ -50,7 +50,7 @@ public sealed partial class ServiceMapNodePropertiesViewModel : ViewModelBase
         Node = node;
         Title = string.Format(
             CultureInfo.CurrentCulture,
-            L10n.Instance.ServiceMapNodePropertiesView_TitleFormat.CurrentValue()!,
+            CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_TitleFormat.CurrentValue()!,
             node.Name);
         OnPropertyChanged(nameof(AccessPoints));
     }

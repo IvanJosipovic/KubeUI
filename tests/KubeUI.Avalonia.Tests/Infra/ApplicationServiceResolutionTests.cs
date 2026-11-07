@@ -9,7 +9,7 @@ public sealed class ApplicationServiceResolutionTests
     public void TestAppBuilder_initializes_services()
     {
         Application.Current.GetTestServices().ShouldNotBeNull();
-        Application.Current.ShouldBeAssignableTo<KubeUIApplication>();
+        Application.Current.ShouldBeAssignableTo<global::KubeUI.App.App>();
     }
 
     [AvaloniaFact]

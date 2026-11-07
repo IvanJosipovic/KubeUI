@@ -1,4 +1,4 @@
-﻿using System.Windows.Input;
+using System.Windows.Input;
 using Avalonia.Input;
 using Avalonia.VisualTree;
 using FluentIcons.Avalonia;
@@ -151,12 +151,12 @@ public partial class ResourceListView : KubeUIView<IResourceListViewModel>
             Leading = new Button()
                 .Command(CompiledBinding.Create<IResourceListViewModel, ICommand?>(x => x.ResourceConfig.NewResourceCommand))
                 .IsVisible(CompiledBinding.Create<IResourceListViewModel, bool>(x => x.ResourceConfig.ShowNewResource))
-                .ToolTip_Tip(L10n.Instance.ResourceListView_NewResource.ToBinding())
+                .ToolTip_Tip(ResourcesLanguageManager.Instance.ResourceListView_NewResource.ToBinding())
                 .Content(new FluentIcon().Icon(Icon.AddSquare)),
             Count = new Label()
                 .VerticalContentAlignment(VerticalAlignment.Center)
                 .Content(CompiledBinding.Create<IResourceListViewModel, int>(x => x.ItemCount,
-                    stringFormat: L10n.Instance.ResourceListView_ItemsFormat.CurrentValue()!)),
+                    stringFormat: ResourcesLanguageManager.Instance.ResourceListView_ItemsFormat.CurrentValue()!)),
             Trailing = new StackPanel()
                 .MaxWidth(456)
                 .Orientation(Orientation.Horizontal)
@@ -169,7 +169,7 @@ public partial class ResourceListView : KubeUIView<IResourceListViewModel>
                         .VerticalAlignment(VerticalAlignment.Stretch)
                         .VerticalContentAlignment(VerticalAlignment.Center)
                         .Background(Brushes.Transparent)
-                        .PlaceholderText(L10n.Instance.ResourceListView_SearchWatermark.ToBinding())
+                        .PlaceholderText(ResourcesLanguageManager.Instance.ResourceListView_SearchWatermark.ToBinding())
                         .Text(CompiledBinding.Create<IResourceListViewModel, string>(x => x.SearchQuery, mode: BindingMode.TwoWay)),
                     CreateNamespaceSelector())
         }.Row(0);

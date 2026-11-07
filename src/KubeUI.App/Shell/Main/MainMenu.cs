@@ -39,24 +39,24 @@ internal static class MainMenu
 
     private static MenuGroup[] CreateGroups(MainViewModel vm) =>
     [
-        new(L10n.Instance.MainView_Menu_File.CurrentValue()!,
+        new(AppLanguageManager.Instance.MainView_Menu_File.CurrentValue()!,
         [
-            new(L10n.Instance.MainView_Menu_File_LoadKubeConfig.CurrentValue()!, vm.LoadKubeConfigCommand),
-            new(L10n.Instance.MainView_Menu_File_ImportAksCluster.CurrentValue()!, vm.ImportAksClusterCommand),
-            new(L10n.Instance.MainView_Menu_File_Clusters.CurrentValue()!, vm.OpenClustersCommand),
-            new(L10n.Instance.MainView_Menu_File_Settings.CurrentValue()!, vm.OpenSettingsCommand),
+            new(AppLanguageManager.Instance.MainView_Menu_File_LoadKubeConfig.CurrentValue()!, vm.LoadKubeConfigCommand),
+            new(AppLanguageManager.Instance.MainView_Menu_File_ImportAksCluster.CurrentValue()!, vm.ImportAksClusterCommand),
+            new(AppLanguageManager.Instance.MainView_Menu_File_Clusters.CurrentValue()!, vm.OpenClustersCommand),
+            new(AppLanguageManager.Instance.MainView_Menu_File_Settings.CurrentValue()!, vm.OpenSettingsCommand),
             null,
-            new(L10n.Instance.MainView_Menu_File_Exit.CurrentValue()!, vm.CloseCommand)
+            new(AppLanguageManager.Instance.MainView_Menu_File_Exit.CurrentValue()!, vm.CloseCommand)
         ]),
-        new(L10n.Instance.MainView_Menu_Window.CurrentValue()!,
+        new(AppLanguageManager.Instance.MainView_Menu_Window.CurrentValue()!,
         [
-            new(L10n.Instance.MainView_Menu_Window_ResetLayout.CurrentValue()!, vm.ResetLayoutCommand),
-            new(L10n.Instance.MainView_Menu_Window_SwitchTheme.CurrentValue()!, vm.SwitchThemeCommand)
+            new(AppLanguageManager.Instance.MainView_Menu_Window_ResetLayout.CurrentValue()!, vm.ResetLayoutCommand),
+            new(AppLanguageManager.Instance.MainView_Menu_Window_SwitchTheme.CurrentValue()!, vm.SwitchThemeCommand)
         ]),
-        new(L10n.Instance.MainView_Menu_Help.CurrentValue()!,
+        new(AppLanguageManager.Instance.MainView_Menu_Help.CurrentValue()!,
         [
-            new(L10n.Instance.MainView_Menu_Help_CheckForUpdates.CurrentValue()!, vm.CheckForUpdatesCommand),
-            new(L10n.Instance.MainView_Menu_Help_About.CurrentValue()!, vm.OpenAboutCommand)
+            new(AppLanguageManager.Instance.MainView_Menu_Help_CheckForUpdates.CurrentValue()!, vm.CheckForUpdatesCommand),
+            new(AppLanguageManager.Instance.MainView_Menu_Help_About.CurrentValue()!, vm.OpenAboutCommand)
         ])
     ];
 

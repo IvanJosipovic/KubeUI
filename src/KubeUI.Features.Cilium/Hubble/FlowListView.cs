@@ -102,7 +102,7 @@ public sealed partial class FlowListView : KubeUIView<FlowListViewModel>
         {
             Leading = new Button()
                 .Command(vm.ClearCommand)
-                .ToolTip_Tip(L10n.Instance.FlowListView_TooltipClear.ToBinding())
+                .ToolTip_Tip(CiliumLanguageManager.Instance.FlowListView_TooltipClear.ToBinding())
                 .Content(new FluentIcon().Icon(Icon.Delete)),
             Count = new StackPanel()
                 .Orientation(Orientation.Horizontal)
@@ -110,7 +110,7 @@ public sealed partial class FlowListView : KubeUIView<FlowListViewModel>
                     new Label()
                         .VerticalContentAlignment(VerticalAlignment.Center)
                         .Content(CompiledBinding.Create<FlowListViewModel, int>(x => x.FlowCount,
-                             stringFormat: L10n.Instance.FlowListView_ItemsFormat.CurrentValue()!)),
+                             stringFormat: CiliumLanguageManager.Instance.FlowListView_ItemsFormat.CurrentValue()!)),
                     new TextBlock()
                         .MaxWidth(260)
                         .Margin(8, 0, 0, 0)
@@ -133,7 +133,7 @@ public sealed partial class FlowListView : KubeUIView<FlowListViewModel>
                             .VerticalAlignment(VerticalAlignment.Stretch)
                             .VerticalContentAlignment(VerticalAlignment.Center)
                             .Background(Brushes.Transparent)
-                            .PlaceholderText(L10n.Instance.FlowListView_SearchWatermark.ToBinding())
+                            .PlaceholderText(CiliumLanguageManager.Instance.FlowListView_SearchWatermark.ToBinding())
                             .Text(CompiledBinding.Create<FlowListViewModel, string>(x => x.SearchQuery, mode: BindingMode.TwoWay)),
                         new NamespaceScopePicker { PickerWidth = 190 }
                             .BindValue(NamespaceScopePicker.NamespacesProperty,

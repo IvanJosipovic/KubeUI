@@ -1,4 +1,4 @@
-﻿using FluentAvalonia.UI.Controls;
+using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
@@ -39,28 +39,28 @@ public sealed partial class V1CronJobConfig : ResourceConfig<V1CronJob>
             new ResourceListColumn<V1CronJob, string>()
             {
                 Key = "schedule",
-                Name = L10n.Instance.V1CronJobConfig_Schedule.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1CronJobConfig_Schedule.CurrentValue()!,
                 Field = x => x.Spec.Schedule,
                 WidthMode = DynamicTableViewWidthMode.Header
             },
             new ResourceListColumn<V1CronJob, bool>()
             {
                 Key = "suspend",
-                Name = L10n.Instance.V1CronJobConfig_Suspend.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1CronJobConfig_Suspend.CurrentValue()!,
                 Field = x => x.Spec.Suspend ?? false,
                 WidthMode = DynamicTableViewWidthMode.Header
             },
             new ResourceListColumn<V1CronJob, int>()
             {
                 Key = "active",
-                Name = L10n.Instance.V1CronJobConfig_Active.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1CronJobConfig_Active.CurrentValue()!,
                 Field = x => x.Status?.Active?.Count ?? 0,
                 WidthMode = DynamicTableViewWidthMode.Header
             },
             new ResourceListColumn<V1CronJob, DateTime?>()
             {
                 Key = "last-schedule",
-                Name = L10n.Instance.V1CronJobConfig_Last_Schedule.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1CronJobConfig_Last_Schedule.CurrentValue()!,
                 Display = x => x.Status?.LastScheduleTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
                 Field = x => x.Status.LastScheduleTime,
                 WidthMode = DynamicTableViewWidthMode.Header
@@ -83,21 +83,21 @@ public sealed partial class V1CronJobConfig : ResourceConfig<V1CronJob>
             CreatePodLogsMenuItem(selectedItems),
             new()
             {
-                Title = L10n.Instance.V1CronJobConfig_Start.CurrentValue()!,
+                Title = ResourcesLanguageManager.Instance.V1CronJobConfig_Start.CurrentValue()!,
                 FluentIcon = Icon.Play,
                 Command = StartCommand,
                 CommandParameter = selectedItems?.ToList(),
             },
             new()
             {
-                Title = L10n.Instance.V1CronJobConfig_Suspend.CurrentValue()!,
+                Title = ResourcesLanguageManager.Instance.V1CronJobConfig_Suspend.CurrentValue()!,
                 FluentIcon = Icon.Pause,
                 Command = SuspendCommand,
                 CommandParameter = selectedItems?.ToList(),
             },
             new()
             {
-                Title = L10n.Instance.V1CronJobConfig_Resume.CurrentValue()!,
+                Title = ResourcesLanguageManager.Instance.V1CronJobConfig_Resume.CurrentValue()!,
                 FluentIcon = Icon.ArrowRight,
                 Command = ResumeCommand,
                 CommandParameter = selectedItems?.ToList(),
@@ -121,10 +121,10 @@ public sealed partial class V1CronJobConfig : ResourceConfig<V1CronJob>
 
         var result = await _dialogService.ShowContentDialogAsync(this, new ContentDialogSettings
         {
-            Title = suspended ? L10n.Instance.V1CronJobConfig_SuspendTitle.CurrentValue()! : L10n.Instance.V1CronJobConfig_ResumeTitle.CurrentValue()!,
-            Content = string.Format(suspended ? L10n.Instance.V1CronJobConfig_SuspendContent.CurrentValue()! : L10n.Instance.V1CronJobConfig_ResumeContent.CurrentValue()!, cronJobs.Count),
-            PrimaryButtonText = L10n.Instance.ResourceListView_Delete_Primary.CurrentValue()!,
-            SecondaryButtonText = SharedL10n.Instance.Shared_Cancel.CurrentValue()!,
+            Title = suspended ? ResourcesLanguageManager.Instance.V1CronJobConfig_SuspendTitle.CurrentValue()! : ResourcesLanguageManager.Instance.V1CronJobConfig_ResumeTitle.CurrentValue()!,
+            Content = string.Format(suspended ? ResourcesLanguageManager.Instance.V1CronJobConfig_SuspendContent.CurrentValue()! : ResourcesLanguageManager.Instance.V1CronJobConfig_ResumeContent.CurrentValue()!, cronJobs.Count),
+            PrimaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_Delete_Primary.CurrentValue()!,
+            SecondaryButtonText = FoundationLanguageManager.Instance.Shared_Cancel.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary,
         });
         if (result != FAContentDialogResult.Primary)
@@ -144,7 +144,7 @@ public sealed partial class V1CronJobConfig : ResourceConfig<V1CronJob>
             catch (Exception ex)
             {
                 failures.Add(ex);
-                ResourceUtilities.HandleException(_logger, _notificationManager, ex, string.Format(suspended ? L10n.Instance.V1CronJobConfig_SuspendError.CurrentValue()! : L10n.Instance.V1CronJobConfig_ResumeError.CurrentValue()!, cronJob.Namespace(), cronJob.Name()), sendNotification: true);
+                ResourceUtilities.HandleException(_logger, _notificationManager, ex, string.Format(suspended ? ResourcesLanguageManager.Instance.V1CronJobConfig_SuspendError.CurrentValue()! : ResourcesLanguageManager.Instance.V1CronJobConfig_ResumeError.CurrentValue()!, cronJob.Namespace(), cronJob.Name()), sendNotification: true);
             }
         }
 
@@ -205,7 +205,7 @@ public sealed partial class V1CronJobConfig : ResourceConfig<V1CronJob>
             catch (Exception ex)
             {
                 exceptions.Add(ex);
-                ResourceUtilities.HandleException(_logger, _notificationManager, ex, L10n.Instance.V1CronJobConfig_Start_Error.CurrentValue()!, sendNotification: true);
+                ResourceUtilities.HandleException(_logger, _notificationManager, ex, ResourcesLanguageManager.Instance.V1CronJobConfig_Start_Error.CurrentValue()!, sendNotification: true);
             }
         }
 

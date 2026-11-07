@@ -19,7 +19,7 @@
     <Using Include="KubeUI.Controls.DependencyInjection" />
     <Using Include="KubeUI.Controls.Platform" />
     <Using Include="KubeUI.Foundation.Styles" />
-    <Using Include="KubeUI.Features.Clusters.Assets.LanguageManager" Alias="L10n" />
+    <Using Include="KubeUI.Features.Clusters.Assets" />
     <Using Include="KubeUI.Foundation.Localization" />
     <Using Include="Microsoft.Extensions.DependencyInjection" />
     <Using Include="Microsoft.Extensions.Logging" />

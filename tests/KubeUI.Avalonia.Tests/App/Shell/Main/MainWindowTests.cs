@@ -192,7 +192,7 @@ public sealed class MainWindowTests
                     .Single(panel => panel.Name == "PART_TitleBar");
             var title = titleBar.GetVisualDescendants()
                 .OfType<TextBlock>()
-                .Single(text => text.Text == AppL10n.Instance.MainWindow_Title.CurrentValue()!);
+                .Single(text => text.Text == AppLanguageManager.Instance.MainWindow_Title.CurrentValue()!);
             title.TextAlignment.ShouldBe(TextAlignment.Center);
             title.Margin.ShouldBe(new Thickness(0));
             WindowDecorationProperties.GetElementRole(title.Parent.ShouldBeAssignableTo<Visual>())
@@ -209,9 +209,9 @@ public sealed class MainWindowTests
 
             var options = overlay.GetVisualDescendants()
                 .OfType<Button>()
-                .Single(button => AutomationProperties.GetName(button) == AppL10n.Instance.MainWindow_Options.CurrentValue()!);
+                .Single(button => AutomationProperties.GetName(button) == AppLanguageManager.Instance.MainWindow_Options.CurrentValue()!);
             WindowDecorationProperties.GetElementRole(options).ShouldBe(WindowDecorationsElementRole.User);
-            ToolTip.GetTip(options).ShouldBe(AppL10n.Instance.MainWindow_Options.CurrentValue()!);
+            ToolTip.GetTip(options).ShouldBe(AppLanguageManager.Instance.MainWindow_Options.CurrentValue()!);
             window.WindowState = WindowState.FullScreen;
             options.IsVisible.ShouldBeFalse();
             window.WindowState = WindowState.Normal;
@@ -280,7 +280,7 @@ public sealed class MainWindowTests
                 .Result.Overlay.ShouldNotBeNull();
             var options = overlay.GetVisualDescendants()
                 .OfType<Button>()
-                .Single(button => AutomationProperties.GetName(button) == AppL10n.Instance.MainWindow_Options.CurrentValue()!);
+                .Single(button => AutomationProperties.GetName(button) == AppLanguageManager.Instance.MainWindow_Options.CurrentValue()!);
 
             var exception = Should.Throw<InvalidOperationException>(() =>
                 options.Command.ShouldNotBeNull().Execute(null));
