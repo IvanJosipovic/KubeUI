@@ -1215,6 +1215,7 @@ public sealed class PodLogsViewModelTests
         viewModel.SetScope(deployment, V1Deployment.KubeKind);
         viewModel.ContainerName = "app";
         await viewModel.Connect();
+        await WaitForAsync(() => GetPodNodes(viewModel).Count == 3, 60000);
 
         PodLogSourceTreeNode[] podNodes = [.. GetPodNodes(viewModel)];
         SelectOnlyPods(viewModel, ((V1Pod)podNodes[0].Value).Name());
