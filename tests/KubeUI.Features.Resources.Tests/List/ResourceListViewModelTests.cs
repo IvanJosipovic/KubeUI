@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.Threading;
 using DynamicData;
 using k8s.Models;
+using KubeUI.Controls.Presentation;
 using KubeUI.Features.AI.Chat;
 using Shouldly;
 using SvcSystems.Avalonia.DynamicTableView;
@@ -26,7 +27,7 @@ public sealed class ResourceListViewModelTests
         items.Single(item => item.Title == ResourceL10n.Instance.ResourceConfigBase_MenuItem_Delete.CurrentValue())
             .InputGesture.ShouldBe(new KeyGesture(Key.Delete));
 
-        var flyoutItems = ResourceActionPresenter.CreateFlyout(items).Items.OfType<MenuItem>().ToArray();
+        var flyoutItems = MenuPresenter.CreateFlyout(items).Items.OfType<MenuItem>().ToArray();
         flyoutItems.Single(item => item.Header?.ToString() == ResourceL10n.Instance.ResourceConfigBase_MenuItem_View.CurrentValue())
             .InputGesture.ShouldBe(new KeyGesture(Key.Enter));
         flyoutItems.Single(item => item.Header?.ToString() == ResourceL10n.Instance.ResourceConfigBase_MenuItem_Delete.CurrentValue())

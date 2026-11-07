@@ -176,8 +176,11 @@ public sealed class HelmReleasesViewModelTests : IDisposable
             window.Show();
             var toolbar = view.GetVisualDescendants().OfType<StackPanel>()
                 .Single(panel => panel.Orientation == global::Avalonia.Layout.Orientation.Horizontal
-                    && panel.Children.OfType<Ursa.Controls.MultiComboBox>().Any());
+                    && panel.Children.OfType<NamespaceScopePicker>().Any());
             toolbar.Children[0].ShouldBeOfType<TextBlock>();
+            var picker = toolbar.Children.OfType<NamespaceScopePicker>().Single();
+            picker.SelectedNamespaces.ShouldBeSameAs(viewModel.SelectedNamespaces);
+            picker.IsSelectionLinked.ShouldBeTrue();
             await TestWait.UntilAsync(() => viewModel.ItemCount == 1,
                 TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
             await TestWait.UntilAsync(

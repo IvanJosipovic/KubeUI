@@ -162,6 +162,32 @@ public sealed class AgentChatViewTests
     }
 
     [AvaloniaFact]
+    public async Task conversation_follow_at_end_resumes_after_view_reattachment()
+    {
+        await using var vm = CreateScrollableChatViewModel();
+        var view = new AgentChatView { DataContext = vm };
+        using var window = Application.Current.CreateTestWindow(400, 600, view);
+
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+        var scrollViewer = GetConversationScrollViewer(view);
+        scrollViewer.ScrollToEnd();
+        await WaitForAsync(() => scrollViewer.Offset.Y >= scrollViewer.ScrollBarMaximum.Y);
+
+        window.Content = null;
+        await WaitForAsync(() => TopLevel.GetTopLevel(view) is null);
+        window.Content = view;
+        await WaitForAsync(() => TopLevel.GetTopLevel(view) is not null
+            && view.GetVisualDescendants().OfType<ScrollViewer>().Contains(scrollViewer));
+        var previousExtent = scrollViewer.Extent.Height;
+
+        vm.Messages.Add(new AgentChatMessage("assistant", "A reattached message."));
+        await WaitForAsync(() => scrollViewer.Extent.Height > previousExtent);
+
+        scrollViewer.Offset.Y.ShouldBe(scrollViewer.ScrollBarMaximum.Y);
+    }
+
+    [AvaloniaFact]
     public async Task conversation_does_not_follow_new_messages_when_not_at_bottom()
     {
         await using var vm = CreateScrollableChatViewModel();

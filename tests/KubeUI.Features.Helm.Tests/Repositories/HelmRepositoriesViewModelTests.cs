@@ -5,6 +5,7 @@ using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using Helm.NET;
+using KubeUI.Controls.Layout;
 using KubeUI.Features.Helm;
 using KubeUI.Features.Helm.Helm;
 using KubeUI.Features.Helm.Releases;
@@ -51,29 +52,32 @@ public sealed class HelmRepositoriesViewModelTests : IDisposable
             window.Show();
             await TestApplicationExtensions.WaitForUiAsync();
             var repositoryHeader = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(repositoryView)
-                .OfType<Grid>().First(grid => grid.ColumnDefinitions.Count == 4);
+                .OfType<CompactToolbar>().Single();
             var releaseHeader = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(releaseView)
-                .OfType<Grid>().First(grid => grid.ColumnDefinitions.Count == 4);
+                .OfType<CompactToolbar>().Single();
             repositoryHeader.MinHeight.ShouldBe(releaseHeader.MinHeight);
             repositoryHeader.Margin.ShouldBe(releaseHeader.Margin);
-            repositoryHeader.ColumnDefinitions.Select(column => column.Width)
-                .ShouldBe(releaseHeader.ColumnDefinitions.Select(column => column.Width));
-            repositoryHeader.Children.OfType<Button>().Single().Margin
-                .ShouldBe(releaseHeader.Children.OfType<Button>().Single().Margin);
-            var count = repositoryHeader.Children.OfType<Label>().Single();
-            count.Content.ShouldBe("Repositories: 1");
-            count.Margin.ShouldBe(releaseHeader.Children.OfType<Label>().Single().Margin);
-            var actions = repositoryHeader.Children.OfType<StackPanel>().Single();
-            actions.HorizontalAlignment.ShouldBe(global::Avalonia.Layout.HorizontalAlignment.Right);
-            Grid.GetColumn(actions).ShouldBe(3);
+            var leading = repositoryHeader.Leading.ShouldBeOfType<Button>();
+            leading.Command.ShouldBeSameAs(repositories.NewRepositoryCommand);
+            var count = repositoryHeader.Count.ShouldBeOfType<Label>();
+            count.Content.ShouldBe(string.Format(HelmL10n.Instance.HelmRepositoriesView_ItemsFormat.CurrentValue()!, 1));
+            var leadingPosition = leading.TranslatePoint(default, repositoryHeader)!.Value;
+            leadingPosition.X.ShouldBe(2);
+            var countPosition = count.TranslatePoint(default, repositoryHeader)!.Value;
+            countPosition.X.ShouldBeGreaterThan(leadingPosition.X + leading.Bounds.Width);
+            var actions = repositoryHeader.Trailing.ShouldBeOfType<StackPanel>();
+            var actionPosition = actions.TranslatePoint(default, repositoryHeader)!.Value;
+            actionPosition.X.ShouldBeGreaterThan(countPosition.X + count.Bounds.Width);
+            actions.TranslatePoint(new Point(actions.Bounds.Width, 0), repositoryHeader)!.Value.X
+                .ShouldBe(repositoryHeader.Bounds.Width);
             actions.Children.OfType<Button>().Select(button => button.Command)
                 .ShouldBe([repositories.UpdateIndexesCommand, repositories.RefreshCommand]);
             actions.Children.OfType<Button>().Select(button => button.Content.ShouldBeOfType<FluentIcon>().Icon)
                 .ShouldBe([Icon.ArrowDownload, Icon.ArrowSync]);
             helm.Setup(service => service.ListRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync([]);
-            await repositories.RefreshCommand.ExecuteAsync(null);
-            count.Content.ShouldBe("Repositories: 0");
+            await repositories.RefreshCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
+            count.Content.ShouldBe(string.Format(HelmL10n.Instance.HelmRepositoriesView_ItemsFormat.CurrentValue()!, 0));
         }
         finally
         {

@@ -5,7 +5,7 @@ using Avalonia.Xaml.Interactions.Core;
 using AvaloniaEdit;
 using KubeUI.Controls.Presentation;
 using KubeUI.Controls.Styles;
-using KubeUI.Features.Resources.Yaml.Behaviors;
+using KubeUI.Controls.Editors.Behaviors;
 
 namespace KubeUI.Features.Helm.Releases;
 
@@ -20,27 +20,16 @@ public sealed class HelmReleaseEditorView : KubeUIView<HelmReleaseEditorViewMode
             .IsChecked(vm, x => x.CreateNamespace, BindingMode.TwoWay);
         AutomationProperties.SetName(createNamespaceCheckBox, L10n.Instance.HelmReleaseEditorView_CreateNamespace.CurrentValue()!);
 
-        var valuesEditor = new TextEditor()
+        var valuesEditor = new TextEditor();
+        YamlEditorDefaults.Apply(valuesEditor);
+        valuesEditor
             .Name("ValuesYamlEditor", Scope)
             .MinHeight(200)
             .MaxHeight(400)
             .IsReadOnly(vm, x => x.IsLoading)
             .FontFamily(new DynamicResourceExtension(Typography.CodeFontFamilyResourceKey))
             .FontSize(new DynamicResourceExtension(Typography.CodeFontSizeResourceKey))
-            .FontWeight(FontWeight.Normal)
-            .ShowLineNumbers(true)
-            .HorizontalScrollBarVisibility(ScrollBarVisibility.Auto)
-            .VerticalScrollBarVisibility(ScrollBarVisibility.Visible)
             .WordWrap(false)
-            .Options(new TextEditorOptions
-            {
-                ConvertTabsToSpaces = true,
-                EnableEmailHyperlinks = false,
-                EnableHyperlinks = false,
-                HighlightCurrentLine = true,
-                IndentationSize = 2,
-                ShowBoxForControlCharacters = false
-            })
             .BindValue(
                 DataValidationErrors.ErrorsProperty,
                 CompiledBinding.Create<HelmReleaseEditorViewModel, IEnumerable<object>>(

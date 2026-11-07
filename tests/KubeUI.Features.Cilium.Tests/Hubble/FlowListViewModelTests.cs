@@ -16,6 +16,34 @@ namespace KubeUI.Features.Cilium.Tests.Hubble;
 public sealed class FlowListViewModelTests
 {
     [AvaloniaFact]
+    public async Task Selection_snapshot_restores_matching_flow_keys_after_table_replacement()
+    {
+        await using var viewModel = new FlowListViewModel(
+            NullLogger<FlowListViewModel>.Instance,
+            Mock.Of<IHubbleConnectionFactory>());
+        viewModel.OnFlowsReceived(
+        [
+            Flow("selected-flow", DateTime.Parse("2026-10-23T10:00:02Z")),
+            Flow("other-flow", DateTime.Parse("2026-10-23T10:00:01Z"))
+        ]);
+
+        await TestWait.UntilAsync(
+            () => viewModel.TableSource.Items.Cast<FlowViewModel>().Count() == 2,
+            timeoutMs: 5_000,
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+
+        viewModel.SelectionModel.Select(0);
+        viewModel.CaptureSelectionState();
+        viewModel.SelectionModel.Clear();
+        viewModel.RestoreSelectionState();
+
+        viewModel.SelectionModel.SelectedItems.Cast<FlowViewModel>()
+            .Select(static flow => flow.Uuid)
+            .ShouldBe(["selected-flow"]);
+    }
+
+    [AvaloniaFact]
     public async Task Flow_batch_keeps_newest_events_by_timestamp_and_bounds_cache()
     {
         await using var viewModel = new FlowListViewModel(

@@ -57,7 +57,7 @@ public sealed class V1EventConfig(IServiceProvider serviceProvider) : ResourceCo
                 Key = "last-seen",
                 Name = L10n.Instance.V1EventConfig_Last_Seen.CurrentValue()!,
                 CustomControl = typeof(EventLastSeenCell),
-                Field = x => RelativeTimeFormatter.ResolveTimestamp(x),
+                Field = x => KubernetesEventTimestampResolver.Resolve(x),
                 Sort = SortDirection.Descending,
                 Width = 80, WidthMode = DynamicTableViewWidthMode.Pixel
             },

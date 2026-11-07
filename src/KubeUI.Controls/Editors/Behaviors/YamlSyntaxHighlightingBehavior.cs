@@ -4,7 +4,7 @@ using AvaloniaEdit.TextMate;
 using TextMateSharp.Grammars;
 using TextMateSharp.Themes;
 
-namespace KubeUI.Features.Resources.Yaml.Behaviors;
+namespace KubeUI.Controls.Editors.Behaviors;
 
 /// <summary>Applies theme-aware TextMate YAML syntax highlighting to an editor.</summary>
 public sealed class YamlSyntaxHighlightingBehavior : Behavior<TextEditor>

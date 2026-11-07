@@ -1,7 +1,7 @@
 ﻿using Avalonia.LogicalTree;
 using AvaloniaEdit.Folding;
 
-namespace KubeUI.Features.Resources.Yaml.Behaviors;
+namespace KubeUI.Controls.Editors.Behaviors;
 
 internal sealed class LeakSafeFoldingMargin : FoldingMargin
 {

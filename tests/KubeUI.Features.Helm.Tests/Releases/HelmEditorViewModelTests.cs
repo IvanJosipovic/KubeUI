@@ -13,7 +13,7 @@ using KubeUI.Features.Helm;
 using KubeUI.Features.Helm.Helm;
 using KubeUI.Features.Helm.Releases;
 using KubeUI.Features.Helm.Repositories;
-using KubeUI.Features.Resources.Yaml.Behaviors;
+using KubeUI.Controls.Editors.Behaviors;
 using KubeUI.Kubernetes;
 using KubeUI.Kubernetes.Serialization;
 using Moq;
@@ -398,12 +398,25 @@ public sealed class HelmEditorViewModelTests : IDisposable
 
             var priorEditorOffset = new Vector(0, Math.Min(80, valuesScrollViewer.ScrollBarMaximum.Y));
             valuesScrollViewer.Offset = priorEditorOffset;
+            textEditor.CaretOffset = Math.Min(32, textEditor.Document!.TextLength);
+            var priorCaretOffset = textEditor.CaretOffset;
             editor.SelectedVersion = "2.0";
             await TestWait.UntilAsync(() => editor.ValuesYaml.Contains("version: 2.0", StringComparison.Ordinal),
                 TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
             await TestApplicationExtensions.WaitForUiAsync();
             valuesScrollViewer.Offset.ShouldBe(priorEditorOffset);
             outerScrollViewer.Offset.Y.ShouldBe(100);
+            textEditor.CaretOffset.ShouldBe(priorCaretOffset);
+
+            var replacementValues = textEditor.Text;
+            textEditor.Document!.Insert(textEditor.Document.TextLength, "userEdit: true\n");
+            await TestWait.UntilAsync(() => editor.ValuesYaml.EndsWith("userEdit: true\n", StringComparison.Ordinal),
+                TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
+            textEditor.Document.UndoStack.CanUndo.ShouldBeTrue();
+            textEditor.Document.UndoStack.Undo();
+            await TestWait.UntilAsync(() => textEditor.Text == replacementValues,
+                TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
+            editor.ValuesYaml.ShouldBe(replacementValues);
 
             editor.IsOciSource = true;
             editor.Chart = "oci://registry.test/charts/old";

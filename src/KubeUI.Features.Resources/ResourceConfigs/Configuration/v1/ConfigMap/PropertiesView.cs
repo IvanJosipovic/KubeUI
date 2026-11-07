@@ -1,5 +1,6 @@
 ﻿using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Controls.Presentation;
 using KubeUI.Features.Resources.Properties;
 using KubeUI.Features.Resources.Properties.Controls;
 

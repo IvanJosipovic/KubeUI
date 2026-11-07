@@ -43,8 +43,8 @@ public sealed class Fluent : AvaloniaStyles
         Add(new FluentAvaloniaTheme());
         Add(CreateFluentTheme());
         Add(CreateTypographyResources());
-        Add(CreateThemeResourceStyles(CreateSemanticLightResources(), CreateSemanticDarkResources()));
-        Add(CreateThemeResourceStyles(CreateVisualizationLightResources(), CreateVisualizationDarkResources()));
+        Add(new SemanticThemeStyles());
+        Add(new KubeUI.Features.Resources.Styles.ResourceFeatureStyles());
         Add(new DynamicTableViewTheme());
         Add(CreateStyleInclude("avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml"));
         Add(CreateStyleInclude("avares://LiveMarkdown.Avalonia/Styles.axaml"));
@@ -52,29 +52,13 @@ public sealed class Fluent : AvaloniaStyles
         Add(new DockFluentTheme());
         Add(new TerminalTheme());
 
-        Add(new Style<TextEditor>()
-            .Background(new DynamicResourceExtension("SystemAltHighColor")));
-
         Add(new Style<ToolControl>()
             .Background(new DynamicResourceExtension("SystemRegionBrush")));
 
         Add(new Style<DocumentControl>()
             .Setter(DocumentControl.HeaderTemplateProperty, new FuncDataTemplate<IDockable>((dockable, _) => CreateDocumentHeader(dockable!), false)));
 
-        Add(new Style<MultiComboBoxItem>()
-            .Setter(TemplatedControl.PaddingProperty, new Thickness(4, 2, 4, 2))
-            .Setter(Layoutable.WidthProperty, 200d)
-            .Setter(Layoutable.MinHeightProperty, 22d));
-
-        Add(new Style<MultiComboBoxSelectedItemList>()
-            .Setter(Interaction.BehaviorsProperty,
-                new BehaviorCollectionTemplate
-                {
-                    Content = (IServiceProvider? _) =>
-                        new TemplateResult<BehaviorCollection>(
-                        [new ToggleMultiComboBoxBehavior()],
-                        new NameScope())
-                }));
+        Add(new SharedControlStyles());
 
         Add(new Style<HostWindow>()
             .Background(new DynamicResourceExtension("SystemRegionBrush"))
@@ -99,23 +83,6 @@ public sealed class Fluent : AvaloniaStyles
         theme.Palettes.Add(ThemeVariant.Dark, _darkPalette);
 
         return theme;
-    }
-
-    private static AvaloniaStyles CreateThemeResourceStyles(
-        ResourceDictionary lightResources,
-        ResourceDictionary darkResources)
-    {
-        return new AvaloniaStyles
-        {
-            Resources = new ResourceDictionary
-            {
-                ThemeDictionaries =
-                {
-                    [ThemeVariant.Light] = lightResources,
-                    [ThemeVariant.Dark] = darkResources,
-                }
-            }
-        };
     }
 
     private static AvaloniaStyles CreateMarkdownTypographyStyles()
@@ -176,42 +143,6 @@ public sealed class Fluent : AvaloniaStyles
         return styles;
     }
 
-    private static ResourceDictionary CreateSemanticLightResources() => new()
-    {
-        ["PodStatusReadyBrush"] = Brush("#2E7D32"),
-        ["PodStatusWarningBrush"] = Brush("#B35A00"),
-        ["ContainerStatusReadyBrush"] = Brush("#2E7D32"),
-        ["ContainerStatusInitReadyBrush"] = Brush("#7B3FB5"),
-        ["ContainerStatusEphemeralReadyBrush"] = Brush("#0067B8"),
-        ["ContainerStatusRunningBrush"] = Brush("#B35A00"),
-        ["ContainerStatusInitRunningBrush"] = Brush("#9C4DCC"),
-        ["ContainerStatusEphemeralRunningBrush"] = Brush("#2F80C0"),
-        ["ContainerStatusWaitingBrush"] = Brush("#C62828"),
-        ["ContainerStatusInitWaitingBrush"] = Brush("#AD1457"),
-        ["ContainerStatusEphemeralWaitingBrush"] = Brush("#D84315"),
-        ["ContainerStatusCompletedBrush"] = Brush("#5C6B73"),
-        ["ContainerStatusErrorBrush"] = Brush("#C62828"),
-        ["SubtleOutlineBrush"] = Brush("#757575"),
-    };
-
-    private static ResourceDictionary CreateSemanticDarkResources() => new()
-    {
-        ["PodStatusReadyBrush"] = Brush("#81C784"),
-        ["PodStatusWarningBrush"] = Brush("#FFB454"),
-        ["ContainerStatusReadyBrush"] = Brush("#81C784"),
-        ["ContainerStatusInitReadyBrush"] = Brush("#C084FC"),
-        ["ContainerStatusEphemeralReadyBrush"] = Brush("#4FA3FF"),
-        ["ContainerStatusRunningBrush"] = Brush("#FFB454"),
-        ["ContainerStatusInitRunningBrush"] = Brush("#D18BFF"),
-        ["ContainerStatusEphemeralRunningBrush"] = Brush("#78B8FF"),
-        ["ContainerStatusWaitingBrush"] = Brush("#FF6B6B"),
-        ["ContainerStatusInitWaitingBrush"] = Brush("#FF80AB"),
-        ["ContainerStatusEphemeralWaitingBrush"] = Brush("#FF8A65"),
-        ["ContainerStatusCompletedBrush"] = Brush("#B8C4CC"),
-        ["ContainerStatusErrorBrush"] = Brush("#FF6B6B"),
-        ["SubtleOutlineBrush"] = Brush("#9E9E9E"),
-    };
-
     internal ResourceDictionary CreateMarkdownResourceOverrides() => new()
     {
         ThemeDictionaries =
@@ -246,34 +177,6 @@ public sealed class Fluent : AvaloniaStyles
             ["QuoteBorderColor"] = _darkPalette.BaseMediumLow,
         };
     }
-
-    private static ResourceDictionary CreateVisualizationLightResources() => new()
-    {
-        ["VisualizationRelationshipOwnerBrush"] = Brush("#0067B8"),
-        ["VisualizationRelationshipReferenceBrush"] = Brush("#5C6B73"),
-        ["VisualizationRelationshipSelectorBrush"] = Brush("#7B3FB5"),
-        ["VisualizationRelationshipLabelBrush"] = Brush("#B35A00"),
-        ["VisualizationRelationshipStorageBrush"] = Brush("#008577"),
-        ["VisualizationRelationshipIdentityBrush"] = Brush("#2E7D32"),
-        ["VisualizationRelationshipRbacBrush"] = Brush("#B0005A"),
-        ["VisualizationRelationshipEventBrush"] = Brush("#A15C00"),
-        ["VisualizationRelationshipGitOpsBrush"] = Brush("#C2185B"),
-        ["VisualizationRelationshipDefaultBrush"] = Brush("#5C6B73"),
-    };
-
-    private static ResourceDictionary CreateVisualizationDarkResources() => new()
-    {
-        ["VisualizationRelationshipOwnerBrush"] = Brush("#4FA3FF"),
-        ["VisualizationRelationshipReferenceBrush"] = Brush("#B8C4CC"),
-        ["VisualizationRelationshipSelectorBrush"] = Brush("#C084FC"),
-        ["VisualizationRelationshipLabelBrush"] = Brush("#FFB454"),
-        ["VisualizationRelationshipStorageBrush"] = Brush("#40D9C0"),
-        ["VisualizationRelationshipIdentityBrush"] = Brush("#81C784"),
-        ["VisualizationRelationshipRbacBrush"] = Brush("#FF6FB5"),
-        ["VisualizationRelationshipEventBrush"] = Brush("#FFD166"),
-        ["VisualizationRelationshipGitOpsBrush"] = Brush("#FF80AB"),
-        ["VisualizationRelationshipDefaultBrush"] = Brush("#B8C4CC"),
-    };
 
     private static ColorPaletteResources CreateLightPalette() => new()
     {
@@ -343,8 +246,6 @@ public sealed class Fluent : AvaloniaStyles
     private static StyleInclude CreateStyleInclude(string source) => new(s_baseUri) { Source = new Uri(source) };
 
     private static Color Color(string value) => global::Avalonia.Media.Color.Parse(value);
-
-    private static SolidColorBrush Brush(string value) => new(Color(value));
 
     private static StackPanel CreateDocumentHeader(IDockable dockable)
     {

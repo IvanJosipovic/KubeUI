@@ -52,6 +52,7 @@
     <PackageReference Include="FluentAvaloniaUI" />
     <PackageReference Include="FluentIcons.Avalonia" />
     <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia.Fluent" />
+    <PackageReference Include="Irihi.Ursa" />
     <PackageReference Include="ServiceScan.SourceGenerator" PrivateAssets="all" />
     <PackageReference Include="SvcSystems.Avalonia.DynamicTableView" />
     <PackageReference Include="Xaml.Behaviors.Avalonia" />

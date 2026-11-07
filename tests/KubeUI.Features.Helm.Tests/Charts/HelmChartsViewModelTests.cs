@@ -9,6 +9,7 @@ using Helm.NET;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Features.Helm;
 using KubeUI.Features.Helm.Charts;
+using KubeUI.Controls.Layout;
 using KubeUI.Features.Helm.Helm;
 using KubeUI.Features.Helm.Releases;
 using KubeUI.Features.Helm.Repositories;
@@ -112,7 +113,7 @@ public sealed class HelmChartsViewModelTests : IDisposable
             window.Show();
             await TestApplicationExtensions.WaitForUiAsync();
             var controls = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view).ToArray();
-            var header = controls.OfType<Grid>().First(grid => grid.ColumnDefinitions.Count == 3);
+            var header = controls.OfType<CompactToolbar>().Single();
             header.MinHeight.ShouldBe(32);
             header.Margin.ShouldBe(new Thickness(0, 2));
             var repository = controls.OfType<ComboBox>().Single();

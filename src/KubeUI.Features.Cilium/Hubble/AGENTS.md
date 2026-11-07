@@ -24,8 +24,13 @@
 
 ## UI and tests
 
+- Flow-list context menus use Controls' `MenuPresenter` for live model-backed rendering; DynamicTableView retains context targeting and Cilium retains flow actions.
+- Flow List composes Controls' `CompactToolbar`; Cilium owns the clear action, count/status text, search, and namespace scope bindings.
+- Use foundation semantic success/error/muted brushes for Hubble state; do not borrow Pod or container status resource keys for connection/verdict presentation.
+
 - Use compiled bindings and resource strings for visible UI text. Keep pointer and keyboard interactions out of view code-behind.
 - The flow list namespace selector must support multiple namespaces, link to cluster namespace selection by default, and allow local selection while unlinked.
+- Both Hubble screens compose Clusters' `NamespaceScopePicker`; keep caller-owned lists and link state bound explicitly. The shared picker must not treat an empty Service Map selection as all namespaces or start transport itself.
 - Keep service-map graph construction in the Cilium layer and render it with GraphX inside a custom Avalonia control.
 - Service Map graph nodes must be draggable and edges must show target-only traffic-direction arrows. Provide a selector for GraphX built-in layout algorithms; use no edge routing by default. Use `CompoundFDP` by default with namespace parent vertices and one `World` parent for namespace-less external nodes; exclude synthetic parents from rendering. Preserve compound membership in the source graph and through the external layout path, since GraphX's built-in factory graph copy drops parent-child associations. Other selected GraphX layouts may operate on a flat copy while retaining source graph membership. Do not calculate node positions manually. Re-run layout after layout selector changes and preserve manually moved node positions during flow-count-only updates.
 - Rendered service-map nodes expose a localized right-click `View` action that opens a non-document properties tool in the right dock. Show details available on the aggregated `ServiceMapNode`, including its identity, workload, flow counts, and access points; do not imply the aggregate is a live Kubernetes resource.

@@ -23,6 +23,8 @@
   "ClusterSettingsView_DebugContainerImageTooltip": "Image used when starting an ephemeral debug container",
   "ClusterSettingsView_ManualNamespacesTooltip": "Manually specified namespaces",
   "ClusterSettingsView_NamespacesLabel": "Namespaces (Restart Required)",
+  "NamespaceScopePicker_LinkNamespaces": "Linked namespace selection",
+  "NamespaceScopePicker_SelectNamespace": "Filter Namespace(s)",
   "ClusterSettingsView_PermissionsLabel": "Permissions",
   "ClusterSettingsView_RefreshPermissions": "Refresh Permissions",
   "ClusterSettingsView_RefreshPermissionsTooltip": "Discard cached authorization rules and re-evaluate resource access",

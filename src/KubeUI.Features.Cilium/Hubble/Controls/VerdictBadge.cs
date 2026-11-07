@@ -28,9 +28,9 @@ public sealed class VerdictBadge : Border
         {
             Background = v switch
             {
-                FlowVerdict.Forwarded => ApplicationBrushResources.GetBrush("PodStatusReadyBrush"),
-                FlowVerdict.Dropped or FlowVerdict.Error => ApplicationBrushResources.GetBrush("ContainerStatusErrorBrush"),
-                _ => ApplicationBrushResources.GetBrush("SubtleOutlineBrush")
+                FlowVerdict.Forwarded => ApplicationBrushResources.GetBrush("SemanticSuccessBrush"),
+                FlowVerdict.Dropped or FlowVerdict.Error => ApplicationBrushResources.GetBrush("SemanticErrorBrush"),
+                _ => ApplicationBrushResources.GetBrush("SemanticMutedBrush")
             };
             Child = new TextBlock
             {

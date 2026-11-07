@@ -9,7 +9,6 @@ using FluentIcons.Common;
 using KubeUI.App.Infrastructure;
 using KubeUI.App.Infrastructure.DependencyInjection;
 using KubeUI.App.Infrastructure.Presentation;
-using KubeUI.Features.Clusters.Catalog.Behaviors;
 using KubeUI.Features.Clusters.Presentation;
 using KubeUI.Kubernetes;
 

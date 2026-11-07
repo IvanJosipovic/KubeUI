@@ -12,6 +12,62 @@ namespace KubeUI.Features.Resources.Tests.List;
 public sealed class ResourceListViewRestoreTests
 {
     [AvaloniaFact]
+    public async Task Replacing_data_context_replaces_source_and_ignores_stale_restore_callbacks()
+    {
+        using var cluster = await Application.Current.CreateClusterAsync();
+        using var firstViewModel = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
+        using var secondViewModel = Application.Current.GetRequiredTestService<ResourceListViewModel<V1Pod>>();
+        firstViewModel.SearchQuery = "first-target";
+        secondViewModel.SearchQuery = "second-target";
+        firstViewModel.Initialize(cluster);
+        secondViewModel.Initialize(cluster);
+        firstViewModel.Objects.AddOrUpdate([Pod("team-a", "first-target")]);
+        secondViewModel.Objects.AddOrUpdate([Pod("team-a", "second-target")]);
+        await WaitForAsync(() => firstViewModel.ItemCount == 1 && secondViewModel.ItemCount == 1);
+
+        firstViewModel.SelectionModel.Select(0);
+        firstViewModel.CaptureSelectionState();
+        secondViewModel.SelectionModel.Select(0);
+        secondViewModel.CaptureSelectionState();
+        var staleColumns = firstViewModel.TableSource.Columns
+            .Select((column, index) => new DynamicTableViewColumnState(column.Key, index, 140))
+            .ToArray();
+        (staleColumns[0], staleColumns[1]) = (staleColumns[1] with { Order = 0 }, staleColumns[0] with { Order = 1 });
+        firstViewModel.TableViewRuntimeState = new(staleColumns, [], [], default);
+        var currentHeaders = secondViewModel.TableSource.Columns
+            .Select(static column => column.Header.ToString() ?? string.Empty)
+            .ToArray();
+        secondViewModel.TableViewRuntimeState = new(
+            secondViewModel.TableSource.Columns
+                .Select((column, index) => new DynamicTableViewColumnState(column.Key, index, 220))
+                .ToArray(),
+            [], [], default);
+
+        var view = Application.Current.GetRequiredTestService<ResourceListView>();
+        view.DataContext = firstViewModel;
+        using var window = Application.Current.CreateTestWindow(content: view);
+        window.Show();
+
+        // Change the context before background-priority restoration runs. The queued callback for
+        // the first source must be ignored; the second source and selection must win.
+        view.DataContext = secondViewModel;
+        var table = await WaitForTableAsync(view);
+        await WaitForHeadersAsync(table, currentHeaders);
+        await WaitForAsync(() => table.Source == secondViewModel.TableSource
+            && table.GetVisualDescendants().OfType<TableViewRow>().Count() == 1);
+
+        ReferenceEquals(table.Source, firstViewModel.TableSource).ShouldBeFalse();
+        table.Source.ShouldBeSameAs(secondViewModel.TableSource);
+        table.GetVisualDescendants().OfType<TableViewRow>()
+            .Select(static row => ((V1Pod)row.DataContext!).Metadata.Name)
+            .ShouldBe(["second-target"]);
+        secondViewModel.SelectionModel.SelectedItems.Cast<V1Pod>()
+            .Select(static pod => pod.Metadata.Name)
+            .ShouldBe(["second-target"]);
+        ReadHeaderLabels(table).ShouldBe(currentHeaders);
+    }
+
+    [AvaloniaFact]
     public async Task Resource_list_headers_remain_visible_after_restore_and_tab_reactivation()
     {
         using var cluster = await Application.Current.CreateClusterAsync();

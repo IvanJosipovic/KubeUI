@@ -25,7 +25,7 @@ public sealed class DirectionIcon : Border
 
         this.GetObservable(DirectionProperty).Subscribe(d =>
         {
-            var ingressBrush = ApplicationBrushResources.GetBrush("PodStatusReadyBrush");
+            var ingressBrush = ApplicationBrushResources.GetBrush("SemanticSuccessBrush");
             var egressBrush = ApplicationBrushResources.GetBrush("VisualizationRelationshipStorageBrush");
 
             var icon = d switch

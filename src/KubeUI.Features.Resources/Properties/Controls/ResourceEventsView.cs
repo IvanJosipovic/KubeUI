@@ -119,6 +119,11 @@ public sealed partial class ResourceEventsView : UserControl, IInitializeCluster
     {
         base.OnAttachedToVisualTree(e);
         _isDetached = false;
+        if (_eventCacheSubscription is null)
+        {
+            RebuildEventSubscription();
+        }
+
         if (!_timer.IsEnabled)
         {
             _timer.Start();

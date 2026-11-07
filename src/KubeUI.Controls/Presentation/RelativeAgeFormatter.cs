@@ -1,12 +1,10 @@
-﻿using k8s.Models;
+namespace KubeUI.Controls.Presentation;
 
-namespace KubeUI.Features.Resources.Properties.Controls;
-
-/// <summary>Formats Kubernetes resource timestamps as compact relative ages.</summary>
-public static class RelativeTimeFormatter
+/// <summary>Formats UTC timestamps as compact relative ages for shared UI presentation.</summary>
+public static class RelativeAgeFormatter
 {
-    /// <summary>Formats a UTC timestamp as a compact age such as <c>2h</c> or <c>4m12s</c>.</summary>
-    /// <param name="timestampUtc">Timestamp to format.</param>
+    /// <summary>Formats a timestamp as a compact age such as <c>2h</c> or <c>4m12s</c>.</summary>
+    /// <param name="timestampUtc">Timestamp to format; unspecified/local values are treated as UTC.</param>
     /// <param name="utcNow">Current UTC time used for the calculation.</param>
     /// <returns>The compact relative age.</returns>
     public static string FormatPrettyAge(DateTime timestampUtc, DateTime utcNow)
@@ -47,14 +45,18 @@ public static class RelativeTimeFormatter
         return $"{delta.TotalMilliseconds:N0}ms";
     }
 
-    internal static string FormatPrettyLastSeen(DateTime? timestamp, DateTime utcNow)
+    /// <summary>Formats a last-seen timestamp as relative age plus local clock/date text.</summary>
+    /// <param name="timestampUtc">Timestamp to display, or null when no timestamp is available.</param>
+    /// <param name="utcNow">Current UTC time used for the calculation.</param>
+    /// <returns>Empty text for null, otherwise an age and local timestamp.</returns>
+    public static string FormatPrettyLastSeen(DateTime? timestampUtc, DateTime utcNow)
     {
-        if (!timestamp.HasValue)
+        if (!timestampUtc.HasValue)
         {
             return string.Empty;
         }
 
-        var normalized = NormalizeUtc(timestamp.Value);
+        var normalized = NormalizeUtc(timestampUtc.Value);
         var local = normalized.ToLocalTime();
         var localText = local.Date == utcNow.ToLocalTime().Date
             ? local.ToString("t")
@@ -63,13 +65,6 @@ public static class RelativeTimeFormatter
         return $"{FormatPrettyAge(normalized, utcNow)} ago ({localText})";
     }
 
-    internal static DateTime? ResolveTimestamp(Corev1Event ev)
-    {
-        return ev.LastTimestamp ?? ev.EventTime ?? ev.Metadata?.CreationTimestamp;
-    }
-
     private static DateTime NormalizeUtc(DateTime value)
-    {
-        return value.Kind == DateTimeKind.Utc ? value : DateTime.SpecifyKind(value, DateTimeKind.Utc);
-    }
+        => value.Kind == DateTimeKind.Utc ? value : DateTime.SpecifyKind(value, DateTimeKind.Utc);
 }
