@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Avalonia.Collections;
 using Avalonia.Controls.Notifications;
@@ -181,7 +181,7 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
         [
             new()
             {
-                Title = SharedL10n.Instance.Shared_OpenNewLogsView.CurrentValue()!,
+                Title = FoundationLanguageManager.Instance.Shared_OpenNewLogsView.CurrentValue()!,
                 FluentIcon = Icon.Open,
                 Command = openCommand,
                 CommandParameter = selectedList,
@@ -191,7 +191,7 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
         {
             actions.Add(new MenuItemViewModel
             {
-                Title = SharedL10n.Instance.Shared_AddToCurrentLogsView.CurrentValue()!,
+                Title = FoundationLanguageManager.Instance.Shared_AddToCurrentLogsView.CurrentValue()!,
                 FluentIcon = Icon.Add,
                 Command = new AsyncRelayCommand<IReadOnlyList<T>?>(AddToPodLogsAsync, CanViewPodLogs),
                 CommandParameter = selectedList,
@@ -200,7 +200,7 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
 
         return new MenuItemViewModel
         {
-            Title = SharedL10n.Instance.Shared_ViewLogs.CurrentValue()!,
+            Title = FoundationLanguageManager.Instance.Shared_ViewLogs.CurrentValue()!,
             FluentIcon = Icon.TextDescription,
             Items = actions,
         };
@@ -254,7 +254,7 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
         return new ResourceListColumn<T, string>()
         {
             Key = "name",
-            Name = L10n.Instance.ResourceListView_Name.CurrentValue()!,
+            Name = ResourcesLanguageManager.Instance.ResourceListView_Name.CurrentValue()!,
             Field = x => x?.Metadata?.Name ?? string.Empty,
             Width = 2,
             WidthMode = DynamicTableViewWidthMode.Star,
@@ -267,7 +267,7 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
         return new ResourceListColumn<T, string>()
         {
             Key = "namespace",
-            Name = L10n.Instance.ResourceListView_Namespace.CurrentValue()!,
+            Name = ResourcesLanguageManager.Instance.ResourceListView_Namespace.CurrentValue()!,
             Field = x => x?.Metadata?.NamespaceProperty ?? string.Empty,
             Width = 1,
             WidthMode = DynamicTableViewWidthMode.Star,
@@ -279,7 +279,7 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
         return new ResourceListColumn<T, DateTime?>()
         {
             Key = "age",
-            Name = L10n.Instance.ResourceListView_Age.CurrentValue()!,
+            Name = ResourcesLanguageManager.Instance.ResourceListView_Age.CurrentValue()!,
             CustomControl = typeof(AgeCell),
             Field = x => x.Metadata.CreationTimestamp,
             Width = 80,
@@ -305,7 +305,7 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
     protected virtual IEnumerable<MenuItemViewModel> CreateDefaultMenuItems(IEnumerable<T>? selectedItems) => [
         new()
         {
-            Title = L10n.Instance.ResourceConfigBase_MenuItem_View.CurrentValue()!,
+            Title = ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_View.CurrentValue()!,
             Command = ViewCommand,
             CommandParameter = selectedItems?.ToList(),
             InputGesture = new KeyGesture(Key.Enter),
@@ -314,28 +314,28 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
         },
         new()
         {
-            Title = L10n.Instance.ResourceConfigBase_MenuItem_Edit.CurrentValue()!,
+            Title = ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_Edit.CurrentValue()!,
             Command = EditYamlCommand,
             CommandParameter = selectedItems?.ToList(),
             FluentIcon = Icon.DocumentEdit,
         },
         new()
         {
-            Title = L10n.Instance.ResourceConfigBase_MenuItem_ViewYaml.CurrentValue()!,
+            Title = ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_ViewYaml.CurrentValue()!,
             Command = ViewYamlCommand,
             CommandParameter = selectedItems?.ToList(),
             FluentIcon = Icon.Code,
         },
         new()
         {
-            Title = L10n.Instance.ResourceConfigBase_MenuItem_Visualize.CurrentValue()!,
+            Title = ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_Visualize.CurrentValue()!,
             Command = VisualizeCommand,
             CommandParameter = selectedItems?.ToList(),
             FluentIcon = Icon.DataUsage,
         },
         new()
         {
-            Title = L10n.Instance.ResourceConfigBase_MenuItem_Delete.CurrentValue()!,
+            Title = ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_Delete.CurrentValue()!,
             Command = DeleteCommand,
             CommandParameter = selectedItems?.ToList(),
             InputGesture = new KeyGesture(Key.Delete),
@@ -453,10 +453,10 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
     {
         ContentDialogSettings settings = new()
         {
-            Title = L10n.Instance.ResourceListView_Delete_Title.CurrentValue()!,
-            Content = string.Format(L10n.Instance.ResourceListView_Delete_Content.CurrentValue()!, items.Count),
-            PrimaryButtonText = L10n.Instance.ResourceListView_Delete_Primary.CurrentValue()!,
-            SecondaryButtonText = L10n.Instance.ResourceListView_Delete_Secondary.CurrentValue()!,
+            Title = ResourcesLanguageManager.Instance.ResourceListView_Delete_Title.CurrentValue()!,
+            Content = string.Format(ResourcesLanguageManager.Instance.ResourceListView_Delete_Content.CurrentValue()!, items.Count),
+            PrimaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_Delete_Primary.CurrentValue()!,
+            SecondaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_Delete_Secondary.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary
         };
 
@@ -599,10 +599,10 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
         var restartableItems = GetRestartableItems(items);
         ContentDialogSettings settings = new()
         {
-            Title = L10n.Instance.ResourceListView_Restart_Title.CurrentValue()!,
-            Content = string.Format(L10n.Instance.ResourceListView_Restart_Content.CurrentValue()!, restartableItems.Count),
-            PrimaryButtonText = L10n.Instance.ResourceListView_Restart_Primary.CurrentValue()!,
-            SecondaryButtonText = L10n.Instance.ResourceListView_Restart_Secondary.CurrentValue()!,
+            Title = ResourcesLanguageManager.Instance.ResourceListView_Restart_Title.CurrentValue()!,
+            Content = string.Format(ResourcesLanguageManager.Instance.ResourceListView_Restart_Content.CurrentValue()!, restartableItems.Count),
+            PrimaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_Restart_Primary.CurrentValue()!,
+            SecondaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_Restart_Secondary.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary
         };
 

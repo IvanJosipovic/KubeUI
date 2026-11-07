@@ -67,8 +67,8 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
 
     /// <summary>Gets the empty-state message for the current namespace and flow selection.</summary>
     public string EmptyStateMessage => HasSelectedNamespaces
-        ? L10n.Instance.ServiceMapView_NoFlows.CurrentValue()!
-        : L10n.Instance.ServiceMapView_SelectNamespacePrompt.CurrentValue()!;
+        ? CiliumLanguageManager.Instance.ServiceMapView_NoFlows.CurrentValue()!
+        : CiliumLanguageManager.Instance.ServiceMapView_SelectNamespacePrompt.CurrentValue()!;
 
     /// <summary>Gets flows associated with the node selected for inspection.</summary>
     public ObservableCollection<FlowViewModel> SelectedNodeFlows => _selectedNodeFlows;
@@ -79,7 +79,7 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
     /// <summary>Gets the localized node and edge counts displayed above the graph.</summary>
     public string GraphSummary => string.Format(
         System.Globalization.CultureInfo.CurrentCulture,
-        L10n.Instance.ServiceMapView_GraphCountsFormat.CurrentValue()!,
+        CiliumLanguageManager.Instance.ServiceMapView_GraphCountsFormat.CurrentValue()!,
         Graph?.NodeCount ?? 0,
         Graph?.EdgeCount ?? 0);
 
@@ -101,7 +101,7 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
 
         ShowFlowsForNodeCommand = new RelayCommand<ServiceMapNode>(ShowFlowsForNode);
         ViewNodeCommand = new RelayCommand<ServiceMapNode>(ViewNode);
-        Title = L10n.Instance.ServiceMapView_Title.CurrentValue()!;
+        Title = CiliumLanguageManager.Instance.ServiceMapView_Title.CurrentValue()!;
         Graph = new ServiceMapGraph();
     }
 
@@ -140,13 +140,13 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
         using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(ct, _lifetime.Token);
         Cluster = cluster;
         Id = $"ServiceMap-{cluster.Runtime.Name}";
-        ConnectionStatus = L10n.Instance.ServiceMapView_StatusConnecting.CurrentValue()!;
+        ConnectionStatus = CiliumLanguageManager.Instance.ServiceMapView_StatusConnecting.CurrentValue()!;
 
         try
         {
             if (!await cluster.Runtime.IsCiliumInstalledAsync(linkedCancellation.Token).ConfigureAwait(true))
             {
-                ConnectionStatus = L10n.Instance.ServiceMapView_StatusCiliumNotDetected.CurrentValue()!;
+                ConnectionStatus = CiliumLanguageManager.Instance.ServiceMapView_StatusCiliumNotDetected.CurrentValue()!;
                 return;
             }
 
@@ -157,12 +157,12 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
         }
         catch (OperationCanceledException) when (linkedCancellation.IsCancellationRequested)
         {
-            ConnectionStatus = L10n.Instance.ServiceMapView_StatusDisconnected.CurrentValue()!;
+            ConnectionStatus = CiliumLanguageManager.Instance.ServiceMapView_StatusDisconnected.CurrentValue()!;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unable to initialize Hubble service map");
-            ConnectionStatus = string.Format(L10n.Instance.ServiceMapView_StatusErrorFormat.CurrentValue()!, ex.Message);
+            ConnectionStatus = string.Format(CiliumLanguageManager.Instance.ServiceMapView_StatusErrorFormat.CurrentValue()!, ex.Message);
             IsConnected = false;
         }
     }
@@ -314,7 +314,7 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
             _refreshSubscription = null;
             CancelGraphBuild();
             CancelSelectedFlowsLoad();
-            ConnectionStatus = L10n.Instance.ServiceMapView_StatusSelectNamespace.CurrentValue()!;
+            ConnectionStatus = CiliumLanguageManager.Instance.ServiceMapView_StatusSelectNamespace.CurrentValue()!;
             IsConnected = false;
             SelectedNode = null;
             SelectedNodeFlows.Clear();
@@ -329,7 +329,7 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
             Interlocked.Increment(ref _flowSubscriptionVersion);
             _flowSubscription?.Dispose();
             var subscriptionVersion = Volatile.Read(ref _flowSubscriptionVersion);
-            ConnectionStatus = L10n.Instance.ServiceMapView_StatusConnecting.CurrentValue()!;
+            ConnectionStatus = CiliumLanguageManager.Instance.ServiceMapView_StatusConnecting.CurrentValue()!;
             IsConnected = false;
             _flowSubscription = _connection.ObserveFlows(selectedNamespaces)
                 .Subscribe(flow => OnFlowReceived(flow, subscriptionVersion), OnFlowStreamError);
@@ -540,17 +540,17 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
 
             if (!HasSelectedNamespaces)
             {
-                ConnectionStatus = L10n.Instance.ServiceMapView_StatusSelectNamespace.CurrentValue()!;
+                ConnectionStatus = CiliumLanguageManager.Instance.ServiceMapView_StatusSelectNamespace.CurrentValue()!;
                 IsConnected = false;
                 return;
             }
 
             ConnectionStatus = status switch
             {
-                HubbleConnectionStatus.Disconnected => L10n.Instance.ServiceMapView_StatusDisconnected.CurrentValue()!,
-                HubbleConnectionStatus.Connecting => L10n.Instance.ServiceMapView_StatusConnecting.CurrentValue()!,
-                HubbleConnectionStatus.Connected => L10n.Instance.ServiceMapView_StatusConnected.CurrentValue()!,
-                HubbleConnectionStatus.Error => L10n.Instance.ServiceMapView_StatusError.CurrentValue()!,
+                HubbleConnectionStatus.Disconnected => CiliumLanguageManager.Instance.ServiceMapView_StatusDisconnected.CurrentValue()!,
+                HubbleConnectionStatus.Connecting => CiliumLanguageManager.Instance.ServiceMapView_StatusConnecting.CurrentValue()!,
+                HubbleConnectionStatus.Connected => CiliumLanguageManager.Instance.ServiceMapView_StatusConnected.CurrentValue()!,
+                HubbleConnectionStatus.Error => CiliumLanguageManager.Instance.ServiceMapView_StatusError.CurrentValue()!,
                 _ => status.ToString()
             };
             IsConnected = status == HubbleConnectionStatus.Connected;

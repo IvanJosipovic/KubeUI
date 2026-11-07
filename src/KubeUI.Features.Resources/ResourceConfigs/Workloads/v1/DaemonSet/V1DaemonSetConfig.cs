@@ -1,4 +1,4 @@
-﻿using FluentIcons.Common;
+using FluentIcons.Common;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Features.Resources.Common;
@@ -25,14 +25,14 @@ public sealed partial class V1DaemonSetConfig : ResourceConfig<V1DaemonSet>
             new ResourceListColumn<V1DaemonSet, int>()
             {
                 Key = "pods",
-                Name = L10n.Instance.V1DaemonSetConfig_Pods.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1DaemonSetConfig_Pods.CurrentValue()!,
                 Field = x => x.Status.NumberReady,
                 WidthMode = DynamicTableViewWidthMode.Header
             },
             new ResourceListColumn<V1DaemonSet, string>()
             {
                 Key = "node-selector",
-                Name = L10n.Instance.V1DaemonSetConfig_Node_Selector.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1DaemonSetConfig_Node_Selector.CurrentValue()!,
                 Field = x => x.Spec?.Selector?.MatchLabels is { Count: > 0 } matchLabels ? string.Join(", ", matchLabels.Select(x => x.Key + "=" + x.Value)) : "",
                 WidthMode = DynamicTableViewWidthMode.Header
             },
@@ -46,7 +46,7 @@ public sealed partial class V1DaemonSetConfig : ResourceConfig<V1DaemonSet>
             CreatePodLogsMenuItem(selectedItems),
             new()
             {
-                Title = L10n.Instance.V1DaemonSetConfig_MenuItem_Restart.CurrentValue()!,
+                Title = ResourcesLanguageManager.Instance.V1DaemonSetConfig_MenuItem_Restart.CurrentValue()!,
                 FluentIcon = Icon.ArrowSync,
                 Command = RestartCommand,
                 CommandParameter = selectedItems?.ToList()

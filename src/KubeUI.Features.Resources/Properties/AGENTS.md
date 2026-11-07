@@ -1,6 +1,9 @@
 # Resource Properties
 
 ## Current Behavior
+- Compose compact property sections with `KubeUI.Controls.Presentation.ExpandableSection`; keep resource initialization, event subscriptions, and data patching in Resources.
+- `ResourceEventsView` owns its event-cache subscription and must rebuild it on visual reattachment when its `DataContext` has not changed. Keep a regression that detaches/re-attaches the same view and observes a newly received matching event.
+- Use Controls' `MenuPresenter` for generic icons and snapshot flyouts; refresh/rebuild action presentation when the resource action set changes. Keep resource permissions and action composition in Resources.
 - There is at most one Properties view (fixed dock id `ResourcePropertiesViewModel`), docked (right tool dock by default) or auto-hidden in the right pinned strip.
 - `ResourceConfigBase.View` opens it explicitly; replacing it disposes the previous instance so its cluster change subscription is released.
 - `ResourcePropertiesCoordinator` owns opening, finding, and replacing the Properties dockable; background list selections do not retarget it.

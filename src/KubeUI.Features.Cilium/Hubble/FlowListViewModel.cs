@@ -111,7 +111,7 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
         SubscribeToSelectedNamespaces();
         ApplyFilter();
 
-        Title = L10n.Instance.FlowListView_Title.CurrentValue()!;
+        Title = CiliumLanguageManager.Instance.FlowListView_Title.CurrentValue()!;
     }
 
     public void Initialize(ClusterWorkspace cluster)
@@ -141,10 +141,10 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
         Id = $"FlowList-{cluster.Runtime.Name}";
         try
         {
-            ConnectionStatus = L10n.Instance.FlowListView_StatusConnecting.CurrentValue()!;
+            ConnectionStatus = CiliumLanguageManager.Instance.FlowListView_StatusConnecting.CurrentValue()!;
             if (!await cluster.Runtime.IsCiliumInstalledAsync(linkedCancellation.Token).ConfigureAwait(true))
             {
-                ConnectionStatus = L10n.Instance.FlowListView_StatusCiliumNotDetected.CurrentValue()!;
+                ConnectionStatus = CiliumLanguageManager.Instance.FlowListView_StatusCiliumNotDetected.CurrentValue()!;
                 return;
             }
 
@@ -158,12 +158,12 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
         }
         catch (OperationCanceledException) when (linkedCancellation.IsCancellationRequested)
         {
-            ConnectionStatus = L10n.Instance.FlowListView_StatusDisconnected.CurrentValue()!;
+            ConnectionStatus = CiliumLanguageManager.Instance.FlowListView_StatusDisconnected.CurrentValue()!;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unable to initialize Hubble flow list");
-            ConnectionStatus = $"{L10n.Instance.FlowListView_StatusError.CurrentValue()!}: {ex.Message}";
+            ConnectionStatus = $"{CiliumLanguageManager.Instance.FlowListView_StatusError.CurrentValue()!}: {ex.Message}";
             IsConnected = false;
         }
     }
@@ -174,66 +174,66 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
         [
             new DynamicTableViewColumn<FlowViewModel>(
                 "Timestamp",
-                L10n.Instance.FlowListView_ColumnTimestamp.CurrentValue()!,
+                CiliumLanguageManager.Instance.FlowListView_ColumnTimestamp.CurrentValue()!,
                 typeof(DateTime),
                 flow => flow.Timestamp,
                 flow => flow.Timestamp.ToString("HH:mm:ss.fff")),
             new DynamicTableViewColumn<FlowViewModel>(
                 "Verdict",
-                L10n.Instance.FlowListView_ColumnVerdict.CurrentValue()!,
+                CiliumLanguageManager.Instance.FlowListView_ColumnVerdict.CurrentValue()!,
                 typeof(FlowVerdict),
                 flow => flow.Verdict,
                 flow => FormatVerdict(flow.Verdict)),
             new DynamicTableViewColumn<FlowViewModel>(
                 "Direction",
-                L10n.Instance.FlowListView_ColumnDirection.CurrentValue()!,
+                CiliumLanguageManager.Instance.FlowListView_ColumnDirection.CurrentValue()!,
                 typeof(KubeUI.Features.Cilium.Hubble.FlowDirection),
                 flow => flow.Direction,
                 flow => FormatDirection(flow.Direction)),
             new DynamicTableViewColumn<FlowViewModel>(
                 "Source",
-                L10n.Instance.FlowListView_ColumnSource.CurrentValue()!,
+                CiliumLanguageManager.Instance.FlowListView_ColumnSource.CurrentValue()!,
                 typeof(string),
                 flow => flow.SourcePod,
                 null),
             new DynamicTableViewColumn<FlowViewModel>(
                 "Destination",
-                L10n.Instance.FlowListView_ColumnDestination.CurrentValue()!,
+                CiliumLanguageManager.Instance.FlowListView_ColumnDestination.CurrentValue()!,
                 typeof(string),
                 flow => flow.DestinationPod,
                 null),
             new DynamicTableViewColumn<FlowViewModel>(
                 "Protocol",
-                L10n.Instance.FlowListView_ColumnProtocol.CurrentValue()!,
+                CiliumLanguageManager.Instance.FlowListView_ColumnProtocol.CurrentValue()!,
                 typeof(string),
                 flow => flow.Protocol,
                 null),
             new DynamicTableViewColumn<FlowViewModel>(
                 "Port",
-                L10n.Instance.FlowListView_ColumnPort.CurrentValue()!,
+                CiliumLanguageManager.Instance.FlowListView_ColumnPort.CurrentValue()!,
                 typeof(int),
                 flow => flow.DestinationPort,
                 null),
             new DynamicTableViewColumn<FlowViewModel>(
                 "Latency",
-                L10n.Instance.FlowListView_ColumnLatency.CurrentValue()!,
+                CiliumLanguageManager.Instance.FlowListView_ColumnLatency.CurrentValue()!,
                 typeof(string),
                 flow => flow.LatencyHumanReadable,
                 null),
             new DynamicTableViewColumn<FlowViewModel>(
                 "PolicyName",
-                L10n.Instance.FlowListView_ColumnPolicy.CurrentValue()!,
+                CiliumLanguageManager.Instance.FlowListView_ColumnPolicy.CurrentValue()!,
                 typeof(string),
-                flow => flow.MatchedPolicyName ?? L10n.Instance.FlowListView_NoPolicy.CurrentValue()!,
+                flow => flow.MatchedPolicyName ?? CiliumLanguageManager.Instance.FlowListView_NoPolicy.CurrentValue()!,
                 null,
                 new FuncDataTemplate<FlowViewModel>((flow, _) => flow is null
                     ? new TextBlock()
                     : new TextBlock
                     {
-                        Text = flow.MatchedPolicyName ?? L10n.Instance.FlowListView_NoPolicy.CurrentValue()!,
+                        Text = flow.MatchedPolicyName ?? CiliumLanguageManager.Instance.FlowListView_NoPolicy.CurrentValue()!,
                         Foreground = flow.Verdict == FlowVerdict.Dropped
-                            ? ApplicationBrushResources.GetBrush("ContainerStatusErrorBrush")
-                            : ApplicationBrushResources.GetBrush("SubtleOutlineBrush")
+                            ? ApplicationBrushResources.GetBrush("SemanticErrorBrush")
+                            : ApplicationBrushResources.GetBrush("SemanticMutedBrush")
                     }))
         ];
 
@@ -253,18 +253,18 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
     internal static string FormatDirection(FlowDirection direction)
         => direction switch
         {
-            KubeUI.Features.Cilium.Hubble.FlowDirection.Ingress => L10n.Instance.FlowDirection_Ingress.CurrentValue()!,
-            KubeUI.Features.Cilium.Hubble.FlowDirection.Egress => L10n.Instance.FlowDirection_Egress.CurrentValue()!,
-            _ => L10n.Instance.FlowDirection_Unknown.CurrentValue()!
+            KubeUI.Features.Cilium.Hubble.FlowDirection.Ingress => CiliumLanguageManager.Instance.FlowDirection_Ingress.CurrentValue()!,
+            KubeUI.Features.Cilium.Hubble.FlowDirection.Egress => CiliumLanguageManager.Instance.FlowDirection_Egress.CurrentValue()!,
+            _ => CiliumLanguageManager.Instance.FlowDirection_Unknown.CurrentValue()!
         };
 
     internal static string FormatVerdict(FlowVerdict verdict)
         => verdict switch
         {
-            FlowVerdict.Forwarded => L10n.Instance.FlowVerdict_Allowed.CurrentValue()!,
-            FlowVerdict.Dropped => L10n.Instance.FlowVerdict_Dropped.CurrentValue()!,
-            FlowVerdict.Error => L10n.Instance.FlowVerdict_Error.CurrentValue()!,
-            _ => L10n.Instance.FlowVerdict_Unknown.CurrentValue()!
+            FlowVerdict.Forwarded => CiliumLanguageManager.Instance.FlowVerdict_Allowed.CurrentValue()!,
+            FlowVerdict.Dropped => CiliumLanguageManager.Instance.FlowVerdict_Dropped.CurrentValue()!,
+            FlowVerdict.Error => CiliumLanguageManager.Instance.FlowVerdict_Error.CurrentValue()!,
+            _ => CiliumLanguageManager.Instance.FlowVerdict_Unknown.CurrentValue()!
         };
 
     internal void OnFlowsReceived(IList<FlowViewModel> flows)
@@ -380,10 +380,10 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
 
             ConnectionStatus = status switch
             {
-                HubbleConnectionStatus.Disconnected => L10n.Instance.FlowListView_StatusDisconnected.CurrentValue()!,
-                HubbleConnectionStatus.Connecting => L10n.Instance.FlowListView_StatusConnecting.CurrentValue()!,
-                HubbleConnectionStatus.Connected => L10n.Instance.FlowListView_StatusConnected.CurrentValue()!,
-                HubbleConnectionStatus.Error => L10n.Instance.FlowListView_StatusError.CurrentValue()!,
+                HubbleConnectionStatus.Disconnected => CiliumLanguageManager.Instance.FlowListView_StatusDisconnected.CurrentValue()!,
+                HubbleConnectionStatus.Connecting => CiliumLanguageManager.Instance.FlowListView_StatusConnecting.CurrentValue()!,
+                HubbleConnectionStatus.Connected => CiliumLanguageManager.Instance.FlowListView_StatusConnected.CurrentValue()!,
+                HubbleConnectionStatus.Error => CiliumLanguageManager.Instance.FlowListView_StatusError.CurrentValue()!,
                 _ => status.ToString()
             };
             IsConnected = status == HubbleConnectionStatus.Connected;

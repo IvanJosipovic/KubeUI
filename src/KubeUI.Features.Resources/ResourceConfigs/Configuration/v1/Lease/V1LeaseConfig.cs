@@ -1,4 +1,4 @@
-﻿using k8s.Models;
+using k8s.Models;
 
 namespace KubeUI.Features.Resources.Configuration.v1.Lease;
 
@@ -20,7 +20,7 @@ public sealed partial class V1LeaseConfig : ResourceConfig<V1Lease>
             new ResourceListColumn<V1Lease, string>()
             {
                 Key = "holder",
-                Name = L10n.Instance.V1LeaseConfig_Holder.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1LeaseConfig_Holder.CurrentValue()!,
                 Field = x => x.Spec.HolderIdentity ?? "",
                 WidthMode = DynamicTableViewWidthMode.Cells
             },

@@ -64,7 +64,7 @@ public sealed class HelmReleasesViewModelTests : IDisposable
 
         await viewModel.ViewValuesCommand.ExecuteAsync(new HelmRelease("web", "apps", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "web-1.0", ""));
 
-        viewModel.Status.ShouldBe(HelmL10n.Instance.HelmReleasesView_ValuesFailed.CurrentValue());
+        viewModel.Status.ShouldBe(HelmLanguageManager.Instance.HelmReleasesView_ValuesFailed.CurrentValue());
         createViewer.Verify(factory => factory(), Times.Never);
     }
 
@@ -176,8 +176,11 @@ public sealed class HelmReleasesViewModelTests : IDisposable
             window.Show();
             var toolbar = view.GetVisualDescendants().OfType<StackPanel>()
                 .Single(panel => panel.Orientation == global::Avalonia.Layout.Orientation.Horizontal
-                    && panel.Children.OfType<Ursa.Controls.MultiComboBox>().Any());
+                    && panel.Children.OfType<NamespaceScopePicker>().Any());
             toolbar.Children[0].ShouldBeOfType<TextBlock>();
+            var picker = toolbar.Children.OfType<NamespaceScopePicker>().Single();
+            picker.SelectedNamespaces.ShouldBeSameAs(viewModel.SelectedNamespaces);
+            picker.IsSelectionLinked.ShouldBeTrue();
             await TestWait.UntilAsync(() => viewModel.ItemCount == 1,
                 TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
             await TestWait.UntilAsync(
@@ -216,7 +219,7 @@ public sealed class HelmReleasesViewModelTests : IDisposable
         viewModel.Initialize(workspace);
         viewModel.VisualizeReleaseCommand.Execute(new HelmRelease("cilium", "kube-system", 1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "cilium-1.20.3", ""));
 
-        viewModel.Status.ShouldBe(HelmL10n.Instance.HelmReleasesView_VisualizeFailed.CurrentValue());
+        viewModel.Status.ShouldBe(HelmLanguageManager.Instance.HelmReleasesView_VisualizeFailed.CurrentValue());
     }
 
     [AvaloniaFact]
@@ -336,7 +339,7 @@ public sealed class HelmReleasesViewModelTests : IDisposable
         viewModel.Initialize(workspace);
 
         await viewModel.ViewStatusCommand.ExecuteAsync(release).WaitAsync(TestContext.Current.CancellationToken);
-        viewModel.Status.ShouldBe(HelmL10n.Instance.HelmReleasesView_StatusLoaded.CurrentValue());
+        viewModel.Status.ShouldBe(HelmLanguageManager.Instance.HelmReleasesView_StatusLoaded.CurrentValue());
         await viewModel.ViewValuesCommand.ExecuteAsync(release).WaitAsync(TestContext.Current.CancellationToken);
         viewModel.Status.ShouldBeEmpty();
         yamlViewer.YamlDocument.Text.ShouldContain("{}");

@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -40,7 +40,7 @@ public sealed partial class ResourcePropertiesViewModel<[DynamicallyAccessedMemb
 
     public ResourcePropertiesViewModel()
     {
-        Title = L10n.Instance.ResourcePropertiesView_Title.CurrentValue()!;
+        Title = ResourcesLanguageManager.Instance.ResourcePropertiesView_Title.CurrentValue()!;
         Id = nameof(ResourcePropertiesViewModel<>);
     }
 

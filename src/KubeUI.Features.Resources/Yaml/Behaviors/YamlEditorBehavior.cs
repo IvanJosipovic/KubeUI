@@ -11,6 +11,7 @@ using AvaloniaEdit.Folding;
 using AvaloniaEdit.Indentation;
 using KubernetesClient.Informer.Client;
 using KubeUI.Controls.DependencyInjection;
+using KubeUI.Controls.Editors.Behaviors;
 using KubeUI.Controls.Styles;
 using KubeUI.Kubernetes;
 
@@ -885,7 +886,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
                     LoadSavedFoldStates(vm);
                 }
 
-                var newFoldings = YamlFoldingStrategy.CreateNewFoldings(AssociatedObject.Document!, out var firstErrorOffset)
+                var newFoldings = YamlIndentationFoldingStrategy.CreateNewFoldings(AssociatedObject.Document!, out var firstErrorOffset)
                     .ToList();
 
                 _foldingManager.UpdateFoldings(newFoldings, firstErrorOffset);

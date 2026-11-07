@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.Threading;
 using DynamicData;
 using k8s.Models;
+using KubeUI.Controls.Presentation;
 using KubeUI.Features.AI.Chat;
 using Shouldly;
 using SvcSystems.Avalonia.DynamicTableView;
@@ -21,15 +22,15 @@ public sealed class ResourceListViewModelTests
         viewModel.Initialize(cluster);
 
         var items = viewModel.GetContextMenuItems(null).ToArray();
-        items.Single(item => item.Title == ResourceL10n.Instance.ResourceConfigBase_MenuItem_View.CurrentValue())
+        items.Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_View.CurrentValue())
             .InputGesture.ShouldBe(new KeyGesture(Key.Enter));
-        items.Single(item => item.Title == ResourceL10n.Instance.ResourceConfigBase_MenuItem_Delete.CurrentValue())
+        items.Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_Delete.CurrentValue())
             .InputGesture.ShouldBe(new KeyGesture(Key.Delete));
 
-        var flyoutItems = ResourceActionPresenter.CreateFlyout(items).Items.OfType<MenuItem>().ToArray();
-        flyoutItems.Single(item => item.Header?.ToString() == ResourceL10n.Instance.ResourceConfigBase_MenuItem_View.CurrentValue())
+        var flyoutItems = MenuPresenter.CreateFlyout(items).Items.OfType<MenuItem>().ToArray();
+        flyoutItems.Single(item => item.Header?.ToString() == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_View.CurrentValue())
             .InputGesture.ShouldBe(new KeyGesture(Key.Enter));
-        flyoutItems.Single(item => item.Header?.ToString() == ResourceL10n.Instance.ResourceConfigBase_MenuItem_Delete.CurrentValue())
+        flyoutItems.Single(item => item.Header?.ToString() == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_Delete.CurrentValue())
             .InputGesture.ShouldBe(new KeyGesture(Key.Delete));
     }
 

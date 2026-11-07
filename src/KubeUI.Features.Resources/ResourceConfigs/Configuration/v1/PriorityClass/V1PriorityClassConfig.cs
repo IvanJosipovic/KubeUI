@@ -1,4 +1,4 @@
-﻿using k8s.Models;
+using k8s.Models;
 
 namespace KubeUI.Features.Resources.Configuration.v1.PriorityClass;
 
@@ -18,14 +18,14 @@ public sealed partial class V1PriorityClassConfig : ResourceConfig<V1PriorityCla
             new ResourceListColumn<V1PriorityClass, int?>()
             {
                 Key = "value",
-                Name = L10n.Instance.V1PriorityClassConfig_Value.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1PriorityClassConfig_Value.CurrentValue()!,
                 Field = x => x.Value,
                 WidthMode = DynamicTableViewWidthMode.Cells
             },
             new ResourceListColumn<V1PriorityClass, bool?>()
             {
                 Key = "global-default",
-                Name = L10n.Instance.V1PriorityClassConfig_Global_Default.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1PriorityClassConfig_Global_Default.CurrentValue()!,
                 Field = x => x.GlobalDefault ?? false,
                 WidthMode = DynamicTableViewWidthMode.Header
             },

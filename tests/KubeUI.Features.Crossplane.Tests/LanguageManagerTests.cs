@@ -13,10 +13,10 @@ public sealed class LanguageManagerTests
     {
         var seen = new List<string?>();
 
-        using var subscription = LanguageManager.Instance.CrossplaneNavigationSectionProvider_SectionTitle.Subscribe(seen.Add);
+        using var subscription = CrossplaneLanguageManager.Instance.CrossplaneNavigationSectionProvider_SectionTitle.Subscribe(seen.Add);
 
-        LanguageManager.Instance.CrossplaneNavigationSectionProvider_SectionTitle.CurrentValue().ShouldBe("Crossplane");
-        LanguageManager.Instance.MRDiffDetectionView_Title.CurrentValue().ShouldBe("MR Diff Detection");
+        CrossplaneLanguageManager.Instance.CrossplaneNavigationSectionProvider_SectionTitle.CurrentValue().ShouldBe("Crossplane");
+        CrossplaneLanguageManager.Instance.MRDiffDetectionView_Title.CurrentValue().ShouldBe("MR Diff Detection");
         seen.ShouldNotBeEmpty();
         seen[^1].ShouldBe("Crossplane");
     }

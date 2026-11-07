@@ -13,9 +13,9 @@ public sealed class LanguageManagerTests
     {
         var seen = new List<string?>();
 
-        using var subscription = LanguageManager.Instance.ClusterErrorView_Title.Subscribe(seen.Add);
+        using var subscription = ClustersLanguageManager.Instance.ClusterErrorView_Title.Subscribe(seen.Add);
 
-        LanguageManager.Instance.ClusterErrorView_Title.CurrentValue().ShouldBe("Cluster Error");
+        ClustersLanguageManager.Instance.ClusterErrorView_Title.CurrentValue().ShouldBe("Cluster Error");
         seen.ShouldNotBeEmpty();
         seen[^1].ShouldBe("Cluster Error");
     }

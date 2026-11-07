@@ -1,4 +1,4 @@
-﻿using KubeUI.Controls.Presentation;
+using KubeUI.Controls.Presentation;
 
 namespace KubeUI.Features.Resources.Workloads.v1.Deployment;
 
@@ -29,7 +29,7 @@ public sealed class DeploymentRolloutHistoryView : KubeUIView<DeploymentRolloutH
                 new Button()
                     .Row(2)
                     .HorizontalAlignment(HorizontalAlignment.Right)
-                    .Content(L10n.Instance.DeploymentRolloutHistoryViewModel_Undo.ToBinding())
+                    .Content(ResourcesLanguageManager.Instance.DeploymentRolloutHistoryViewModel_Undo.ToBinding())
                     .Command(vm, x => x.UndoCommand));
     }
 }

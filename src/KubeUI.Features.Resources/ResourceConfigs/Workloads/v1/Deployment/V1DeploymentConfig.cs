@@ -1,4 +1,4 @@
-﻿using FluentAvalonia.UI.Controls;
+using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
@@ -38,7 +38,7 @@ public sealed partial class V1DeploymentConfig : ScalableWorkloadConfig<V1Deploy
             new ResourceListColumn<V1Deployment, int>()
             {
                 Key = "pods",
-                Name = L10n.Instance.V1DeploymentConfig_Pods.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1DeploymentConfig_Pods.CurrentValue()!,
                 Display = x => $"{x.Status?.AvailableReplicas ?? 0}/{x.Spec?.Replicas ?? 0}",
                 Field = x => x.Status?.AvailableReplicas ?? 0,
                 WidthMode = DynamicTableViewWidthMode.Header
@@ -46,14 +46,14 @@ public sealed partial class V1DeploymentConfig : ScalableWorkloadConfig<V1Deploy
             new ResourceListColumn<V1Deployment, int>()
             {
                 Key = "replicas",
-                Name = L10n.Instance.V1DeploymentConfig_Replicas.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1DeploymentConfig_Replicas.CurrentValue()!,
                 Field = x => x.Spec.Replicas ?? 0,
                 WidthMode = DynamicTableViewWidthMode.Header
             },
             new ResourceListColumn<V1Deployment, string>()
             {
                 Key = "available",
-                Name = L10n.Instance.V1DeploymentConfig_Available.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1DeploymentConfig_Available.CurrentValue()!,
                 Field = x => x.Status?.Conditions?.FirstOrDefault(x => x.Type == "Available")?.Status ?? "",
                 WidthMode = DynamicTableViewWidthMode.Header
             },
@@ -68,28 +68,28 @@ public sealed partial class V1DeploymentConfig : ScalableWorkloadConfig<V1Deploy
             CreateScaleMenuItem(selectedItems),
             new()
             {
-                Title = L10n.Instance.V1DeploymentConfig_MenuItem_Restart.CurrentValue()!,
+                Title = ResourcesLanguageManager.Instance.V1DeploymentConfig_MenuItem_Restart.CurrentValue()!,
                 FluentIcon = Icon.ArrowSync,
                 Command = RestartCommand,
                 CommandParameter = selectedItems?.ToList()
             },
             new()
             {
-                Title = L10n.Instance.V1DeploymentConfig_Pause.CurrentValue()!,
+                Title = ResourcesLanguageManager.Instance.V1DeploymentConfig_Pause.CurrentValue()!,
                 FluentIcon = Icon.Pause,
                 Command = PauseCommand,
                 CommandParameter = selectedItems?.ToList(),
             },
             new()
             {
-                Title = L10n.Instance.V1DeploymentConfig_Resume.CurrentValue()!,
+                Title = ResourcesLanguageManager.Instance.V1DeploymentConfig_Resume.CurrentValue()!,
                 FluentIcon = Icon.ArrowRight,
                 Command = ResumeCommand,
                 CommandParameter = selectedItems?.ToList(),
             },
             new()
             {
-                Title = L10n.Instance.V1DeploymentConfig_RolloutHistory.CurrentValue()!,
+                Title = ResourcesLanguageManager.Instance.V1DeploymentConfig_RolloutHistory.CurrentValue()!,
                 FluentIcon = Icon.History,
                 Command = OpenRolloutHistoryCommand,
                 CommandParameter = selectedItems?.ToList(),
@@ -131,10 +131,10 @@ public sealed partial class V1DeploymentConfig : ScalableWorkloadConfig<V1Deploy
 
         var result = await _dialogService.ShowContentDialogAsync(this, new ContentDialogSettings
         {
-            Title = string.Format(paused ? L10n.Instance.V1DeploymentConfig_PauseTitle.CurrentValue()! : L10n.Instance.V1DeploymentConfig_ResumeTitle.CurrentValue()!, deployments.Count),
-            Content = paused ? L10n.Instance.V1DeploymentConfig_PauseContent.CurrentValue()! : L10n.Instance.V1DeploymentConfig_ResumeContent.CurrentValue()!,
-            PrimaryButtonText = paused ? L10n.Instance.V1DeploymentConfig_Pause.CurrentValue()! : L10n.Instance.V1DeploymentConfig_Resume.CurrentValue()!,
-            SecondaryButtonText = SharedL10n.Instance.Shared_Cancel.CurrentValue()!,
+            Title = string.Format(paused ? ResourcesLanguageManager.Instance.V1DeploymentConfig_PauseTitle.CurrentValue()! : ResourcesLanguageManager.Instance.V1DeploymentConfig_ResumeTitle.CurrentValue()!, deployments.Count),
+            Content = paused ? ResourcesLanguageManager.Instance.V1DeploymentConfig_PauseContent.CurrentValue()! : ResourcesLanguageManager.Instance.V1DeploymentConfig_ResumeContent.CurrentValue()!,
+            PrimaryButtonText = paused ? ResourcesLanguageManager.Instance.V1DeploymentConfig_Pause.CurrentValue()! : ResourcesLanguageManager.Instance.V1DeploymentConfig_Resume.CurrentValue()!,
+            SecondaryButtonText = FoundationLanguageManager.Instance.Shared_Cancel.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary,
         });
         if (result != FAContentDialogResult.Primary)
@@ -154,7 +154,7 @@ public sealed partial class V1DeploymentConfig : ScalableWorkloadConfig<V1Deploy
             catch (Exception ex)
             {
                 failures.Add(ex);
-                ResourceUtilities.HandleException(_logger, _notificationManager, ex, string.Format(paused ? L10n.Instance.V1DeploymentConfig_PauseError.CurrentValue()! : L10n.Instance.V1DeploymentConfig_ResumeError.CurrentValue()!, deployment.Namespace(), deployment.Name()), sendNotification: true);
+                ResourceUtilities.HandleException(_logger, _notificationManager, ex, string.Format(paused ? ResourcesLanguageManager.Instance.V1DeploymentConfig_PauseError.CurrentValue()! : ResourcesLanguageManager.Instance.V1DeploymentConfig_ResumeError.CurrentValue()!, deployment.Namespace(), deployment.Name()), sendNotification: true);
             }
         }
 

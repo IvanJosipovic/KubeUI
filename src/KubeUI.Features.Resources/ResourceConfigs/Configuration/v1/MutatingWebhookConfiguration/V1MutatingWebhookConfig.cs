@@ -1,4 +1,4 @@
-﻿using k8s.Models;
+using k8s.Models;
 
 namespace KubeUI.Features.Resources.Configuration.v1.MutatingWebhookConfiguration;
 
@@ -18,7 +18,7 @@ public sealed partial class V1MutatingWebhookConfig : ResourceConfig<V1MutatingW
             new ResourceListColumn<V1MutatingWebhookConfiguration, int>()
             {
                 Key = "webhooks",
-                Name = L10n.Instance.V1MutatingWebhookConfig_Webhooks.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1MutatingWebhookConfig_Webhooks.CurrentValue()!,
                 Field = x => x.Webhooks?.Count ?? 0,
                 WidthMode = DynamicTableViewWidthMode.Header
             },

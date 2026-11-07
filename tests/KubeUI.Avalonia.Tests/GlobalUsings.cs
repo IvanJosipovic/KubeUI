@@ -59,4 +59,3 @@ global using KubeUI.Testing.Kubernetes.Scenarios;
 global using KubeUI.Testing.Kubernetes.Transport;
 global using KubeUI.Testing.Utilities;
 global using Microsoft.Extensions.DependencyInjection;
-global using KubeUIApplication = KubeUI.App.App;

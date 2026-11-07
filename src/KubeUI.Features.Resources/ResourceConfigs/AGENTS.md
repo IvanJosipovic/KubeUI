@@ -1,9 +1,9 @@
 # Resource-Kind Features
 
 ## Ownership
-- Each Kubernetes resource kind is a feature root under `Resources/<Category>/<Version>/<Kind>/`.
+- Each Kubernetes resource kind is a feature root under `ResourceConfigs/<Category>/<Version>/<Kind>/` in this project.
 - Resource-kind folders own their config plus any local views, controls, view models, converters, and helpers.
-- Keep only generic resource infrastructure at `Resources/` root.
+- Keep only generic resource infrastructure at the project root and in cross-resource capability folders; do not move kind-specific behavior there.
 
 ## Constraints
 - Do not introduce category-level shared views or view models for behavior owned by one resource kind.

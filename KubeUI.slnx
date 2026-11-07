@@ -25,6 +25,7 @@
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="tests/KubeUI.Avalonia.Tests/KubeUI.Avalonia.Tests.csproj" />
+    <Project Path="tests/KubeUI.Controls.Tests/KubeUI.Controls.Tests.csproj" />
     <Project Path="tests/KubeUI.Features.AI.Tests/KubeUI.Features.AI.Tests.csproj" />
     <Project Path="tests/KubeUI.Features.Azure.Tests/KubeUI.Features.Azure.Tests.csproj" />
     <Project Path="tests/KubeUI.Features.Cilium.Tests/KubeUI.Features.Cilium.Tests.csproj" />

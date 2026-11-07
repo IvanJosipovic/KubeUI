@@ -3,6 +3,7 @@
 ## Chat UI
 
 - Keep the chat composer in the final grid row so it remains anchored below the scrollable conversation.
+- Preserve and test follow-at-end behavior after the same chat view detaches and reattaches without rebuilding.
 - Configure the selected agent through persisted settings. The chat panel does not own an agent selector.
 - Consume only the feature's ACP abstractions; do not expose ACP protocol types from views or view models.
 - Keep selected-resource context to multiple resource identities and lightweight metadata; agents fetch full details through MCP.

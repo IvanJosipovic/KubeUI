@@ -1,4 +1,4 @@
-﻿using k8s.Models;
+using k8s.Models;
 using KubeUI.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Features.Resources.AccessControl.v1.RoleBinding;
@@ -12,13 +12,13 @@ public sealed class PropertiesView : ViewBase<V1RoleBinding>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(SharedL10n.Instance.Shared_Role_Kind.CurrentValue()!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Role_Kind.CurrentValue()!)
                     .Value(vm.RoleRef.Kind),
                 new PropertyItem()
-                    .Key(SharedL10n.Instance.Shared_Role_Name.CurrentValue()!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Role_Name.CurrentValue()!)
                     .Value(vm.RoleRef.Name),
                 new PropertyItem()
-                    .Key(SharedL10n.Instance.Shared_Subjects.CurrentValue()!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Subjects.CurrentValue()!)
                     .Value(vm.Subjects.Count));
     }
 }

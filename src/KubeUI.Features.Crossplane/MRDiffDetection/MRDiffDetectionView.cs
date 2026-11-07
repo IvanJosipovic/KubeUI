@@ -28,7 +28,7 @@ public sealed class MRDiffDetectionView : KubeUIView<MRDiffDetectionViewModel>
                             .Margin(0, 0, 6, 0)
                             .VerticalAlignment(VerticalAlignment.Stretch)
                             .VerticalContentAlignment(VerticalAlignment.Center)
-                            .PlaceholderText(L10n.Instance.MRDiffDetectionView_SelectProvider.ToBinding())
+                            .PlaceholderText(CrossplaneLanguageManager.Instance.MRDiffDetectionView_SelectProvider.ToBinding())
                             .ItemsSource(vm, x => x.Providers)
                             .SelectedItem(vm, x => x.SelectedProvider, BindingMode.TwoWay)
                             .ItemTemplate(new FuncDataTemplate<CrossplaneProviderOption>(
@@ -41,7 +41,7 @@ public sealed class MRDiffDetectionView : KubeUIView<MRDiffDetectionViewModel>
                             .VerticalAlignment(VerticalAlignment.Stretch)
                             .VerticalContentAlignment(VerticalAlignment.Center)
                             .Background(Brushes.Transparent)
-                            .PlaceholderText(L10n.Instance.MRDiffDetectionView_Search.ToBinding())
+                            .PlaceholderText(CrossplaneLanguageManager.Instance.MRDiffDetectionView_Search.ToBinding())
                             .Text(vm, x => x.SearchQuery, BindingMode.TwoWay),
                         new TextBlock()
                             .Col(2)
@@ -52,7 +52,7 @@ public sealed class MRDiffDetectionView : KubeUIView<MRDiffDetectionViewModel>
                             .Col(3)
                             .VerticalAlignment(VerticalAlignment.Stretch)
                             .Command(vm, x => x.ClearCommand)
-                            .ToolTip_Tip(L10n.Instance.MRDiffDetectionView_Clear.ToBinding())
+                            .ToolTip_Tip(CrossplaneLanguageManager.Instance.MRDiffDetectionView_Clear.ToBinding())
                             .Content(new FluentIcon().Icon(Icon.Broom))),
                 new DynamicTableView
                 {
@@ -78,7 +78,7 @@ public sealed class MRDiffDetectionView : KubeUIView<MRDiffDetectionViewModel>
         foreach (var row in targets.OfType<CrossplaneDiffRow>())
         {
             yield return new MenuItem()
-                .Header(ResourceL10n.Instance.ResourceConfigBase_MenuItem_ViewYaml.ToBinding())
+                .Header(ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_ViewYaml.ToBinding())
                 .Command(viewModel, x => x.ViewYamlCommand)
                 .CommandParameter(row)
                 .InputGesture(new KeyGesture(Key.Enter));
