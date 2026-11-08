@@ -1,5 +1,6 @@
 using k8s.Models;
 using KubeUI.Controls.Presentation;
+using KubeUI.Features.Resources.Properties;
 
 namespace KubeUI.Features.Resources.Storage.v1.PersistentVolumeClaim;
 
@@ -23,29 +24,21 @@ public sealed class PropertiesView : ViewBase<V1PersistentVolumeClaim>
                 new PropertyItem()
                     .Key(FoundationLanguageManager.Instance.Shared_Access_Modes.CurrentValue()!)
                     .Value(vm.Spec?.AccessModes?.Count ?? 0),
-                new ExpandableSection()
-                    .Header(FoundationLanguageManager.Instance.Shared_Configuration.ToBinding())
-                    .IsExpanded(true)
-                    .Content(
-                        new StackPanel()
-                            .Children(
-                                new PropertyItem()
-                                    .Key(FoundationLanguageManager.Instance.Shared_Volume_Mode.CurrentValue()!)
-                                    .Value(vm.Spec?.VolumeMode ?? ""),
-                                new PropertyItem()
-                                    .Key(ResourcesLanguageManager.Instance.PersistentVolumeClaimPropertiesView_Requested_Storage.CurrentValue()!)
-                                    .Value(vm.Spec?.Resources?.Requests?.Count ?? 0))),
-                new ExpandableSection()
-                    .Header(FoundationLanguageManager.Instance.Shared_Status.ToBinding())
-                    .IsExpanded(true)
-                    .Content(
-                        new StackPanel()
-                            .Children(
-                                new PropertyItem()
-                                    .Key(FoundationLanguageManager.Instance.Shared_Capacity_Entries.CurrentValue()!)
-                                    .Value(vm.Status?.Capacity?.Count ?? 0),
-                                new PropertyItem()
-                                    .Key(FoundationLanguageManager.Instance.Shared_Conditions.CurrentValue()!)
-                                    .Value(vm.Status?.Conditions?.Count ?? 0))));
+                ResourcePropertiesSection.Create(
+                    FoundationLanguageManager.Instance.Shared_Configuration.ToBinding(),
+                    new PropertyItem()
+                        .Key(FoundationLanguageManager.Instance.Shared_Volume_Mode.CurrentValue()!)
+                        .Value(vm.Spec?.VolumeMode ?? ""),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.PersistentVolumeClaimPropertiesView_Requested_Storage.CurrentValue()!)
+                        .Value(vm.Spec?.Resources?.Requests?.Count ?? 0)),
+                ResourcePropertiesSection.Create(
+                    FoundationLanguageManager.Instance.Shared_Status.ToBinding(),
+                    new PropertyItem()
+                        .Key(FoundationLanguageManager.Instance.Shared_Capacity_Entries.CurrentValue()!)
+                        .Value(vm.Status?.Capacity?.Count ?? 0),
+                    new PropertyItem()
+                        .Key(FoundationLanguageManager.Instance.Shared_Conditions.CurrentValue()!)
+                        .Value(vm.Status?.Conditions?.Count ?? 0)));
     }
 }

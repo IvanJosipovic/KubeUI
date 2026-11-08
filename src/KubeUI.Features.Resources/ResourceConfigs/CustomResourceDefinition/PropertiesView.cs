@@ -1,5 +1,6 @@
 using k8s.Models;
 using KubeUI.Controls.Presentation;
+using KubeUI.Features.Resources.Properties;
 
 namespace KubeUI.Features.Resources.CustomResourceDefinition;
 
@@ -23,17 +24,13 @@ public sealed class PropertiesView : ViewBase<V1CustomResourceDefinition>
                 new PropertyItem()
                     .Key(ResourcesLanguageManager.Instance.CustomResourceDefinitionPropertiesView_Versions.CurrentValue()!)
                     .Value(vm.Spec?.Versions?.Count ?? 0),
-                new ExpandableSection()
-                    .Header(FoundationLanguageManager.Instance.Shared_Status.ToBinding())
-                    .IsExpanded(true)
-                    .Content(
-                        new StackPanel()
-                            .Children(
-                                new PropertyItem()
-                                    .Key(ResourcesLanguageManager.Instance.CustomResourceDefinitionPropertiesView_Accepted_Kind.CurrentValue()!)
-                                    .Value(vm.Status?.AcceptedNames?.Kind ?? ""),
-                                new PropertyItem()
-                                    .Key(ResourcesLanguageManager.Instance.CustomResourceDefinitionPropertiesView_Stored_Versions.CurrentValue()!)
-                                    .Value(vm.Status?.StoredVersions?.Count ?? 0))));
+                ResourcePropertiesSection.Create(
+                    FoundationLanguageManager.Instance.Shared_Status.ToBinding(),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.CustomResourceDefinitionPropertiesView_Accepted_Kind.CurrentValue()!)
+                        .Value(vm.Status?.AcceptedNames?.Kind ?? ""),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.CustomResourceDefinitionPropertiesView_Stored_Versions.CurrentValue()!)
+                        .Value(vm.Status?.StoredVersions?.Count ?? 0)));
     }
 }

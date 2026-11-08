@@ -1,5 +1,6 @@
 using k8s.Models;
 using KubeUI.Controls.Presentation;
+using KubeUI.Features.Resources.Properties;
 
 namespace KubeUI.Features.Resources.Core.v1.Event;
 
@@ -32,22 +33,19 @@ public sealed class PropertiesView : ViewBase<Corev1Event>
                 new PropertyItem()
                     .Key(FoundationLanguageManager.Instance.Shared_Type.CurrentValue()!)
                     .Value(vm.Type ?? ""),
-                new ExpandableSection()
-                    .Header(ResourcesLanguageManager.Instance.EventPropertiesView_InvolvedObject.ToBinding())
-                    .Content(
-                        new StackPanel()
-                            .Children(
-                                new PropertyItem()
-                                    .Key(FoundationLanguageManager.Instance.Shared_Kind.CurrentValue()!)
-                                    .Value($"{vm.InvolvedObject?.ApiVersion ?? ""}/{vm.InvolvedObject?.Kind ?? ""}"),
-                                new PropertyItem()
-                                    .Key(FoundationLanguageManager.Instance.Shared_Name.CurrentValue()!)
-                                    .Value(vm.InvolvedObject?.Name ?? ""),
-                                new PropertyItem()
-                                    .Key(ResourcesLanguageManager.Instance.EventPropertiesView_Namespace.CurrentValue()!)
-                                    .Value(vm.InvolvedObject?.NamespaceProperty ?? ""),
-                                new PropertyItem()
-                                    .Key(ResourcesLanguageManager.Instance.EventPropertiesView_Field_Path.CurrentValue()!)
-                                    .Value(vm.InvolvedObject?.FieldPath ?? ""))));
+                ResourcePropertiesSection.Create(
+                    ResourcesLanguageManager.Instance.EventPropertiesView_InvolvedObject.ToBinding(),
+                    new PropertyItem()
+                        .Key(FoundationLanguageManager.Instance.Shared_Kind.CurrentValue()!)
+                        .Value($"{vm.InvolvedObject?.ApiVersion ?? ""}/{vm.InvolvedObject?.Kind ?? ""}"),
+                    new PropertyItem()
+                        .Key(FoundationLanguageManager.Instance.Shared_Name.CurrentValue()!)
+                        .Value(vm.InvolvedObject?.Name ?? ""),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.EventPropertiesView_Namespace.CurrentValue()!)
+                        .Value(vm.InvolvedObject?.NamespaceProperty ?? ""),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.EventPropertiesView_Field_Path.CurrentValue()!)
+                        .Value(vm.InvolvedObject?.FieldPath ?? "")));
     }
 }

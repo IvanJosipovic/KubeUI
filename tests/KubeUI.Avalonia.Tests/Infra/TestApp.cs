@@ -26,6 +26,7 @@ namespace KubeUI.Avalonia.Tests.Infra;
 
 
 
+
 <<<<<<< TODO: Unmerged change from project 'KubeUI.Avalonia.Tests', Before:
 public class TestApp : global::KubeUI.App.App, IDisposable
 =======
