@@ -2,7 +2,6 @@
 using KubeUI.Features.Resources;
 using KubeUI.Features.Resources.Icons;
 using KubeUI.Features.Resources.List;
-using KubeUI.Features.Resources.List.Controls;
 using KubeUI.Features.Resources.Properties;
 using KubeUI.Features.Resources.ResourceConfigs.Workloads.v1.Pod;
 using KubeUI.Features.Resources.Visualization;

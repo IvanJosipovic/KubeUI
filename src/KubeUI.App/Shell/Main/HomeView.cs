@@ -21,5 +21,5 @@ public sealed class HomeView() : KubeUIView<HomeViewModel>
                     .Margin(0, 5, 0, 0)
                     .HorizontalAlignment(HorizontalAlignment.Center)
                     .FontSize(new DynamicResourceExtension(Typography.TitleFontSizeResourceKey))
-                    .Text(L10n.Instance.HomeView_Header.ToBinding()));
+                    .Text(AppLanguageManager.Instance.HomeView_Header.ToBinding()));
 }

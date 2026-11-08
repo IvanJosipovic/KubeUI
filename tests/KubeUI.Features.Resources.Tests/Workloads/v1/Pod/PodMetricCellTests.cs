@@ -319,7 +319,7 @@ public sealed class PodMetricCellTests
 
         window.Show();
         cell.Initialize(fixture.Workspace);
-        Dispatcher.UIThread.RunJobs();
+        await WaitForMetricBarsAsync(cell);
 
         MetricBars(cell).Max(static bar => bar.Bounds.Height)
             .ShouldBeGreaterThan(cell.Bounds.Height * 0.85);

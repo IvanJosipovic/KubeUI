@@ -1,9 +1,10 @@
-﻿using Avalonia.Xaml.Interactivity;
+﻿using Avalonia.Threading;
+using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using AvaloniaEdit.Folding;
-using KubeUI.Features.Resources.Yaml;
+using KubeUI.Controls.Editors;
 
-namespace KubeUI.Features.Resources.Yaml.Behaviors;
+namespace KubeUI.Controls.Editors.Behaviors;
 
 /// <summary>Enables nested YAML folding for AvaloniaEdit YAML editors.</summary>
 public sealed class YamlFoldingBehavior : Behavior<TextEditor>
@@ -11,6 +12,8 @@ public sealed class YamlFoldingBehavior : Behavior<TextEditor>
     private FoldingManager? _foldingManager;
     private LeakSafeFoldingMargin? _foldingMargin;
     private DispatcherTimer? _updateTimer;
+
+    internal bool IsInstalled => _foldingManager is not null;
 
     protected override void OnAttached()
     {
@@ -91,6 +94,6 @@ public sealed class YamlFoldingBehavior : Behavior<TextEditor>
             return;
         }
 
-        _foldingManager.UpdateFoldings(YamlFoldingStrategy.CreateNewFoldings(document, out var firstErrorOffset), firstErrorOffset);
+        _foldingManager.UpdateFoldings(YamlIndentationFoldingStrategy.CreateNewFoldings(document, out var firstErrorOffset), firstErrorOffset);
     }
 }

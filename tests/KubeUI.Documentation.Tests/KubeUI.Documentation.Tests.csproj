@@ -5,7 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Using Include="KubeUI.Features.Resources.Assets.LanguageManager" Alias="ResourceL10n" />
     <PackageReference Include="Avalonia.Headless.XUnit" />
     <PackageReference Include="KokoroSharp.CPU" />
     <PackageReference Include="xunit.v3.mtp-v2" />
@@ -20,7 +19,7 @@
     <Using Include="Xunit" />
     <Using Include="KubeUI.App" />
     <Using Include="KubeUI.Controls.DependencyInjection" />
-    <Using Include="KubeUI.Features.Resources.Assets" Alias="ResourceAssets" />
+    <Using Include="KubeUI.Features.Resources.Assets" />
   </ItemGroup>
 
   <Target Name="DisableDeclarativeAnalyzer" BeforeTargets="CoreCompile">

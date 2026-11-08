@@ -19,9 +19,10 @@
     <Using Include="Avalonia.Threading" />
     <Using Include="CommunityToolkit.Mvvm.ComponentModel" />
     <Using Include="CommunityToolkit.Mvvm.Input" />
-    <Using Include="KubeUI.App.Assets.LanguageManager" Alias="L10n" />
-    <Using Include="KubeUI.Foundation.Assets.LanguageManager" Alias="SharedL10n" />
+    <Using Include="KubeUI.App.Assets" />
+    <Using Include="KubeUI.Foundation.Assets" />
     <Using Include="KubeUI.Controls.Presentation" />
+    <Using Include="KubeUI.Controls.Behaviors" />
     <Using Include="KubeUI.Controls.DependencyInjection" />
     <Using Include="KubeUI.Controls.Docking" />
     <Using Include="KubeUI.Controls.Platform" />
@@ -30,8 +31,8 @@
     <Using Include="KubeUI.Foundation.Localization" />
     <Using Include="KubeUI.Controls.Converters" />
     <Using Include="KubeUI.Controls.Styles" />
-    <Using Include="KubeUI.Features.Clusters.Assets.LanguageManager" Alias="ClusterL10n" />
-    <Using Include="KubeUI.Features.Resources.Assets.LanguageManager" Alias="ResourceL10n" />
+    <Using Include="KubeUI.Features.Clusters.Assets" />
+    <Using Include="KubeUI.Features.Resources.Assets" />
     <Using Include="Microsoft.Extensions.DependencyInjection" />
     <Using Include="Microsoft.Extensions.Logging" />
     <Using Include="SvcSystems.Avalonia.DynamicTableView" />

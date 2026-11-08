@@ -30,19 +30,19 @@ namespace KubeUI.Features.Resources.Metrics.Controls;
 [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Metric tabs are owned and disposed by MetricsControl.")]
 public sealed partial class MetricsControl : UserControl, IInitializeCluster, INotifyPropertyChanged, IDisposable
 {
-    private static string LoadingStatusText => L10n.Instance.MetricsControl_Loading.CurrentValue()!;
-    private static string NoMetricsStatusText => L10n.Instance.MetricsControl_NoMetrics.CurrentValue()!;
+    private static string LoadingStatusText => ResourcesLanguageManager.Instance.MetricsControl_Loading.CurrentValue()!;
+    private static string NoMetricsStatusText => ResourcesLanguageManager.Instance.MetricsControl_NoMetrics.CurrentValue()!;
     private readonly DispatcherTimer _timer = new(DispatcherPriority.Default);
     private static readonly IReadOnlyList<MetricTimeRangeOption> s_timeRangeOptions =
     [
-        new MetricTimeRangeOption(L10n.Instance.MetricsControl_TimeRange_1Hour.CurrentValue()!, 3600),
-        new MetricTimeRangeOption(L10n.Instance.MetricsControl_TimeRange_2Hours.CurrentValue()!, 7200),
-        new MetricTimeRangeOption(L10n.Instance.MetricsControl_TimeRange_4Hours.CurrentValue()!, 14400),
-        new MetricTimeRangeOption(L10n.Instance.MetricsControl_TimeRange_12Hours.CurrentValue()!, 43200),
-        new MetricTimeRangeOption(L10n.Instance.MetricsControl_TimeRange_48Hours.CurrentValue()!, 172800),
-        new MetricTimeRangeOption(L10n.Instance.MetricsControl_TimeRange_1Week.CurrentValue()!, 604800),
-        new MetricTimeRangeOption(L10n.Instance.MetricsControl_TimeRange_1Month.CurrentValue()!, 2592000),
-        new MetricTimeRangeOption(L10n.Instance.MetricsControl_TimeRange_2Months.CurrentValue()!, 5184000),
+        new MetricTimeRangeOption(ResourcesLanguageManager.Instance.MetricsControl_TimeRange_1Hour.CurrentValue()!, 3600),
+        new MetricTimeRangeOption(ResourcesLanguageManager.Instance.MetricsControl_TimeRange_2Hours.CurrentValue()!, 7200),
+        new MetricTimeRangeOption(ResourcesLanguageManager.Instance.MetricsControl_TimeRange_4Hours.CurrentValue()!, 14400),
+        new MetricTimeRangeOption(ResourcesLanguageManager.Instance.MetricsControl_TimeRange_12Hours.CurrentValue()!, 43200),
+        new MetricTimeRangeOption(ResourcesLanguageManager.Instance.MetricsControl_TimeRange_48Hours.CurrentValue()!, 172800),
+        new MetricTimeRangeOption(ResourcesLanguageManager.Instance.MetricsControl_TimeRange_1Week.CurrentValue()!, 604800),
+        new MetricTimeRangeOption(ResourcesLanguageManager.Instance.MetricsControl_TimeRange_1Month.CurrentValue()!, 2592000),
+        new MetricTimeRangeOption(ResourcesLanguageManager.Instance.MetricsControl_TimeRange_2Months.CurrentValue()!, 5184000),
     ];
     private static readonly MetricTimeRangeOption s_defaultTimeRange = s_timeRangeOptions[0];
     private const double s_chartMinHeight = 360d;
@@ -206,9 +206,9 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             .IsVisible(this, x => x.ShowTimeRangeSelector)
             .ItemsSource(this, x => x.TimeRangeOptions)
             .SelectedItem(this, x => x.SelectedTimeRange, BindingMode.TwoWay)
-            .ToolTip_Tip(L10n.Instance.MetricsControl_TimeRangeLabel.CurrentValue())
+            .ToolTip_Tip(ResourcesLanguageManager.Instance.MetricsControl_TimeRangeLabel.CurrentValue())
             .ItemTemplate(new FuncDataTemplate<MetricTimeRangeOption>((option, _) => new TextBlock().Text(option.Label)));
-        AutomationProperties.SetName(timeRangeSelector, L10n.Instance.MetricsControl_TimeRangeLabel.CurrentValue());
+        AutomationProperties.SetName(timeRangeSelector, ResourcesLanguageManager.Instance.MetricsControl_TimeRangeLabel.CurrentValue());
 
         var tabs = new ItemsControl()
             .ItemsSource(this, x => x.Tabs)
@@ -275,7 +275,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
                     .IsVisible(this, x => x.ShowStatus));
 
         return new ExpandableSection()
-            .Header(L10n.Instance.MetricsControl_Header.CurrentValue()!)
+            .Header(ResourcesLanguageManager.Instance.MetricsControl_Header.CurrentValue()!)
             .Content(metricsGrid);
     }
 
@@ -507,7 +507,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
                             ShowTabs = false;
                             ShowTimeRangeSelector = false;
                             ShowStatus = true;
-                            StatusText = L10n.Instance.MetricsControl_LoadFailed.CurrentValue();
+                            StatusText = ResourcesLanguageManager.Instance.MetricsControl_LoadFailed.CurrentValue();
                         }
                     });
                 }
@@ -562,7 +562,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             ShowStatus = !ShowTabs;
             StatusText = ShowTabs
                 ? null
-                : L10n.Instance.MetricsControl_MetricsServerUnavailable.CurrentValue();
+                : ResourcesLanguageManager.Instance.MetricsControl_MetricsServerUnavailable.CurrentValue();
 
             if (SelectedTab == null || !Tabs.Contains(SelectedTab))
             {
@@ -585,7 +585,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             ShowTabs = false;
             ShowTimeRangeSelector = false;
             ShowStatus = true;
-            StatusText = L10n.Instance.MetricsControl_Unavailable.CurrentValue();
+            StatusText = ResourcesLanguageManager.Instance.MetricsControl_Unavailable.CurrentValue();
             return;
         }
 
@@ -726,7 +726,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             if (snapshot.HadRequestFailures && !hadExistingContent)
             {
                 ShowStatus = true;
-                StatusText = L10n.Instance.MetricsControl_LoadFailed.CurrentValue();
+                StatusText = ResourcesLanguageManager.Instance.MetricsControl_LoadFailed.CurrentValue();
                 return;
             }
 
@@ -764,7 +764,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             MergeTabs(tabs);
             ShowTabs = Tabs.Count > 0;
             ShowStatus = !ShowTabs;
-            StatusText = ShowTabs ? null : L10n.Instance.MetricsControl_ContainerMetricsServerUnavailable.CurrentValue();
+            StatusText = ShowTabs ? null : ResourcesLanguageManager.Instance.MetricsControl_ContainerMetricsServerUnavailable.CurrentValue();
 
             if (SelectedTab == null || !Tabs.Contains(SelectedTab))
             {
@@ -787,7 +787,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             ShowTabs = false;
             ShowTimeRangeSelector = false;
             ShowStatus = true;
-            StatusText = L10n.Instance.MetricsControl_Unavailable.CurrentValue();
+            StatusText = ResourcesLanguageManager.Instance.MetricsControl_Unavailable.CurrentValue();
             return;
         }
 
@@ -889,7 +889,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             {
                 ShowStatus = true;
                 StatusText = snapshot.HadRequestFailures && !hadExistingContent
-                    ? L10n.Instance.MetricsControl_ContainerLoadFailed.CurrentValue()
+                    ? ResourcesLanguageManager.Instance.MetricsControl_ContainerLoadFailed.CurrentValue()
                     : NoMetricsStatusText;
                 return;
             }

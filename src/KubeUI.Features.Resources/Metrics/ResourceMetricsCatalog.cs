@@ -15,11 +15,11 @@ internal static class ResourceMetricsCatalog
             V1Pod pod => CreatePodDescriptor(pod),
             V1Node node => CreateNodeDescriptor(node),
             V1Namespace ns => CreateNamespaceDescriptor(ns),
-            V1Deployment deployment => await CreateWorkloadDescriptorAsync(cluster, deployment.Namespace(), deployment.Spec?.Selector, L10n.Instance.Shared_Deployment.CurrentValue()!, "namespace"),
-            V1StatefulSet statefulSet => await CreateWorkloadDescriptorAsync(cluster, statefulSet.Namespace(), statefulSet.Spec?.Selector, L10n.Instance.Shared_StatefulSet.CurrentValue()!, "namespace"),
-            V1DaemonSet daemonSet => await CreateWorkloadDescriptorAsync(cluster, daemonSet.Namespace(), daemonSet.Spec?.Selector, L10n.Instance.Shared_DaemonSet.CurrentValue()!, "namespace"),
-            V1ReplicaSet replicaSet => await CreateWorkloadDescriptorAsync(cluster, replicaSet.Namespace(), replicaSet.Spec?.Selector, L10n.Instance.Shared_ReplicaSet.CurrentValue()!, "namespace"),
-            V1Job job => await CreateWorkloadDescriptorAsync(cluster, job.Namespace(), job.Spec?.Selector, L10n.Instance.Shared_Job.CurrentValue()!, "namespace"),
+            V1Deployment deployment => await CreateWorkloadDescriptorAsync(cluster, deployment.Namespace(), deployment.Spec?.Selector, ResourcesLanguageManager.Instance.Shared_Deployment.CurrentValue()!, "namespace"),
+            V1StatefulSet statefulSet => await CreateWorkloadDescriptorAsync(cluster, statefulSet.Namespace(), statefulSet.Spec?.Selector, ResourcesLanguageManager.Instance.Shared_StatefulSet.CurrentValue()!, "namespace"),
+            V1DaemonSet daemonSet => await CreateWorkloadDescriptorAsync(cluster, daemonSet.Namespace(), daemonSet.Spec?.Selector, ResourcesLanguageManager.Instance.Shared_DaemonSet.CurrentValue()!, "namespace"),
+            V1ReplicaSet replicaSet => await CreateWorkloadDescriptorAsync(cluster, replicaSet.Namespace(), replicaSet.Spec?.Selector, ResourcesLanguageManager.Instance.Shared_ReplicaSet.CurrentValue()!, "namespace"),
+            V1Job job => await CreateWorkloadDescriptorAsync(cluster, job.Namespace(), job.Spec?.Selector, ResourcesLanguageManager.Instance.Shared_Job.CurrentValue()!, "namespace"),
             V1PersistentVolumeClaim pvc => CreatePvcDescriptor(pvc),
             V1Ingress ingress => CreateIngressDescriptor(ingress),
             _ => null,
@@ -39,24 +39,24 @@ internal static class ResourceMetricsCatalog
 
         return new ResourceMetricsDescriptor(
             [
-                new MetricTabDefinition(L10n.Instance.Shared_CPU.CurrentValue()!, Icon.TopSpeed,
+                new MetricTabDefinition(ResourcesLanguageManager.Instance.Shared_CPU.CurrentValue()!, Icon.TopSpeed,
                 [
-                    MetricPanel(L10n.Instance.Shared_CPU.CurrentValue()!, MetricCategory.Pods, podQueryOptions, ("cpuUsage", L10n.Instance.Shared_Usage.CurrentValue()!), ("cpuRequests", L10n.Instance.Shared_Requests.CurrentValue()!), ("cpuLimits", L10n.Instance.Shared_Limits.CurrentValue()!)),
+                    MetricPanel(ResourcesLanguageManager.Instance.Shared_CPU.CurrentValue()!, MetricCategory.Pods, podQueryOptions, ("cpuUsage", ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue()!), ("cpuRequests", ResourcesLanguageManager.Instance.Shared_Requests.CurrentValue()!), ("cpuLimits", ResourcesLanguageManager.Instance.Shared_Limits.CurrentValue()!)),
                 ]),
-                new MetricTabDefinition(L10n.Instance.Shared_Memory.CurrentValue()!, Icon.Ram,
+                new MetricTabDefinition(ResourcesLanguageManager.Instance.Shared_Memory.CurrentValue()!, Icon.Ram,
                 [
-                    MetricPanel(L10n.Instance.Shared_Memory.CurrentValue()!, MetricCategory.Pods, podQueryOptions, ("memoryUsage", L10n.Instance.Shared_Usage.CurrentValue()!), ("memoryRequests", L10n.Instance.Shared_Requests.CurrentValue()!), ("memoryLimits", L10n.Instance.Shared_Limits.CurrentValue()!)),
+                    MetricPanel(ResourcesLanguageManager.Instance.Shared_Memory.CurrentValue()!, MetricCategory.Pods, podQueryOptions, ("memoryUsage", ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue()!), ("memoryRequests", ResourcesLanguageManager.Instance.Shared_Requests.CurrentValue()!), ("memoryLimits", ResourcesLanguageManager.Instance.Shared_Limits.CurrentValue()!)),
                 ]),
-                new MetricTabDefinition(L10n.Instance.Shared_Network.CurrentValue()!, Icon.VirtualNetwork,
+                new MetricTabDefinition(ResourcesLanguageManager.Instance.Shared_Network.CurrentValue()!, Icon.VirtualNetwork,
                 [
-                    MetricPanel(L10n.Instance.Shared_Network.CurrentValue()!, MetricCategory.Pods, podQueryOptions, ("networkReceive", L10n.Instance.Shared_Receive.CurrentValue()!), ("networkTransmit", L10n.Instance.Shared_Transmit.CurrentValue()!)),
+                    MetricPanel(ResourcesLanguageManager.Instance.Shared_Network.CurrentValue()!, MetricCategory.Pods, podQueryOptions, ("networkReceive", ResourcesLanguageManager.Instance.Shared_Receive.CurrentValue()!), ("networkTransmit", ResourcesLanguageManager.Instance.Shared_Transmit.CurrentValue()!)),
                 ]),
-                new MetricTabDefinition(L10n.Instance.Shared_Filesystem.CurrentValue()!, Icon.HardDrive,
+                new MetricTabDefinition(ResourcesLanguageManager.Instance.Shared_Filesystem.CurrentValue()!, Icon.HardDrive,
                 [
-                    MetricPanel(L10n.Instance.Shared_Filesystem.CurrentValue()!, MetricCategory.Pods, podQueryOptions, ("fsUsage", L10n.Instance.Shared_Usage.CurrentValue()!), ("fsReads", L10n.Instance.Shared_Reads.CurrentValue()!), ("fsWrites", L10n.Instance.Shared_Writes.CurrentValue()!)),
+                    MetricPanel(ResourcesLanguageManager.Instance.Shared_Filesystem.CurrentValue()!, MetricCategory.Pods, podQueryOptions, ("fsUsage", ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue()!), ("fsReads", ResourcesLanguageManager.Instance.Shared_Reads.CurrentValue()!), ("fsWrites", ResourcesLanguageManager.Instance.Shared_Writes.CurrentValue()!)),
                 ]),
             ],
-            L10n.Instance.ResourceMetricsCatalog_NoPrometheusPod.CurrentValue());
+            ResourcesLanguageManager.Instance.ResourceMetricsCatalog_NoPrometheusPod.CurrentValue());
     }
 
     private static ResourceMetricsDescriptor CreateNodeDescriptor(V1Node node)
@@ -77,20 +77,20 @@ internal static class ResourceMetricsCatalog
 
         return new ResourceMetricsDescriptor(
             [
-                new MetricTabDefinition(L10n.Instance.Shared_CPU.CurrentValue()!, Icon.TopSpeed,
+                new MetricTabDefinition(ResourcesLanguageManager.Instance.Shared_CPU.CurrentValue()!, Icon.TopSpeed,
                 [
-                    MetricPanel(L10n.Instance.Shared_CPU.CurrentValue()!, MetricCategory.Nodes, options, filter, ("cpuUsage", L10n.Instance.Shared_Usage.CurrentValue()!), ("cpuCapacity", L10n.Instance.Shared_Capacity.CurrentValue()!), ("cpuAllocatableCapacity", L10n.Instance.Shared_Allocatable.CurrentValue()!)),
+                    MetricPanel(ResourcesLanguageManager.Instance.Shared_CPU.CurrentValue()!, MetricCategory.Nodes, options, filter, ("cpuUsage", ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue()!), ("cpuCapacity", ResourcesLanguageManager.Instance.Shared_Capacity.CurrentValue()!), ("cpuAllocatableCapacity", ResourcesLanguageManager.Instance.Shared_Allocatable.CurrentValue()!)),
                 ]),
-                new MetricTabDefinition(L10n.Instance.Shared_Memory.CurrentValue()!, Icon.Ram,
+                new MetricTabDefinition(ResourcesLanguageManager.Instance.Shared_Memory.CurrentValue()!, Icon.Ram,
                 [
-                    MetricPanel(L10n.Instance.Shared_Memory.CurrentValue()!, MetricCategory.Nodes, options, filter, ("memoryUsage", L10n.Instance.Shared_Usage.CurrentValue()!), ("memoryCapacity", L10n.Instance.Shared_Capacity.CurrentValue()!), ("memoryAllocatableCapacity", L10n.Instance.Shared_Allocatable.CurrentValue()!)),
+                    MetricPanel(ResourcesLanguageManager.Instance.Shared_Memory.CurrentValue()!, MetricCategory.Nodes, options, filter, ("memoryUsage", ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue()!), ("memoryCapacity", ResourcesLanguageManager.Instance.Shared_Capacity.CurrentValue()!), ("memoryAllocatableCapacity", ResourcesLanguageManager.Instance.Shared_Allocatable.CurrentValue()!)),
                 ]),
-                new MetricTabDefinition(L10n.Instance.Shared_Filesystem.CurrentValue()!, Icon.HardDrive,
+                new MetricTabDefinition(ResourcesLanguageManager.Instance.Shared_Filesystem.CurrentValue()!, Icon.HardDrive,
                 [
-                    MetricPanel(L10n.Instance.Shared_Filesystem.CurrentValue()!, MetricCategory.Nodes, options, filter, ("fsUsage", L10n.Instance.Shared_Usage.CurrentValue()!), ("fsSize", L10n.Instance.Shared_Size.CurrentValue()!)),
+                    MetricPanel(ResourcesLanguageManager.Instance.Shared_Filesystem.CurrentValue()!, MetricCategory.Nodes, options, filter, ("fsUsage", ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue()!), ("fsSize", ResourcesLanguageManager.Instance.Shared_Size.CurrentValue()!)),
                 ]),
             ],
-            L10n.Instance.ResourceMetricsCatalog_NoPrometheusNode.CurrentValue());
+            ResourcesLanguageManager.Instance.ResourceMetricsCatalog_NoPrometheusNode.CurrentValue());
     }
 
     internal static string GetNodeInstancePattern(V1Node node)
@@ -132,16 +132,16 @@ internal static class ResourceMetricsCatalog
 
         return new ResourceMetricsDescriptor(
             [
-                new MetricTabDefinition(L10n.Instance.Shared_CPU.CurrentValue()!, Icon.TopSpeed,
+                new MetricTabDefinition(ResourcesLanguageManager.Instance.Shared_CPU.CurrentValue()!, Icon.TopSpeed,
                 [
-                    MetricPanel(L10n.Instance.Shared_CPU.CurrentValue()!, MetricCategory.Namespace, options, ("cpuUsage", L10n.Instance.Shared_Usage.CurrentValue()!), ("cpuRequests", L10n.Instance.Shared_Requests.CurrentValue()!), ("cpuLimits", L10n.Instance.Shared_Limits.CurrentValue()!)),
+                    MetricPanel(ResourcesLanguageManager.Instance.Shared_CPU.CurrentValue()!, MetricCategory.Namespace, options, ("cpuUsage", ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue()!), ("cpuRequests", ResourcesLanguageManager.Instance.Shared_Requests.CurrentValue()!), ("cpuLimits", ResourcesLanguageManager.Instance.Shared_Limits.CurrentValue()!)),
                 ]),
-                new MetricTabDefinition(L10n.Instance.Shared_Memory.CurrentValue()!, Icon.Ram,
+                new MetricTabDefinition(ResourcesLanguageManager.Instance.Shared_Memory.CurrentValue()!, Icon.Ram,
                 [
-                    MetricPanel(L10n.Instance.Shared_Memory.CurrentValue()!, MetricCategory.Namespace, options, ("memoryUsage", L10n.Instance.Shared_Usage.CurrentValue()!), ("memoryRequests", L10n.Instance.Shared_Requests.CurrentValue()!), ("memoryLimits", L10n.Instance.Shared_Limits.CurrentValue()!)),
+                    MetricPanel(ResourcesLanguageManager.Instance.Shared_Memory.CurrentValue()!, MetricCategory.Namespace, options, ("memoryUsage", ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue()!), ("memoryRequests", ResourcesLanguageManager.Instance.Shared_Requests.CurrentValue()!), ("memoryLimits", ResourcesLanguageManager.Instance.Shared_Limits.CurrentValue()!)),
                 ]),
             ],
-            L10n.Instance.ResourceMetricsCatalog_NoPrometheusNamespace.CurrentValue());
+            ResourcesLanguageManager.Instance.ResourceMetricsCatalog_NoPrometheusNamespace.CurrentValue());
     }
 
     private static ResourceMetricsDescriptor CreatePvcDescriptor(V1PersistentVolumeClaim pvc)
@@ -154,12 +154,12 @@ internal static class ResourceMetricsCatalog
 
         return new ResourceMetricsDescriptor(
             [
-                new MetricTabDefinition(L10n.Instance.Shared_Storage.CurrentValue()!, Icon.Storage,
+                new MetricTabDefinition(ResourcesLanguageManager.Instance.Shared_Storage.CurrentValue()!, Icon.Storage,
                 [
-                    MetricPanel(L10n.Instance.Shared_PvcStorage.CurrentValue()!, MetricCategory.Pvc, options, ("diskUsage", L10n.Instance.Shared_Usage.CurrentValue()!), ("diskCapacity", L10n.Instance.Shared_Capacity.CurrentValue()!)),
+                    MetricPanel(ResourcesLanguageManager.Instance.Shared_PvcStorage.CurrentValue()!, MetricCategory.Pvc, options, ("diskUsage", ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue()!), ("diskCapacity", ResourcesLanguageManager.Instance.Shared_Capacity.CurrentValue()!)),
                 ]),
             ],
-            L10n.Instance.ResourceMetricsCatalog_NoPrometheusPvc.CurrentValue());
+            ResourcesLanguageManager.Instance.ResourceMetricsCatalog_NoPrometheusPvc.CurrentValue());
     }
 
     private static ResourceMetricsDescriptor CreateIngressDescriptor(V1Ingress ingress)
@@ -172,16 +172,16 @@ internal static class ResourceMetricsCatalog
 
         return new ResourceMetricsDescriptor(
             [
-                new MetricTabDefinition(L10n.Instance.Shared_BytesSent.CurrentValue()!, Icon.DataUsage,
+                new MetricTabDefinition(ResourcesLanguageManager.Instance.Shared_BytesSent.CurrentValue()!, Icon.DataUsage,
                 [
-                    MetricPanel(L10n.Instance.Shared_BytesSent.CurrentValue()!, MetricCategory.Ingress, options, ("bytesSentSuccess", L10n.Instance.Shared_Success.CurrentValue()!), ("bytesSentFailure", L10n.Instance.Shared_Failure.CurrentValue()!)),
+                    MetricPanel(ResourcesLanguageManager.Instance.Shared_BytesSent.CurrentValue()!, MetricCategory.Ingress, options, ("bytesSentSuccess", ResourcesLanguageManager.Instance.Shared_Success.CurrentValue()!), ("bytesSentFailure", ResourcesLanguageManager.Instance.Shared_Failure.CurrentValue()!)),
                 ]),
-                new MetricTabDefinition(L10n.Instance.Shared_Latency.CurrentValue()!, Icon.DataUsage,
+                new MetricTabDefinition(ResourcesLanguageManager.Instance.Shared_Latency.CurrentValue()!, Icon.DataUsage,
                 [
-                    MetricPanel(L10n.Instance.Shared_Latency.CurrentValue()!, MetricCategory.Ingress, options, ("requestDurationSeconds", L10n.Instance.Shared_Request.CurrentValue()!), ("responseDurationSeconds", L10n.Instance.Shared_Response.CurrentValue()!)),
+                    MetricPanel(ResourcesLanguageManager.Instance.Shared_Latency.CurrentValue()!, MetricCategory.Ingress, options, ("requestDurationSeconds", ResourcesLanguageManager.Instance.Shared_Request.CurrentValue()!), ("responseDurationSeconds", ResourcesLanguageManager.Instance.Shared_Response.CurrentValue()!)),
                 ]),
             ],
-            L10n.Instance.ResourceMetricsCatalog_NoPrometheusIngress.CurrentValue());
+            ResourcesLanguageManager.Instance.ResourceMetricsCatalog_NoPrometheusIngress.CurrentValue());
     }
 
     private static async Task<ResourceMetricsDescriptor?> CreateWorkloadDescriptorAsync(ClusterWorkspace cluster, string ns, V1LabelSelector? selector, string workloadName, string seriesSelector)
@@ -193,13 +193,13 @@ internal static class ResourceMetricsCatalog
 
         if (selector == null)
         {
-            return new ResourceMetricsDescriptor([], string.Format(L10n.Instance.ResourceMetricsCatalog_NoPodsForWorkload.CurrentValue()!, workloadName));
+            return new ResourceMetricsDescriptor([], string.Format(ResourcesLanguageManager.Instance.ResourceMetricsCatalog_NoPodsForWorkload.CurrentValue()!, workloadName));
         }
 
         var matchingPods = await GetMatchingPodsAsync(cluster, ns, selector).ConfigureAwait(false);
         if (matchingPods.Count == 0)
         {
-            return new ResourceMetricsDescriptor([], string.Format(L10n.Instance.ResourceMetricsCatalog_NoPodsForWorkload.CurrentValue()!, workloadName));
+            return new ResourceMetricsDescriptor([], string.Format(ResourcesLanguageManager.Instance.ResourceMetricsCatalog_NoPodsForWorkload.CurrentValue()!, workloadName));
         }
 
         // The workload is identified by its label selector rather than by a regex alternation of every
@@ -225,24 +225,24 @@ internal static class ResourceMetricsCatalog
 
         return new ResourceMetricsDescriptor(
             [
-                new MetricTabDefinition(L10n.Instance.Shared_CPU.CurrentValue()!, Icon.TopSpeed,
+                new MetricTabDefinition(ResourcesLanguageManager.Instance.Shared_CPU.CurrentValue()!, Icon.TopSpeed,
                 [
-                    MetricPanel(L10n.Instance.Shared_CPU.CurrentValue()!, MetricCategory.WorkloadPods, options, ("cpuUsage", L10n.Instance.Shared_Usage.CurrentValue()!), ("cpuRequests", L10n.Instance.Shared_Requests.CurrentValue()!), ("cpuLimits", L10n.Instance.Shared_Limits.CurrentValue()!)),
+                    MetricPanel(ResourcesLanguageManager.Instance.Shared_CPU.CurrentValue()!, MetricCategory.WorkloadPods, options, ("cpuUsage", ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue()!), ("cpuRequests", ResourcesLanguageManager.Instance.Shared_Requests.CurrentValue()!), ("cpuLimits", ResourcesLanguageManager.Instance.Shared_Limits.CurrentValue()!)),
                 ]),
-                new MetricTabDefinition(L10n.Instance.Shared_Memory.CurrentValue()!, Icon.Ram,
+                new MetricTabDefinition(ResourcesLanguageManager.Instance.Shared_Memory.CurrentValue()!, Icon.Ram,
                 [
-                    MetricPanel(L10n.Instance.Shared_Memory.CurrentValue()!, MetricCategory.WorkloadPods, options, ("memoryUsage", L10n.Instance.Shared_Usage.CurrentValue()!), ("memoryRequests", L10n.Instance.Shared_Requests.CurrentValue()!), ("memoryLimits", L10n.Instance.Shared_Limits.CurrentValue()!)),
+                    MetricPanel(ResourcesLanguageManager.Instance.Shared_Memory.CurrentValue()!, MetricCategory.WorkloadPods, options, ("memoryUsage", ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue()!), ("memoryRequests", ResourcesLanguageManager.Instance.Shared_Requests.CurrentValue()!), ("memoryLimits", ResourcesLanguageManager.Instance.Shared_Limits.CurrentValue()!)),
                 ]),
-                new MetricTabDefinition(L10n.Instance.Shared_Network.CurrentValue()!, Icon.VirtualNetwork,
+                new MetricTabDefinition(ResourcesLanguageManager.Instance.Shared_Network.CurrentValue()!, Icon.VirtualNetwork,
                 [
-                    MetricPanel(L10n.Instance.Shared_Network.CurrentValue()!, MetricCategory.WorkloadPods, options, ("networkReceive", L10n.Instance.Shared_Receive.CurrentValue()!), ("networkTransmit", L10n.Instance.Shared_Transmit.CurrentValue()!)),
+                    MetricPanel(ResourcesLanguageManager.Instance.Shared_Network.CurrentValue()!, MetricCategory.WorkloadPods, options, ("networkReceive", ResourcesLanguageManager.Instance.Shared_Receive.CurrentValue()!), ("networkTransmit", ResourcesLanguageManager.Instance.Shared_Transmit.CurrentValue()!)),
                 ]),
-                new MetricTabDefinition(L10n.Instance.Shared_Filesystem.CurrentValue()!, Icon.HardDrive,
+                new MetricTabDefinition(ResourcesLanguageManager.Instance.Shared_Filesystem.CurrentValue()!, Icon.HardDrive,
                 [
-                    MetricPanel(L10n.Instance.Shared_Filesystem.CurrentValue()!, MetricCategory.WorkloadPods, options, ("fsUsage", L10n.Instance.Shared_Usage.CurrentValue()!), ("fsReads", L10n.Instance.Shared_Reads.CurrentValue()!), ("fsWrites", L10n.Instance.Shared_Writes.CurrentValue()!)),
+                    MetricPanel(ResourcesLanguageManager.Instance.Shared_Filesystem.CurrentValue()!, MetricCategory.WorkloadPods, options, ("fsUsage", ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue()!), ("fsReads", ResourcesLanguageManager.Instance.Shared_Reads.CurrentValue()!), ("fsWrites", ResourcesLanguageManager.Instance.Shared_Writes.CurrentValue()!)),
                 ]),
             ],
-            string.Format(L10n.Instance.ResourceMetricsCatalog_NoPrometheusWorkload.CurrentValue()!, workloadName));
+            string.Format(ResourcesLanguageManager.Instance.ResourceMetricsCatalog_NoPrometheusWorkload.CurrentValue()!, workloadName));
     }
 
     /// <summary>Builds a Prometheus label matcher for a Kubernetes label selector.</summary>

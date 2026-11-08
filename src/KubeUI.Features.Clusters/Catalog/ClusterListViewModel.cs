@@ -50,7 +50,7 @@ public sealed partial class ClusterListViewModel : ViewModelBase, IDisposable
         _settingsService.KubeConfigs.CollectionChanged += KubeConfigsOnCollectionChanged;
         RefreshRemovableKubeConfigs();
 
-        Title = L10n.Instance.ClusterListView_Title.CurrentValue()!;
+        Title = ClustersLanguageManager.Instance.ClusterListView_Title.CurrentValue()!;
         Id = nameof(ClusterListViewModel);
         _clusterCache = ClusterCatalog.Clusters
             .ToObservableChangeSet(static cluster => cluster.Runtime.Name)
@@ -78,12 +78,12 @@ public sealed partial class ClusterListViewModel : ViewModelBase, IDisposable
     {
         var nameColumn = DynamicTableViewColumn<ClusterWorkspace>.Create(
             "name",
-            L10n.Instance.ClusterListView_Name.CurrentValue()!,
+            ClustersLanguageManager.Instance.ClusterListView_Name.CurrentValue()!,
             static cluster => cluster.Runtime.Name);
         nameColumn.WidthMode = DynamicTableViewWidthMode.Star;
         nameColumn.Width = 1;
 
-        var aliasColumn = DynamicTableViewColumn<ClusterWorkspace>.Create("alias", L10n.Instance.ClusterListView_Alias.CurrentValue()!,
+        var aliasColumn = DynamicTableViewColumn<ClusterWorkspace>.Create("alias", ClustersLanguageManager.Instance.ClusterListView_Alias.CurrentValue()!,
             static cluster => cluster.Alias ?? string.Empty,
             cellTemplate: CreateAliasCellTemplate());
         aliasColumn.WidthMode = DynamicTableViewWidthMode.Star;
@@ -91,13 +91,13 @@ public sealed partial class ClusterListViewModel : ViewModelBase, IDisposable
 
         var kubeconfigColumn = DynamicTableViewColumn<ClusterWorkspace>.Create(
             "kubeconfig",
-            L10n.Instance.ClusterListView_KubeConfig.CurrentValue()!,
+            ClustersLanguageManager.Instance.ClusterListView_KubeConfig.CurrentValue()!,
             static cluster => cluster.Runtime.KubeConfigPath);
         kubeconfigColumn.WidthMode = DynamicTableViewWidthMode.Star;
         kubeconfigColumn.Width = 2;
 
         return [
-            DynamicTableViewColumn<ClusterWorkspace>.Create("enabled", L10n.Instance.ClusterListView_Enabled.CurrentValue()!,
+            DynamicTableViewColumn<ClusterWorkspace>.Create("enabled", ClustersLanguageManager.Instance.ClusterListView_Enabled.CurrentValue()!,
                 static cluster => cluster.IsEnabled,
                 cellTemplate: CreateEnabledCellTemplate()),
             aliasColumn,
@@ -134,10 +134,10 @@ public sealed partial class ClusterListViewModel : ViewModelBase, IDisposable
     {
         ContentDialogSettings settings = new()
         {
-            Title = L10n.Instance.ClusterListView_Delete_Title.CurrentValue()!,
-            Content = string.Format(L10n.Instance.ClusterListView_Delete_Content.CurrentValue()!, cluster.Runtime.Name)!,
-            PrimaryButtonText = L10n.Instance.ClusterListView_Delete_Primary.CurrentValue()!,
-            SecondaryButtonText = L10n.Instance.ClusterListView_Delete_Secondary.CurrentValue()!,
+            Title = ClustersLanguageManager.Instance.ClusterListView_Delete_Title.CurrentValue()!,
+            Content = string.Format(ClustersLanguageManager.Instance.ClusterListView_Delete_Content.CurrentValue()!, cluster.Runtime.Name)!,
+            PrimaryButtonText = ClustersLanguageManager.Instance.ClusterListView_Delete_Primary.CurrentValue()!,
+            SecondaryButtonText = ClustersLanguageManager.Instance.ClusterListView_Delete_Secondary.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary
         };
 
@@ -162,7 +162,7 @@ public sealed partial class ClusterListViewModel : ViewModelBase, IDisposable
     {
         var files = await _platformServices.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = L10n.Instance.ClusterListView_AddKubeConfig.CurrentValue()!,
+            Title = ClustersLanguageManager.Instance.ClusterListView_AddKubeConfig.CurrentValue()!,
             AllowMultiple = true,
         }).ConfigureAwait(true);
 
@@ -186,8 +186,8 @@ public sealed partial class ClusterListViewModel : ViewModelBase, IDisposable
             if (!_kubeConfigDiscovery.IsKubeConfig(path))
             {
                 _notificationManager.Show(new Notification(
-                    L10n.Instance.ClusterListView_AddKubeConfig.CurrentValue()!,
-                    string.Format(L10n.Instance.ClusterListView_InvalidKubeConfig.CurrentValue()!, path),
+                    ClustersLanguageManager.Instance.ClusterListView_AddKubeConfig.CurrentValue()!,
+                    string.Format(ClustersLanguageManager.Instance.ClusterListView_InvalidKubeConfig.CurrentValue()!, path),
                     NotificationType.Warning));
                 continue;
             }
@@ -210,10 +210,10 @@ public sealed partial class ClusterListViewModel : ViewModelBase, IDisposable
 
         ContentDialogSettings settings = new()
         {
-            Title = L10n.Instance.ClusterListView_RemoveKubeConfig.CurrentValue()!,
-            Content = string.Format(L10n.Instance.ClusterListView_RemoveKubeConfig_Content.CurrentValue()!, path),
-            PrimaryButtonText = L10n.Instance.ClusterListView_Delete_Primary.CurrentValue()!,
-            SecondaryButtonText = L10n.Instance.ClusterListView_Delete_Secondary.CurrentValue()!,
+            Title = ClustersLanguageManager.Instance.ClusterListView_RemoveKubeConfig.CurrentValue()!,
+            Content = string.Format(ClustersLanguageManager.Instance.ClusterListView_RemoveKubeConfig_Content.CurrentValue()!, path),
+            PrimaryButtonText = ClustersLanguageManager.Instance.ClusterListView_Delete_Primary.CurrentValue()!,
+            SecondaryButtonText = ClustersLanguageManager.Instance.ClusterListView_Delete_Secondary.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary
         };
 

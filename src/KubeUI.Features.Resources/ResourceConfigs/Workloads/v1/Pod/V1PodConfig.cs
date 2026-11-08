@@ -40,7 +40,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
                 new ResourceListColumn<V1Pod, int>()
                 {
                     Key = "containers",
-                    Name = L10n.Instance.V1PodConfig_Containers.CurrentValue()!,
+                    Name = ResourcesLanguageManager.Instance.V1PodConfig_Containers.CurrentValue()!,
                     CustomControl = typeof(PodContainerCellView),
                     Field = x => (x.Spec?.Containers?.Count ?? 0) + (x.Spec?.InitContainers?.Count ?? 0),
                     WidthMode = DynamicTableViewWidthMode.Cells
@@ -49,28 +49,28 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
                 new ResourceListColumn<V1Pod, int>()
                 {
                     Key = "restarts",
-                    Name = L10n.Instance.V1PodConfig_Restarts.CurrentValue()!,
+                    Name = ResourcesLanguageManager.Instance.V1PodConfig_Restarts.CurrentValue()!,
                     Field = x => x?.Status?.ContainerStatuses?.Sum(x => x.RestartCount) ?? 0,
                     WidthMode = DynamicTableViewWidthMode.Header
                 },
                 new ResourceListColumn<V1Pod, string>()
                 {
                     Key = "controlled-by",
-                    Name = L10n.Instance.V1PodConfig_Controlled_By.CurrentValue()!,
+                    Name = ResourcesLanguageManager.Instance.V1PodConfig_Controlled_By.CurrentValue()!,
                     Field = x => x?.Metadata?.OwnerReferences?.FirstOrDefault()?.Name ?? "",
                     WidthMode = DynamicTableViewWidthMode.Header
                 },
                 new ResourceListColumn<V1Pod, string>()
                 {
                     Key = "node",
-                    Name = L10n.Instance.V1PodConfig_Node.CurrentValue()!,
+                    Name = ResourcesLanguageManager.Instance.V1PodConfig_Node.CurrentValue()!,
                     Field = x => x?.Spec?.NodeName ?? "",
                     WidthMode = DynamicTableViewWidthMode.Header
                 },
                 new ResourceListColumn<V1Pod, string>()
                 {
                     Key = "qos",
-                    Name = L10n.Instance.V1PodConfig_QoS.CurrentValue()!,
+                    Name = ResourcesLanguageManager.Instance.V1PodConfig_QoS.CurrentValue()!,
                     Field = x => x?.Status?.QosClass ?? "",
                     WidthMode = DynamicTableViewWidthMode.Cells
                 },
@@ -78,7 +78,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
                 new ResourceListColumn<V1Pod, string>()
                 {
                     Key = "status",
-                    Name = L10n.Instance.V1PodConfig_Status.CurrentValue()!,
+                    Name = ResourcesLanguageManager.Instance.V1PodConfig_Status.CurrentValue()!,
                     Field = x => x.Status?.Conditions?.FirstOrDefault(x => x.Type == "Ready")?.Status == "True" ? "Running" : x.Status?.Conditions?.FirstOrDefault(x => x.Type == "Ready")?.Reason ?? "Unknown",
                     CustomControl = typeof(PodStatusCellView),
                     WidthMode = DynamicTableViewWidthMode.Header
@@ -88,7 +88,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
         cols.Insert(3, new ResourceListColumn<V1Pod, decimal>()
         {
             Key = "cpu",
-            Name = L10n.Instance.V1PodConfig_CPU.CurrentValue()!,
+            Name = ResourcesLanguageManager.Instance.V1PodConfig_CPU.CurrentValue()!,
             CustomControl = typeof(MetricsHistoryCPUCellView),
             Field = x => Cluster.Runtime.GetPodMetricsSnapshot(x.Namespace(), x.Name() ?? string.Empty).LastOrDefault()?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
             Width = 80,
@@ -97,7 +97,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
         cols.Insert(4, new ResourceListColumn<V1Pod, decimal>()
         {
             Key = "memory",
-            Name = L10n.Instance.V1PodConfig_Memory.CurrentValue()!,
+            Name = ResourcesLanguageManager.Instance.V1PodConfig_Memory.CurrentValue()!,
             CustomControl = typeof(MetricsHistoryMemoryCellView),
             Field = x => Cluster.Runtime.GetPodMetricsSnapshot(x.Namespace(), x.Name() ?? string.Empty).LastOrDefault()?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
             Width = 80,
@@ -127,12 +127,12 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
         return [
             new()
             {
-                Title = L10n.Instance.V1PodConfig_MenuItem_ViewConsole.CurrentValue()!,
+                Title = ResourcesLanguageManager.Instance.V1PodConfig_MenuItem_ViewConsole.CurrentValue()!,
                 FluentIcon = Icon.Desktop,
                 Items = selectedItem == null ? null : new AvaloniaList<MenuItemViewModel>([
                     new()
                     {
-                        Title = L10n.Instance.V1PodConfig_MenuItem_Init.CurrentValue()!,
+                        Title = ResourcesLanguageManager.Instance.V1PodConfig_MenuItem_Init.CurrentValue()!,
                         Items = [.. initContainers.Select(c => new MenuItemViewModel()
                         {
                             Title = c.Name,
@@ -142,7 +142,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
                     },
                     new()
                     {
-                        Title = L10n.Instance.V1PodConfig_MenuItem_Normal.CurrentValue()!,
+                        Title = ResourcesLanguageManager.Instance.V1PodConfig_MenuItem_Normal.CurrentValue()!,
                         Items = [.. containers.Select(c => new MenuItemViewModel()
                         {
                             Title = c.Name,
@@ -152,7 +152,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
                     },
                     new()
                     {
-                        Title = L10n.Instance.V1PodConfig_MenuItem_Ephemeral.CurrentValue()!,
+                        Title = ResourcesLanguageManager.Instance.V1PodConfig_MenuItem_Ephemeral.CurrentValue()!,
                         Items = [.. ephemeralContainers.Select(c => new MenuItemViewModel()
                         {
                             Title = c.Name,
@@ -164,12 +164,12 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
             },
             new()
             {
-                Title = L10n.Instance.V1PodConfig_MenuItem_Attach.CurrentValue()!,
+                Title = ResourcesLanguageManager.Instance.V1PodConfig_MenuItem_Attach.CurrentValue()!,
                 FluentIcon = Icon.Link,
                 Items = selectedItem == null ? null : new AvaloniaList<MenuItemViewModel>([
                     new()
                     {
-                        Title = L10n.Instance.V1PodConfig_MenuItem_Init.CurrentValue()!,
+                        Title = ResourcesLanguageManager.Instance.V1PodConfig_MenuItem_Init.CurrentValue()!,
                         Items = [.. initContainers.Select(c => new MenuItemViewModel()
                         {
                             Title = c.Name,
@@ -179,7 +179,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
                     },
                     new()
                     {
-                        Title = L10n.Instance.V1PodConfig_MenuItem_Normal.CurrentValue()!,
+                        Title = ResourcesLanguageManager.Instance.V1PodConfig_MenuItem_Normal.CurrentValue()!,
                         Items = [.. containers.Select(c => new MenuItemViewModel()
                         {
                             Title = c.Name,
@@ -189,7 +189,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
                     },
                     new()
                     {
-                        Title = L10n.Instance.V1PodConfig_MenuItem_Ephemeral.CurrentValue()!,
+                        Title = ResourcesLanguageManager.Instance.V1PodConfig_MenuItem_Ephemeral.CurrentValue()!,
                         Items = [.. ephemeralContainers.Select(c => new MenuItemViewModel()
                         {
                             Title = c.Name,
@@ -203,18 +203,18 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
             CreateEvictMenuItem(selectedList),
             new()
             {
-                Title = L10n.Instance.V1PodConfig_DebugContainer.CurrentValue()!,
+                Title = ResourcesLanguageManager.Instance.V1PodConfig_DebugContainer.CurrentValue()!,
                 FluentIcon = Icon.Code,
                 Items = selectedItem == null ? null : new AvaloniaList<MenuItemViewModel>([
                     new()
                     {
-                        Title = L10n.Instance.V1PodConfig_DebugContainer_Pod.CurrentValue()!,
+                        Title = ResourcesLanguageManager.Instance.V1PodConfig_DebugContainer_Pod.CurrentValue()!,
                         Command = DebugContainerCommand,
                         CommandParameter = new ArrayList { selectedItem },
                     },
                     new()
                     {
-                        Title = L10n.Instance.V1PodConfig_MenuItem_Init.CurrentValue()!,
+                        Title = ResourcesLanguageManager.Instance.V1PodConfig_MenuItem_Init.CurrentValue()!,
                         Items = [.. initContainers.Select(c => new MenuItemViewModel()
                         {
                             Title = c.Name,
@@ -224,7 +224,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
                     },
                     new()
                     {
-                        Title = L10n.Instance.V1PodConfig_MenuItem_Normal.CurrentValue()!,
+                        Title = ResourcesLanguageManager.Instance.V1PodConfig_MenuItem_Normal.CurrentValue()!,
                         Items = [.. containers.Select(c => new MenuItemViewModel()
                         {
                             Title = c.Name,
@@ -234,7 +234,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
                     },
                     new()
                     {
-                        Title = L10n.Instance.V1PodConfig_MenuItem_Ephemeral.CurrentValue()!,
+                        Title = ResourcesLanguageManager.Instance.V1PodConfig_MenuItem_Ephemeral.CurrentValue()!,
                         Items = [.. ephemeralContainers.Select(c => new MenuItemViewModel()
                         {
                             Title = c.Name,
@@ -246,12 +246,12 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
             },
             new()
             {
-                Title = L10n.Instance.V1PodConfig_MenuItem_PortForwarding.CurrentValue()!,
+                Title = ResourcesLanguageManager.Instance.V1PodConfig_MenuItem_PortForwarding.CurrentValue()!,
                 FluentIcon = Icon.CloudFlow,
                 Items = selectedItem == null ? null : new AvaloniaList<MenuItemViewModel>([
                     new()
                     {
-                        Title = L10n.Instance.V1PodConfig_MenuItem_Init.CurrentValue()!,
+                        Title = ResourcesLanguageManager.Instance.V1PodConfig_MenuItem_Init.CurrentValue()!,
                         Items = [.. initContainers.Select(c => new MenuItemViewModel()
                         {
                             Title = c.Name,
@@ -265,7 +265,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
                     },
                     new()
                     {
-                        Title = L10n.Instance.V1PodConfig_MenuItem_Normal.CurrentValue()!,
+                        Title = ResourcesLanguageManager.Instance.V1PodConfig_MenuItem_Normal.CurrentValue()!,
                         Items = [.. containers.Select(c => new MenuItemViewModel()
                         {
                             Title = c.Name,
@@ -279,13 +279,13 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
                     },
                     new()
                     {
-                        Title = L10n.Instance.V1PodConfig_MenuItem_Ephemeral.CurrentValue()!,
+                        Title = ResourcesLanguageManager.Instance.V1PodConfig_MenuItem_Ephemeral.CurrentValue()!,
                         Items = [.. ephemeralContainers.Select(c => new MenuItemViewModel()
                         {
                             Title = c.Name,
                             Items = [.. c.Ports?.Select(p => new MenuItemViewModel()
                             {
-                            Title = string.Format(L10n.Instance.V1PodConfig_MenuItem_PortFormat.CurrentValue()!, p.Name, p.ContainerPort),
+                            Title = string.Format(ResourcesLanguageManager.Instance.V1PodConfig_MenuItem_PortFormat.CurrentValue()!, p.Name, p.ContainerPort),
                                 Command = PortForwardCommand,
                                 CommandParameter = new ArrayList { selectedItem, p },
                             }).ToList() ?? []],
@@ -308,7 +308,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
     private MenuItemViewModel CreateEvictMenuItem(IReadOnlyList<V1Pod> selectedItems)
         => new()
         {
-            Title = L10n.Instance.V1PodConfig_Evict.CurrentValue()!,
+            Title = ResourcesLanguageManager.Instance.V1PodConfig_Evict.CurrentValue()!,
             FluentIcon = Icon.ArrowRight,
             Command = EvictPodsCommand,
             CommandParameter = selectedItems,
@@ -325,10 +325,10 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
 
         var result = await _dialogService.ShowContentDialogAsync(this, new ContentDialogSettings
         {
-            Title = L10n.Instance.V1PodConfig_EvictTitle.CurrentValue()!,
-            Content = string.Format(L10n.Instance.V1PodConfig_EvictContent.CurrentValue()!, pods.Count),
-            PrimaryButtonText = L10n.Instance.ResourceListView_Delete_Primary.CurrentValue()!,
-            SecondaryButtonText = SharedL10n.Instance.Shared_Cancel.CurrentValue()!,
+            Title = ResourcesLanguageManager.Instance.V1PodConfig_EvictTitle.CurrentValue()!,
+            Content = string.Format(ResourcesLanguageManager.Instance.V1PodConfig_EvictContent.CurrentValue()!, pods.Count),
+            PrimaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_Delete_Primary.CurrentValue()!,
+            SecondaryButtonText = FoundationLanguageManager.Instance.Shared_Cancel.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary,
         });
         if (result != FAContentDialogResult.Primary)
@@ -353,7 +353,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
             catch (Exception ex)
             {
                 failures.Add(ex);
-                ResourceUtilities.HandleException(_logger, _notificationManager, ex, string.Format(L10n.Instance.V1PodConfig_EvictError.CurrentValue()!, pod.Namespace(), pod.Name()), sendNotification: true);
+                ResourceUtilities.HandleException(_logger, _notificationManager, ex, string.Format(ResourcesLanguageManager.Instance.V1PodConfig_EvictError.CurrentValue()!, pod.Namespace(), pod.Name()), sendNotification: true);
             }
         }
 
@@ -514,7 +514,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
         }
         catch (Exception ex)
         {
-            ResourceUtilities.HandleException(_logger, _notificationManager, ex, L10n.Instance.V1PodConfig_DebugContainer_Error.CurrentValue()!, sendNotification: true);
+            ResourceUtilities.HandleException(_logger, _notificationManager, ex, ResourcesLanguageManager.Instance.V1PodConfig_DebugContainer_Error.CurrentValue()!, sendNotification: true);
         }
     }
 
@@ -547,10 +547,10 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
 
             ContentDialogSettings settings = new()
             {
-                Title = L10n.Instance.ResourceListView_PortForward_Title.CurrentValue()!,
-                Content = string.Format(L10n.Instance.ResourceListView_PortForward_Content.CurrentValue()!, containerPort.ContainerPort, pf.LocalPort),
-                PrimaryButtonText = L10n.Instance.ResourceListView_PortForward_Primary.CurrentValue()!,
-                SecondaryButtonText = L10n.Instance.ResourceListView_PortForward_Secondary.CurrentValue()!,
+                Title = ResourcesLanguageManager.Instance.ResourceListView_PortForward_Title.CurrentValue()!,
+                Content = string.Format(ResourcesLanguageManager.Instance.ResourceListView_PortForward_Content.CurrentValue()!, containerPort.ContainerPort, pf.LocalPort),
+                PrimaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_PortForward_Primary.CurrentValue()!,
+                SecondaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_PortForward_Secondary.CurrentValue()!,
                 DefaultButton = FAContentDialogButton.Secondary
             };
 

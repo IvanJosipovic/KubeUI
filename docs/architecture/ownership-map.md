@@ -2,6 +2,8 @@
 
 **Status:** Current project and feature ownership map. See [remaining-work.md](remaining-work.md) for the prioritized backlog.
 
+Shared-control ownership and promotion criteria live in [shared-ui-components.md](shared-ui-components.md).
+
 ## Project split
 
 The application keeps one project per feature. The existing split is the boundary; do not add paired Core/UI projects, a universal contracts assembly, or move controls wholesale without demonstrated reuse.

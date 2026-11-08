@@ -9,6 +9,7 @@ namespace KubeUI.Features.Cilium.Tests.Hubble;
 public sealed class HubbleConnectionTests
 {
     [Fact]
+    [Obsolete]
     public async Task Observe_flows_rejects_an_empty_namespace_scope()
     {
         await using var cluster = await CreateNamedRuntimeAsync();
@@ -20,6 +21,7 @@ public sealed class HubbleConnectionTests
     }
 
     [Fact]
+    [Obsolete]
     public async Task Start_rejects_empty_relay_namespace_before_cluster_access()
     {
         await using var cluster = await CreateNamedRuntimeAsync();
@@ -37,6 +39,7 @@ public sealed class HubbleConnectionTests
     }
 
     [Fact]
+    [Obsolete]
     public async Task Start_rejects_incomplete_mutual_tls_credentials()
     {
         await using var cluster = await CreateNamedRuntimeAsync();

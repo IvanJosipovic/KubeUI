@@ -252,7 +252,7 @@ public class DockFactory : Factory
         if (window is not null)
         {
             var floatingWindowCount = _rootDock?.Windows?.Count ?? HostWindows.Count;
-            window.Title = string.Format(CultureInfo.CurrentCulture, L10n.Instance.DockFactory_FloatingWindowTitle.CurrentValue()!, floatingWindowCount + 2);
+            window.Title = string.Format(CultureInfo.CurrentCulture, AppLanguageManager.Instance.DockFactory_FloatingWindowTitle.CurrentValue()!, floatingWindowCount + 2);
         }
 
         return window;

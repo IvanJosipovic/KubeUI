@@ -526,18 +526,18 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
         return limit is > 0
             ? string.Format(
                 System.Globalization.CultureInfo.CurrentCulture,
-                L10n.Instance.MetricsHistoryCellBase_TooltipWithLimit.CurrentValue()!,
+                ResourcesLanguageManager.Instance.MetricsHistoryCellBase_TooltipWithLimit.CurrentValue()!,
                 range,
-                L10n.Instance.Shared_Usage.CurrentValue(),
+                ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue(),
                 value,
-                L10n.Instance.Shared_Limits.CurrentValue(),
+                ResourcesLanguageManager.Instance.Shared_Limits.CurrentValue(),
                 FormatValue(limit.Value),
                 bar.Value / limit.Value)
             : string.Format(
                 System.Globalization.CultureInfo.CurrentCulture,
-                L10n.Instance.MetricsHistoryCellBase_TooltipWithoutLimit.CurrentValue()!,
+                ResourcesLanguageManager.Instance.MetricsHistoryCellBase_TooltipWithoutLimit.CurrentValue()!,
                 range,
-                L10n.Instance.Shared_Usage.CurrentValue(),
+                ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue(),
                 value);
     }
 

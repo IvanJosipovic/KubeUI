@@ -3,6 +3,7 @@ using Avalonia.Input;
 using Avalonia.Styling;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
+using KubeUI.Controls.Layout;
 using KubeUI.Controls.Presentation;
 using KubeUI.Features.Clusters.Workspace;
 
@@ -17,20 +18,16 @@ public sealed partial class ClusterListView : KubeUIView<ClusterListViewModel>
         return new Grid()
             .Rows("Auto,*")
             .Children(
-                new StackPanel()
-                    .Row(0)
-                    .MinHeight(32)
-                    .Orientation(Orientation.Horizontal)
-                    .Spacing(2)
-                    .Margin(2, 2, 0, 2)
-                    .Children(
+                new CompactToolbar
+                {
+                    Leading = CompactToolbar.Group(
                         new Button()
                             .Content(new FluentIcon().Icon(Icon.AddSquare))
-                            .ToolTip_Tip(L10n.Instance.ClusterListView_AddKubeConfig.ToBinding())
+                            .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterListView_AddKubeConfig.ToBinding())
                             .Command(vm, x => x.AddKubeConfigCommand),
                         new DropDownButton()
                             .Content(new FluentIcon().Icon(Icon.Delete))
-                            .ToolTip_Tip(L10n.Instance.ClusterListView_RemoveKubeConfig.ToBinding())
+                            .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterListView_RemoveKubeConfig.ToBinding())
                             .IsEnabled(vm, x => x.RemovableKubeConfigs.Count, BindingMode.OneWay, new FuncValueConverter<int, bool>(count => count > 0))
                             .Flyout(new MenuFlyout()
                                 .ItemsSource(vm.RemovableKubeConfigs)
@@ -43,7 +40,8 @@ public sealed partial class ClusterListView : KubeUIView<ClusterListViewModel>
                                         new Setter(MenuItem.CommandProperty, vm.RemoveKubeConfigCommand),
                                         new Setter(MenuItem.CommandParameterProperty, CompiledBinding.Create<string, string>(x => x)),
                                     }
-                                }))),
+                                })))
+                }.Row(0),
                 new DynamicTableView
                 {
                     ContextMenuItemsFactory = targets => CreateContextMenuItems(vm, targets),
@@ -65,7 +63,7 @@ public sealed partial class ClusterListView : KubeUIView<ClusterListViewModel>
             yield return new MenuItem()
                 .Command(vm, x => x.DeleteCommand)
                 .CommandParameter(cluster)
-                .Header(L10n.Instance.ClusterListView_Delete.ToBinding())
+                .Header(ClustersLanguageManager.Instance.ClusterListView_Delete.ToBinding())
                 .InputGesture(new KeyGesture(Key.Delete))
                 .Icon(new FluentIcon().Icon(Icon.Delete));
         }

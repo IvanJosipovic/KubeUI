@@ -20,16 +20,17 @@
     <Using Include="KubeUI.Foundation.Styles" />
     <Using Include="CommunityToolkit.Mvvm.ComponentModel" />
     <Using Include="CommunityToolkit.Mvvm.Input" />
-    <Using Include="KubeUI.Foundation.Assets.LanguageManager" Alias="SharedL10n" />
+    <Using Include="KubeUI.Foundation.Assets" />
     <Using Include="KubeUI.Foundation.Localization" />
     <Using Include="KubeUI.Controls.Presentation" />
+    <Using Include="KubeUI.Controls.Editors" />
     <Using Include="KubeUI.Controls.Converters" />
     <Using Include="KubeUI.Controls.Styles" />
     <Using Include="KubeUI.Controls.DependencyInjection" />
     <Using Include="KubeUI.Controls.Docking" />
     <Using Include="KubeUI.Controls.Platform" />
     <Using Include="KubeUI.Controls.Threading" />
-    <Using Include="KubeUI.Features.Resources.Assets.LanguageManager" Alias="L10n" />
+    <Using Include="KubeUI.Features.Resources.Assets" />
     <Using Include="KubeUI.Features.Resources.Contracts" />
     <Using Include="KubeUI.Kubernetes" />
     <Using Include="Microsoft.Extensions.DependencyInjection" />
@@ -71,7 +72,6 @@
     <PackageReference Include="Irihi.Lingua" />
     <PackageReference Include="Avalonia.AvaloniaEdit" />
     <PackageReference Include="Avalonia.Markup.Declarative" />
-    <PackageReference Include="AvaloniaEdit.TextMate" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="Dock.Avalonia" />
     <PackageReference Include="Dock.Model.Mvvm" />
@@ -92,8 +92,6 @@
     <PackageReference Include="SvcSystems.Avalonia.DynamicTableView" />
     <PackageReference Include="SvcSystems.UI.Terminal" />
     <PackageReference Include="System.Reactive" />
-    <PackageReference Include="TextMateSharp" />
-    <PackageReference Include="TextMateSharp.Grammars" />
     <PackageReference Include="Westermo.GraphX.Controls.Avalonia" />
     <PackageReference Include="Westermo.GraphX.Controls.Avalonia.Themes.Fluent" />
     <PackageReference Include="Westermo.GraphX.Logic" />

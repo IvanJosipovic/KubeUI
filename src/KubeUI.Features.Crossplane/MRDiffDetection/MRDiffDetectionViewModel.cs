@@ -95,44 +95,44 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
             new DynamicTableViewSortDescriptor("kind", ListSortDirection.Ascending)
         ]);
         _processingTask = Task.Run(() => ProcessRecordsAsync(_processingToken));
-        Title = L10n.Instance.MRDiffDetectionView_Title.CurrentValue()!;
+        Title = CrossplaneLanguageManager.Instance.MRDiffDetectionView_Title.CurrentValue()!;
     }
 
     internal static IReadOnlyList<DynamicTableViewColumn<CrossplaneDiffRow>> CreateColumns()
     {
         return [
-            CreateColumn("name", L10n.Instance.MRDiffDetectionView_Name.CurrentValue()!, typeof(string), static row => row.Name),
-            CreateColumn("namespace", L10n.Instance.MRDiffDetectionView_Namespace.CurrentValue()!, typeof(string), static row => row.Namespace),
-            CreateColumn("apiVersion", L10n.Instance.MRDiffDetectionView_ApiVersion.CurrentValue()!, typeof(string), static row => row.ApiVersion),
-            CreateColumn("kind", L10n.Instance.MRDiffDetectionView_Kind.CurrentValue()!, typeof(string), static row => row.Kind),
+            CreateColumn("name", CrossplaneLanguageManager.Instance.MRDiffDetectionView_Name.CurrentValue()!, typeof(string), static row => row.Name),
+            CreateColumn("namespace", CrossplaneLanguageManager.Instance.MRDiffDetectionView_Namespace.CurrentValue()!, typeof(string), static row => row.Namespace),
+            CreateColumn("apiVersion", CrossplaneLanguageManager.Instance.MRDiffDetectionView_ApiVersion.CurrentValue()!, typeof(string), static row => row.ApiVersion),
+            CreateColumn("kind", CrossplaneLanguageManager.Instance.MRDiffDetectionView_Kind.CurrentValue()!, typeof(string), static row => row.Kind),
             CreateColumn(
                 "diffField",
-                L10n.Instance.MRDiffDetectionView_DiffField.CurrentValue()!,
+                CrossplaneLanguageManager.Instance.MRDiffDetectionView_DiffField.CurrentValue()!,
                 typeof(string),
                 static row => row.DiffField,
                 widthMode: DynamicTableViewWidthMode.Star,
                 width: 1),
             CreateColumn(
                 "oldValue",
-                L10n.Instance.MRDiffDetectionView_OldValue.CurrentValue()!,
+                CrossplaneLanguageManager.Instance.MRDiffDetectionView_OldValue.CurrentValue()!,
                 typeof(string),
                 static row => row.OldValue,
-                static row => row.Sensitive ? L10n.Instance.MRDiffDetectionView_Sensitive.CurrentValue()! : row.OldValue,
+                static row => row.Sensitive ? CrossplaneLanguageManager.Instance.MRDiffDetectionView_Sensitive.CurrentValue()! : row.OldValue,
                 DynamicTableViewWidthMode.Star,
                 2),
             CreateColumn(
                 "newValue",
-                L10n.Instance.MRDiffDetectionView_NewValue.CurrentValue()!,
+                CrossplaneLanguageManager.Instance.MRDiffDetectionView_NewValue.CurrentValue()!,
                 typeof(string),
                 static row => row.NewValue,
-                static row => row.Sensitive ? L10n.Instance.MRDiffDetectionView_Sensitive.CurrentValue()! : row.NewValue,
+                static row => row.Sensitive ? CrossplaneLanguageManager.Instance.MRDiffDetectionView_Sensitive.CurrentValue()! : row.NewValue,
                 DynamicTableViewWidthMode.Star,
                 2),
-            CreateColumn("newComputed", L10n.Instance.MRDiffDetectionView_NewComputed.CurrentValue()!, typeof(bool), static row => row.NewComputed),
-            CreateColumn("newRemoved", L10n.Instance.MRDiffDetectionView_NewRemoved.CurrentValue()!, typeof(bool), static row => row.NewRemoved),
-            CreateColumn("requiresNew", L10n.Instance.MRDiffDetectionView_RequiresNew.CurrentValue()!, typeof(bool), static row => row.RequiresNew),
-            CreateColumn("instanceCount", L10n.Instance.MRDiffDetectionView_InstanceCount.CurrentValue()!, typeof(int), static row => row.InstanceCount),
-            CreateColumn("occurrences", L10n.Instance.MRDiffDetectionView_Occurrences.CurrentValue()!, typeof(int), static row => row.Occurrences)
+            CreateColumn("newComputed", CrossplaneLanguageManager.Instance.MRDiffDetectionView_NewComputed.CurrentValue()!, typeof(bool), static row => row.NewComputed),
+            CreateColumn("newRemoved", CrossplaneLanguageManager.Instance.MRDiffDetectionView_NewRemoved.CurrentValue()!, typeof(bool), static row => row.NewRemoved),
+            CreateColumn("requiresNew", CrossplaneLanguageManager.Instance.MRDiffDetectionView_RequiresNew.CurrentValue()!, typeof(bool), static row => row.RequiresNew),
+            CreateColumn("instanceCount", CrossplaneLanguageManager.Instance.MRDiffDetectionView_InstanceCount.CurrentValue()!, typeof(int), static row => row.InstanceCount),
+            CreateColumn("occurrences", CrossplaneLanguageManager.Instance.MRDiffDetectionView_Occurrences.CurrentValue()!, typeof(int), static row => row.Occurrences)
         ];
     }
 
@@ -411,7 +411,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
 
         if (provider is null)
         {
-            SetStatus(L10n.Instance.MRDiffDetectionView_SelectProvider.CurrentValue()!, generation);
+            SetStatus(CrossplaneLanguageManager.Instance.MRDiffDetectionView_SelectProvider.CurrentValue()!, generation);
             return;
         }
 
@@ -421,7 +421,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
             return;
         }
 
-        SetStatus(string.Format(L10n.Instance.MRDiffDetectionView_Connecting.CurrentValue()!, provider.Name), generation);
+        SetStatus(string.Format(CrossplaneLanguageManager.Instance.MRDiffDetectionView_Connecting.CurrentValue()!, provider.Name), generation);
         try
         {
             SetMonitoringStatus(generation);
@@ -688,7 +688,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         SetStatus(
             string.Format(
                 CultureInfo.CurrentCulture,
-                L10n.Instance.MRDiffDetectionView_RowLimitReached.CurrentValue()!,
+                CrossplaneLanguageManager.Instance.MRDiffDetectionView_RowLimitReached.CurrentValue()!,
                 MaximumRetainedDiffRows),
             generation);
     }
@@ -704,7 +704,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
                 return;
             }
 
-            Status = L10n.Instance.MRDiffDetectionView_TruncatedLog.CurrentValue()!;
+            Status = CrossplaneLanguageManager.Instance.MRDiffDetectionView_TruncatedLog.CurrentValue()!;
         }
 
         if (Dispatcher.UIThread.CheckAccess())

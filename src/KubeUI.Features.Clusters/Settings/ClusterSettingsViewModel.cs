@@ -22,30 +22,30 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
 
     public IReadOnlyList<MetricsServiceOption> MetricsServiceOptions { get; } =
     [
-        new(MetricsServiceType.Auto, L10n.Instance.ClusterSettingsView_MetricsServiceAuto.CurrentValue()!),
-        new(MetricsServiceType.None, L10n.Instance.ClusterSettingsView_MetricsServiceNone.CurrentValue()!),
-        new(MetricsServiceType.KubernetesMetricsServer, L10n.Instance.ClusterSettingsView_MetricsServiceMetricsServer.CurrentValue()!),
-        new(MetricsServiceType.Prometheus, L10n.Instance.ClusterSettingsView_MetricsServicePrometheus.CurrentValue()!),
+        new(MetricsServiceType.Auto, ClustersLanguageManager.Instance.ClusterSettingsView_MetricsServiceAuto.CurrentValue()!),
+        new(MetricsServiceType.None, ClustersLanguageManager.Instance.ClusterSettingsView_MetricsServiceNone.CurrentValue()!),
+        new(MetricsServiceType.KubernetesMetricsServer, ClustersLanguageManager.Instance.ClusterSettingsView_MetricsServiceMetricsServer.CurrentValue()!),
+        new(MetricsServiceType.Prometheus, ClustersLanguageManager.Instance.ClusterSettingsView_MetricsServicePrometheus.CurrentValue()!),
     ];
 
     public IReadOnlyList<PrometheusProviderOption> PrometheusProviderOptions { get; } =
     [
-        new(null, L10n.Instance.ClusterSettingsView_PrometheusProviderAuto.CurrentValue()!),
-        new(PrometheusProviderKind.Operator, L10n.Instance.ClusterSettingsView_PrometheusProviderOperator.CurrentValue()!),
-        new(PrometheusProviderKind.OpenShift, L10n.Instance.ClusterSettingsView_PrometheusProviderOpenShift.CurrentValue()!),
-        new(PrometheusProviderKind.Manual, L10n.Instance.ClusterSettingsView_PrometheusProviderManual.CurrentValue()!),
-        new(PrometheusProviderKind.External, L10n.Instance.ClusterSettingsView_PrometheusProviderExternal.CurrentValue()!),
-        new(PrometheusProviderKind.AzureMonitor, L10n.Instance.ClusterSettingsView_PrometheusProviderAzureMonitor.CurrentValue()!),
+        new(null, ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusProviderAuto.CurrentValue()!),
+        new(PrometheusProviderKind.Operator, ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusProviderOperator.CurrentValue()!),
+        new(PrometheusProviderKind.OpenShift, ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusProviderOpenShift.CurrentValue()!),
+        new(PrometheusProviderKind.Manual, ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusProviderManual.CurrentValue()!),
+        new(PrometheusProviderKind.External, ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusProviderExternal.CurrentValue()!),
+        new(PrometheusProviderKind.AzureMonitor, ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusProviderAzureMonitor.CurrentValue()!),
     ];
 
     public ClusterWorkspace? Cluster { get; set; }
 
     public ClusterSettingsViewModel(IClusterPreferenceStore settingsService, IAzureMonitorWorkspaceService azureMonitorWorkspaceService)
     {
-        Title = L10n.Instance.ClusterSettingsView_Title.CurrentValue()!;
+        Title = ClustersLanguageManager.Instance.ClusterSettingsView_Title.CurrentValue()!;
         SettingsService = settingsService;
         _azureMonitorWorkspaceService = azureMonitorWorkspaceService;
-        AzureMonitorStatusText = L10n.Instance.ClusterSettingsView_AzureMonitorNotChecked.CurrentValue()!;
+        AzureMonitorStatusText = ClustersLanguageManager.Instance.ClusterSettingsView_AzureMonitorNotChecked.CurrentValue()!;
         _settingsSaveTimer.Interval = TimeSpan.FromMilliseconds(300);
         _settingsSaveTimer.Tick += OnSettingsSaveTimerTick;
     }
@@ -236,7 +236,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
             {
                 await Dispatcher.UIThread.InvokeAsync(() =>
                 {
-                    AzureMonitorStatusText = L10n.Instance.ClusterSettingsView_AzureMonitorNotSignedIn.CurrentValue()!;
+                    AzureMonitorStatusText = ClustersLanguageManager.Instance.ClusterSettingsView_AzureMonitorNotSignedIn.CurrentValue()!;
                     AzureMonitorSubscriptions = [];
                     AzureMonitorWorkspaces = [];
                     OnPropertyChanged(nameof(SelectedAzureMonitorSubscription));
@@ -246,7 +246,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
             }
 
             var accountText = string.Format(
-                L10n.Instance.ClusterSettingsView_AzureMonitorSignedInFormat.CurrentValue()!,
+                ClustersLanguageManager.Instance.ClusterSettingsView_AzureMonitorSignedInFormat.CurrentValue()!,
                 auth.Username ?? "(unknown)",
                 auth.TenantId ?? "(unknown)");
             var subscriptions = await _azureMonitorWorkspaceService
@@ -259,7 +259,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
                 OnPropertyChanged(nameof(SelectedAzureMonitorSubscription));
                 if (subscriptions.Count == 0)
                 {
-                    AzureMonitorStatusText = L10n.Instance.ClusterSettingsView_AzureMonitorNoSubscriptions.CurrentValue()!;
+                    AzureMonitorStatusText = ClustersLanguageManager.Instance.ClusterSettingsView_AzureMonitorNoSubscriptions.CurrentValue()!;
                     AzureMonitorWorkspaces = [];
                     OnPropertyChanged(nameof(SelectedAzureMonitorWorkspace));
                     return;
@@ -322,7 +322,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
 
                 if (AzureMonitorWorkspaces.Count == 0)
                 {
-                    AzureMonitorStatusText = L10n.Instance.ClusterSettingsView_AzureMonitorNoWorkspaces.CurrentValue()!;
+                    AzureMonitorStatusText = ClustersLanguageManager.Instance.ClusterSettingsView_AzureMonitorNoWorkspaces.CurrentValue()!;
                 }
             });
         }
@@ -345,25 +345,25 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         {
             if (Cluster is null || !Cluster.Runtime.Connected)
             {
-                return L10n.Instance.ClusterSettingsView_ActiveMetricsServiceNotConnected.CurrentValue()!;
+                return ClustersLanguageManager.Instance.ClusterSettingsView_ActiveMetricsServiceNotConnected.CurrentValue()!;
             }
 
             if (!Cluster.Runtime.IsMetricsAvailable || Cluster.Runtime.ActiveMetricsBackend.Type == MetricsServiceType.None)
             {
                 return ClusterSettings?.MetricsSettings.MetricsServiceType == MetricsServiceType.None
-                    ? L10n.Instance.ClusterSettingsView_ActiveMetricsServiceDisabled.CurrentValue()!
-                    : L10n.Instance.ClusterSettingsView_ActiveMetricsServiceUnavailable.CurrentValue()!;
+                    ? ClustersLanguageManager.Instance.ClusterSettingsView_ActiveMetricsServiceDisabled.CurrentValue()!
+                    : ClustersLanguageManager.Instance.ClusterSettingsView_ActiveMetricsServiceUnavailable.CurrentValue()!;
             }
 
             return Cluster.Runtime.ActiveMetricsBackend.Type switch
             {
-                MetricsServiceType.KubernetesMetricsServer => L10n.Instance.ClusterSettingsView_ActiveMetricsServiceMetricsServer.CurrentValue()!,
+                MetricsServiceType.KubernetesMetricsServer => ClustersLanguageManager.Instance.ClusterSettingsView_ActiveMetricsServiceMetricsServer.CurrentValue()!,
                 MetricsServiceType.Prometheus when Cluster.Runtime.ActiveMetricsBackend.PrometheusProviderKind is { } provider
                     => string.Format(
-                        L10n.Instance.ClusterSettingsView_ActiveMetricsServicePrometheusFormat.CurrentValue()!,
-                        L10n.Instance.ClusterSettingsView_MetricsServicePrometheus.CurrentValue(),
+                        ClustersLanguageManager.Instance.ClusterSettingsView_ActiveMetricsServicePrometheusFormat.CurrentValue()!,
+                        ClustersLanguageManager.Instance.ClusterSettingsView_MetricsServicePrometheus.CurrentValue(),
                         GetPrometheusProviderLabel(provider)),
-                MetricsServiceType.Prometheus => L10n.Instance.ClusterSettingsView_MetricsServicePrometheus.CurrentValue()!,
+                MetricsServiceType.Prometheus => ClustersLanguageManager.Instance.ClusterSettingsView_MetricsServicePrometheus.CurrentValue()!,
                 _ => Cluster.Runtime.ActiveMetricsBackend.Type.ToString(),
             };
         }

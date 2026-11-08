@@ -9,6 +9,7 @@ using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using k8s;
 using k8s.Models;
+using KubeUI.Controls.Layout;
 using KubeUI.Features.Resources.Workloads.v1.Pod.Behaviors;
 using KubeUI.Features.Resources.Workloads.v1.Pod.Services;
 using KubeUI.Features.Resources.Workloads.v1.Pod.ViewModels;
@@ -240,42 +241,38 @@ public sealed class PodLogsViewTests
             sourceCheckBox.IsChecked.ShouldBeNull();
             templateNode.UpdateIsChecked(true);
             sourceCheckBox.IsChecked.ShouldBe(true);
-            var logControlsBar = selectionControls.Parent.ShouldBeOfType<Grid>();
-            var topBarScrollViewer = logControlsBar.Parent.ShouldBeOfType<ScrollViewer>();
-            var topBar = topBarScrollViewer.Parent.ShouldBeOfType<Grid>();
-            var actionControls = logControlsBar.Children
-                .OfType<StackPanel>()
-                .Single(panel => Grid.GetColumn(panel) == 1);
+            var logControlsBar = selectionControls.Parent.ShouldBeOfType<CompactToolbar>();
+            var actionControls = logControlsBar.Trailing.ShouldBeOfType<StackPanel>();
             actionControls.Children
                 .OfType<TemplatedControl>()
                 .Select(control => ToolTip.GetTip(control))
                 .ShouldBe(
                 [
-                    ResourceL10n.Instance.PodLogsView_Clear.CurrentValue()!,
-                    ResourceL10n.Instance.PodLogsView_Download.CurrentValue()!,
-                    ResourceL10n.Instance.PodLogsView_FollowLogs.CurrentValue()!,
-                    ResourceL10n.Instance.PodLogsView_Controller.CurrentValue()!,
-                    ResourceL10n.Instance.PodLogsView_Previous.CurrentValue()!,
-                    ResourceL10n.Instance.PodLogsView_Timestamps.CurrentValue()!,
-                    ResourceL10n.Instance.PodLogsView_ShowResourceNames.CurrentValue()!,
-                    ResourceL10n.Instance.PodLogsView_WordWrap.CurrentValue()!,
+                    ResourcesLanguageManager.Instance.PodLogsView_Clear.CurrentValue()!,
+                    ResourcesLanguageManager.Instance.PodLogsView_Download.CurrentValue()!,
+                    ResourcesLanguageManager.Instance.PodLogsView_FollowLogs.CurrentValue()!,
+                    ResourcesLanguageManager.Instance.PodLogsView_Controller.CurrentValue()!,
+                    ResourcesLanguageManager.Instance.PodLogsView_Previous.CurrentValue()!,
+                    ResourcesLanguageManager.Instance.PodLogsView_Timestamps.CurrentValue()!,
+                    ResourcesLanguageManager.Instance.PodLogsView_ShowResourceNames.CurrentValue()!,
+                    ResourcesLanguageManager.Instance.PodLogsView_WordWrap.CurrentValue()!,
                 ]);
             Control controllerButton = view.GetVisualDescendants()
                 .OfType<Button>()
                 .Single(button => ReferenceEquals(button.Command, viewModel.JumpToControlledByLogsCommand));
             var followLogsButton = view.GetVisualDescendants()
                 .OfType<ToggleButton>()
-                .Single(button => Equals(ToolTip.GetTip(button), ResourceL10n.Instance.PodLogsView_FollowLogs.CurrentValue()!));
+                .Single(button => Equals(ToolTip.GetTip(button), ResourcesLanguageManager.Instance.PodLogsView_FollowLogs.CurrentValue()!));
             var clearButton = view.GetVisualDescendants()
                 .OfType<Button>()
                 .Single(button => ReferenceEquals(button.Command, viewModel.ClearCommand));
             viewModel.SelectedScopeItems.Single().DisplayName.ShouldBe("Pod/default/app-7c9dd9f4f4-abcde");
-            logControlsBar.Margin.ShouldBe(new Thickness(2, 0));
-            topBar.Children.Count.ShouldBe(1);
+            logControlsBar.Margin.ShouldBe(new Thickness(0, 2));
+            logControlsBar.Children.Count.ShouldBe(2);
             Grid.GetRow(logControlsBar).ShouldBe(0);
             view.GetVisualDescendants().OfType<Ursa.Controls.MultiComboBox>().ShouldBeEmpty();
             sourcesSelector.Width.ShouldBe(300);
-            sourcesSelector.PlaceholderText.ShouldBe(ResourceL10n.Instance.PodLogsView_Sources.CurrentValue()!);
+            sourcesSelector.PlaceholderText.ShouldBe(ResourcesLanguageManager.Instance.PodLogsView_Sources.CurrentValue()!);
             controllerButton.IsVisible.ShouldBeTrue();
             followLogsButton.Content
                 .ShouldBeOfType<FluentIcons.Avalonia.FluentIcon>()
@@ -373,7 +370,7 @@ public sealed class PodLogsViewTests
 
             var toggle = view.GetVisualDescendants()
                 .OfType<ToggleButton>()
-                .Single(control => Equals(ToolTip.GetTip(control), ResourceL10n.Instance.PodLogsView_ShowResourceNames.CurrentValue()!));
+                .Single(control => Equals(ToolTip.GetTip(control), ResourcesLanguageManager.Instance.PodLogsView_ShowResourceNames.CurrentValue()!));
             viewModel.ShowResourceNames.ShouldBeTrue();
             toggle.IsEnabled.ShouldBeTrue();
             toggle.IsChecked.ShouldBe(true);
@@ -427,7 +424,7 @@ public sealed class PodLogsViewTests
 
             var toggle = view.GetVisualDescendants()
                 .OfType<ToggleButton>()
-                .Single(control => Equals(ToolTip.GetTip(control), ResourceL10n.Instance.PodLogsView_ShowResourceNames.CurrentValue()!));
+                .Single(control => Equals(ToolTip.GetTip(control), ResourcesLanguageManager.Instance.PodLogsView_ShowResourceNames.CurrentValue()!));
             viewModel.ShowResourceNames.ShouldBeTrue();
             toggle.IsEnabled.ShouldBeTrue();
             toggle.IsChecked.ShouldBe(true);
@@ -473,7 +470,7 @@ public sealed class PodLogsViewTests
             Dispatcher.UIThread.RunJobs();
             var followLogsButton = view.GetVisualDescendants()
                 .OfType<ToggleButton>()
-                .Single(button => Equals(ToolTip.GetTip(button), ResourceL10n.Instance.PodLogsView_FollowLogs.CurrentValue()!));
+                .Single(button => Equals(ToolTip.GetTip(button), ResourcesLanguageManager.Instance.PodLogsView_FollowLogs.CurrentValue()!));
             var editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
             var scrollViewer = await WaitForScrollViewerAsync(editor);
             viewModel.FollowLogs();
@@ -532,7 +529,7 @@ public sealed class PodLogsViewTests
             Dispatcher.UIThread.RunJobs();
             var followLogsButton = view.GetVisualDescendants()
                 .OfType<ToggleButton>()
-                .Single(button => Equals(ToolTip.GetTip(button), ResourceL10n.Instance.PodLogsView_FollowLogs.CurrentValue()!));
+                .Single(button => Equals(ToolTip.GetTip(button), ResourcesLanguageManager.Instance.PodLogsView_FollowLogs.CurrentValue()!));
             var editor = view.GetVisualDescendants().OfType<TextEditor>().Single();
             var scrollViewer = await WaitForScrollViewerAsync(editor);
             await WaitForAsync(() => scrollViewer.ScrollBarMaximum.Y == 0);
@@ -970,8 +967,8 @@ public sealed class PodLogsViewTests
                 .OfType<Ursa.Controls.TreeComboBox>()
                 .Single();
             Control topBar = view.GetVisualDescendants()
-                .OfType<Grid>()
-                .Single(grid => grid.Height == 32);
+                .OfType<CompactToolbar>()
+                .Single();
 
             topBar.Bounds.Height.ShouldBeLessThanOrEqualTo(32);
             sourcesSelector.Bounds.Height.ShouldBeLessThanOrEqualTo(32);

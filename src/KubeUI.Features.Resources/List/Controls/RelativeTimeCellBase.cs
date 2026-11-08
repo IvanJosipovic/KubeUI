@@ -1,5 +1,5 @@
-﻿using KubeUI.Controls.Threading;
-using KubeUI.Features.Resources.Properties.Controls;
+﻿using KubeUI.Controls.Presentation;
+using KubeUI.Controls.Threading;
 
 namespace KubeUI.Features.Resources.List.Controls;
 
@@ -14,7 +14,7 @@ public abstract class RelativeTimeCellBase : RefreshingCellTextBlock
     {
         var timestamp = ResolveTimestamp(dataContext);
         return timestamp.HasValue
-            ? RelativeTimeFormatter.FormatPrettyAge(timestamp.Value, DateTime.UtcNow)
+            ? RelativeAgeFormatter.FormatPrettyAge(timestamp.Value, DateTime.UtcNow)
             : string.Empty;
     }
 

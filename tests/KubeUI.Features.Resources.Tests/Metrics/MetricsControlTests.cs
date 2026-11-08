@@ -60,7 +60,7 @@ public sealed class MetricsControlTests
         using var control = new MetricsControl();
 
         var section = control.Content.ShouldBeOfType<ExpandableSection>();
-        section.Header.ShouldBe(ResourceL10n.Instance.MetricsControl_Header.CurrentValue()!);
+        section.Header.ShouldBe(ResourcesLanguageManager.Instance.MetricsControl_Header.CurrentValue()!);
         var grid = section.Content.ShouldBeOfType<Grid>();
         grid.Children.OfType<StackPanel>().Single()
             .Children.OfType<StackPanel>().Single()
@@ -218,9 +218,9 @@ public sealed class MetricsControlTests
         ]);
 
         var series = panel.Series.OfType<StepLineSeries<DateTimePoint>>().ToArray();
-        var usage = series.Single(item => item.Name == ResourceL10n.Instance.Shared_Usage.CurrentValue()!);
-        var requests = series.Single(item => item.Name == ResourceL10n.Instance.Shared_Requests.CurrentValue()!);
-        var limits = series.Single(item => item.Name == ResourceL10n.Instance.Shared_Limits.CurrentValue()!);
+        var usage = series.Single(item => item.Name == ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue()!);
+        var requests = series.Single(item => item.Name == ResourcesLanguageManager.Instance.Shared_Requests.CurrentValue()!);
+        var limits = series.Single(item => item.Name == ResourcesLanguageManager.Instance.Shared_Limits.CurrentValue()!);
 
         usage.ZIndex.ShouldBe(requests.ZIndex);
         usage.ZIndex.ShouldBe(limits.ZIndex);
@@ -238,8 +238,8 @@ public sealed class MetricsControlTests
         var selector = selectors.Children.OfType<ComboBox>().ShouldHaveSingleItem();
         var tabs = header.Children.OfType<ItemsControl>().ShouldHaveSingleItem();
 
-        ToolTip.GetTip(selector).ShouldBe(ResourceL10n.Instance.MetricsControl_TimeRangeLabel.CurrentValue()!);
-        AutomationProperties.GetName(selector).ShouldBe(ResourceL10n.Instance.MetricsControl_TimeRangeLabel.CurrentValue()!);
+        ToolTip.GetTip(selector).ShouldBe(ResourcesLanguageManager.Instance.MetricsControl_TimeRangeLabel.CurrentValue()!);
+        AutomationProperties.GetName(selector).ShouldBe(ResourcesLanguageManager.Instance.MetricsControl_TimeRangeLabel.CurrentValue()!);
         selectors.IsVisible.ShouldBeFalse();
         header.Children.IndexOf(tabs).ShouldBe(1);
     }
@@ -306,13 +306,13 @@ public sealed class MetricsControlTests
         fixture.Initialize(control);
 
         await TestWait.UntilAsync(
-            () => control.ShowStatus && control.StatusText == ResourceL10n.Instance.MetricsControl_Unavailable.CurrentValue()!,
+            () => control.ShowStatus && control.StatusText == ResourcesLanguageManager.Instance.MetricsControl_Unavailable.CurrentValue()!,
             5000,
             TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
 
         control.ShowTabs.ShouldBeFalse();
-        control.StatusText.ShouldBe(ResourceL10n.Instance.MetricsControl_Unavailable.CurrentValue()!);
+        control.StatusText.ShouldBe(ResourcesLanguageManager.Instance.MetricsControl_Unavailable.CurrentValue()!);
     }
 
     [AvaloniaFact]
@@ -337,18 +337,18 @@ public sealed class MetricsControlTests
             beforePoll: () => Dispatcher.UIThread.RunJobs());
 
         control.ShowStatus.ShouldBeTrue();
-        control.StatusText.ShouldBe(ResourceL10n.Instance.MetricsControl_Loading.CurrentValue()!);
+        control.StatusText.ShouldBe(ResourcesLanguageManager.Instance.MetricsControl_Loading.CurrentValue()!);
 
         queryClient.Release();
 
         await TestWait.UntilAsync(
-            () => control.ShowStatus && control.StatusText == ResourceL10n.Instance.MetricsControl_NoMetrics.CurrentValue()!,
+            () => control.ShowStatus && control.StatusText == ResourcesLanguageManager.Instance.MetricsControl_NoMetrics.CurrentValue()!,
             5000,
             TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
 
         control.ShowTabs.ShouldBeTrue();
-        control.StatusText.ShouldBe(ResourceL10n.Instance.MetricsControl_NoMetrics.CurrentValue()!);
+        control.StatusText.ShouldBe(ResourcesLanguageManager.Instance.MetricsControl_NoMetrics.CurrentValue()!);
     }
 
     [AvaloniaFact]
@@ -363,13 +363,13 @@ public sealed class MetricsControlTests
         fixture.Initialize(control);
 
         await TestWait.UntilAsync(
-            () => control.ShowStatus && control.StatusText == ResourceL10n.Instance.MetricsControl_LoadFailed.CurrentValue()!,
+            () => control.ShowStatus && control.StatusText == ResourcesLanguageManager.Instance.MetricsControl_LoadFailed.CurrentValue()!,
             15000,
             TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
 
         control.ShowTabs.ShouldBeTrue();
-        control.StatusText.ShouldBe(ResourceL10n.Instance.MetricsControl_LoadFailed.CurrentValue()!);
+        control.StatusText.ShouldBe(ResourcesLanguageManager.Instance.MetricsControl_LoadFailed.CurrentValue()!);
     }
 
     [AvaloniaFact]
@@ -389,7 +389,7 @@ public sealed class MetricsControlTests
         using var window = Application.Current.CreateTestWindow(content: control);
         window.Show();
         fixture.Initialize(control);
-        await TestWait.UntilAsync(() => control.StatusText == ResourceL10n.Instance.MetricsControl_LoadFailed.CurrentValue()!,
+        await TestWait.UntilAsync(() => control.StatusText == ResourcesLanguageManager.Instance.MetricsControl_LoadFailed.CurrentValue()!,
             15000, TestContext.Current.CancellationToken, beforePoll: () => Dispatcher.UIThread.RunJobs());
         var memory = control.GetVisualDescendants().OfType<ToggleButton>()
             .Single(button => Equals(ToolTip.GetTip(button), "Memory"));
@@ -430,7 +430,7 @@ public sealed class MetricsControlTests
         using var window = Application.Current.CreateTestWindow(content: control);
         window.Show();
         fixture.Initialize(control);
-        await TestWait.UntilAsync(() => control.StatusText == ResourceL10n.Instance.MetricsControl_LoadFailed.CurrentValue()!,
+        await TestWait.UntilAsync(() => control.StatusText == ResourcesLanguageManager.Instance.MetricsControl_LoadFailed.CurrentValue()!,
             15000, TestContext.Current.CancellationToken, beforePoll: () => Dispatcher.UIThread.RunJobs());
         var buttons = control.GetVisualDescendants().OfType<ToggleButton>().Where(button => button.Command != null).ToArray();
         var cpu = buttons.Single(button => Equals(ToolTip.GetTip(button), "CPU"));
@@ -663,14 +663,14 @@ public sealed class MetricsControlTests
             .OfType<StepLineSeries<DateTimePoint>>()
             .Select(static series => series.Name)
             .ToArray();
-        seriesNames.ShouldBe([ResourceL10n.Instance.Shared_Requests.CurrentValue()!, ResourceL10n.Instance.Shared_Usage.CurrentValue()!]);
+        seriesNames.ShouldBe([ResourcesLanguageManager.Instance.Shared_Requests.CurrentValue()!, ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue()!]);
 
         var requestSeries = control.SelectedPanel.Series
             .OfType<StepLineSeries<DateTimePoint>>()
-            .Single(series => series.Name == ResourceL10n.Instance.Shared_Requests.CurrentValue()!);
+            .Single(series => series.Name == ResourcesLanguageManager.Instance.Shared_Requests.CurrentValue()!);
         var usageSeries = control.SelectedPanel.Series
             .OfType<StepLineSeries<DateTimePoint>>()
-            .Single(series => series.Name == ResourceL10n.Instance.Shared_Usage.CurrentValue()!);
+            .Single(series => series.Name == ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue()!);
         usageSeries.ZIndex.ShouldBe(requestSeries.ZIndex);
         usageSeries.Fill.ShouldNotBeNull();
         requestSeries.Fill.ShouldNotBeNull();
@@ -810,7 +810,7 @@ public sealed class MetricsControlTests
         points[1].Value!.Value.ShouldBe(secondCpu, tolerance: 0.000000001);
 
         var memoryPoints = control.Tabs
-            .Single(tab => tab.Title == ResourceL10n.Instance.Shared_Memory.CurrentValue()!)
+            .Single(tab => tab.Title == ResourcesLanguageManager.Instance.Shared_Memory.CurrentValue()!)
             .Panels.ShouldHaveSingleItem()
             .Series.ShouldHaveSingleItem()
             .ShouldBeOfType<StepLineSeries<DateTimePoint>>()

@@ -147,9 +147,9 @@ internal static class MetricsControlPrometheusBackend
     {
         return title switch
         {
-            var value when value == L10n.Instance.Shared_CPU.CurrentValue() => Icon.TopSpeed,
-            var value when value == L10n.Instance.Shared_Memory.CurrentValue() => Icon.Ram,
-            var value when value == L10n.Instance.Shared_Filesystem.CurrentValue() => Icon.HardDrive,
+            var value when value == ResourcesLanguageManager.Instance.Shared_CPU.CurrentValue() => Icon.TopSpeed,
+            var value when value == ResourcesLanguageManager.Instance.Shared_Memory.CurrentValue() => Icon.Ram,
+            var value when value == ResourcesLanguageManager.Instance.Shared_Filesystem.CurrentValue() => Icon.HardDrive,
             _ => Icon.TopSpeed,
         };
     }
@@ -166,9 +166,9 @@ internal static class MetricsControlPrometheusBackend
 
         return
         [
-            CreatePanel(L10n.Instance.Shared_CPU.CurrentValue()!, [("cpuUsage", L10n.Instance.Shared_Usage.CurrentValue()!), ("cpuRequests", L10n.Instance.Shared_Requests.CurrentValue()!), ("cpuLimits", L10n.Instance.Shared_Limits.CurrentValue()!)]),
-            CreatePanel(L10n.Instance.Shared_Memory.CurrentValue()!, [("memoryUsage", L10n.Instance.Shared_Usage.CurrentValue()!), ("memoryRequests", L10n.Instance.Shared_Requests.CurrentValue()!), ("memoryLimits", L10n.Instance.Shared_Limits.CurrentValue()!)]),
-            CreatePanel(L10n.Instance.Shared_Filesystem.CurrentValue()!, [("fsUsage", L10n.Instance.Shared_Usage.CurrentValue()!), ("fsReads", L10n.Instance.Shared_Reads.CurrentValue()!), ("fsWrites", L10n.Instance.Shared_Writes.CurrentValue()!)]),
+            CreatePanel(ResourcesLanguageManager.Instance.Shared_CPU.CurrentValue()!, [("cpuUsage", ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue()!), ("cpuRequests", ResourcesLanguageManager.Instance.Shared_Requests.CurrentValue()!), ("cpuLimits", ResourcesLanguageManager.Instance.Shared_Limits.CurrentValue()!)]),
+            CreatePanel(ResourcesLanguageManager.Instance.Shared_Memory.CurrentValue()!, [("memoryUsage", ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue()!), ("memoryRequests", ResourcesLanguageManager.Instance.Shared_Requests.CurrentValue()!), ("memoryLimits", ResourcesLanguageManager.Instance.Shared_Limits.CurrentValue()!)]),
+            CreatePanel(ResourcesLanguageManager.Instance.Shared_Filesystem.CurrentValue()!, [("fsUsage", ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue()!), ("fsReads", ResourcesLanguageManager.Instance.Shared_Reads.CurrentValue()!), ("fsWrites", ResourcesLanguageManager.Instance.Shared_Writes.CurrentValue()!)]),
         ];
 
         MetricPanelDefinition CreatePanel(string title, IReadOnlyList<(string QueryName, string Label)> queries)
@@ -427,21 +427,21 @@ internal static class MetricsControlMetricsServerBackend
 
         return
         [
-            new MetricTabSnapshot(L10n.Instance.Shared_CPU.CurrentValue()!, Icon.TopSpeed,
+            new MetricTabSnapshot(ResourcesLanguageManager.Instance.Shared_CPU.CurrentValue()!, Icon.TopSpeed,
             [
-                new MetricPanelSnapshot(L10n.Instance.Shared_CPU.CurrentValue()!,
+                new MetricPanelSnapshot(ResourcesLanguageManager.Instance.Shared_CPU.CurrentValue()!,
                 [
                     new MetricSeriesSnapshot(
-                        L10n.Instance.Shared_Usage.CurrentValue()!,
+                        ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue()!,
                         cpuPoints),
                 ]),
             ]),
-            new MetricTabSnapshot(L10n.Instance.Shared_Memory.CurrentValue()!, Icon.Ram,
+            new MetricTabSnapshot(ResourcesLanguageManager.Instance.Shared_Memory.CurrentValue()!, Icon.Ram,
             [
-                new MetricPanelSnapshot(L10n.Instance.Shared_Memory.CurrentValue()!,
+                new MetricPanelSnapshot(ResourcesLanguageManager.Instance.Shared_Memory.CurrentValue()!,
                 [
                     new MetricSeriesSnapshot(
-                        L10n.Instance.Shared_Usage.CurrentValue()!,
+                        ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue()!,
                         memoryPoints),
                 ]),
             ]),

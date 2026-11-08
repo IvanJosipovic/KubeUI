@@ -1,4 +1,4 @@
-﻿using Avalonia.Controls.Selection;
+using Avalonia.Controls.Selection;
 using DynamicData;
 using DynamicData.Binding;
 using FluentAvalonia.UI.Controls;
@@ -30,7 +30,7 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
     {
         _dialogService = dialogService;
         _platformServices = platformServices;
-        Title = L10n.Instance.PortForwarderListView_Title.CurrentValue()!;
+        Title = ResourcesLanguageManager.Instance.PortForwarderListView_Title.CurrentValue()!;
     }
 
     [RelayCommand(CanExecute = nameof(CanRemove))]
@@ -38,10 +38,10 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
     {
         ContentDialogSettings settings = new()
         {
-            Title = L10n.Instance.PortForwarderListView_Remove_Title.CurrentValue()!,
-            Content = string.Format(L10n.Instance.PortForwarderListView_Remove_Content.CurrentValue()!, pf.Namespace, pf.Name, pf.Port),
-            PrimaryButtonText = L10n.Instance.PortForwarderListView_Remove_Primary.CurrentValue()!,
-            SecondaryButtonText = L10n.Instance.PortForwarderListView_Remove_Secondary.CurrentValue()!,
+            Title = ResourcesLanguageManager.Instance.PortForwarderListView_Remove_Title.CurrentValue()!,
+            Content = string.Format(ResourcesLanguageManager.Instance.PortForwarderListView_Remove_Content.CurrentValue()!, pf.Namespace, pf.Name, pf.Port),
+            PrimaryButtonText = ResourcesLanguageManager.Instance.PortForwarderListView_Remove_Primary.CurrentValue()!,
+            SecondaryButtonText = ResourcesLanguageManager.Instance.PortForwarderListView_Remove_Secondary.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary
         };
 
@@ -86,13 +86,13 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
             _portForwarderCache,
             static item => $"{item.Namespace}\u001f{item.Type}\u001f{item.Name}\u001f{item.Port}",
             [
-                CreateColumn("type", static item => item.Type, L10n.Instance.PortForwarderListView_Type.CurrentValue()!, DynamicTableViewWidthMode.Pixel, 80),
-                CreateColumn("name", static item => item.Name, L10n.Instance.PortForwarderListView_Name.CurrentValue()!, DynamicTableViewWidthMode.Star, 1),
-                CreateColumn("namespace", static item => item.Namespace, L10n.Instance.PortForwarderListView_Namespace.CurrentValue()!, DynamicTableViewWidthMode.Pixel, 120),
-                CreateColumn("port", static item => item.Port, L10n.Instance.PortForwarderListView_Port.CurrentValue()!, DynamicTableViewWidthMode.Pixel, 80),
-                CreateColumn("local-port", static item => item.LocalPort, L10n.Instance.PortForwarderListView_LocalPort.CurrentValue()!, DynamicTableViewWidthMode.Pixel, 100),
-                CreateColumn("connections", static item => item.Connections, L10n.Instance.PortForwarderListView_Connections.CurrentValue()!, DynamicTableViewWidthMode.Pixel, 120),
-                CreateColumn("status", static item => item.Status, L10n.Instance.PortForwarderListView_Status.CurrentValue()!, DynamicTableViewWidthMode.Pixel, 140)
+                CreateColumn("type", static item => item.Type, ResourcesLanguageManager.Instance.PortForwarderListView_Type.CurrentValue()!, DynamicTableViewWidthMode.Pixel, 80),
+                CreateColumn("name", static item => item.Name, ResourcesLanguageManager.Instance.PortForwarderListView_Name.CurrentValue()!, DynamicTableViewWidthMode.Star, 1),
+                CreateColumn("namespace", static item => item.Namespace, ResourcesLanguageManager.Instance.PortForwarderListView_Namespace.CurrentValue()!, DynamicTableViewWidthMode.Pixel, 120),
+                CreateColumn("port", static item => item.Port, ResourcesLanguageManager.Instance.PortForwarderListView_Port.CurrentValue()!, DynamicTableViewWidthMode.Pixel, 80),
+                CreateColumn("local-port", static item => item.LocalPort, ResourcesLanguageManager.Instance.PortForwarderListView_LocalPort.CurrentValue()!, DynamicTableViewWidthMode.Pixel, 100),
+                CreateColumn("connections", static item => item.Connections, ResourcesLanguageManager.Instance.PortForwarderListView_Connections.CurrentValue()!, DynamicTableViewWidthMode.Pixel, 120),
+                CreateColumn("status", static item => item.Status, ResourcesLanguageManager.Instance.PortForwarderListView_Status.CurrentValue()!, DynamicTableViewWidthMode.Pixel, 140)
             ],
             options: new DynamicTableViewSourceOptions
             {

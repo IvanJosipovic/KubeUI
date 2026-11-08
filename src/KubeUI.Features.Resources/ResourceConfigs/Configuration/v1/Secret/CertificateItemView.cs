@@ -1,8 +1,8 @@
-﻿using System.Security.Cryptography;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using Avalonia.Controls.Templates;
-using KubeUI.Features.Resources.Properties.Controls;
+using KubeUI.Controls.Presentation;
 
 namespace KubeUI.Features.Resources.Configuration.v1.Secret;
 
@@ -58,19 +58,19 @@ public sealed partial class CertificateItemView : UserControl, IDeclarativeViewB
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(L10n.Instance.CertificateItemView_Issuer.CurrentValue()!)
+                    .Key(ResourcesLanguageManager.Instance.CertificateItemView_Issuer.CurrentValue()!)
                     .Value(cert.Issuer),
                 new PropertyItem()
-                    .Key(L10n.Instance.CertificateItemView_Subject.CurrentValue()!)
+                    .Key(ResourcesLanguageManager.Instance.CertificateItemView_Subject.CurrentValue()!)
                     .Value(cert.SubjectName.Name),
                 new PropertyItem()
-                    .Key(L10n.Instance.CertificateItemView_NotBefore.CurrentValue()!)
+                    .Key(ResourcesLanguageManager.Instance.CertificateItemView_NotBefore.CurrentValue()!)
                     .Value(cert.NotBefore),
                 new PropertyItem()
-                    .Key(L10n.Instance.CertificateItemView_Expires.CurrentValue()!)
+                    .Key(ResourcesLanguageManager.Instance.CertificateItemView_Expires.CurrentValue()!)
                     .Value(GetExpiryValue(cert)),
-                CreateSanList(GetDnsNames(cert), L10n.Instance.CertificateItemView_Dns.CurrentValue()!),
-                CreateSanList(GetIpAddresses(cert), L10n.Instance.CertificateItemView_Ip.CurrentValue()!));
+                CreateSanList(GetDnsNames(cert), ResourcesLanguageManager.Instance.CertificateItemView_Dns.CurrentValue()!),
+                CreateSanList(GetIpAddresses(cert), ResourcesLanguageManager.Instance.CertificateItemView_Ip.CurrentValue()!));
     }
 
     private static StackPanel CreateKeyTemplate(RSA key)
@@ -187,13 +187,13 @@ public sealed partial class CertificateItemView : UserControl, IDeclarativeViewB
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(L10n.Instance.CertificateItemView_KeyExchangeAlgorithm.CurrentValue()!)
+                    .Key(ResourcesLanguageManager.Instance.CertificateItemView_KeyExchangeAlgorithm.CurrentValue()!)
                     .Value(exchangeAlgorithm),
                 new PropertyItem()
-                    .Key(L10n.Instance.CertificateItemView_SignatureAlgorithm.CurrentValue()!)
+                    .Key(ResourcesLanguageManager.Instance.CertificateItemView_SignatureAlgorithm.CurrentValue()!)
                     .Value(signatureAlgorithm),
                 new PropertyItem()
-                    .Key(L10n.Instance.CertificateItemView_KeySize.CurrentValue()!)
+                    .Key(ResourcesLanguageManager.Instance.CertificateItemView_KeySize.CurrentValue()!)
                     .Value(keySize));
     }
 

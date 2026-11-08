@@ -13,9 +13,9 @@ public sealed class LanguageManagerTests
     {
         var seen = new List<string?>();
 
-        using var subscription = LanguageManager.Instance.ResourcePropertiesView_Name.Subscribe(seen.Add);
+        using var subscription = ResourcesLanguageManager.Instance.ResourcePropertiesView_Name.Subscribe(seen.Add);
 
-        LanguageManager.Instance.ResourcePropertiesView_Name.CurrentValue().ShouldBe("Name");
+        ResourcesLanguageManager.Instance.ResourcePropertiesView_Name.CurrentValue().ShouldBe("Name");
         seen.ShouldNotBeEmpty();
         seen[^1].ShouldBe("Name");
     }

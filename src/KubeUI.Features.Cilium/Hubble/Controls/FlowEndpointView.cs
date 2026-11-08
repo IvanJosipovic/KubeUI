@@ -36,7 +36,7 @@ public sealed class FlowEndpointView : StackPanel
             if (e == null)
                 return;
 
-            var secondaryBrush = ApplicationBrushResources.GetBrush("SubtleOutlineBrush");
+            var secondaryBrush = ApplicationBrushResources.GetBrush("SemanticMutedBrush");
 
             Children.Add(new TextBlock
             {

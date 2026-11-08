@@ -76,16 +76,16 @@ public sealed class RecordingTests
                     + $"status: {GetPodMetrics(root)?.StatusText}")
             .Speak(
                 "The CPU chart compares usage, requests, and limits. Switch to memory.",
-                root => ChartIsVisible(root, ResourceL10n.Instance.Shared_CPU.CurrentValue()!, "cpu"))
+                root => ChartIsVisible(root, ResourcesLanguageManager.Instance.Shared_CPU.CurrentValue()!, "cpu"))
             .Speak(
                 "The memory chart compares usage, requests, and limits for this Pod.",
-                root => ChartIsVisible(root, ResourceL10n.Instance.Shared_Memory.CurrentValue()!, "memory"))
+                root => ChartIsVisible(root, ResourcesLanguageManager.Instance.Shared_Memory.CurrentValue()!, "memory"))
             .Speak(
                 "Network shows receive and transmit rates over the full hour.",
-                root => ChartIsVisible(root, ResourceL10n.Instance.Shared_Network.CurrentValue()!, "network"))
+                root => ChartIsVisible(root, ResourcesLanguageManager.Instance.Shared_Network.CurrentValue()!, "network"))
             .Speak(
                 "Filesystem shows usage, read rate, and write rate over the full hour.",
-                root => ChartIsVisible(root, ResourceL10n.Instance.Shared_Filesystem.CurrentValue()!, "fs"))
+                root => ChartIsVisible(root, ResourcesLanguageManager.Instance.Shared_Filesystem.CurrentValue()!, "fs"))
             .RecordAsync();
     }
 
@@ -119,20 +119,20 @@ public sealed class RecordingTests
         {
             "cpu" or "memory" =>
             [
-                (Name: ResourceL10n.Instance.Shared_Usage.CurrentValue()!, Metric: metric + "Usage"),
-                (Name: ResourceL10n.Instance.Shared_Requests.CurrentValue()!, Metric: metric + "Requests"),
-                (Name: ResourceL10n.Instance.Shared_Limits.CurrentValue()!, Metric: metric + "Limits"),
+                (Name: ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue()!, Metric: metric + "Usage"),
+                (Name: ResourcesLanguageManager.Instance.Shared_Requests.CurrentValue()!, Metric: metric + "Requests"),
+                (Name: ResourcesLanguageManager.Instance.Shared_Limits.CurrentValue()!, Metric: metric + "Limits"),
             ],
             "network" =>
             [
-                (Name: ResourceL10n.Instance.Shared_Receive.CurrentValue()!, Metric: "networkReceive"),
-                (Name: ResourceL10n.Instance.Shared_Transmit.CurrentValue()!, Metric: "networkTransmit"),
+                (Name: ResourcesLanguageManager.Instance.Shared_Receive.CurrentValue()!, Metric: "networkReceive"),
+                (Name: ResourcesLanguageManager.Instance.Shared_Transmit.CurrentValue()!, Metric: "networkTransmit"),
             ],
             "fs" =>
             [
-                (Name: ResourceL10n.Instance.Shared_Usage.CurrentValue()!, Metric: "fsUsage"),
-                (Name: ResourceL10n.Instance.Shared_Reads.CurrentValue()!, Metric: "fsReads"),
-                (Name: ResourceL10n.Instance.Shared_Writes.CurrentValue()!, Metric: "fsWrites"),
+                (Name: ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue()!, Metric: "fsUsage"),
+                (Name: ResourcesLanguageManager.Instance.Shared_Reads.CurrentValue()!, Metric: "fsReads"),
+                (Name: ResourcesLanguageManager.Instance.Shared_Writes.CurrentValue()!, Metric: "fsWrites"),
             ],
             _ => throw new ArgumentOutOfRangeException(nameof(metric), metric, "Unsupported Pod chart."),
         };
