@@ -1,3 +1,5 @@
+using KubeUI.Features.Azure.Client.AzureMonitor;
+using KubeUI.Kubernetes;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Features.Azure.DependencyInjection;
@@ -12,6 +14,7 @@ public static class KubeUIAzureFeatureServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
         services.AddSingleton<IAksClusterService, AksClusterService>();
+        services.AddSingleton<IAzureMonitorWorkspaceService, AzureMonitorWorkspaceService>();
         return services;
     }
 }

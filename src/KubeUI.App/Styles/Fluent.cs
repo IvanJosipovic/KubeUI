@@ -342,7 +342,7 @@ public sealed class Fluent : AvaloniaStyles
     [RequiresUnreferencedCode("Calls Avalonia.Markup.Xaml.Styling.StyleInclude.StyleInclude(Uri)")]
     private static StyleInclude CreateStyleInclude(string source) => new(s_baseUri) { Source = new Uri(source) };
 
-    private static Color Color(string value) => global::Avalonia.Media.Color.Parse(value);
+    private static Color Color(string value) => Avalonia.Media.Color.Parse(value);
 
     private static SolidColorBrush Brush(string value) => new(Color(value));
 

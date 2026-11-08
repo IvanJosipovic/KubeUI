@@ -18,4 +18,9 @@ public interface IClusterSettingsStore
     void RemoveKubeConfigPath(string path);
 
     IReadOnlyCollection<string> GetClusterNamespaces(IClusterRuntime cluster);
+
+    /// <summary>Returns persisted metrics configuration for a cluster.</summary>
+    /// <param name="cluster">Cluster whose settings should be read.</param>
+    /// <returns>The cluster metrics settings.</returns>
+    ClusterMetricsSettings GetClusterMetricsSettings(IClusterRuntime cluster) => new();
 }

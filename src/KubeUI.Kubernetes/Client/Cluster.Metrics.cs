@@ -1,147 +1,34 @@
-using k8s;
+using System.Collections.Immutable;
 using k8s.Models;
 
 namespace KubeUI.Kubernetes;
 
 public partial class Cluster
 {
-    [ObservableProperty]
-    public partial ObservableCollection<PodMetrics> PodMetrics { get; set; } = [];
+    private readonly ObservableCollection<PodMetrics> _emptyPodMetrics = [];
+    private readonly ObservableCollection<NodeMetrics> _emptyNodeMetrics = [];
 
-    [ObservableProperty]
-    public partial ObservableCollection<NodeMetrics> NodeMetrics { get; set; } = [];
-    public bool IsMetricsAvailable { get; private set; }
+    public ObservableCollection<PodMetrics> PodMetrics => _metricsService?.PodMetrics ?? _emptyPodMetrics;
 
-    private PeriodicTimer? _metricsRefreshTimer;
-    private CancellationTokenSource? _metricsRefreshCancellationTokenSource;
+    public ObservableCollection<NodeMetrics> NodeMetrics => _metricsService?.NodeMetrics ?? _emptyNodeMetrics;
 
-    private async Task SyncData(CancellationToken cancellationToken)
-    {
-        using var activity = StartClusterActivity(nameof(SyncData));
+    public bool IsMetricsAvailable => _metricsService?.IsMetricsAvailable ?? false;
 
-        try
-        {
-            cancellationToken.ThrowIfCancellationRequested();
+    public ActiveMetricsBackend ActiveMetricsBackend => _metricsService?.ActiveMetricsBackend ?? ActiveMetricsBackend.None;
 
-            var nodeMetricslist = await KubernetesMetricsClient.GetKubernetesNodesMetricsAsync(Client, cancellationToken);
-            NodeMetrics.Clear();
-            foreach (var item in nodeMetricslist.Items.OfType<NodeMetrics>())
-            {
-                NodeMetrics.Add(item);
-            }
+    public ImmutableArray<PodMetrics> GetPodMetricsSnapshot(string? namespaceName, string podName)
+        => _metricsService?.GetPodMetricsSnapshot(namespaceName, podName) ?? ImmutableArray<PodMetrics>.Empty;
 
-            cancellationToken.ThrowIfCancellationRequested();
+    public ImmutableArray<NodeMetrics> GetNodeMetricsSnapshot(string nodeName)
+        => _metricsService?.GetNodeMetricsSnapshot(nodeName) ?? ImmutableArray<NodeMetrics>.Empty;
 
-            var podMetricsList = await KubernetesMetricsClient.GetKubernetesPodsMetricsAsync(Client, cancellationToken);
-            PodMetrics.Clear();
-            foreach (var item in podMetricsList.Items.OfType<PodMetrics>())
-            {
-                PodMetrics.Add(item);
-            }
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-        }
-        catch (Exception ex)
-        {
-            activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, ex.Message);
-            _logger.LogError(ex, "Error updating Metrics");
-        }
-    }
+    public ImmutableArray<PodMetrics> GetAllPodMetricsSnapshot()
+        => _metricsService?.GetAllPodMetricsSnapshot() ?? ImmutableArray<PodMetrics>.Empty;
 
-    private async Task RefreshMetricsAsync(PeriodicTimer timer, CancellationToken cancellationToken)
-    {
-        using var activity = StartClusterActivity(nameof(RefreshMetricsAsync));
+    public ImmutableArray<NodeMetrics> GetAllNodeMetricsSnapshot()
+        => _metricsService?.GetAllNodeMetricsSnapshot() ?? ImmutableArray<NodeMetrics>.Empty;
 
-        try
-        {
-            while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false))
-            {
-                await RefreshMetricsDataAsync(cancellationToken).ConfigureAwait(false);
-            }
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-        }
-    }
-
-    private async Task RefreshMetricsDataAsync(CancellationToken cancellationToken)
-    {
-        using var activity = StartClusterActivity(nameof(RefreshMetricsDataAsync));
-        await SyncData(cancellationToken).ConfigureAwait(false);
-    }
-
-    private async Task InitMetrics()
-    {
-        using var activity = StartClusterActivity(nameof(InitMetrics));
-
-        try
-        {
-            if (!TryGetKubernetesClient(out var kube))
-            {
-                return;
-            }
-
-            var model = new V1SelfSubjectAccessReview()
-            {
-                ApiVersion = V1SelfSubjectAccessReview.KubeGroup + "/" + V1SelfSubjectAccessReview.KubeApiVersion,
-                Kind = V1SelfSubjectAccessReview.KubeKind,
-                Spec = new()
-                {
-                    ResourceAttributes = new()
-                    {
-                        Group = "metrics.k8s.io",
-                        Resource = "pods",
-                        Verb = "list"
-                    }
-                }
-            };
-
-            var resp = await kube.CreateSelfSubjectAccessReviewAsync(model);
-
-            var model2 = new V1SelfSubjectAccessReview()
-            {
-                ApiVersion = V1SelfSubjectAccessReview.KubeGroup + "/" + V1SelfSubjectAccessReview.KubeApiVersion,
-                Kind = V1SelfSubjectAccessReview.KubeKind,
-                Spec = new()
-                {
-                    ResourceAttributes = new()
-                    {
-                        Group = "metrics.k8s.io",
-                        Resource = "nodes",
-                        Verb = "list"
-                    }
-                }
-            };
-
-            var resp2 = await kube.CreateSelfSubjectAccessReviewAsync(model2);
-
-            var APIGroups = await Client.Apis.GetAPIVersionsAsync();
-
-            IsMetricsAvailable = APIGroups.Groups.Any(g => g.Name == "metrics.k8s.io") && resp.Status.Allowed && resp2.Status.Allowed;
-
-            if (IsMetricsAvailable)
-            {
-                _metricsRefreshCancellationTokenSource?.Cancel();
-                _metricsRefreshTimer?.Dispose();
-
-                var metricsRefreshCancellationTokenSource = new CancellationTokenSource();
-                var metricsRefreshTimer = new PeriodicTimer(TimeSpan.FromSeconds(30));
-                _metricsRefreshCancellationTokenSource = metricsRefreshCancellationTokenSource;
-                _metricsRefreshTimer = metricsRefreshTimer;
-
-                await RefreshMetricsDataAsync(metricsRefreshCancellationTokenSource.Token);
-
-                using (ExecutionContext.SuppressFlow())
-                {
-                    _ = Task.Run(() => RefreshMetricsAsync(metricsRefreshTimer, metricsRefreshCancellationTokenSource.Token));
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, ex.Message);
-            _logger.LogError(ex, "Error initializing Metrics");
-        }
-    }
+    public Task<MetricResultSet> RequestMetricsAsync(MetricRequest request, CancellationToken cancellationToken = default)
+        => _metricsService?.RequestMetricsAsync(request, cancellationToken)
+            ?? Task.FromException<MetricResultSet>(new InvalidOperationException("Metrics service is not registered."));
 }

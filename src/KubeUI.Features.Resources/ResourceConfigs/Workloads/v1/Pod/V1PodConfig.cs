@@ -11,6 +11,7 @@ using KubeUI.Features.Clusters.Settings;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources.Common;
 using KubeUI.Features.Resources.Infrastructure;
+using KubeUI.Features.Resources.ResourceConfigs.Workloads.v1.Pod;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Features.Resources.Workloads.v1.Pod;
@@ -84,27 +85,24 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
                 },
             ];
 
-        if (Cluster.Runtime.IsMetricsAvailable)
+        cols.Insert(3, new ResourceListColumn<V1Pod, decimal>()
         {
-            cols.Insert(3, new ResourceListColumn<V1Pod, decimal>()
-            {
-                Key = "cpu",
-                Name = L10n.Instance.V1PodConfig_CPU.CurrentValue()!,
-                CustomControl = typeof(PodMetricCPUCellView),
-                Field = x => Cluster.Runtime.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
-                Width = 80,
-                WidthMode = DynamicTableViewWidthMode.Pixel
-            });
-            cols.Insert(4, new ResourceListColumn<V1Pod, decimal>()
-            {
-                Key = "memory",
-                Name = L10n.Instance.V1PodConfig_Memory.CurrentValue()!,
-                CustomControl = typeof(PodMetricMemoryCellView),
-                Field = x => Cluster.Runtime.PodMetrics.FirstOrDefault(y => y.Name() == x.Name() && y.Namespace() == x.Namespace())?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
-                Width = 80,
-                WidthMode = DynamicTableViewWidthMode.Pixel
-            });
-        }
+            Key = "cpu",
+            Name = L10n.Instance.V1PodConfig_CPU.CurrentValue()!,
+            CustomControl = typeof(MetricsHistoryCPUCellView),
+            Field = x => Cluster.Runtime.GetPodMetricsSnapshot(x.Namespace(), x.Name() ?? string.Empty).LastOrDefault()?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
+            Width = 80,
+            WidthMode = DynamicTableViewWidthMode.Pixel
+        });
+        cols.Insert(4, new ResourceListColumn<V1Pod, decimal>()
+        {
+            Key = "memory",
+            Name = L10n.Instance.V1PodConfig_Memory.CurrentValue()!,
+            CustomControl = typeof(MetricsHistoryMemoryCellView),
+            Field = x => Cluster.Runtime.GetPodMetricsSnapshot(x.Namespace(), x.Name() ?? string.Empty).LastOrDefault()?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
+            Width = 80,
+            WidthMode = DynamicTableViewWidthMode.Pixel
+        });
 
         return cols;
     }

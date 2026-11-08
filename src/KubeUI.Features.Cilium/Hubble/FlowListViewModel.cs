@@ -187,7 +187,7 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
             new DynamicTableViewColumn<FlowViewModel>(
                 "Direction",
                 L10n.Instance.FlowListView_ColumnDirection.CurrentValue()!,
-                typeof(KubeUI.Features.Cilium.Hubble.FlowDirection),
+                typeof(FlowDirection),
                 flow => flow.Direction,
                 flow => FormatDirection(flow.Direction)),
             new DynamicTableViewColumn<FlowViewModel>(
@@ -253,8 +253,8 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
     internal static string FormatDirection(FlowDirection direction)
         => direction switch
         {
-            KubeUI.Features.Cilium.Hubble.FlowDirection.Ingress => L10n.Instance.FlowDirection_Ingress.CurrentValue()!,
-            KubeUI.Features.Cilium.Hubble.FlowDirection.Egress => L10n.Instance.FlowDirection_Egress.CurrentValue()!,
+            FlowDirection.Ingress => L10n.Instance.FlowDirection_Ingress.CurrentValue()!,
+            FlowDirection.Egress => L10n.Instance.FlowDirection_Egress.CurrentValue()!,
             _ => L10n.Instance.FlowDirection_Unknown.CurrentValue()!
         };
 

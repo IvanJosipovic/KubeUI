@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
+using KubeUI.Kubernetes;
 using static k8s.KubernetesJson;
 
 namespace KubeUI.Kubernetes.Serialization;
@@ -131,6 +132,7 @@ namespace KubeUI.Kubernetes.Serialization;
 [JsonSerializable(typeof(NodeMetricsList))]
 [JsonSerializable(typeof(PodMetrics))]
 [JsonSerializable(typeof(PodMetricsList))]
+[JsonSerializable(typeof(PrometheusClientQueryRangeResponse))]
 [JsonSerializable(typeof(V1Patch.PatchType))]
 // Kubeconfig roots stay YAML-only because NamedExtension.Extension is dynamic and breaks System.Text.Json source generation.
 

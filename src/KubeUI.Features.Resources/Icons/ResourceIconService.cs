@@ -4,8 +4,8 @@ using Avalonia.Platform;
 using Avalonia.Svg.Skia;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Features.Resources.Contracts;
 using KubeUI.Controls.Styles;
+using KubeUI.Features.Resources.Contracts;
 using KubeUI.Foundation.Styles;
 
 namespace KubeUI.Features.Resources.Icons;

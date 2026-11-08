@@ -1,4 +1,5 @@
-﻿using k8s.Models;
+using k8s.Models;
+using KubeUI.Features.Resources.Metrics.Controls;
 using KubeUI.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Features.Resources.Workloads.v1.Deployment;
@@ -10,7 +11,7 @@ public sealed class PropertiesView : ViewBase<V1Deployment>
         ArgumentNullException.ThrowIfNull(vm);
 
         return new StackPanel()
-            .Children(
+            .Children(new MetricsControl { DataContext = vm },
                 new PropertyItem()
                     .Key(SharedL10n.Instance.Shared_Replicas.CurrentValue()!)
                     .Value(vm.Spec?.Replicas ?? 0),

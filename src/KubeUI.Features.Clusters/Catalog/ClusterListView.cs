@@ -39,7 +39,7 @@ public sealed partial class ClusterListView : KubeUIView<ClusterListViewModel>
                                     BasedOn = Application.Current?.FindResource(typeof(MenuItem)) as ControlTheme,
                                     Setters =
                                     {
-                                        new Setter(global::Avalonia.Controls.Primitives.HeaderedSelectingItemsControl.HeaderProperty, CompiledBinding.Create<string, string>(x => x)),
+                                        new Setter(Avalonia.Controls.Primitives.HeaderedSelectingItemsControl.HeaderProperty, CompiledBinding.Create<string, string>(x => x)),
                                         new Setter(MenuItem.CommandProperty, vm.RemoveKubeConfigCommand),
                                         new Setter(MenuItem.CommandParameterProperty, CompiledBinding.Create<string, string>(x => x)),
                                     }

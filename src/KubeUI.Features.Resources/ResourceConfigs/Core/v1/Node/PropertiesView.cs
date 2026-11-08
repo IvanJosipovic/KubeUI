@@ -1,4 +1,5 @@
-﻿using k8s.Models;
+using k8s.Models;
+using KubeUI.Features.Resources.Metrics.Controls;
 using KubeUI.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Features.Resources.Core.v1.Node;
@@ -26,6 +27,7 @@ public sealed class PropertiesView : ViewBase<V1Node>
                 new PropertyItem()
                     .Key(L10n.Instance.NodePropertiesView_Kubelet_Version.CurrentValue()!)
                     .Value(vm.Status?.NodeInfo?.KubeletVersion ?? ""),
+                new MetricsControl { DataContext = vm },
                 new ExpandableSection()
                     .Header(SharedL10n.Instance.Shared_Status.ToBinding())
                     .Content(

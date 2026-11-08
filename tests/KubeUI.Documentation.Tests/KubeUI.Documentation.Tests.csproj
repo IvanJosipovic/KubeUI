@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Using Include="KubeUI.Features.Resources.Assets.LanguageManager" Alias="ResourceL10n" />
     <PackageReference Include="Avalonia.Headless.XUnit" />
     <PackageReference Include="KokoroSharp.CPU" />
     <PackageReference Include="xunit.v3.mtp-v2" />

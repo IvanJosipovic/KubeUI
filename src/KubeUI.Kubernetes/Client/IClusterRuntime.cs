@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using DynamicData;
 using k8s;
 using k8s.KubeConfigModels;
@@ -13,6 +14,7 @@ public interface IClusterRuntime
     ClusterStatus Status { get; set; }
     string? LastError { get; set; }
     bool IsMetricsAvailable { get; }
+    ActiveMetricsBackend ActiveMetricsBackend { get; }
     bool ListNamespaces { get; set; }
     event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
     event Action<IClusterRuntime>? NamespaceSelectionRequired;
@@ -32,6 +34,11 @@ public interface IClusterRuntime
     ObservableCollection<PortForwarder> PortForwarders { get; }
     IClusterAuthorization Permissions { get; }
     bool IsResourceNamespaced(GroupApiVersionKind kind);
+    ImmutableArray<PodMetrics> GetPodMetricsSnapshot(string? namespaceName, string podName);
+    ImmutableArray<NodeMetrics> GetNodeMetricsSnapshot(string nodeName);
+    ImmutableArray<PodMetrics> GetAllPodMetricsSnapshot();
+    ImmutableArray<NodeMetrics> GetAllNodeMetricsSnapshot();
+    Task<MetricResultSet> RequestMetricsAsync(MetricRequest request, CancellationToken cancellationToken = default);
     bool IsResourceNamespaced<T>();
     PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort);
     Task AddPodEphemeralDebugContainer(V1Pod pod, string? targetContainerName, string image);

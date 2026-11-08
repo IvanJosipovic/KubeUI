@@ -1,4 +1,5 @@
-﻿using k8s.Models;
+using k8s.Models;
+using KubeUI.Features.Resources.Metrics.Controls;
 using KubeUI.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Features.Resources.Workloads.v1.DaemonSet;
@@ -10,7 +11,7 @@ public sealed class PropertiesView : ViewBase<V1DaemonSet>
         ArgumentNullException.ThrowIfNull(vm);
 
         return new StackPanel()
-            .Children(
+            .Children(new MetricsControl { DataContext = vm },
                 new PropertyItem()
                     .Key(L10n.Instance.DaemonSetPropertiesView_Desired_Scheduled.CurrentValue()!)
                     .Value(vm.Status?.DesiredNumberScheduled ?? 0),

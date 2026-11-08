@@ -34,6 +34,13 @@ public static partial class KubeUIKubernetesServiceCollectionExtensions
         services.AddTransient<IClusterRuntime>(sp => sp.GetRequiredService<Cluster>());
         services.AddSingleton<ClusterManager>();
         services.AddSingleton<IClusterRuntimeCatalog>(sp => sp.GetRequiredService<ClusterManager>());
+        services.AddTransient<IMetricsService, MetricsService>();
+        services.AddTransient<IPrometheusQueryClient, PrometheusQueryClient>();
+        services.AddSingleton<IPrometheusProvider, OperatorPrometheusProvider>();
+        services.AddSingleton<IPrometheusProvider, OpenShiftPrometheusProvider>();
+        services.AddSingleton<IPrometheusProvider, ManualPrometheusProvider>();
+        services.AddSingleton<IPrometheusProvider, ExternalPrometheusProvider>();
+        services.AddSingleton<IPrometheusProvider, AzureMonitorPrometheusProvider>();
         services.AddHostedService<ClusterManagerStartupService>();
         services.AddOptions<ClusterAuthorizationOptions>();
         return services;

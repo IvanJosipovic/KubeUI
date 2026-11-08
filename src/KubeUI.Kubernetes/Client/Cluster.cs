@@ -42,6 +42,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     private IServiceProvider _serviceProvider;
 
     private IThreadDispatcher _dispatcher;
+    private readonly IMetricsService? _metricsService;
 
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
     public event Action<IClusterRuntime>? NamespaceSelectionRequired;
@@ -106,7 +107,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     /// <param name="serviceProvider">Application service provider.</param>
     /// <param name="dispatcher">Dispatcher used for UI-bound observable updates.</param>
     /// <param name="authorizationOptions">Authorization behavior options.</param>
-    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ClusterModelCatalog modelCatalog, IClusterSettingsStore settings, IServiceProvider serviceProvider, IThreadDispatcher dispatcher, IKubernetesJsonSerializer jsonSerializer, IKubernetesYamlSerializer yamlSerializer, IOptions<ClusterAuthorizationOptions>? authorizationOptions = null)
+    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ClusterModelCatalog modelCatalog, IClusterSettingsStore settings, IServiceProvider serviceProvider, IThreadDispatcher dispatcher, IKubernetesJsonSerializer jsonSerializer, IKubernetesYamlSerializer yamlSerializer, IMetricsService? metricsService = null, IOptions<ClusterAuthorizationOptions>? authorizationOptions = null)
     {
         _loggerFactory = loggerFactory;
         _logger = logger;
@@ -119,6 +120,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             loggerFactory.CreateLogger<KubernetesOpenApiSchemaLoader>());
         _settings = settings;
         _serviceProvider = serviceProvider;
+        _metricsService = metricsService ?? serviceProvider.GetService<IMetricsService>();
         _dispatcher = dispatcher;
         _authorizationOptions = authorizationOptions?.Value ?? new ClusterAuthorizationOptions();
     }
@@ -133,6 +135,14 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         }
 
         StopNamespaceSubscription();
+        if (_metricsService is not null)
+        {
+            await _metricsService.StopAsync().ConfigureAwait(false);
+            if (_metricsService is IDisposable metricsDisposable)
+            {
+                metricsDisposable.Dispose();
+            }
+        }
         await StopResourceInformersAsync().ConfigureAwait(false);
         _openApiSchemaLoader.Dispose();
         _connectionLimiter.Dispose();
@@ -245,7 +255,10 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
                     _ = RefreshApiGroupDiscoveryListAsync();
                     _ = EnsureOpenApiSchemasAsync();
-                    _ = InitMetrics();
+                    if (_metricsService is not null)
+                    {
+                        await _metricsService.InitializeAsync(this).ConfigureAwait(false);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -273,7 +286,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
         try
         {
-            StopMetrics();
+            await StopMetrics().ConfigureAwait(false);
             StopPortForwarders();
             StopNamespaceSubscription();
 
@@ -1015,18 +1028,12 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         }
     }
 
-    private void StopMetrics()
+    private async Task StopMetrics()
     {
-        _metricsRefreshCancellationTokenSource?.Cancel();
-        _metricsRefreshCancellationTokenSource?.Dispose();
-        _metricsRefreshCancellationTokenSource = null;
-
-        _metricsRefreshTimer?.Dispose();
-        _metricsRefreshTimer = null;
-
-        NodeMetrics.Clear();
-        PodMetrics.Clear();
-        IsMetricsAvailable = false;
+        if (_metricsService is not null)
+        {
+            await _metricsService.StopAsync().ConfigureAwait(false);
+        }
     }
 
     private void StopNamespaceSubscription()
