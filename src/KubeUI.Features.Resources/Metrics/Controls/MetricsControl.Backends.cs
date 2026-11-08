@@ -195,8 +195,14 @@ internal static class MetricsControlPrometheusBackend
 
     public static MetricRequest ApplySelectedTimeRange(MetricRequest request, MetricTimeRangeOption? selectedTimeRange)
     {
-        var selectedRangeSeconds = selectedTimeRange?.RangeSeconds ?? request.RangeSeconds.GetValueOrDefault();
-        if (request.RangeSeconds == selectedRangeSeconds)
+        if (selectedTimeRange is null)
+        {
+            return request;
+        }
+
+        if (request.RangeSeconds == selectedTimeRange.RangeSeconds
+            && request.StepSeconds == selectedTimeRange.StepSeconds
+            && request.Frames == selectedTimeRange.ExpectedPointCount)
         {
             return request;
         }
@@ -207,9 +213,9 @@ internal static class MetricsControlPrometheusBackend
             Queries = request.Queries,
             Start = request.Start,
             End = request.End,
-            StepSeconds = request.StepSeconds,
-            RangeSeconds = selectedRangeSeconds,
-            Frames = request.Frames,
+            StepSeconds = selectedTimeRange.StepSeconds,
+            RangeSeconds = selectedTimeRange.RangeSeconds,
+            Frames = selectedTimeRange.ExpectedPointCount,
         };
     }
 

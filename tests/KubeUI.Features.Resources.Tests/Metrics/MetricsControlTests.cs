@@ -90,7 +90,7 @@ public sealed class MetricsControlTests
     }
 
     [AvaloniaFact]
-    public void metrics_chart_uses_twelve_hour_axis_and_tooltip_time()
+    public void metrics_chart_axis_includes_date_when_data_spans_multiple_days()
     {
         using var panel = new MetricPanelViewModel { Title = "CPU" };
         var timestamp = new DateTime(2026, 1, 2, 15, 4, 0, DateTimeKind.Local);
@@ -103,6 +103,19 @@ public sealed class MetricsControlTests
         [
             new MetricSeriesSnapshot("Usage", [new DateTimePoint(timestamp, 0.1)]),
         ]);
+
+        axis.Labeler!(timestamp.Ticks).ShouldBe("3:04 PM");
+
+        panel.MergeSeries(
+        [
+            new MetricSeriesSnapshot("Usage", [
+                new DateTimePoint(timestamp, 0.1),
+                new DateTimePoint(timestamp.AddDays(1), 0.2),
+            ]),
+        ]);
+
+        axis.Labeler!(timestamp.Ticks).ShouldBe("Jan 2, 3:04 PM");
+        axis.Labeler!(timestamp.AddDays(1).Ticks).ShouldBe("Jan 3, 3:04 PM");
 
         var series = panel.Series.ShouldHaveSingleItem().ShouldBeOfType<StepLineSeries<DateTimePoint>>();
         series.XToolTipLabelFormatter.ShouldNotBeNull();
@@ -184,8 +197,37 @@ public sealed class MetricsControlTests
 
         control.SelectedTimeRange.ShouldNotBeNull();
         control.SelectedTimeRange!.RangeSeconds.ShouldBe(60 * 60);
-        control.TimeRangeOptions.ShouldContain(option => option.RangeSeconds == 60 * 60);
         control.TimeRangeOptions.ShouldNotContain(option => option.RangeSeconds == 24 * 60 * 60);
+
+        control.TimeRangeOptions
+            .Select(option => (option.RangeSeconds, option.StepSeconds, option.ExpectedPointCount))
+            .ShouldBe(
+            [
+                (3600, 60, 61),
+                (7200, 120, 61),
+                (14400, 300, 49),
+                (43200, 600, 73),
+                (172800, 1800, 97),
+                (604800, 7200, 85),
+                (2592000, 21600, 121),
+                (5184000, 43200, 121),
+            ]);
+
+        var request = new MetricRequest
+        {
+            Category = MetricCategory.Pods,
+            Queries = [],
+            RangeSeconds = 3600,
+            StepSeconds = 60,
+            Frames = 60,
+        };
+        foreach (var range in control.TimeRangeOptions)
+        {
+            var rangedRequest = MetricsControlPrometheusBackend.ApplySelectedTimeRange(request, range);
+            rangedRequest.RangeSeconds.ShouldBe(range.RangeSeconds);
+            rangedRequest.StepSeconds.ShouldBe(range.StepSeconds);
+            rangedRequest.Frames.ShouldBe(range.ExpectedPointCount);
+        }
     }
 
     [AvaloniaFact]

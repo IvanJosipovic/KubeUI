@@ -137,6 +137,72 @@ public sealed class PrometheusMetricQueriesTests
     }
 
     [Fact]
+    public async Task RequestAsync_long_range_keeps_end_within_one_minute_of_now()
+    {
+        DateTimeOffset now = new(2026, 11, 8, 21, 37, 49, TimeSpan.Zero);
+        DateTimeOffset expectedEnd = new(2026, 11, 8, 21, 37, 0, TimeSpan.Zero);
+        var queryClient = new RecordingPrometheusQueryClient();
+        queryClient.EnqueueResponse(CreateSuccessResponse(1.25));
+        var queries = new PrometheusMetricQueries(NullLogger.Instance, queryClient, new FixedTimeProvider(now));
+        await using var cluster = CreateCluster();
+        var request = new MetricRequest
+        {
+            Category = MetricCategory.Pods,
+            RangeSeconds = 60 * 24 * 60 * 60,
+            StepSeconds = 12 * 60 * 60,
+            Frames = 121,
+            Queries =
+            [
+                new MetricQueryDefinition
+                {
+                    Name = "cpuUsage",
+                    Options = new Dictionary<string, string>(StringComparer.Ordinal) { ["namespace"] = "default", ["pods"] = "pod-1" },
+                },
+            ],
+        };
+
+        _ = await queries.RequestAsync(cluster, CreateEndpoint(), CreateProvider(), request, CancellationToken.None, CancellationToken.None);
+
+        queryClient.LastEnd.ShouldBe(expectedEnd);
+        queryClient.LastEnd!.Value.ShouldBeGreaterThan(now.AddMinutes(-1));
+        queryClient.LastStart.ShouldBe(expectedEnd.AddDays(-60));
+        queryClient.LastStepSeconds.ShouldBe(12 * 60 * 60);
+    }
+
+    [Fact]
+    public async Task RequestAsync_preserves_explicit_time_bounds_with_large_step()
+    {
+        DateTimeOffset start = new(2026, 11, 1, 10, 17, 11, TimeSpan.Zero);
+        DateTimeOffset end = new(2026, 11, 8, 21, 37, 49, TimeSpan.Zero);
+        var queryClient = new RecordingPrometheusQueryClient();
+        queryClient.EnqueueResponse(CreateSuccessResponse(1.25));
+        var queries = new PrometheusMetricQueries(NullLogger.Instance, queryClient, TimeProvider.System);
+        await using var cluster = CreateCluster();
+        var request = new MetricRequest
+        {
+            Category = MetricCategory.Pods,
+            Start = start,
+            End = end,
+            StepSeconds = 12 * 60 * 60,
+            Frames = 121,
+            Queries =
+            [
+                new MetricQueryDefinition
+                {
+                    Name = "cpuUsage",
+                    Options = new Dictionary<string, string>(StringComparer.Ordinal) { ["namespace"] = "default", ["pods"] = "pod-1" },
+                },
+            ],
+        };
+
+        _ = await queries.RequestAsync(cluster, CreateEndpoint(), CreateProvider(), request, CancellationToken.None, CancellationToken.None);
+
+        queryClient.LastStart.ShouldBe(start);
+        queryClient.LastEnd.ShouldBe(end);
+        queryClient.LastStepSeconds.ShouldBe(12 * 60 * 60);
+    }
+
+    [Fact]
     public async Task StopAsync_clears_the_cache_so_the_next_request_queries_again()
     {
         var queryClient = new RecordingPrometheusQueryClient();
@@ -231,12 +297,23 @@ public sealed class PrometheusMetricQueriesTests
         },
     };
 
+    private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => utcNow;
+    }
+
     private sealed class RecordingPrometheusQueryClient : IPrometheusQueryClient
     {
         private readonly Queue<PrometheusClientQueryRangeResponse> _responses = new();
         private readonly TaskCompletionSource _release = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public int QueryCalls { get; private set; }
+
+        public DateTimeOffset? LastStart { get; private set; }
+
+        public DateTimeOffset? LastEnd { get; private set; }
+
+        public int LastStepSeconds { get; private set; }
 
         public TaskCompletionSource QueryStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -263,6 +340,9 @@ public sealed class PrometheusMetricQueriesTests
             CancellationToken cancellationToken = default)
         {
             QueryCalls++;
+            LastStart = start;
+            LastEnd = end;
+            LastStepSeconds = stepSeconds;
             QueryStarted.TrySetResult();
 
             if (WaitForRelease)

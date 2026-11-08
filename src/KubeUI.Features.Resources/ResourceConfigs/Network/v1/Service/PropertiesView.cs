@@ -25,7 +25,7 @@ public sealed class PropertiesView : ViewBase<V1Service>
                     .Key(ResourcesLanguageManager.Instance.ServicePropertiesView_Load_Balancer_Ingress.CurrentValue()!)
                     .Value(vm.Status?.LoadBalancer?.Ingress?.Count ?? 0),
                 ResourcePropertiesSection.Create(
-                    ResourcesLanguageManager.Instance.ServicePropertiesView_Routing.ToBinding(),
+                    ResourcesLanguageManager.Instance.ServicePropertiesView_Routing,
                     new PropertyItem()
                         .Key(ResourcesLanguageManager.Instance.ServicePropertiesView_Selector.CurrentValue()!)
                         .Value(vm.Spec?.Selector?.Count ?? 0),
@@ -42,7 +42,7 @@ public sealed class PropertiesView : ViewBase<V1Service>
                         .Key(ResourcesLanguageManager.Instance.ServicePropertiesView_Publish_Not_Ready_Addresses.CurrentValue()!)
                         .Value(vm.Spec?.PublishNotReadyAddresses ?? false)),
                 ResourcePropertiesSection.Create(
-                    ResourcesLanguageManager.Instance.ServicePropertiesView_Networking.ToBinding(),
+                    ResourcesLanguageManager.Instance.ServicePropertiesView_Networking,
                     new PropertyItem()
                         .Key(ResourcesLanguageManager.Instance.ServicePropertiesView_Cluster_IPs.CurrentValue()!)
                         .Value(vm.Spec?.ClusterIPs?.Count ?? 0),

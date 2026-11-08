@@ -405,6 +405,50 @@ public sealed class MetricsServiceTests
     }
 
     [Fact]
+    public async Task QueryPrometheusAsync_does_not_pad_short_series_before_first_sample()
+    {
+        var queryClient = new FakePrometheusQueryClient();
+        queryClient.EnqueueResponse(new PrometheusClientQueryRangeResponse
+        {
+            Status = "success",
+            Data = new PrometheusClientQueryRangeResponse.DataObject
+            {
+                ResultType = "matrix",
+                Result =
+                [
+                    new PrometheusClientQueryRangeResponse.ResultObject
+                    {
+                        Metric = new Dictionary<string, string> { ["pod"] = "pod-1" },
+                        Values =
+                        [
+                            (DateTimeOffset.FromUnixTimeSeconds(0), 1.25),
+                            (DateTimeOffset.FromUnixTimeSeconds(12 * 60 * 60), 2.5),
+                        ],
+                    },
+                ],
+            },
+        });
+        var settings = new TestClusterSettingsStore(new ClusterMetricsSettings
+        {
+            MetricsServiceType = MetricsServiceType.Prometheus,
+            PrometheusProviderKind = PrometheusProviderKind.External,
+            PrometheusDirectUrl = "http://prometheus.example",
+        });
+        using var service = CreateMetricsService(settings, queryClient);
+        await using var cluster = CreateCluster("prom-cluster", service, settings);
+        await service.InitializeAsync(cluster);
+        var request = CreateRequest(
+            stepSeconds: 12 * 60 * 60,
+            frames: 121,
+            rangeSeconds: 60 * 24 * 60 * 60);
+
+        var result = await service.QueryPrometheusAsync(request);
+
+        result.Metrics["cpuUsage"].Single().Points.Select(static point => point.Timestamp)
+            .ShouldBe([DateTimeOffset.FromUnixTimeSeconds(0), DateTimeOffset.FromUnixTimeSeconds(12 * 60 * 60)]);
+    }
+
+    [Fact]
     public async Task QueryPrometheusAsync_reuses_cached_result_for_identical_request()
     {
         var queryClient = new FakePrometheusQueryClient();
@@ -646,12 +690,12 @@ public sealed class MetricsServiceTests
         return new FakeKubernetesHttpApi();
     }
 
-    private static MetricRequest CreateRequest(int stepSeconds = 60, int frames = 5)
+    private static MetricRequest CreateRequest(int stepSeconds = 60, int frames = 5, int rangeSeconds = 300)
     {
         return new MetricRequest
         {
             Category = MetricCategory.Pods,
-            RangeSeconds = 300,
+            RangeSeconds = rangeSeconds,
             StepSeconds = stepSeconds,
             Frames = frames,
             Queries =

@@ -22,7 +22,7 @@ public sealed class PropertiesView : ViewBase<V1CronJob>
                     .Key(ResourcesLanguageManager.Instance.CronJobPropertiesView_Concurrency_Policy.CurrentValue()!)
                     .Value(vm.Spec?.ConcurrencyPolicy ?? ""),
                 ResourcePropertiesSection.Create(
-                    FoundationLanguageManager.Instance.Shared_Configuration.ToBinding(),
+                    FoundationLanguageManager.Instance.Shared_Configuration,
                     new PropertyItem()
                         .Key(ResourcesLanguageManager.Instance.CronJobPropertiesView_Successful_History_Limit.CurrentValue()!)
                         .Value(vm.Spec?.SuccessfulJobsHistoryLimit ?? 0),
@@ -36,7 +36,7 @@ public sealed class PropertiesView : ViewBase<V1CronJob>
                         .Key(ResourcesLanguageManager.Instance.CronJobPropertiesView_Time_Zone.CurrentValue()!)
                         .Value(vm.Spec?.TimeZone ?? "")),
                 ResourcePropertiesSection.Create(
-                    FoundationLanguageManager.Instance.Shared_Status.ToBinding(),
+                    FoundationLanguageManager.Instance.Shared_Status,
                     new PropertyItem()
                         .Key(ResourcesLanguageManager.Instance.CronJobPropertiesView_Active_Jobs.CurrentValue()!)
                         .Value(vm.Status?.Active?.Count ?? 0),

@@ -35,20 +35,20 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
     private readonly DispatcherTimer _timer = new(DispatcherPriority.Default);
     private static readonly IReadOnlyList<MetricTimeRangeOption> s_timeRangeOptions =
     [
-        new MetricTimeRangeOption(ResourcesLanguageManager.Instance.MetricsControl_TimeRange_1Hour.CurrentValue()!, 3600),
-        new MetricTimeRangeOption(ResourcesLanguageManager.Instance.MetricsControl_TimeRange_2Hours.CurrentValue()!, 7200),
-        new MetricTimeRangeOption(ResourcesLanguageManager.Instance.MetricsControl_TimeRange_4Hours.CurrentValue()!, 14400),
-        new MetricTimeRangeOption(ResourcesLanguageManager.Instance.MetricsControl_TimeRange_12Hours.CurrentValue()!, 43200),
-        new MetricTimeRangeOption(ResourcesLanguageManager.Instance.MetricsControl_TimeRange_48Hours.CurrentValue()!, 172800),
-        new MetricTimeRangeOption(ResourcesLanguageManager.Instance.MetricsControl_TimeRange_1Week.CurrentValue()!, 604800),
-        new MetricTimeRangeOption(ResourcesLanguageManager.Instance.MetricsControl_TimeRange_1Month.CurrentValue()!, 2592000),
-        new MetricTimeRangeOption(ResourcesLanguageManager.Instance.MetricsControl_TimeRange_2Months.CurrentValue()!, 5184000),
+        new MetricTimeRangeOption(ResourcesLanguageManager.Instance.MetricsControl_TimeRange_1Hour.CurrentValue()!, 3600, 60),
+        new MetricTimeRangeOption(ResourcesLanguageManager.Instance.MetricsControl_TimeRange_2Hours.CurrentValue()!, 7200, 120),
+        new MetricTimeRangeOption(ResourcesLanguageManager.Instance.MetricsControl_TimeRange_4Hours.CurrentValue()!, 14400, 300),
+        new MetricTimeRangeOption(ResourcesLanguageManager.Instance.MetricsControl_TimeRange_12Hours.CurrentValue()!, 43200, 600),
+        new MetricTimeRangeOption(ResourcesLanguageManager.Instance.MetricsControl_TimeRange_48Hours.CurrentValue()!, 172800, 1800),
+        new MetricTimeRangeOption(ResourcesLanguageManager.Instance.MetricsControl_TimeRange_1Week.CurrentValue()!, 604800, 7200),
+        new MetricTimeRangeOption(ResourcesLanguageManager.Instance.MetricsControl_TimeRange_1Month.CurrentValue()!, 2592000, 21600),
+        new MetricTimeRangeOption(ResourcesLanguageManager.Instance.MetricsControl_TimeRange_2Months.CurrentValue()!, 5184000, 43200),
     ];
     private static readonly MetricTimeRangeOption s_defaultTimeRange = s_timeRangeOptions[0];
     private const double s_chartMinHeight = 360d;
     private ClusterWorkspace? _cluster;
     private string? _prometheusCacheKey;
-    private int? _prometheusCacheRangeSeconds;
+    private MetricTimeRangeOption? _prometheusCacheTimeRange;
     private bool _suppressSelectedTabRefresh;
     private readonly ILogger<MetricsControl> _logger;
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
@@ -617,9 +617,9 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
         }
 
         var resourceKey = GetResourceKey(resource);
-        var selectedRangeSeconds = SelectedTimeRange?.RangeSeconds ?? s_defaultTimeRange.RangeSeconds;
+        var selectedTimeRange = SelectedTimeRange ?? s_defaultTimeRange;
         var shouldInvalidateCache = !string.Equals(_prometheusCacheKey, resourceKey, StringComparison.Ordinal)
-            || _prometheusCacheRangeSeconds != selectedRangeSeconds;
+            || _prometheusCacheTimeRange != selectedTimeRange;
 
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
@@ -656,7 +656,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             }
 
             _prometheusCacheKey = resourceKey;
-            _prometheusCacheRangeSeconds = selectedRangeSeconds;
+            _prometheusCacheTimeRange = selectedTimeRange;
         });
 
         var activeTab = SelectedTab ?? Tabs.FirstOrDefault();
@@ -806,10 +806,10 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
 
         var request = MetricsControlPrometheusBackend.CreatePodContainerPrometheusRequest(Pod, Container.Name);
         var resourceKey = GetPodContainerResourceKey(Pod, Container.Name);
-        var selectedRangeSeconds = SelectedTimeRange?.RangeSeconds ?? s_defaultTimeRange.RangeSeconds;
+        var selectedTimeRange = SelectedTimeRange ?? s_defaultTimeRange;
         var selectedTitle = SelectedTab?.Title;
         var shouldInvalidateCache = !string.Equals(_prometheusCacheKey, resourceKey, StringComparison.Ordinal)
-            || _prometheusCacheRangeSeconds != selectedRangeSeconds;
+            || _prometheusCacheTimeRange != selectedTimeRange;
 
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
@@ -835,7 +835,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             _suppressSelectedTabRefresh = false;
 
             _prometheusCacheKey = resourceKey;
-            _prometheusCacheRangeSeconds = selectedRangeSeconds;
+            _prometheusCacheTimeRange = selectedTimeRange;
         });
 
         var activeTab = SelectedTab ?? Tabs.FirstOrDefault();
@@ -1094,6 +1094,7 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
     private static readonly TimeSpan s_defaultTimeWindow = TimeSpan.FromHours(1);
     private const float s_lineStrokeThickness = 1f;
     private readonly Application? _application;
+    private bool _includeDateInAxisLabels;
     private readonly Axis _yAxis = new()
     {
         LabelsPaint = CreateChartTextPaint(),
@@ -1113,7 +1114,7 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
     public MetricPanelViewModel()
     {
         _application = Application.Current;
-        _xAxis = new DateTimeAxis(TimeSpan.FromMinutes(10), FormatChartTime)
+        _xAxis = new DateTimeAxis(TimeSpan.FromMinutes(10), FormatAxisLabel)
         {
             LabelsPaint = CreateChartTextPaint(),
             TextSize = GetApplicationTextSize(),
@@ -1154,7 +1155,7 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
                 {
                     Name = snapshot.Name,
                     GeometrySize = 0,
-                    XToolTipLabelFormatter = static point => FormatChartTime(new DateTime((long)point.Coordinate.SecondaryValue)),
+                    XToolTipLabelFormatter = point => FormatAxisLabel(new DateTime((long)point.Coordinate.SecondaryValue)),
                     YToolTipLabelFormatter = static point => FormatTooltipValue(point.Coordinate.PrimaryValue),
                     Values = new ObservableCollection<DateTimePoint>(snapshot.Points),
                 };
@@ -1291,6 +1292,7 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
 
         if (timestamps.Length == 0)
         {
+            _includeDateInAxisLabels = false;
             _xAxis.MinLimit = null;
             _xAxis.MaxLimit = null;
             return;
@@ -1305,6 +1307,7 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
             min = max - s_defaultTimeWindow;
         }
 
+        _includeDateInAxisLabels = min.Date != max.Date;
         _xAxis.MinLimit = min.Ticks;
         _xAxis.MaxLimit = max.Ticks;
     }
@@ -1343,6 +1346,10 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
     {
         return value.ToString("h:mm tt", CultureInfo.CurrentCulture);
     }
+
+    private string FormatAxisLabel(DateTime value) => _includeDateInAxisLabels
+        ? value.ToString("MMM d, h:mm tt", CultureInfo.CurrentCulture)
+        : FormatChartTime(value);
 
     private static void ApplyStepLineSeriesStyle(StepLineSeries<DateTimePoint> series, int index)
     {

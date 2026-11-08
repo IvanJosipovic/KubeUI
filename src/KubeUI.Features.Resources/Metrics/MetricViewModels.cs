@@ -78,4 +78,9 @@ public sealed partial class MetricTabViewModel : ObservableObject, IDisposable
     }
 }
 
-public sealed record MetricTimeRangeOption(string Label, int RangeSeconds);
+/// <summary>Prometheus query window and evaluation interval shown in metrics range selector.</summary>
+public sealed record MetricTimeRangeOption(string Label, int RangeSeconds, int StepSeconds)
+{
+    /// <summary>Gets expected range-query evaluations, including both endpoints.</summary>
+    public int ExpectedPointCount => RangeSeconds / StepSeconds + 1;
+}

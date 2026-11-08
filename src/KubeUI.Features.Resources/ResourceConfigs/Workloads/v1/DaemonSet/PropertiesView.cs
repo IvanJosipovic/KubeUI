@@ -26,7 +26,7 @@ public sealed class PropertiesView : ViewBase<V1DaemonSet>
                     .Key(ResourcesLanguageManager.Instance.DaemonSetPropertiesView_Updated.CurrentValue()!)
                     .Value(vm.Status?.UpdatedNumberScheduled ?? 0),
                 ResourcePropertiesSection.Create(
-                    FoundationLanguageManager.Instance.Shared_Status.ToBinding(),
+                    FoundationLanguageManager.Instance.Shared_Status,
                     new PropertyItem()
                         .Key(ResourcesLanguageManager.Instance.DaemonSetPropertiesView_Available.CurrentValue()!)
                         .Value(vm.Status?.NumberAvailable ?? 0),
@@ -40,7 +40,7 @@ public sealed class PropertiesView : ViewBase<V1DaemonSet>
                         .Key(FoundationLanguageManager.Instance.Shared_Conditions.CurrentValue()!)
                         .Value(vm.Status?.Conditions?.Count ?? 0)),
                 ResourcePropertiesSection.Create(
-                    FoundationLanguageManager.Instance.Shared_Configuration.ToBinding(),
+                    FoundationLanguageManager.Instance.Shared_Configuration,
                     new PropertyItem()
                         .Key(FoundationLanguageManager.Instance.Shared_Min_Ready_Seconds.CurrentValue()!)
                         .Value(vm.Spec?.MinReadySeconds ?? 0),

@@ -25,7 +25,7 @@ public sealed class PropertiesView : ViewBase<V1CustomResourceDefinition>
                     .Key(ResourcesLanguageManager.Instance.CustomResourceDefinitionPropertiesView_Versions.CurrentValue()!)
                     .Value(vm.Spec?.Versions?.Count ?? 0),
                 ResourcePropertiesSection.Create(
-                    FoundationLanguageManager.Instance.Shared_Status.ToBinding(),
+                    FoundationLanguageManager.Instance.Shared_Status,
                     new PropertyItem()
                         .Key(ResourcesLanguageManager.Instance.CustomResourceDefinitionPropertiesView_Accepted_Kind.CurrentValue()!)
                         .Value(vm.Status?.AcceptedNames?.Kind ?? ""),

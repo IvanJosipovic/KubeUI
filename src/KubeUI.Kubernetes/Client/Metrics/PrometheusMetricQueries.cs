@@ -204,9 +204,17 @@ internal sealed class PrometheusMetricQueries(
     {
         var step = request.StepSeconds ?? 60;
         var rawEnd = request.End ?? timeProvider.GetUtcNow();
-        var end = DateTimeOffset.FromUnixTimeSeconds(rawEnd.ToUnixTimeSeconds() / step * step);
+        var endUnixSeconds = rawEnd.ToUnixTimeSeconds();
+        if (!request.End.HasValue)
+        {
+            // Keep cache keys stable across the 30-second UI refresh without making long-range
+            // requests lag by up to the selected Prometheus step (12 hours at the widest range).
+            endUnixSeconds = endUnixSeconds / 60 * 60;
+        }
+
+        var end = DateTimeOffset.FromUnixTimeSeconds(endUnixSeconds);
         var rawStart = request.Start ?? end.AddSeconds(-(request.RangeSeconds ?? 3600));
-        var start = DateTimeOffset.FromUnixTimeSeconds(rawStart.ToUnixTimeSeconds() / step * step);
+        var start = DateTimeOffset.FromUnixTimeSeconds(rawStart.ToUnixTimeSeconds());
         return (start, end, step);
     }
 
@@ -254,21 +262,6 @@ internal sealed class PrometheusMetricQueries(
                 normalized.Add(new MetricPoint(cursor, 0));
         }
         normalized.Sort(static (left, right) => left.Timestamp.CompareTo(right.Timestamp));
-
-        var paddingCount = Math.Max(0, frames - normalized.Count);
-        if (paddingCount > 0)
-        {
-            var padded = new List<MetricPoint>(normalized.Count + paddingCount);
-            var firstTimestamp = normalized[0].Timestamp;
-            for (var index = paddingCount; index > 0; index--)
-            {
-                padded.Add(new MetricPoint(firstTimestamp.AddSeconds(-(long)index * step), 0));
-            }
-
-            padded.AddRange(normalized);
-            normalized = padded;
-        }
-
         return normalized;
     }
 
