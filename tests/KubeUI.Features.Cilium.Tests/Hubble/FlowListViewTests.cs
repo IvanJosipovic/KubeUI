@@ -6,8 +6,10 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.Controls.Layout;
 using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Features.Cilium.Hubble;
+using KubeUI.Features.Clusters.Presentation;
 using KubeUI.Testing.Utilities;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
@@ -62,24 +64,24 @@ public sealed class FlowListViewTests
         window.Show();
         await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
 
-        var toolbar = view.GetVisualDescendants()
-            .OfType<Grid>()
-            .Single(grid => grid.Classes.Contains("toolbar"));
+        var toolbar = view.GetVisualDescendants().OfType<CompactToolbar>().Single();
         var namespaceSelector = toolbar.GetVisualDescendants().OfType<MultiComboBox>().Single();
-        namespaceSelector.PlaceholderText.ShouldBe(ResourceAssets.Resources.ResourceListView_SelectNamespace);
+        namespaceSelector.PlaceholderText.ShouldBe("Filter Namespace(s)");
 
         var searchBox = toolbar.GetVisualDescendants()
             .OfType<TextBox>()
-            .Single(textBox => textBox.PlaceholderText == CiliumAssets.Resources.FlowListView_SearchWatermark);
-        var filterControls = (StackPanel)namespaceSelector.Parent!;
-        filterControls.Children.IndexOf(searchBox).ShouldBeLessThan(filterControls.Children.IndexOf(namespaceSelector));
+            .Single(textBox => textBox.PlaceholderText == CiliumLanguageManager.Instance.FlowListView_SearchWatermark.CurrentValue());
+        var picker = toolbar.GetVisualDescendants().OfType<NamespaceScopePicker>().Single();
+        var filterControls = (StackPanel)picker.Parent!;
+        filterControls.Children.IndexOf(searchBox).ShouldBeLessThan(filterControls.Children.IndexOf(picker));
+        picker.PickerWidth.ShouldBe(190);
 
-        var status = toolbar.Children.OfType<TextBlock>().Single();
-        Grid.GetColumn(status).ShouldBe(2);
+        toolbar.Middle!.GetVisualDescendants().OfType<TextBlock>()
+            .ShouldContain(textBlock => textBlock.Text == viewModel.ConnectionStatus);
 
         var linkToggle = toolbar.GetVisualDescendants()
             .OfType<ToggleButton>()
-            .Single(toggle => Equals(ToolTip.GetTip(toggle), ResourceAssets.Resources.ResourceListView_NamespaceLink));
+            .Single(toggle => Equals(ToolTip.GetTip(toggle), "Linked namespace selection"));
         linkToggle.IsChecked.ShouldBe(true);
 
         toolbar.GetVisualDescendants().OfType<ComboBox>().ShouldBeEmpty();
@@ -88,6 +90,6 @@ public sealed class FlowListViewTests
         toolbar.GetVisualDescendants().OfType<ToggleButton>().ShouldHaveSingleItem();
         toolbar.GetVisualDescendants()
             .OfType<Button>()
-            .ShouldNotContain(button => Equals(ToolTip.GetTip(button), CiliumAssets.Resources.FlowListView_ButtonResetFilter));
+            .ShouldNotContain(button => Equals(ToolTip.GetTip(button), CiliumLanguageManager.Instance.FlowListView_ButtonResetFilter.CurrentValue()));
     }
 }

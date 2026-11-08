@@ -26,19 +26,28 @@
     <InternalsVisibleTo Include="KubeUI.App" />
     <InternalsVisibleTo Include="KubeUI.Avalonia.Tests" />
     <InternalsVisibleTo Include="KubeUI.Features.Resources.Tests" />
+    <InternalsVisibleTo Include="KubeUI.Features.Resources" />
+    <InternalsVisibleTo Include="KubeUI.Features.Helm.Tests" />
+    <InternalsVisibleTo Include="KubeUI.Controls.Tests" />
     <InternalsVisibleTo Include="KubeUI.Benchmarks" />
-    <ProjectReference Include="..\KubeUI.Avalonia\KubeUI.Avalonia.csproj" />
+    <ProjectReference Include="..\KubeUI.Foundation\KubeUI.Foundation.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Markup.Declarative" />
+    <PackageReference Include="Avalonia.AvaloniaEdit" />
+    <PackageReference Include="AvaloniaEdit.TextMate" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="Dock.Model.Mvvm" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="FluentIcons.Avalonia" />
+    <PackageReference Include="Irihi.Ursa" />
     <PackageReference Include="PropertyGenerator.Avalonia">
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Svg.Controls.Skia.Avalonia" />
+    <PackageReference Include="TextMateSharp" />
+    <PackageReference Include="TextMateSharp.Grammars" />
+    <PackageReference Include="Xaml.Behaviors.Avalonia" />
   </ItemGroup>
 </Project>

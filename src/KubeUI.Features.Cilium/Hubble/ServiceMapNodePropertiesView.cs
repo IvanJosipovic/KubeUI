@@ -9,38 +9,38 @@ public sealed class ServiceMapNodePropertiesView : KubeUIView<ServiceMapNodeProp
     {
         var node = viewModel.Node;
         if (node is null)
-            return new TextBlock().Text(Assets.Resources.ServiceMapNodePropertiesView_NoNode!);
+            return new TextBlock().Text(CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_NoNode.CurrentValue()!);
 
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(Assets.Resources.ServiceMapNodePropertiesView_Id!)
+                    .Key(CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_Id.CurrentValue()!)
                     .Value(node.Id),
                 new PropertyItem()
-                    .Key(Assets.Resources.ServiceMapNodePropertiesView_Name!)
+                    .Key(CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_Name.CurrentValue()!)
                     .Value(node.Name),
                 new PropertyItem()
-                    .Key(Assets.Resources.ServiceMapNodePropertiesView_Namespace!)
+                    .Key(CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_Namespace.CurrentValue()!)
                     .Value(string.IsNullOrEmpty(node.Namespace)
-                        ? Assets.Resources.ServiceMapGraphControl_External!
+                        ? CiliumLanguageManager.Instance.ServiceMapGraphControl_External.CurrentValue()!
                         : node.Namespace),
                 new PropertyItem()
-                    .Key(Assets.Resources.ServiceMapNodePropertiesView_WorkloadType!)
+                    .Key(CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_WorkloadType.CurrentValue()!)
                     .Value(node.WorkloadType ?? string.Empty),
                 new PropertyItem()
-                    .Key(Assets.Resources.ServiceMapNodePropertiesView_IngressFlows!)
+                    .Key(CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_IngressFlows.CurrentValue()!)
                     .Value(node.IngressFlowCount),
                 new PropertyItem()
-                    .Key(Assets.Resources.ServiceMapNodePropertiesView_EgressFlows!)
+                    .Key(CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_EgressFlows.CurrentValue()!)
                     .Value(node.EgressFlowCount),
                 new PropertyItem()
-                    .Key(Assets.Resources.ServiceMapNodePropertiesView_AllowedFlows!)
+                    .Key(CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_AllowedFlows.CurrentValue()!)
                     .Value(node.AllowedCount),
                 new PropertyItem()
-                    .Key(Assets.Resources.ServiceMapNodePropertiesView_DeniedFlows!)
+                    .Key(CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_DeniedFlows.CurrentValue()!)
                     .Value(node.DeniedCount),
                 new PropertyItem()
-                    .Key(Assets.Resources.ServiceMapNodePropertiesView_AccessPoints!)
+                    .Key(CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_AccessPoints.CurrentValue()!)
                     .Value(viewModel.AccessPoints));
     }
 }

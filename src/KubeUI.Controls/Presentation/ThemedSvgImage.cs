@@ -3,7 +3,7 @@ using Avalonia.Svg.Skia;
 namespace KubeUI.Controls.Presentation;
 
 /// <summary>
-/// Renders an SVG asset from an <c>avares://KubeUI.Avalonia</c> path and swaps to a second asset when the effective
+/// Renders an SVG asset from an <c>avares://KubeUI.Foundation</c> path and swaps to a second asset when the effective
 /// theme variant is dark. Use for monochrome brand icons that need an official dark-background variant.
 /// </summary>
 public sealed class ThemedSvgImage : Image
@@ -16,7 +16,7 @@ public sealed class ThemedSvgImage : Image
     public static readonly StyledProperty<string?> DarkSourcePathProperty =
         AvaloniaProperty.Register<ThemedSvgImage, string?>(nameof(DarkSourcePath));
 
-    private static readonly Uri AppUri = new("avares://KubeUI.Avalonia");
+    private static readonly Uri AppUri = new("avares://KubeUI.Foundation");
 
     private (string Path, SvgImage Image)? _light;
     private (string Path, SvgImage Image)? _dark;

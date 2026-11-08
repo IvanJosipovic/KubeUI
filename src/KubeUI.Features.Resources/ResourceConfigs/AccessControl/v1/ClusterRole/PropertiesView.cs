@@ -1,4 +1,4 @@
-﻿using k8s.Models;
+using k8s.Models;
 using KubeUI.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Features.Resources.AccessControl.v1.ClusterRole;
@@ -12,10 +12,10 @@ public sealed class PropertiesView : ViewBase<V1ClusterRole>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Rules)
+                    .Key(FoundationLanguageManager.Instance.Shared_Rules.CurrentValue()!)
                     .Value(vm.Rules.Count),
                 new PropertyItem()
-                    .Key(Assets.Resources.ClusterRolePropertiesView_Aggregation_Selectors)
+                    .Key(ResourcesLanguageManager.Instance.ClusterRolePropertiesView_Aggregation_Selectors.CurrentValue()!)
                     .Value(vm.AggregationRule.ClusterRoleSelectors.Count));
     }
 }

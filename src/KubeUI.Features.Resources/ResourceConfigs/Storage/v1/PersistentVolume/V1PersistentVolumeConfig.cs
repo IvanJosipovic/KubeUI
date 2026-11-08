@@ -1,4 +1,4 @@
-﻿using k8s.Models;
+using k8s.Models;
 
 namespace KubeUI.Features.Resources.Storage.v1.PersistentVolume;
 
@@ -18,14 +18,14 @@ public sealed partial class V1PersistentVolumeConfig : ResourceConfig<V1Persiste
             new ResourceListColumn<V1PersistentVolume, string>()
             {
                 Key = "storage-class",
-                Name = Assets.Resources.V1PersistentVolumeConfig_Storage_Class!,
+                Name = ResourcesLanguageManager.Instance.V1PersistentVolumeConfig_Storage_Class.CurrentValue()!,
                 Field = x => x.Spec.StorageClassName,
                 Width = 1, WidthMode = DynamicTableViewWidthMode.Star,
             },
             new ResourceListColumn<V1PersistentVolume, decimal>()
             {
                 Key = "size",
-                Name = Assets.Resources.V1PersistentVolumeConfig_Size!,
+                Name = ResourcesLanguageManager.Instance.V1PersistentVolumeConfig_Size.CurrentValue()!,
                 Display = x => x.Spec.Capacity["storage"]?.CanonicalizeString(ResourceQuantity.SuffixFormat.BinarySI) ?? "",
                 Field = x => x.Spec.Capacity["storage"]?.ToDecimal() ?? 0,
                 WidthMode = DynamicTableViewWidthMode.Cells
@@ -33,7 +33,7 @@ public sealed partial class V1PersistentVolumeConfig : ResourceConfig<V1Persiste
             new ResourceListColumn<V1PersistentVolume, string>()
             {
                 Key = "claim",
-                Name = Assets.Resources.V1PersistentVolumeConfig_Claim!,
+                Name = ResourcesLanguageManager.Instance.V1PersistentVolumeConfig_Claim.CurrentValue()!,
                 Field = x => x.Spec.ClaimRef.Name,
                 Width = 1, WidthMode = DynamicTableViewWidthMode.Star,
             },
@@ -41,7 +41,7 @@ public sealed partial class V1PersistentVolumeConfig : ResourceConfig<V1Persiste
             new ResourceListColumn<V1PersistentVolume, string>()
             {
                 Key = "status",
-                Name = Assets.Resources.V1PersistentVolumeConfig_Status!,
+                Name = ResourcesLanguageManager.Instance.V1PersistentVolumeConfig_Status.CurrentValue()!,
                 Field = x => x.Status.Phase,
                 WidthMode = DynamicTableViewWidthMode.Cells
             },

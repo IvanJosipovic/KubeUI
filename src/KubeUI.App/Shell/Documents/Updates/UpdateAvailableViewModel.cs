@@ -42,7 +42,7 @@ public sealed partial class UpdateAvailableViewModel : ViewModelBase
         _platformServices = platformServices;
         _logger = logger;
         Id = nameof(UpdateAvailableViewModel);
-        Title = Assets.Resources.UpdateAvailableView_Title;
+        Title = AppLanguageManager.Instance.UpdateAvailableView_Title.CurrentValue()!;
         CanClose = true;
     }
 
@@ -54,7 +54,7 @@ public sealed partial class UpdateAvailableViewModel : ViewModelBase
     {
         LatestVersion = latestVersion;
         VersionSummary = string.Format(
-            Assets.Resources.UpdateAvailableView_VersionSummaryFormat,
+            AppLanguageManager.Instance.UpdateAvailableView_VersionSummaryFormat.CurrentValue()!,
             currentVersion,
             latestVersion);
         MarkdownBuilder.Clear();
@@ -84,7 +84,7 @@ public sealed partial class UpdateAvailableViewModel : ViewModelBase
         IsUpdating = true;
         CanClose = false;
         DownloadProgress = 0;
-        DownloadProgressText = string.Format(Assets.Resources.UpdateAvailableView_DownloadProgress, 0);
+        DownloadProgressText = string.Format(AppLanguageManager.Instance.UpdateAvailableView_DownloadProgress.CurrentValue()!, 0);
 
         try
         {
@@ -121,7 +121,7 @@ public sealed partial class UpdateAvailableViewModel : ViewModelBase
         {
             DownloadProgress = Math.Clamp(progress, 0, 100);
             DownloadProgressText = string.Format(
-                Assets.Resources.UpdateAvailableView_DownloadProgress,
+                AppLanguageManager.Instance.UpdateAvailableView_DownloadProgress.CurrentValue()!,
                 DownloadProgress);
         });
     }
@@ -148,17 +148,17 @@ public sealed partial class UpdateAvailableViewModel : ViewModelBase
 
         return markdown.Length > 0
             ? markdown.ToString()
-            : Assets.Resources.UpdateAvailableView_NoReleaseNotes;
+            : AppLanguageManager.Instance.UpdateAvailableView_NoReleaseNotes.CurrentValue()!;
     }
 
     internal static ContentDialogSettings CreateUpdateConfirmationDialogSettings(string latestVersion)
     {
         return new ContentDialogSettings
         {
-            Title = Assets.Resources.UpdateAvailableView_Confirm_Title,
-            Content = string.Format(Assets.Resources.UpdateAvailableView_Confirm_Content, latestVersion),
-            PrimaryButtonText = Assets.Resources.UpdateAvailableView_Confirm_Primary,
-            SecondaryButtonText = Assets.Resources.UpdateAvailableView_Confirm_Secondary,
+            Title = AppLanguageManager.Instance.UpdateAvailableView_Confirm_Title.CurrentValue()!,
+            Content = string.Format(AppLanguageManager.Instance.UpdateAvailableView_Confirm_Content.CurrentValue()!, latestVersion),
+            PrimaryButtonText = AppLanguageManager.Instance.UpdateAvailableView_Confirm_Primary.CurrentValue()!,
+            SecondaryButtonText = AppLanguageManager.Instance.UpdateAvailableView_Confirm_Secondary.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary
         };
     }
@@ -167,9 +167,9 @@ public sealed partial class UpdateAvailableViewModel : ViewModelBase
     {
         return new ContentDialogSettings
         {
-            Title = Assets.Resources.UpdateAvailableView_Failure_Title,
-            Content = Assets.Resources.UpdateAvailableView_Failure_Content,
-            PrimaryButtonText = Assets.Resources.UpdateAvailableView_Failure_Primary,
+            Title = AppLanguageManager.Instance.UpdateAvailableView_Failure_Title.CurrentValue()!,
+            Content = AppLanguageManager.Instance.UpdateAvailableView_Failure_Content.CurrentValue()!,
+            PrimaryButtonText = AppLanguageManager.Instance.UpdateAvailableView_Failure_Primary.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Primary
         };
     }

@@ -123,7 +123,7 @@ Build steps:
 
 - `src/KubeUI.Kubernetes`
   Kubernetes runtime, cluster integration, serialization, and shared domain logic
-- `src/KubeUI.Avalonia` (shared Avalonia foundation)
+- `src/KubeUI.Foundation` (shared Avalonia foundation)
 - `src/KubeUI.Controls` (reusable controls)
 - `src/KubeUI.App` (main UI shell and composition)
 - `src/KubeUI.Features.*` (feature modules)

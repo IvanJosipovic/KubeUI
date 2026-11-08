@@ -46,7 +46,7 @@ public sealed partial class HelmRepositoryEditorViewModel : ViewModelBase
         _originalUrl = repository?.Url ?? string.Empty;
         Name = repository?.Name ?? string.Empty;
         Url = repository?.Url ?? string.Empty;
-        Title = repository is null ? Assets.Resources.HelmRepositoryEditorView_NewTitle : Assets.Resources.HelmRepositoryEditorView_EditTitle;
+        Title = repository is null ? HelmLanguageManager.Instance.HelmRepositoryEditorView_NewTitle.CurrentValue()! : HelmLanguageManager.Instance.HelmRepositoryEditorView_EditTitle.CurrentValue()!;
         Id = $"{nameof(HelmRepositoryEditorViewModel)}-{cluster.Runtime.Name}-{_originalName ?? Guid.NewGuid().ToString("N")}";
     }
 

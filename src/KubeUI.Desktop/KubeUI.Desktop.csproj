@@ -12,8 +12,8 @@
     <PublishReadyToRunComposite>false</PublishReadyToRunComposite>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <EnableCompressionInSingleFile>false</EnableCompressionInSingleFile>
-    <PackageIcon>..\KubeUI.Avalonia\Assets\icon.ico</PackageIcon>
-    <ApplicationIcon>..\KubeUI.Avalonia\Assets\icon.ico</ApplicationIcon>
+    <PackageIcon>..\KubeUI.Foundation\Assets\icon.ico</PackageIcon>
+    <ApplicationIcon>..\KubeUI.Foundation\Assets\icon.ico</ApplicationIcon>
     <DebugType>embedded</DebugType>
   </PropertyGroup>
 

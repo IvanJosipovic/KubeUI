@@ -24,7 +24,7 @@ public sealed class HubbleNavigationSectionProvider : INavigationSectionProvider
         _enabled = enabled;
         Section = new NavigationSection(
             "cilium",
-            Assets.Resources.NavigationView_Cilium!,
+            CiliumLanguageManager.Instance.HubbleNavigationSectionProvider_SectionTitle.CurrentValue()!,
             NavigationSectionOrder.AfterCustomResources,
             null,
             CiliumIconAssetPath,
@@ -34,7 +34,7 @@ public sealed class HubbleNavigationSectionProvider : INavigationSectionProvider
         [
             new NavigationDocument(
                 FlowsDocumentId,
-                Assets.Resources.Hubble_Flows_Title!,
+                CiliumLanguageManager.Instance.HubbleNavigationSectionProvider_Flows_Title.CurrentValue()!,
                 100,
                 null,
                 IsAvailable,
@@ -46,7 +46,7 @@ public sealed class HubbleNavigationSectionProvider : INavigationSectionProvider
                 }),
             new NavigationDocument(
                 ServiceMapDocumentId,
-                Assets.Resources.Hubble_ServiceMap_Title!,
+                CiliumLanguageManager.Instance.HubbleNavigationSectionProvider_ServiceMap_Title.CurrentValue()!,
                 200,
                 null,
                 IsAvailable,
@@ -63,7 +63,7 @@ public sealed class HubbleNavigationSectionProvider : INavigationSectionProvider
 
     public NavigationPlacement DocumentPlacement => NavigationPlacement.InSection(
         Section.Id,
-        [new NavigationGroup("hubble", Assets.Resources.Hubble_GroupName!, 0, null, HubbleIconAssetPath, HubbleIconDarkAssetPath)]);
+        [new NavigationGroup("hubble", CiliumLanguageManager.Instance.HubbleNavigationSectionProvider_GroupName.CurrentValue()!, 0, null, HubbleIconAssetPath, HubbleIconDarkAssetPath)]);
 
     public IReadOnlyList<NavigationDocument> Documents { get; }
 

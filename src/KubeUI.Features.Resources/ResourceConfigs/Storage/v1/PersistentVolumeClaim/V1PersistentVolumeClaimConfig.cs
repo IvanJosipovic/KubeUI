@@ -1,4 +1,4 @@
-﻿using k8s.Models;
+using k8s.Models;
 
 namespace KubeUI.Features.Resources.Storage.v1.PersistentVolumeClaim;
 
@@ -20,14 +20,14 @@ public sealed partial class V1PersistentVolumeClaimConfig : ResourceConfig<V1Per
             new ResourceListColumn<V1PersistentVolumeClaim, string>()
             {
                 Key = "storage-class",
-                Name = Assets.Resources.V1PersistentVolumeClaimConfig_Storage_Class!,
+                Name = ResourcesLanguageManager.Instance.V1PersistentVolumeClaimConfig_Storage_Class.CurrentValue()!,
                 Field = x => x.Spec.StorageClassName,
                 Width = 1, WidthMode = DynamicTableViewWidthMode.Star,
             },
             new ResourceListColumn<V1PersistentVolumeClaim, decimal>()
             {
                 Key = "size",
-                Name = Assets.Resources.V1PersistentVolumeClaimConfig_Size!,
+                Name = ResourcesLanguageManager.Instance.V1PersistentVolumeClaimConfig_Size.CurrentValue()!,
                 Display = x => x.Spec.Resources?.Requests["storage"]?.CanonicalizeString(ResourceQuantity.SuffixFormat.BinarySI) ?? "",
                 Field = x => x.Spec.Resources?.Requests["storage"]?.ToDecimal() ?? 0,
                 WidthMode = DynamicTableViewWidthMode.Cells
@@ -36,7 +36,7 @@ public sealed partial class V1PersistentVolumeClaimConfig : ResourceConfig<V1Per
             new ResourceListColumn<V1PersistentVolumeClaim, string>()
             {
                 Key = "status",
-                Name = Assets.Resources.V1PersistentVolumeClaimConfig_Status!,
+                Name = ResourcesLanguageManager.Instance.V1PersistentVolumeClaimConfig_Status.CurrentValue()!,
                 Field = x => x.Status.Phase,
                 WidthMode = DynamicTableViewWidthMode.Cells
             },

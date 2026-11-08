@@ -1,4 +1,4 @@
-﻿using k8s.Models;
+using k8s.Models;
 using KubeUI.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Features.Resources.Configuration.v1.Lease;
@@ -12,19 +12,19 @@ public sealed class PropertiesView : ViewBase<V1Lease>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(Assets.Resources.LeasePropertiesView_Holder_Identity)
+                    .Key(ResourcesLanguageManager.Instance.LeasePropertiesView_Holder_Identity.CurrentValue()!)
                     .Value(vm.Spec.HolderIdentity),
                 new PropertyItem()
-                    .Key(Assets.Resources.LeasePropertiesView_Lease_Duration_Seconds)
+                    .Key(ResourcesLanguageManager.Instance.LeasePropertiesView_Lease_Duration_Seconds.CurrentValue()!)
                     .Value(vm.Spec.LeaseDurationSeconds),
                 new PropertyItem()
-                    .Key(Assets.Resources.LeasePropertiesView_Acquire_Time)
+                    .Key(ResourcesLanguageManager.Instance.LeasePropertiesView_Acquire_Time.CurrentValue()!)
                     .Value(vm.Spec.AcquireTime),
                 new PropertyItem()
-                    .Key(Assets.Resources.LeasePropertiesView_Renew_Time)
+                    .Key(ResourcesLanguageManager.Instance.LeasePropertiesView_Renew_Time.CurrentValue()!)
                     .Value(vm.Spec.RenewTime),
                 new PropertyItem()
-                    .Key(Assets.Resources.LeasePropertiesView_Lease_Transitions)
+                    .Key(ResourcesLanguageManager.Instance.LeasePropertiesView_Lease_Transitions.CurrentValue()!)
                     .Value(vm.Spec.LeaseTransitions));
     }
 }

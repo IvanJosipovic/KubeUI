@@ -1,8 +1,5 @@
 using System.Collections;
-using System.Windows.Input;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
-using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
 using Avalonia.Markup.Declarative;
 using Avalonia.Markup.Xaml.MarkupExtensions;
@@ -10,20 +7,19 @@ using Avalonia.Media;
 using CommunityToolkit.Mvvm.Input;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
-using k8s.Models;
 using KubeUI.Controls.DependencyInjection;
+using KubeUI.Controls.Layout;
 using KubeUI.Controls.Presentation;
 using KubeUI.Features.Cilium.Hubble;
+using KubeUI.Features.Clusters.Presentation;
 using SvcSystems.Avalonia.DynamicTableView;
-using UrsaControls = Ursa.Controls;
 
 namespace KubeUI.Features.Cilium.Hubble;
 
 public sealed partial class FlowListView : KubeUIView<FlowListViewModel>
 {
     private DynamicTableView _table = null!;
-    private DynamicTableView? _restoredTable;
-    private FlowListViewModel? _restoredViewModel;
+    private readonly TableStateRestoreCoordinator<DynamicTableViewState> _stateRestore = new();
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
@@ -81,7 +77,7 @@ public sealed partial class FlowListView : KubeUIView<FlowListViewModel>
         }
             .GridLinesVisibility(DynamicTableViewGridLinesVisibility.All)
             .Source(viewModel.TableSource)
-            .ContextMenu(CreateContextMenu());
+            .ContextMenu(MenuPresenter.CreateContextMenu());
     }
 
     private void TryRestoreState()
@@ -89,120 +85,53 @@ public sealed partial class FlowListView : KubeUIView<FlowListViewModel>
         if (DataContext is not FlowListViewModel vm)
             return;
 
-        var restoreTableState = !ReferenceEquals(_restoredTable, _table) || !ReferenceEquals(_restoredViewModel, vm);
-        var state = restoreTableState ? vm.TableViewRuntimeState : null;
-
-        if (restoreTableState)
-        {
-            _restoredTable = _table;
-            _restoredViewModel = vm;
-        }
-
-        if (state is null)
-        {
-            Dispatcher.UIThread.Post(() =>
-            {
-                if (ReferenceEquals(DataContext, vm) && VisualRoot is not null && ReferenceEquals(_table.Source, vm.TableSource))
-                    vm.RestoreSelectionState();
-            }, DispatcherPriority.Background);
-            return;
-        }
-
-        Dispatcher.UIThread.Post(() =>
-        {
-            if (ReferenceEquals(DataContext, vm) && VisualRoot is not null && ReferenceEquals(_table.Source, vm.TableSource))
-            {
-                _table.RestoreState(state);
-                vm.RestoreSelectionState();
-            }
-        }, DispatcherPriority.Background);
+        _stateRestore.Restore(
+            _table,
+            vm,
+            vm.TableViewRuntimeState,
+            () => ReferenceEquals(DataContext, vm)
+                && VisualRoot is not null
+                && ReferenceEquals(_table.Source, vm.TableSource),
+            _table.RestoreState,
+            vm.RestoreSelectionState);
     }
 
-    private static Grid CreateTopBar(FlowListViewModel vm)
+    private static CompactToolbar CreateTopBar(FlowListViewModel vm)
     {
-        return new Grid()
-            .Row(0)
-            .Classes("toolbar")
-            .Margin(0, 2, 0, 2)
-            .MinHeight(32)
-            .Cols("Auto,Auto,*,Auto")
-            .Children(
-                new Button()
-                    .Col(0)
-                    .Margin(2, 0, 0, 0)
-                    .Command(vm.ClearCommand)
-                    .ToolTip_Tip(Assets.Resources.FlowListView_TooltipClear)
-                    .Content(new FluentIcon().Icon(Icon.Delete)),
-                new Label()
-                    .Col(1)
-                    .Margin(2, 0, 0, 0)
-                    .VerticalContentAlignment(VerticalAlignment.Center)
-                    .Content(CompiledBinding.Create<FlowListViewModel, int>(x => x.FlowCount,
-                        stringFormat: Assets.Resources.FlowListView_ItemsFormat)),
-                new TextBlock()
-                    .Col(2)
-                    .Margin(8, 0)
-                    .VerticalAlignment(VerticalAlignment.Center)
-                    .Text(CompiledBinding.Create<FlowListViewModel, string>(x => x.ConnectionStatus))
-                    .Foreground(CompiledBinding.Create<FlowListViewModel, bool>(x => x.IsConnected,
-                        converter: new BoolToBrushConverter(
-                            new DynamicResourceExtension("PodStatusReadyBrush"),
-                            new DynamicResourceExtension("ContainerStatusErrorBrush")))),
-                new StackPanel()
-                    .Col(3)
-                    .MaxWidth(940)
-                    .HorizontalAlignment(HorizontalAlignment.Right)
-                    .Orientation(Orientation.Horizontal)
-                    .Children(
+        return new CompactToolbar
+        {
+            Leading = new Button()
+                .Command(vm.ClearCommand)
+                .ToolTip_Tip(CiliumLanguageManager.Instance.FlowListView_TooltipClear.ToBinding())
+                .Content(new FluentIcon().Icon(Icon.Delete)),
+            Middle = CompactToolbar.Group(
+                    new Label()
+                        .Content(CompiledBinding.Create<FlowListViewModel, int>(x => x.FlowCount,
+                             stringFormat: CiliumLanguageManager.Instance.FlowListView_ItemsFormat.CurrentValue()!)),
+                    new TextBlock()
+                        .MaxWidth(260)
+                        .TextWrapping(TextWrapping.Wrap)
+                        .Text(CompiledBinding.Create<FlowListViewModel, string>(x => x.ConnectionStatus))
+                        .Foreground(CompiledBinding.Create<FlowListViewModel, bool>(x => x.IsConnected,
+                            converter: new BoolToBrushConverter(
+                            new DynamicResourceExtension("SemanticSuccessBrush"),
+                            new DynamicResourceExtension("SemanticErrorBrush"))))),
+            Trailing = CompactToolbar.Group(
                         new TextBox()
                             .Width(200)
                             .MinWidth(120)
-                            .Margin(0, 0, 2, 0)
-                            .VerticalAlignment(VerticalAlignment.Stretch)
-                            .VerticalContentAlignment(VerticalAlignment.Center)
                             .Background(Brushes.Transparent)
-                            .PlaceholderText(Assets.Resources.FlowListView_SearchWatermark)
+                            .PlaceholderText(CiliumLanguageManager.Instance.FlowListView_SearchWatermark.ToBinding())
                             .Text(CompiledBinding.Create<FlowListViewModel, string>(x => x.SearchQuery, mode: BindingMode.TwoWay)),
-                        CreateNamespaceSelector(vm),
-                        new ToggleButton()
-                            .Margin(0, 0, 2, 0)
-                            .IsChecked(CompiledBinding.Create<FlowListViewModel, bool>(x => x.IsNamespaceSelectionLinked, source: vm, mode: BindingMode.TwoWay))
-                            .ToolTip_Tip(ResourceAssets.Resources.ResourceListView_NamespaceLink)
-                            .Content(new FluentIcon().Icon(Icon.Link))));
-    }
-
-    private static UrsaControls.MultiComboBox CreateNamespaceSelector(FlowListViewModel viewModel)
-    {
-        var template = new FuncDataTemplate<V1Namespace>((ns, _) =>
-            new TextBlock().Text(ns?.Metadata?.Name ?? string.Empty));
-
-        return new UrsaControls.MultiComboBox()
-            .Width(190)
-            .MinWidth(140)
-            .MaxHeight(20)
-            .Margin(0, 0, 2, 0)
-            .HorizontalAlignment(HorizontalAlignment.Stretch)
-            .Classes("ClearButton")
-            .ItemsSource(CompiledBinding.Create<FlowListViewModel, IEnumerable>(x => x.Cluster!.Runtime.Namespaces, source: viewModel))
-            .PlaceholderText(ResourceAssets.Resources.ResourceListView_SelectNamespace)
-            .SelectedItems(CompiledBinding.Create<FlowListViewModel, IList>(x => x.SelectedNamespaces, source: viewModel))
-            .ItemTemplate(template)
-            .SelectedItemTemplate(template);
-    }
-
-    private static ContextMenu CreateContextMenu()
-    {
-        return new ContextMenu()
-            .Styles(
-                new Style<MenuItem>()
-                    .Setter(IsVisibleProperty, CompiledBinding.Create<MenuItemViewModel, bool>(x => x.IsVisible))
-                    .Setter(HeaderedItemsControl.HeaderProperty, CompiledBinding.Create<MenuItemViewModel, string?>(x => x.Title))
-                    .Setter(MenuItem.CommandProperty, CompiledBinding.Create<MenuItemViewModel, ICommand?>(x => x.Command))
-                    .Setter(MenuItem.CommandParameterProperty, CompiledBinding.Create<MenuItemViewModel, object?>(x => x.CommandParameter))
-                    .Setter(ItemsControl.ItemsSourceProperty, CompiledBinding.Create<MenuItemViewModel, IEnumerable?>(x => x.Items))
-                    .Setter(TagProperty, CompiledBinding.Create<MenuItemViewModel, bool>(x => x.IsSeparator)),
-                new Style<MenuItem>(x => x.PropertyEquals(TagProperty, true))
-                    .Setter(TemplatedControl.TemplateProperty, new FuncControlTemplate((_, _) => new Separator())));
+                        new NamespaceScopePicker { PickerWidth = 190 }
+                            .BindValue(NamespaceScopePicker.NamespacesProperty,
+                                CompiledBinding.Create<FlowListViewModel, IEnumerable>(x => x.Cluster!.Runtime.Namespaces, source: vm))
+                            .BindValue(NamespaceScopePicker.SelectedNamespacesProperty,
+                                CompiledBinding.Create<FlowListViewModel, IList>(x => x.SelectedNamespaces, source: vm, mode: BindingMode.OneWay))
+                            .BindValue(NamespaceScopePicker.IsSelectionLinkedProperty,
+                                CompiledBinding.Create<FlowListViewModel, bool>(x => x.IsNamespaceSelectionLinked, source: vm, mode: BindingMode.TwoWay)))
+                .MaxWidth(940)
+        }.Row(0);
     }
 }
 

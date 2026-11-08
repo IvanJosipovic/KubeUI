@@ -1,4 +1,4 @@
-﻿using FluentAvalonia.UI.Controls;
+using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
@@ -38,7 +38,7 @@ public sealed partial class V1DeploymentConfig : ScalableWorkloadConfig<V1Deploy
             new ResourceListColumn<V1Deployment, int>()
             {
                 Key = "pods",
-                Name = Assets.Resources.V1DeploymentConfig_Pods!,
+                Name = ResourcesLanguageManager.Instance.V1DeploymentConfig_Pods.CurrentValue()!,
                 Display = x => $"{x.Status?.AvailableReplicas ?? 0}/{x.Spec?.Replicas ?? 0}",
                 Field = x => x.Status?.AvailableReplicas ?? 0,
                 WidthMode = DynamicTableViewWidthMode.Header
@@ -46,14 +46,14 @@ public sealed partial class V1DeploymentConfig : ScalableWorkloadConfig<V1Deploy
             new ResourceListColumn<V1Deployment, int>()
             {
                 Key = "replicas",
-                Name = Assets.Resources.V1DeploymentConfig_Replicas!,
+                Name = ResourcesLanguageManager.Instance.V1DeploymentConfig_Replicas.CurrentValue()!,
                 Field = x => x.Spec.Replicas ?? 0,
                 WidthMode = DynamicTableViewWidthMode.Header
             },
             new ResourceListColumn<V1Deployment, string>()
             {
                 Key = "available",
-                Name = Assets.Resources.V1DeploymentConfig_Available!,
+                Name = ResourcesLanguageManager.Instance.V1DeploymentConfig_Available.CurrentValue()!,
                 Field = x => x.Status?.Conditions?.FirstOrDefault(x => x.Type == "Available")?.Status ?? "",
                 WidthMode = DynamicTableViewWidthMode.Header
             },
@@ -68,28 +68,28 @@ public sealed partial class V1DeploymentConfig : ScalableWorkloadConfig<V1Deploy
             CreateScaleMenuItem(selectedItems),
             new()
             {
-                Title = Assets.Resources.V1DeploymentConfig_MenuItem_Restart,
+                Title = ResourcesLanguageManager.Instance.V1DeploymentConfig_MenuItem_Restart.CurrentValue()!,
                 FluentIcon = Icon.ArrowSync,
                 Command = RestartCommand,
                 CommandParameter = selectedItems?.ToList()
             },
             new()
             {
-                Title = Assets.Resources.V1DeploymentConfig_Pause,
+                Title = ResourcesLanguageManager.Instance.V1DeploymentConfig_Pause.CurrentValue()!,
                 FluentIcon = Icon.Pause,
                 Command = PauseCommand,
                 CommandParameter = selectedItems?.ToList(),
             },
             new()
             {
-                Title = Assets.Resources.V1DeploymentConfig_Resume,
+                Title = ResourcesLanguageManager.Instance.V1DeploymentConfig_Resume.CurrentValue()!,
                 FluentIcon = Icon.ArrowRight,
                 Command = ResumeCommand,
                 CommandParameter = selectedItems?.ToList(),
             },
             new()
             {
-                Title = Assets.Resources.V1DeploymentConfig_RolloutHistory,
+                Title = ResourcesLanguageManager.Instance.V1DeploymentConfig_RolloutHistory.CurrentValue()!,
                 FluentIcon = Icon.History,
                 Command = OpenRolloutHistoryCommand,
                 CommandParameter = selectedItems?.ToList(),
@@ -131,10 +131,10 @@ public sealed partial class V1DeploymentConfig : ScalableWorkloadConfig<V1Deploy
 
         var result = await _dialogService.ShowContentDialogAsync(this, new ContentDialogSettings
         {
-            Title = string.Format(paused ? Assets.Resources.V1DeploymentConfig_PauseTitle : Assets.Resources.V1DeploymentConfig_ResumeTitle, deployments.Count),
-            Content = paused ? Assets.Resources.V1DeploymentConfig_PauseContent : Assets.Resources.V1DeploymentConfig_ResumeContent,
-            PrimaryButtonText = paused ? Assets.Resources.V1DeploymentConfig_Pause : Assets.Resources.V1DeploymentConfig_Resume,
-            SecondaryButtonText = SharedAssets.Resources.Shared_Cancel,
+            Title = string.Format(paused ? ResourcesLanguageManager.Instance.V1DeploymentConfig_PauseTitle.CurrentValue()! : ResourcesLanguageManager.Instance.V1DeploymentConfig_ResumeTitle.CurrentValue()!, deployments.Count),
+            Content = paused ? ResourcesLanguageManager.Instance.V1DeploymentConfig_PauseContent.CurrentValue()! : ResourcesLanguageManager.Instance.V1DeploymentConfig_ResumeContent.CurrentValue()!,
+            PrimaryButtonText = paused ? ResourcesLanguageManager.Instance.V1DeploymentConfig_Pause.CurrentValue()! : ResourcesLanguageManager.Instance.V1DeploymentConfig_Resume.CurrentValue()!,
+            SecondaryButtonText = FoundationLanguageManager.Instance.Shared_Cancel.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary,
         });
         if (result != FAContentDialogResult.Primary)
@@ -143,6 +143,7 @@ public sealed partial class V1DeploymentConfig : ScalableWorkloadConfig<V1Deploy
         }
 
         deployments = GetPauseCandidates(deployments, paused);
+        var failures = new List<Exception>();
         var patch = new V1Patch(paused ? "{\"spec\":{\"paused\":true}}" : "{\"spec\":{\"paused\":false}}", V1Patch.PatchType.MergePatch);
         foreach (var deployment in deployments)
         {
@@ -152,8 +153,14 @@ public sealed partial class V1DeploymentConfig : ScalableWorkloadConfig<V1Deploy
             }
             catch (Exception ex)
             {
-                ResourceUtilities.HandleException(_logger, _notificationManager, ex, string.Format(paused ? Assets.Resources.V1DeploymentConfig_PauseError : Assets.Resources.V1DeploymentConfig_ResumeError, deployment.Namespace(), deployment.Name()), sendNotification: true);
+                failures.Add(ex);
+                ResourceUtilities.HandleException(_logger, _notificationManager, ex, string.Format(paused ? ResourcesLanguageManager.Instance.V1DeploymentConfig_PauseError.CurrentValue()! : ResourcesLanguageManager.Instance.V1DeploymentConfig_ResumeError.CurrentValue()!, deployment.Namespace(), deployment.Name()), sendNotification: true);
             }
+        }
+
+        if (failures.Count > 0)
+        {
+            _logger.LogError(new AggregateException(failures), "Error changing Deployment pause state");
         }
     }
 

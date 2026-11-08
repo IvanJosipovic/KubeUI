@@ -4,16 +4,16 @@ using Avalonia.Platform;
 using Avalonia.Svg.Skia;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Styles;
 using KubeUI.Controls.Styles;
 using KubeUI.Features.Resources.Contracts;
+using KubeUI.Foundation.Styles;
 
 namespace KubeUI.Features.Resources.Icons;
 
 public sealed partial class ResourceIconService : IResourceIconService
 {
     private const string BlankIconPath = "/Assets/kube/blank.svg";
-    private static readonly Uri AppUri = new("avares://KubeUI.Avalonia");
+    private static readonly Uri AppUri = new("avares://KubeUI.Foundation");
     private static readonly Dictionary<GroupApiVersionKind, string> IconPaths = new()
     {
         [GroupApiVersionKind.From<V1Node>()] = "/Assets/kube/infrastructure_components/unlabeled/node.svg",

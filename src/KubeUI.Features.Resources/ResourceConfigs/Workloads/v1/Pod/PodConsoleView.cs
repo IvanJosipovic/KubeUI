@@ -1,4 +1,4 @@
-﻿using Avalonia.Markup.Xaml.MarkupExtensions;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Xaml.Interactivity;
 using KubeUI.Controls.DependencyInjection;
 using KubeUI.Controls.Presentation;
@@ -35,7 +35,7 @@ public sealed class PodConsoleView : KubeUIView<PodConsoleViewModel>
                     .Children(
                         new Label()
                             .VerticalAlignment(VerticalAlignment.Center)
-                            .Content(Assets.Resources.PodLogsView_PodLabel),
+                            .Content(ResourcesLanguageManager.Instance.PodLogsView_PodLabel.ToBinding()),
                         new Label()
                             .VerticalAlignment(VerticalAlignment.Center)
                             .Content($"{vm.Object?.Metadata?.NamespaceProperty}/{vm.Object?.Metadata?.Name}/{vm.ContainerName}")),

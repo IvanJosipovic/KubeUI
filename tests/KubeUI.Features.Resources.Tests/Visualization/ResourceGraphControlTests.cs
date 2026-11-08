@@ -209,8 +209,8 @@ public sealed class ResourceGraphControlTests
             ((ResourceGraphVertex)control.Area.VertexList.Values.Single().DataContext!).Node.ContextMenuItems
                 .Select(item => item.Title)
                 .ShouldBe([
-                    ResourceAssets.Resources.ResourceConfigBase_MenuItem_View,
-                    ResourceAssets.Resources.ResourceConfigBase_MenuItem_ViewYaml,
+                    ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_View.CurrentValue()!,
+                    ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_ViewYaml.CurrentValue()!,
                 ]);
         }
         finally

@@ -2,6 +2,7 @@
   <Import Project="..\FeatureTests.props" />
 
   <ItemGroup>
+    <Using Include="KubeUI.Features.Helm.Assets" />
     <PackageReference Include="Moq" />
   </ItemGroup>
 

@@ -1,4 +1,4 @@
-﻿using System.Windows.Input;
+using System.Windows.Input;
 using FluentIcons.Common;
 using KubernetesClient.Informer.Client;
 using KubeUI.Features.Clusters.Assets;
@@ -28,11 +28,11 @@ public static class NavigationTargets
     /// <summary>Gets the fixed links every connected cluster shows above its sections.</summary>
     internal static IReadOnlyList<NavigationTarget> FixedClusterLinks { get; } =
     [
-        new(ClusterWorkspace, Assets.Resources.ClusterView_Title!, -500, Icon.Desktop),
-        new(Visualization, ResourceAssets.Resources.VisualizationView_Title!, -490, Icon.DataUsage),
-        new(ClusterSettings, ClusterAssets.Resources.ClusterSettingsView_Title!, -480, Icon.Settings),
-        new(LoadYaml, Assets.Resources.NavigationView_LoadYaml!, -470, Icon.ArrowUpload),
-        new(LoadFolder, Assets.Resources.NavigationView_LoadFolder!, -460, Icon.FolderAdd),
+        new(ClusterWorkspace, AppLanguageManager.Instance.ClusterView_Title.CurrentValue()!, -500, Icon.Desktop),
+        new(Visualization, ResourcesLanguageManager.Instance.VisualizationView_Title.CurrentValue()!, -490, Icon.DataUsage),
+        new(ClusterSettings, ClustersLanguageManager.Instance.ClusterSettingsView_Title.CurrentValue()!, -480, Icon.Settings),
+        new(LoadYaml, AppLanguageManager.Instance.NavigationView_LoadYaml.CurrentValue()!, -470, Icon.ArrowUpload),
+        new(LoadFolder, AppLanguageManager.Instance.NavigationView_LoadFolder.CurrentValue()!, -460, Icon.FolderAdd),
     ];
 
     internal static NavigationTarget Find(string key)
@@ -62,8 +62,8 @@ public partial class ClusterNavigationNode : NavigationItem, IDisposable
     public ClusterWorkspace Cluster { get; }
 
     public string ConnectionMenuHeader => Cluster.Runtime.Connected
-        ? Assets.Resources.NavigationView_ContextMenu_Disconnect!
-        : Assets.Resources.NavigationView_ContextMenu_Connect!;
+        ? AppLanguageManager.Instance.NavigationView_ContextMenu_Disconnect.CurrentValue()!
+        : AppLanguageManager.Instance.NavigationView_ContextMenu_Connect.CurrentValue()!;
 
     public Icon ConnectionMenuIcon => Cluster.Runtime.Connected
         ? Icon.Dismiss

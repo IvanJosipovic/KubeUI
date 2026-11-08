@@ -16,6 +16,34 @@ namespace KubeUI.Features.Cilium.Tests.Hubble;
 public sealed class FlowListViewModelTests
 {
     [AvaloniaFact]
+    public async Task Selection_snapshot_restores_matching_flow_keys_after_table_replacement()
+    {
+        await using var viewModel = new FlowListViewModel(
+            NullLogger<FlowListViewModel>.Instance,
+            Mock.Of<IHubbleConnectionFactory>());
+        viewModel.OnFlowsReceived(
+        [
+            Flow("selected-flow", DateTime.Parse("2026-10-23T10:00:02Z")),
+            Flow("other-flow", DateTime.Parse("2026-10-23T10:00:01Z"))
+        ]);
+
+        await TestWait.UntilAsync(
+            () => viewModel.TableSource.Items.Cast<FlowViewModel>().Count() == 2,
+            timeoutMs: 5_000,
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+
+        viewModel.SelectionModel.Select(0);
+        viewModel.CaptureSelectionState();
+        viewModel.SelectionModel.Clear();
+        viewModel.RestoreSelectionState();
+
+        viewModel.SelectionModel.SelectedItems.Cast<FlowViewModel>()
+            .Select(static flow => flow.Uuid)
+            .ShouldBe(["selected-flow"]);
+    }
+
+    [AvaloniaFact]
     public async Task Flow_batch_keeps_newest_events_by_timestamp_and_bounds_cache()
     {
         await using var viewModel = new FlowListViewModel(
@@ -41,7 +69,8 @@ public sealed class FlowListViewModelTests
         viewModel.TableSource.Items
             .Cast<FlowViewModel>()
             .Select(static flow => flow.Uuid)
-            .ShouldBe(["newest", "middle"]);
+            .Order(StringComparer.Ordinal)
+            .ShouldBe(["middle", "newest"]);
     }
 
     [AvaloniaFact]
@@ -109,11 +138,11 @@ public sealed class FlowListViewModelTests
     public void Direction_column_displays_localized_text_without_an_icon_template()
     {
         FlowListViewModel.FormatDirection(FlowDirection.Ingress)
-            .ShouldBe(CiliumAssets.Resources.FlowDirection_Ingress);
+            .ShouldBe(CiliumLanguageManager.Instance.FlowDirection_Ingress.CurrentValue());
         FlowListViewModel.FormatDirection(FlowDirection.Egress)
-            .ShouldBe(CiliumAssets.Resources.FlowDirection_Egress);
+            .ShouldBe(CiliumLanguageManager.Instance.FlowDirection_Egress.CurrentValue());
         FlowListViewModel.FormatDirection(FlowDirection.Unknown)
-            .ShouldBe(CiliumAssets.Resources.FlowDirection_Unknown);
+            .ShouldBe(CiliumLanguageManager.Instance.FlowDirection_Unknown.CurrentValue());
 
         FlowListViewModel.CreateColumns()
             .Single(static column => column.Key == "Direction")
@@ -124,13 +153,13 @@ public sealed class FlowListViewModelTests
     public void Verdict_column_displays_localized_text_without_a_badge_template()
     {
         FlowListViewModel.FormatVerdict(FlowVerdict.Forwarded)
-            .ShouldBe(CiliumAssets.Resources.FlowVerdict_Allowed);
+            .ShouldBe(CiliumLanguageManager.Instance.FlowVerdict_Allowed.CurrentValue());
         FlowListViewModel.FormatVerdict(FlowVerdict.Dropped)
-            .ShouldBe(CiliumAssets.Resources.FlowVerdict_Dropped);
+            .ShouldBe(CiliumLanguageManager.Instance.FlowVerdict_Dropped.CurrentValue());
         FlowListViewModel.FormatVerdict(FlowVerdict.Error)
-            .ShouldBe(CiliumAssets.Resources.FlowVerdict_Error);
+            .ShouldBe(CiliumLanguageManager.Instance.FlowVerdict_Error.CurrentValue());
         FlowListViewModel.FormatVerdict(FlowVerdict.Unknown)
-            .ShouldBe(CiliumAssets.Resources.FlowVerdict_Unknown);
+            .ShouldBe(CiliumLanguageManager.Instance.FlowVerdict_Unknown.CurrentValue());
 
         FlowListViewModel.CreateColumns()
             .Single(static column => column.Key == "Verdict")

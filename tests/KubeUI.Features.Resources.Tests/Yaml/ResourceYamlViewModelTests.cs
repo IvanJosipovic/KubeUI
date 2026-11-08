@@ -23,6 +23,8 @@ using KubernetesClient.Informer.Client;
 using KubeUI.App.Infrastructure.Platform;
 using KubeUI.App.Shell.Documents.About;
 using KubeUI.App.Shell.Main;
+using KubeUI.Controls.Editors;
+using KubeUI.Controls.Editors.Behaviors;
 using KubeUI.Features.Resources.Yaml.Behaviors;
 using KubeUI.Kubernetes.Serialization;
 using Microsoft.Extensions.DependencyInjection;
@@ -63,7 +65,7 @@ public class ResourceYamlViewModelTests
         viewModel.Initialize(cluster, resource);
         viewModel.IsReadOnlyLocked.ShouldBeFalse();
         viewModel.YamlDocument.Text.ShouldContain("kind: Pod");
-        viewModel.Title.ShouldBe(ResourceAssets.Resources.ResourceYamlView_Title);
+        viewModel.Title.ShouldBe(ResourcesLanguageManager.Instance.ResourceYamlView_Title.CurrentValue()!);
     }
 
     [AvaloniaFact]
@@ -178,7 +180,7 @@ public class ResourceYamlViewModelTests
             """.ReplaceLineEndings("\n");
 
 
-        var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
+        var foldings = YamlIndentationFoldingStrategy.CreateNewFoldings(text, out _).ToList();
         foldings.Count.ShouldBe(2);
         foldings[0].Name.TrimEnd().ShouldBe($"prop2:");
         foldings[1].Name.TrimEnd().ShouldBe($"  prop2Nested:");
@@ -196,7 +198,7 @@ public class ResourceYamlViewModelTests
             outside: value
             """.ReplaceLineEndings("\n"));
 
-        var foldings = YamlFoldingStrategy.CreateNewFoldings(document, out _).ToArray();
+        var foldings = YamlIndentationFoldingStrategy.CreateNewFoldings(document, out _).ToArray();
 
         foldings.Select(static folding => folding.Name.Trim()).ShouldBe(["root:", "child:"]);
         foldings[0].EndOffset.ShouldBe(document.GetLineByNumber(5).EndOffset);
@@ -219,7 +221,7 @@ public class ResourceYamlViewModelTests
                   operation: Apply
             """.ReplaceLineEndings("\n"));
 
-        var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
+        var foldings = YamlIndentationFoldingStrategy.CreateNewFoldings(text, out _).ToList();
         foldings.Select(folding => folding.Name.Trim()).ShouldBe(
         [
             "metadata:",
@@ -249,7 +251,7 @@ public class ResourceYamlViewModelTests
                 kubectl.kubernetes.io/last-applied-configuration: compact
             """.ReplaceLineEndings("\n"));
 
-        var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
+        var foldings = YamlIndentationFoldingStrategy.CreateNewFoldings(text, out _).ToList();
 
         foldings.Any(folding => YamlFoldingStrategy.IsNoisyFieldFolding(text, folding)).ShouldBeFalse();
     }
@@ -491,7 +493,7 @@ public class ResourceYamlViewModelTests
             """.ReplaceLineEndings("\n");
 
 
-        var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
+        var foldings = YamlIndentationFoldingStrategy.CreateNewFoldings(text, out _).ToList();
         foldings.Count.ShouldBe(1);
         foldings[0].Name.TrimEnd().ShouldBe($"prop1:");
     }
@@ -513,7 +515,7 @@ public class ResourceYamlViewModelTests
             """.ReplaceLineEndings("\n");
 
 
-        var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
+        var foldings = YamlIndentationFoldingStrategy.CreateNewFoldings(text, out _).ToList();
         foldings.Count.ShouldBe(4);
         foldings[0].Name.TrimEnd().ShouldBe($"prop1:");
         foldings[1].Name.TrimEnd().ShouldBe($"- prop1Nested1:");
@@ -536,7 +538,7 @@ public class ResourceYamlViewModelTests
             prop2: val
             """.ReplaceLineEndings("\n");
 
-        var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
+        var foldings = YamlIndentationFoldingStrategy.CreateNewFoldings(text, out _).ToList();
         foldings.Count.ShouldBe(1);
         foldings[0].Name.TrimEnd().ShouldBe($"prop1:");
     }
@@ -550,7 +552,7 @@ public class ResourceYamlViewModelTests
             prop2: val
             """.ReplaceLineEndings("\n");
 
-        var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
+        var foldings = YamlIndentationFoldingStrategy.CreateNewFoldings(text, out _).ToList();
         foldings.Count.ShouldBe(0);
     }
 
@@ -576,7 +578,7 @@ public class ResourceYamlViewModelTests
             - item2
             """.ReplaceLineEndings("\n");
 
-        var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
+        var foldings = YamlIndentationFoldingStrategy.CreateNewFoldings(text, out _).ToList();
         foldings.Count.ShouldBe(0);
     }
 
@@ -590,7 +592,7 @@ public class ResourceYamlViewModelTests
             - item2
             """.ReplaceLineEndings("\n");
 
-        var foldings = YamlFoldingStrategy.CreateNewFoldings(text, out _).ToList();
+        var foldings = YamlIndentationFoldingStrategy.CreateNewFoldings(text, out _).ToList();
         foldings.Count.ShouldBe(1);
         foldings[0].Name.TrimEnd().ShouldBe($"- item1:");
     }

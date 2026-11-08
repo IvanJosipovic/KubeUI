@@ -1,5 +1,6 @@
-﻿using k8s.Models;
-using KubeUI.Features.Resources.Properties.Controls;
+using k8s.Models;
+using KubeUI.Controls.Presentation;
+using KubeUI.Features.Resources.Properties;
 
 namespace KubeUI.Features.Resources.Workloads.v1.Deployment;
 
@@ -12,37 +13,33 @@ public sealed class PropertiesView : ViewBase<V1Deployment>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Replicas!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Replicas.CurrentValue()!)
                     .Value(vm.Spec?.Replicas ?? 0),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Available_Replicas!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Available_Replicas.CurrentValue()!)
                     .Value(vm.Status?.AvailableReplicas ?? 0),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Ready_Replicas!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Ready_Replicas.CurrentValue()!)
                     .Value(vm.Status?.ReadyReplicas ?? 0),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Updated_Replicas!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Updated_Replicas.CurrentValue()!)
                     .Value(vm.Status?.UpdatedReplicas ?? 0),
-                new ExpandableSection()
-                    .Header(Assets.Resources.DeploymentPropertiesView_Rollout!)
-                    .IsExpanded(true)
-                    .Content(
-                        new StackPanel()
-                            .Children(
-                                new PropertyItem()
-                                    .Key(Assets.Resources.DeploymentPropertiesView_Unavailable_Replicas!)
-                                    .Value(vm.Status?.UnavailableReplicas ?? 0),
-                                new PropertyItem()
-                                    .Key(SharedAssets.Resources.Shared_Conditions!)
-                                    .Value(vm.Status?.Conditions?.Count ?? 0),
-                                new PropertyItem()
-                                    .Key(Assets.Resources.DeploymentPropertiesView_Strategy_Type!)
-                                    .Value(vm.Spec?.Strategy?.Type ?? ""),
-                                new PropertyItem()
-                                    .Key(Assets.Resources.DeploymentPropertiesView_Progress_Deadline_Seconds!)
-                                    .Value(vm.Spec?.ProgressDeadlineSeconds ?? 0),
-                                new PropertyItem()
-                                    .Key(SharedAssets.Resources.Shared_Revision_History_Limit!)
-                                    .Value(vm.Spec?.RevisionHistoryLimit ?? 0))));
+                ResourcePropertiesSection.Create(
+                    ResourcesLanguageManager.Instance.DeploymentPropertiesView_Rollout.ToBinding(),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.DeploymentPropertiesView_Unavailable_Replicas.CurrentValue()!)
+                        .Value(vm.Status?.UnavailableReplicas ?? 0),
+                    new PropertyItem()
+                        .Key(FoundationLanguageManager.Instance.Shared_Conditions.CurrentValue()!)
+                        .Value(vm.Status?.Conditions?.Count ?? 0),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.DeploymentPropertiesView_Strategy_Type.CurrentValue()!)
+                        .Value(vm.Spec?.Strategy?.Type ?? ""),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.DeploymentPropertiesView_Progress_Deadline_Seconds.CurrentValue()!)
+                        .Value(vm.Spec?.ProgressDeadlineSeconds ?? 0),
+                    new PropertyItem()
+                        .Key(FoundationLanguageManager.Instance.Shared_Revision_History_Limit.CurrentValue()!)
+                        .Value(vm.Spec?.RevisionHistoryLimit ?? 0)));
     }
 }

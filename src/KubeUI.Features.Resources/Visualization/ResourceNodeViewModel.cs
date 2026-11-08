@@ -1,4 +1,4 @@
-﻿using k8s;
+using k8s;
 using k8s.Models;
 using KubeUI.Controls.Presentation;
 using KubeUI.Features.Clusters.Workspace;
@@ -87,8 +87,8 @@ public sealed partial class ResourceNodeViewModel : ViewModelBase
             if (IsPreview)
             {
                 return config.GetDefaultMenuItems(selectedItems)
-                    .Where(item => item.Title == Assets.Resources.ResourceConfigBase_MenuItem_View
-                        || item.Title == Assets.Resources.ResourceConfigBase_MenuItem_ViewYaml);
+                    .Where(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_View.CurrentValue()!
+                        || item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_ViewYaml.CurrentValue()!);
             }
 
             return ResourceActionPresenter.Compose(config, selectedItems);

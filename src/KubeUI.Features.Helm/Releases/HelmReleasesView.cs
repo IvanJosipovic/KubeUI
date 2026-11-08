@@ -1,12 +1,11 @@
 using System.Diagnostics.CodeAnalysis;
-using Avalonia.Controls.Primitives;
-using Avalonia.Controls.Templates;
 using Avalonia.Xaml.Interactions.Core;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using Helm.NET;
-using k8s.Models;
+using KubeUI.Controls.Layout;
 using KubeUI.Controls.Presentation;
+using KubeUI.Features.Clusters.Presentation;
 using Ursa.Controls;
 
 namespace KubeUI.Features.Helm.Releases;
@@ -29,47 +28,29 @@ public sealed class HelmReleasesView : KubeUIView<HelmReleasesViewModel>
         var root = new Grid()
             .Rows("Auto,*")
             .Children(
-                new Grid()
-                    .Row(0)
-                    .MinHeight(32)
-                    .Margin(0, 2, 0, 2)
-                    .Cols("Auto,Auto,*,Auto")
-                    .Children(
-                        new Button()
-                            .Col(0)
-                            .Margin(2, 0, 0, 0)
-                            .Command(vm, x => x.NewReleaseCommand)
-                            .Content(new FluentIcon().Icon(Icon.AddSquare))
-                            .ToolTip_Tip(Assets.Resources.HelmReleasesView_Install),
-                        new Label()
-                            .Col(1)
-                            .Margin(2, 0, 0, 0)
-                            .VerticalContentAlignment(VerticalAlignment.Center)
-                            .Content(CompiledBinding.Create<HelmReleasesViewModel, int>(
-                                x => x.ItemCount,
-                                source: vm,
-                                stringFormat: Assets.Resources.HelmReleasesView_ItemsFormat)),
-                        new StackPanel()
-                            .Col(3)
-                            .MaxWidth(700)
-                            .HorizontalAlignment(HorizontalAlignment.Right)
-                            .Orientation(Orientation.Horizontal)
-                            .Children(
-                                new TextBlock()
-                                    .MaxWidth(300)
-                                    .VerticalAlignment(VerticalAlignment.Center)
-                                    .TextWrapping(TextWrapping.Wrap)
-                                    .Text(vm, x => x.Status),
-                                CreateNamespaceSelector(vm),
-                                new ToggleButton()
-                                    .Margin(0, 0, 2, 0)
-                                    .IsChecked(vm, x => x.IsNamespaceSelectionLinked, BindingMode.TwoWay)
-                                    .ToolTip_Tip(ResourceAssets.Resources.ResourceListView_NamespaceLink)
-                                    .Content(new FluentIcon().Icon(Icon.Link)),
-                                new Button()
-                                    .Command(vm, x => x.RefreshCommand)
-                                    .Content(new FluentIcon().Icon(Icon.ArrowSync))
-                                    .ToolTip_Tip(SharedAssets.Resources.Shared_Refresh))),
+                new CompactToolbar
+                {
+                    Leading = new Button()
+                        .Command(vm, x => x.NewReleaseCommand)
+                        .Content(new FluentIcon().Icon(Icon.AddSquare))
+                        .ToolTip_Tip(HelmLanguageManager.Instance.HelmReleasesView_Install.ToBinding()),
+                    Middle = new Label()
+                        .Content(CompiledBinding.Create<HelmReleasesViewModel, int>(
+                            x => x.ItemCount,
+                            source: vm,
+                            stringFormat: HelmLanguageManager.Instance.HelmReleasesView_ItemsFormat.CurrentValue()!)),
+                    Trailing = CompactToolbar.Group(
+                            new TextBlock()
+                                .MaxWidth(300)
+                                .TextWrapping(TextWrapping.Wrap)
+                                .Text(vm, x => x.Status),
+                            CreateNamespaceSelector(vm),
+                            new Button()
+                                .Command(vm, x => x.RefreshCommand)
+                                .Content(new FluentIcon().Icon(Icon.ArrowSync))
+                                .ToolTip_Tip(FoundationLanguageManager.Instance.Shared_Refresh.ToBinding()))
+                        .MaxWidth(700)
+                },
                 table.Row(1));
         Interaction.GetBehaviors(root).Add(new EventTriggerBehavior
         {
@@ -79,23 +60,12 @@ public sealed class HelmReleasesView : KubeUIView<HelmReleasesViewModel>
         return root;
     }
 
-    private static MultiComboBox CreateNamespaceSelector(HelmReleasesViewModel viewModel)
+    private static NamespaceScopePicker CreateNamespaceSelector(HelmReleasesViewModel viewModel)
     {
-        var template = new FuncDataTemplate<V1Namespace>((ns, _) =>
-            new TextBlock().Text(ns?.Metadata?.Name ?? string.Empty));
-
-        return new MultiComboBox()
-            .Width(200)
-            .MinWidth(140)
-            .MaxHeight(20)
-            .Margin(0, 0, 2, 0)
-            .HorizontalAlignment(HorizontalAlignment.Stretch)
-            .Classes("ClearButton")
-            .ItemsSource(CompiledBinding.Create<HelmReleasesViewModel, IEnumerable>(x => x.Cluster!.Runtime.Namespaces, source: viewModel))
-            .PlaceholderText(ResourceAssets.Resources.ResourceListView_SelectNamespace)
-            .SelectedItems(CompiledBinding.Create<HelmReleasesViewModel, IList>(x => x.SelectedNamespaces, source: viewModel))
-            .ItemTemplate(template)
-            .SelectedItemTemplate(template);
+        return new NamespaceScopePicker()
+            .BindValue(NamespaceScopePicker.NamespacesProperty, CompiledBinding.Create<HelmReleasesViewModel, IEnumerable>(x => x.Cluster!.Runtime.Namespaces, source: viewModel, mode: BindingMode.OneWay))
+            .BindValue(NamespaceScopePicker.SelectedNamespacesProperty, CompiledBinding.Create<HelmReleasesViewModel, IList>(x => x.SelectedNamespaces, source: viewModel, mode: BindingMode.OneWay))
+            .BindValue(NamespaceScopePicker.IsSelectionLinkedProperty, CompiledBinding.Create<HelmReleasesViewModel, bool>(x => x.IsNamespaceSelectionLinked, source: viewModel, mode: BindingMode.TwoWay));
     }
 
     private static IEnumerable<MenuItem> CreateContextMenuItems(HelmReleasesViewModel vm, IReadOnlyList<object> targets)
@@ -103,27 +73,27 @@ public sealed class HelmReleasesView : KubeUIView<HelmReleasesViewModel>
         foreach (var release in targets.OfType<HelmRelease>())
         {
             yield return new MenuItem()
-                .Header(Assets.Resources.HelmReleasesView_Visualize)
+                .Header(HelmLanguageManager.Instance.HelmReleasesView_Visualize.ToBinding())
                 .Command(vm, x => x.VisualizeReleaseCommand)
                 .CommandParameter(release)
                 .Icon(new FluentIcon().Icon(Icon.DataUsage));
             yield return new MenuItem()
-                .Header(Assets.Resources.HelmReleasesView_Values)
+                .Header(HelmLanguageManager.Instance.HelmReleasesView_Values.ToBinding())
                 .Command(vm, x => x.ViewValuesCommand)
                 .CommandParameter(release)
                 .Icon(new FluentIcon().Icon(Icon.Code));
             yield return new MenuItem()
-                .Header(Assets.Resources.HelmReleasesView_Upgrade)
+                .Header(HelmLanguageManager.Instance.HelmReleasesView_Upgrade.ToBinding())
                 .Command(vm, x => x.UpgradeReleaseCommand)
                 .CommandParameter(release)
                 .Icon(new FluentIcon().Icon(Icon.Edit));
             yield return new MenuItem()
-                .Header(Assets.Resources.HelmReleasesView_Rollback)
+                .Header(HelmLanguageManager.Instance.HelmReleasesView_Rollback.ToBinding())
                 .Command(vm, x => x.RollbackCommand)
                 .CommandParameter(release)
                 .Icon(new FluentIcon().Icon(Icon.ArrowUndo));
             yield return new MenuItem()
-                .Header(Assets.Resources.HelmReleasesView_Uninstall)
+                .Header(HelmLanguageManager.Instance.HelmReleasesView_Uninstall.ToBinding())
                 .Command(vm, x => x.UninstallCommand)
                 .CommandParameter(release)
                 .Icon(new FluentIcon().Icon(Icon.Delete));

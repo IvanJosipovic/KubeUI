@@ -29,7 +29,7 @@ public sealed class ImportAksClusterViewModelTests
 
         await viewModel.ImportCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
         viewModel.StatusMessage.ShouldBe(string.Format(
-            ClusterAssets.Resources.ImportAksClusterView_Imported,
+            ClustersLanguageManager.Instance.ImportAksClusterView_Imported.CurrentValue(),
             clusterName));
         runtimeCatalog.Clusters.Select(x => x.Name).ShouldContain(clusterName);
         await WaitForAsync(() => catalog.Clusters.Any(x => x.Runtime.Name == clusterName));
@@ -48,7 +48,7 @@ public sealed class ImportAksClusterViewModelTests
             runtimeCatalog,
             services.GetRequiredService<ILogger<ImportAksClusterViewModel>>());
 
-        await WaitForAsync(() => viewModel.StatusMessage == ClusterAssets.Resources.ImportAksClusterView_NoSubscriptions);
+        await WaitForAsync(() => viewModel.StatusMessage == ClustersLanguageManager.Instance.ImportAksClusterView_NoSubscriptions.CurrentValue());
 
         viewModel.Subscriptions.ShouldBeEmpty();
         viewModel.Clusters.ShouldBeEmpty();
@@ -67,7 +67,7 @@ public sealed class ImportAksClusterViewModelTests
             runtimeCatalog,
             services.GetRequiredService<ILogger<ImportAksClusterViewModel>>());
 
-        await WaitForAsync(() => viewModel.StatusMessage == ClusterAssets.Resources.ImportAksClusterView_NoSubscriptions);
+        await WaitForAsync(() => viewModel.StatusMessage == ClustersLanguageManager.Instance.ImportAksClusterView_NoSubscriptions.CurrentValue());
 
         viewModel.RefreshCommand.CanExecute(null).ShouldBeTrue();
 

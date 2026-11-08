@@ -1,7 +1,8 @@
-﻿using System.Text;
+using System.Text;
 using Avalonia.Controls.Templates;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Controls.Presentation;
 using KubeUI.Features.Resources.Properties;
 using KubeUI.Features.Resources.Properties.Controls;
 
@@ -29,11 +30,11 @@ public sealed class PropertiesView : ViewBase<V1Secret>, IResourcePropertiesRefr
         return new StackPanel()
             .Children(
                 new ExpandableSection()
-                    .Header(SharedAssets.Resources.Shared_Data)
+                    .Header(FoundationLanguageManager.Instance.Shared_Data.ToBinding())
                     .IsExpanded(true)
                     .Content(_dataDisplay),
                 new ExpandableSection()
-                    .Header(Assets.Resources.SecretPropertiesView_Certificates)
+                    .Header(ResourcesLanguageManager.Instance.SecretPropertiesView_Certificates.ToBinding())
                     .IsExpanded(true)
                     .Content(_certificateItems));
     }

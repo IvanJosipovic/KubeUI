@@ -1,4 +1,4 @@
-﻿using k8s.Models;
+using k8s.Models;
 using KubeUI.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Features.Resources.Storage.v1.StorageClass;
@@ -12,25 +12,25 @@ public sealed class PropertiesView : ViewBase<V1StorageClass>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(Assets.Resources.StorageClassPropertiesView_Provisioner!)
+                    .Key(ResourcesLanguageManager.Instance.StorageClassPropertiesView_Provisioner.CurrentValue()!)
                     .Value(vm.Provisioner ?? ""),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Reclaim_Policy!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Reclaim_Policy.CurrentValue()!)
                     .Value(vm.ReclaimPolicy ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.StorageClassPropertiesView_Volume_Binding_Mode!)
+                    .Key(ResourcesLanguageManager.Instance.StorageClassPropertiesView_Volume_Binding_Mode.CurrentValue()!)
                     .Value(vm.VolumeBindingMode ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.StorageClassPropertiesView_Allow_Volume_Expansion!)
+                    .Key(ResourcesLanguageManager.Instance.StorageClassPropertiesView_Allow_Volume_Expansion.CurrentValue()!)
                     .Value(vm.AllowVolumeExpansion ?? false),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Mount_Options!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Mount_Options.CurrentValue()!)
                     .Value(vm.MountOptions?.Count ?? 0),
                 new PropertyItem()
-                    .Key(Assets.Resources.StorageClassPropertiesView_Parameters!)
+                    .Key(ResourcesLanguageManager.Instance.StorageClassPropertiesView_Parameters.CurrentValue()!)
                     .Value(vm.Parameters?.Count ?? 0),
                 new PropertyItem()
-                    .Key(Assets.Resources.StorageClassPropertiesView_Allowed_Topologies!)
+                    .Key(ResourcesLanguageManager.Instance.StorageClassPropertiesView_Allowed_Topologies.CurrentValue()!)
                     .Value(vm.AllowedTopologies?.Count ?? 0));
     }
 }

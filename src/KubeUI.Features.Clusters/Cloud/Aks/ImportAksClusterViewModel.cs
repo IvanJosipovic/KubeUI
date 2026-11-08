@@ -19,7 +19,7 @@ public sealed partial class ImportAksClusterViewModel : ViewModelBase
         _runtimeCatalog = runtimeCatalog;
         _logger = logger;
 
-        Title = Assets.Resources.ImportAksClusterView_Title;
+        Title = ClustersLanguageManager.Instance.ImportAksClusterView_Title.CurrentValue()!;
         Id = nameof(ImportAksClusterViewModel);
 
         _ = RefreshAuthenticationAsync();
@@ -66,8 +66,8 @@ public sealed partial class ImportAksClusterViewModel : ViewModelBase
             var authenticationStatus = await _aksClusterService.GetAuthenticationStatusAsync().ConfigureAwait(false);
 
             var statusText = authenticationStatus.AzureCliSignedIn
-                ? Assets.Resources.ImportAksClusterView_AzureCliSignedIn
-                : Assets.Resources.ImportAksClusterView_AzureCliNotSignedIn;
+                ? ClustersLanguageManager.Instance.ImportAksClusterView_AzureCliSignedIn.CurrentValue()!
+                : ClustersLanguageManager.Instance.ImportAksClusterView_AzureCliNotSignedIn.CurrentValue()!;
 
             if (authenticationStatus.AzureCliSignedIn)
             {
@@ -77,7 +77,7 @@ public sealed partial class ImportAksClusterViewModel : ViewModelBase
                         statusText,
                         Environment.NewLine,
                         string.Format(
-                            Assets.Resources.ImportAksClusterView_AccountFormat,
+                            ClustersLanguageManager.Instance.ImportAksClusterView_AccountFormat.CurrentValue()!,
                             authenticationStatus.AzureCliUsername ?? "(unknown)",
                             authenticationStatus.AzureCliTenantId ?? "(unknown)"));
                 }
@@ -123,13 +123,13 @@ public sealed partial class ImportAksClusterViewModel : ViewModelBase
             }
             else
             {
-                StatusMessage = Assets.Resources.ImportAksClusterView_NoSubscriptions;
+                StatusMessage = ClustersLanguageManager.Instance.ImportAksClusterView_NoSubscriptions.CurrentValue()!;
             }
         }
         catch (AzureAuthenticationUnavailableException ex)
         {
             _logger.LogInformation(ex, "AKS subscription discovery is unavailable because Azure CLI is not signed in.");
-            StatusMessage = Assets.Resources.ImportAksClusterView_NoSubscriptions;
+            StatusMessage = ClustersLanguageManager.Instance.ImportAksClusterView_NoSubscriptions.CurrentValue()!;
         }
         catch (Exception ex)
         {
@@ -166,7 +166,7 @@ public sealed partial class ImportAksClusterViewModel : ViewModelBase
         catch (AzureAuthenticationUnavailableException ex)
         {
             _logger.LogInformation(ex, "AKS cluster discovery is unavailable because Azure CLI is not signed in.");
-            StatusMessage = Assets.Resources.ImportAksClusterView_NoSubscriptions;
+            StatusMessage = ClustersLanguageManager.Instance.ImportAksClusterView_NoSubscriptions.CurrentValue()!;
         }
         catch (Exception ex)
         {
@@ -196,7 +196,7 @@ public sealed partial class ImportAksClusterViewModel : ViewModelBase
         try
         {
             IsBusy = true;
-            await Dispatcher.UIThread.InvokeAsync(() => StatusMessage = Assets.Resources.ImportAksClusterView_Importing);
+            await Dispatcher.UIThread.InvokeAsync(() => StatusMessage = ClustersLanguageManager.Instance.ImportAksClusterView_Importing.CurrentValue()!);
 
             var credentials = await _aksClusterService.GetCredentialsAsync(
                 SelectedCluster,
@@ -206,7 +206,7 @@ public sealed partial class ImportAksClusterViewModel : ViewModelBase
 
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
-                StatusMessage = string.Format(Assets.Resources.ImportAksClusterView_Imported, SelectedCluster.Name);
+                StatusMessage = string.Format(ClustersLanguageManager.Instance.ImportAksClusterView_Imported.CurrentValue()!, SelectedCluster.Name);
             });
         }
         catch (Exception ex)

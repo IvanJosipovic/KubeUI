@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia.Platform;
 using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
@@ -167,7 +168,7 @@ public class DockFactory : Factory
     {
         return new()
         {
-            Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://KubeUI.Avalonia/Assets/icon.ico")))
+            Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://KubeUI.Foundation/Assets/icon.ico")))
         };
     }
 
@@ -251,7 +252,7 @@ public class DockFactory : Factory
         if (window is not null)
         {
             var floatingWindowCount = _rootDock?.Windows?.Count ?? HostWindows.Count;
-            window.Title = $"KubeUI {floatingWindowCount + 2}";
+            window.Title = string.Format(CultureInfo.CurrentCulture, AppLanguageManager.Instance.DockFactory_FloatingWindowTitle.CurrentValue()!, floatingWindowCount + 2);
         }
 
         return window;

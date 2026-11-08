@@ -5,6 +5,7 @@ This guide supplements the repository root `AGENTS.md` and defines the Avalonia-
 ## 1) Folder structure
 
 - Keep feature UI under `Features/<FeatureName>/` and shell UI under `Shell/<Area>/`.
+- Keep shell-owned UI text in `KubeUI.App/Assets/Resources.resx`; feature-owned text stays in the owning feature catalog and cross-view labels stay in the foundation `Shared_*` catalog.
 - Put helpers in shared infrastructure only when multiple areas own the behavior.
 
 ## 2) Avalonia UI best practices
@@ -61,7 +62,7 @@ Reference: https://github.com/wieslawsoltes/Dock
 Reference: https://github.com/AvaloniaUI/AvaloniaEdit
 
 - Use AvaloniaEdit `TextEditor` for all code/text editing surfaces.
-- Apply shared `TextEditor` background styling in `Styles/Fluent.cs`; do not set it per view.
+- Apply shared `TextEditor` background styling through Controls' `SharedControlStyles`; do not set it per view or duplicate it in `Styles/Fluent.cs`. Compose Controls' provider after the Ursa theme.
 - Enable syntax highlighting using TextMate grammars/themes.
 - Keep editor configuration in ViewModels and bind to the view.
 

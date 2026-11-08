@@ -1,4 +1,4 @@
-﻿using Avalonia.Data.Converters;
+using Avalonia.Data.Converters;
 using k8s.Models;
 using KubeUI.Controls.Styles;
 using KubeUI.Features.Resources.Core.v1.Event.Controls;
@@ -19,14 +19,14 @@ public sealed class V1EventConfig(IServiceProvider serviceProvider) : ResourceCo
             new ResourceListColumn<Corev1Event, string>()
             {
                 Key = "type",
-                Name = Assets.Resources.V1EventConfig_Type,
+                Name = ResourcesLanguageManager.Instance.V1EventConfig_Type.CurrentValue()!,
                 Field = x => x?.Type ?? "",
                 WidthMode = DynamicTableViewWidthMode.Cells
             },
             new ResourceListColumn<Corev1Event, string>()
             {
                 Key = "message",
-                Name = Assets.Resources.V1EventConfig_Message,
+                Name = ResourcesLanguageManager.Instance.V1EventConfig_Message.CurrentValue()!,
                 Field = x => x?.Message ?? "",
                 Width = 4, WidthMode = DynamicTableViewWidthMode.Star
             },
@@ -34,30 +34,30 @@ public sealed class V1EventConfig(IServiceProvider serviceProvider) : ResourceCo
             new ResourceListColumn<Corev1Event, string>()
             {
                 Key = "involved-object",
-                Name = Assets.Resources.V1EventConfig_Involved_Object,
+                Name = ResourcesLanguageManager.Instance.V1EventConfig_Involved_Object.CurrentValue()!,
                 Field = x => x?.InvolvedObject?.Name ?? "",
                 Width = 1, WidthMode = DynamicTableViewWidthMode.Star
             },
             new ResourceListColumn<Corev1Event, string>()
             {
                 Key = "source",
-                Name = Assets.Resources.V1EventConfig_Source,
+                Name = ResourcesLanguageManager.Instance.V1EventConfig_Source.CurrentValue()!,
                 Field = x => x?.Source?.Component ?? (x?.ReportingComponent) ?? "",
                 Width = 1, WidthMode = DynamicTableViewWidthMode.Star
             },
             new ResourceListColumn<Corev1Event, int>()
             {
                 Key = "count",
-                Name = Assets.Resources.V1EventConfig_Count,
+                Name = ResourcesLanguageManager.Instance.V1EventConfig_Count.CurrentValue()!,
                 Field = x => x?.Count ?? 0,
                 WidthMode = DynamicTableViewWidthMode.Header
             },
             new ResourceListColumn<Corev1Event, DateTime?>()
             {
                 Key = "last-seen",
-                Name = Assets.Resources.V1EventConfig_Last_Seen,
+                Name = ResourcesLanguageManager.Instance.V1EventConfig_Last_Seen.CurrentValue()!,
                 CustomControl = typeof(EventLastSeenCell),
-                Field = x => RelativeTimeFormatter.ResolveTimestamp(x),
+                Field = x => KubernetesEventTimestampResolver.Resolve(x),
                 Sort = SortDirection.Descending,
                 Width = 80, WidthMode = DynamicTableViewWidthMode.Pixel
             },

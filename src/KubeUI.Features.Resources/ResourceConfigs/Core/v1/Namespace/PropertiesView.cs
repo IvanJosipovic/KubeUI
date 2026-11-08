@@ -1,4 +1,4 @@
-﻿using k8s.Models;
+using k8s.Models;
 using KubeUI.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Features.Resources.Core.v1.Namespace;
@@ -12,13 +12,13 @@ public sealed class PropertiesView : ViewBase<V1Namespace>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Phase!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Phase.CurrentValue()!)
                     .Value(vm.Status?.Phase ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.NamespacePropertiesView_Finalizers!)
+                    .Key(ResourcesLanguageManager.Instance.NamespacePropertiesView_Finalizers.CurrentValue()!)
                     .Value(vm.Spec?.Finalizers?.Count ?? 0),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Conditions!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Conditions.CurrentValue()!)
                     .Value(vm.Status?.Conditions?.Count ?? 0));
     }
 }

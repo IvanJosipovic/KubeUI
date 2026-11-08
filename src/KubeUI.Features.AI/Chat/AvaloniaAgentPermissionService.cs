@@ -16,33 +16,33 @@ public sealed class AvaloniaAgentPermissionService(IDialogService dialogService)
         cancellationToken.ThrowIfCancellationRequested();
 
         var owner = new PermissionDialogOwner();
-        var resource = request.Resource ?? Assets.Resources.AgentPermissionDialog_UnspecifiedResource;
+        var resource = request.Resource ?? AiLanguageManager.Instance.AvaloniaAgentPermissionService_UnspecifiedResource.CurrentValue()!;
         var operationImpact = request.IsDestructive
-            ? Assets.Resources.AgentPermissionDialog_Destructive
-            : Assets.Resources.AgentPermissionDialog_NonDestructive;
+            ? AiLanguageManager.Instance.AvaloniaAgentPermissionService_Destructive.CurrentValue()!
+            : AiLanguageManager.Instance.AvaloniaAgentPermissionService_NonDestructive.CurrentValue()!;
         var content = string.IsNullOrWhiteSpace(request.RequestingClient)
             ? string.Format(
-                Assets.Resources.AgentPermissionDialog_ContentFormat!,
+                AiLanguageManager.Instance.AvaloniaAgentPermissionService_ContentFormat.CurrentValue()!,
                 request.Action,
                 resource,
                 operationImpact)
             : string.Format(
-                Assets.Resources.AgentPermissionDialog_ContentWithRequesterFormat!,
+                AiLanguageManager.Instance.AvaloniaAgentPermissionService_ContentWithRequesterFormat.CurrentValue()!,
                 request.RequestingClient,
                 request.Action,
                 resource,
                 operationImpact);
         var settings = new ContentDialogSettings
         {
-            Title = Assets.Resources.AgentPermissionDialog_Title,
+            Title = AiLanguageManager.Instance.AvaloniaAgentPermissionService_Title.CurrentValue()!,
             Content = content,
-            PrimaryButtonText = Assets.Resources.AgentPermissionDialog_Allow,
-            SecondaryButtonText = Assets.Resources.AgentPermissionDialog_Deny,
+            PrimaryButtonText = AiLanguageManager.Instance.AvaloniaAgentPermissionService_Allow.CurrentValue()!,
+            SecondaryButtonText = AiLanguageManager.Instance.AvaloniaAgentPermissionService_Deny.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary
         };
         var result = await dialogService.ShowContentDialogAsync(owner, settings).ConfigureAwait(true);
         var allowed = result == FAContentDialogResult.Primary;
-        return new AgentPermissionResult(allowed, allowed ? null : Assets.Resources.AgentPermissionDialog_Denied);
+        return new AgentPermissionResult(allowed, allowed ? null : AiLanguageManager.Instance.AvaloniaAgentPermissionService_Denied.CurrentValue()!);
     }
 
     private sealed class PermissionDialogOwner : ViewModelBase
@@ -50,7 +50,7 @@ public sealed class AvaloniaAgentPermissionService(IDialogService dialogService)
         public PermissionDialogOwner()
         {
             Id = nameof(PermissionDialogOwner);
-            Title = Assets.Resources.AgentPermissionDialog_OwnerTitle;
+            Title = AiLanguageManager.Instance.AvaloniaAgentPermissionService_OwnerTitle.CurrentValue()!;
         }
     }
 }

@@ -456,7 +456,12 @@ public class ClusterWorkspaceTests
         seededContainer.ShouldNotBeNull();
         GetInformers(seededContainer).Count.ShouldBe(1);
 
-        crd.Metadata.Uid = workspace.Runtime.GetResource<V1CustomResourceDefinition>(null, crd.Name()).ShouldNotBeNull().Metadata.Uid;
+        var currentCrd = await TestWait.UntilValueAsync(
+            () => workspace.Runtime.GetResource<V1CustomResourceDefinition>(null, crd.Name()),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+        crd.Metadata.Uid = currentCrd.ShouldNotBeNull().Metadata.Uid;
         await workspace.Runtime.DeleteAsync(crd, TestContext.Current.CancellationToken);
 
         await TestWait.UntilAsync(

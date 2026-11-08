@@ -10,7 +10,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
 
     public ClusterSettingsViewModel(IClusterPreferenceStore settingsService)
     {
-        Title = Assets.Resources.ClusterSettingsView_Title!;
+        Title = ClustersLanguageManager.Instance.ClusterSettingsView_Title.CurrentValue()!;
         SettingsService = settingsService;
     }
 
@@ -37,7 +37,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
 
     public bool CanRefreshPermissions => !IsRefreshingPermissions;
 
-    public string ClusterTitle => string.Format(Assets.Resources.ClusterSettingsView_TitleFormat!, Cluster?.Runtime.Name);
+    public string ClusterTitle => string.Format(ClustersLanguageManager.Instance.ClusterSettingsView_TitleFormat.CurrentValue()!, Cluster?.Runtime.Name);
 
     [RelayCommand]
     private async Task RefreshPermissionsAsync()

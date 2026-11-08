@@ -386,7 +386,7 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
             .Height(22)
             .Padding(4)
             .Focusable(false)
-            .ToolTip_Tip(Assets.Resources.PodLogsView_Filter)
+            .ToolTip_Tip(ResourcesLanguageManager.Instance.PodLogsView_Filter.ToBinding())
             .Content(new FluentIcons.Avalonia.FluentIcon().Icon(FluentIcons.Common.Icon.Filter));
         _filterToggle.PropertyChanged += FilterToggleOnPropertyChanged;
         rightContent.Children.Add(_filterToggle);

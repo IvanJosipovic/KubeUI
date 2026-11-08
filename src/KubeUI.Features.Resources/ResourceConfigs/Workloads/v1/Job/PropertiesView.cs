@@ -1,5 +1,6 @@
-﻿using k8s.Models;
-using KubeUI.Features.Resources.Properties.Controls;
+using k8s.Models;
+using KubeUI.Controls.Presentation;
+using KubeUI.Features.Resources.Properties;
 
 namespace KubeUI.Features.Resources.Workloads.v1.Job;
 
@@ -12,52 +13,44 @@ public sealed class PropertiesView : ViewBase<V1Job>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(Assets.Resources.JobPropertiesView_Completions!)
+                    .Key(ResourcesLanguageManager.Instance.JobPropertiesView_Completions.CurrentValue()!)
                     .Value(vm.Spec?.Completions ?? 0),
                 new PropertyItem()
-                    .Key(Assets.Resources.JobPropertiesView_Parallelism!)
+                    .Key(ResourcesLanguageManager.Instance.JobPropertiesView_Parallelism.CurrentValue()!)
                     .Value(vm.Spec?.Parallelism ?? 0),
                 new PropertyItem()
-                    .Key(Assets.Resources.JobPropertiesView_Succeeded!)
+                    .Key(ResourcesLanguageManager.Instance.JobPropertiesView_Succeeded.CurrentValue()!)
                     .Value(vm.Status?.Succeeded ?? 0),
                 new PropertyItem()
-                    .Key(Assets.Resources.JobPropertiesView_Failed!)
+                    .Key(ResourcesLanguageManager.Instance.JobPropertiesView_Failed.CurrentValue()!)
                     .Value(vm.Status?.Failed ?? 0),
-                new ExpandableSection()
-                    .Header(SharedAssets.Resources.Shared_Configuration!)
-                    .IsExpanded(true)
-                    .Content(
-                        new StackPanel()
-                            .Children(
-                                new PropertyItem()
-                                    .Key(Assets.Resources.JobPropertiesView_Backoff_Limit!)
-                                    .Value(vm.Spec?.BackoffLimit ?? 0),
-                                new PropertyItem()
-                                    .Key(Assets.Resources.JobPropertiesView_Active_Deadline_Seconds!)
-                                    .Value(vm.Spec?.ActiveDeadlineSeconds ?? 0),
-                                new PropertyItem()
-                                    .Key(Assets.Resources.JobPropertiesView_Completion_Mode!)
-                                    .Value(vm.Spec?.CompletionMode ?? ""),
-                                new PropertyItem()
-                                    .Key(SharedAssets.Resources.Shared_Suspend!)
-                                    .Value(vm.Spec?.Suspend ?? false))),
-                new ExpandableSection()
-                    .Header(SharedAssets.Resources.Shared_Status!)
-                    .IsExpanded(true)
-                    .Content(
-                        new StackPanel()
-                            .Children(
-                                new PropertyItem()
-                                    .Key(Assets.Resources.JobPropertiesView_Active_Pods!)
-                                    .Value(vm.Status?.Active ?? 0),
-                                new PropertyItem()
-                                    .Key(Assets.Resources.JobPropertiesView_Start_Time!)
-                                    .Value(vm.Status?.StartTime ?? DateTime.MinValue),
-                                new PropertyItem()
-                                    .Key(Assets.Resources.JobPropertiesView_Completion_Time!)
-                                    .Value(vm.Status?.CompletionTime ?? DateTime.MinValue),
-                                new PropertyItem()
-                                    .Key(SharedAssets.Resources.Shared_Conditions!)
-                                    .Value(vm.Status?.Conditions?.Count ?? 0))));
+                ResourcePropertiesSection.Create(
+                    FoundationLanguageManager.Instance.Shared_Configuration.ToBinding(),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.JobPropertiesView_Backoff_Limit.CurrentValue()!)
+                        .Value(vm.Spec?.BackoffLimit ?? 0),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.JobPropertiesView_Active_Deadline_Seconds.CurrentValue()!)
+                        .Value(vm.Spec?.ActiveDeadlineSeconds ?? 0),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.JobPropertiesView_Completion_Mode.CurrentValue()!)
+                        .Value(vm.Spec?.CompletionMode ?? ""),
+                    new PropertyItem()
+                        .Key(FoundationLanguageManager.Instance.Shared_Suspend.CurrentValue()!)
+                        .Value(vm.Spec?.Suspend ?? false)),
+                ResourcePropertiesSection.Create(
+                    FoundationLanguageManager.Instance.Shared_Status.ToBinding(),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.JobPropertiesView_Active_Pods.CurrentValue()!)
+                        .Value(vm.Status?.Active ?? 0),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.JobPropertiesView_Start_Time.CurrentValue()!)
+                        .Value(vm.Status?.StartTime ?? DateTime.MinValue),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.JobPropertiesView_Completion_Time.CurrentValue()!)
+                        .Value(vm.Status?.CompletionTime ?? DateTime.MinValue),
+                    new PropertyItem()
+                        .Key(FoundationLanguageManager.Instance.Shared_Conditions.CurrentValue()!)
+                        .Value(vm.Status?.Conditions?.Count ?? 0)));
     }
 }

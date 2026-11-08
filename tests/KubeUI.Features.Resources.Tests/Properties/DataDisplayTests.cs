@@ -39,7 +39,7 @@ public sealed class DataDisplayTests
         GetDisplayedTexts(view).ShouldContain("remove-value");
         view.GetVisualDescendants()
             .OfType<ExpandableSection>()
-            .ShouldContain(section => Equals(section.Header, SharedAssets.Resources.Shared_Data));
+            .ShouldContain(section => Equals(section.Header, FoundationLanguageManager.Instance.Shared_Data.CurrentValue()!));
     }
 
     [AvaloniaFact]
@@ -65,7 +65,7 @@ public sealed class DataDisplayTests
         GetDisplayedTexts(view).ShouldContain("secret-value");
         view.GetVisualDescendants()
             .OfType<ExpandableSection>()
-            .ShouldContain(section => Equals(section.Header, ResourceAssets.Resources.SecretPropertiesView_Certificates));
+            .ShouldContain(section => Equals(section.Header, ResourcesLanguageManager.Instance.SecretPropertiesView_Certificates.CurrentValue()!));
     }
 
     [AvaloniaFact]
@@ -144,7 +144,7 @@ public sealed class DataDisplayTests
         display.ViewModel.BeginEditCommand.CanExecute(null).ShouldBeFalse();
         display.GetVisualDescendants()
             .OfType<Button>()
-            .ShouldNotContain(button => button.IsVisible && Equals(ToolTip.GetTip(button), ResourceAssets.Resources.DataDisplay_Edit));
+            .ShouldNotContain(button => button.IsVisible && Equals(ToolTip.GetTip(button), ResourcesLanguageManager.Instance.DataDisplay_Edit.CurrentValue()!));
     }
 
     [AvaloniaFact]
@@ -194,7 +194,7 @@ public sealed class DataDisplayTests
 
         display.GetVisualDescendants()
             .OfType<Button>()
-            .ShouldContain(button => button.IsVisible && Equals(ToolTip.GetTip(button), ResourceAssets.Resources.DataDisplay_Edit));
+            .ShouldContain(button => button.IsVisible && Equals(ToolTip.GetTip(button), ResourcesLanguageManager.Instance.DataDisplay_Edit.CurrentValue()!));
 
         display.ViewModel.BeginEditCommand.Execute(null);
         await WaitForUiAsync();

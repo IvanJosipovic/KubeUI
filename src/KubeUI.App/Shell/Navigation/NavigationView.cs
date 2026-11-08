@@ -9,7 +9,6 @@ using FluentIcons.Common;
 using KubeUI.App.Infrastructure;
 using KubeUI.App.Infrastructure.DependencyInjection;
 using KubeUI.App.Infrastructure.Presentation;
-using KubeUI.Features.Clusters.Catalog.Behaviors;
 using KubeUI.Features.Clusters.Presentation;
 using KubeUI.Kubernetes;
 
@@ -74,7 +73,7 @@ public sealed class NavigationView : KubeUIView<NavigationViewModel>
                             .InputGesture(new KeyGesture(Key.Enter))
                             .Icon(new FluentIcon().Icon(node, x => x.ConnectionMenuIcon)),
                         new MenuItem()
-                            .Header(Assets.Resources.NavigationView_ContextMenu_Settings)
+                            .Header(AppLanguageManager.Instance.NavigationView_ContextMenu_Settings.ToBinding())
                             .Command(node, x => x.OpenSettingsCommand)
                             .CommandParameter(node)
                             .Icon(new FluentIcon().Icon(Icon.Settings))
@@ -99,10 +98,10 @@ public sealed class NavigationView : KubeUIView<NavigationViewModel>
                 {
                     return status switch
                     {
-                        ClusterStatus.None => Assets.Resources.NavigationView_ToolTip_ClickToConnect!,
-                        ClusterStatus.Connecting => Assets.Resources.NavigationView_ToolTip_Connecting!,
-                        ClusterStatus.Errored => Assets.Resources.NavigationView_ToolTip_Errored!,
-                        ClusterStatus.Connected => Assets.Resources.NavigationView_ToolTip_Connected!,
+                        ClusterStatus.None => AppLanguageManager.Instance.NavigationView_ToolTip_ClickToConnect.CurrentValue()!,
+                        ClusterStatus.Connecting => AppLanguageManager.Instance.NavigationView_ToolTip_Connecting.CurrentValue()!,
+                        ClusterStatus.Errored => AppLanguageManager.Instance.NavigationView_ToolTip_Errored.CurrentValue()!,
+                        ClusterStatus.Connected => AppLanguageManager.Instance.NavigationView_ToolTip_Connected.CurrentValue()!,
                         _ => string.Empty
                     };
                 })),
@@ -121,13 +120,13 @@ public sealed class NavigationView : KubeUIView<NavigationViewModel>
                         ? new ContextMenu()
                             .Items([
                                 new MenuItem()
-                                    .Header(Assets.Resources.NavigationView_ContextMenu_Open)
+                                    .Header(AppLanguageManager.Instance.NavigationView_ContextMenu_Open.ToBinding())
                                     .Command(link, x => x.OpenCommand)
                                     .CommandParameter(link)
                                     .InputGesture(new KeyGesture(Key.Enter))
                                     .Icon(new FluentIcon().Icon(Icon.DocumentEdit)),
                                 new MenuItem()
-                                    .Header(Assets.Resources.NavigationView_ContextMenu_OpenNewTab)
+                                    .Header(AppLanguageManager.Instance.NavigationView_ContextMenu_OpenNewTab.ToBinding())
                                     .Command(link, x => x.OpenInNewTabCommand)
                                     .CommandParameter(link)
                                     .Icon(new FluentIcon().Icon(Icon.AddSquare))

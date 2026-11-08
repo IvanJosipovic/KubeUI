@@ -15,18 +15,18 @@ public sealed class HelmRepositoryEditorView : KubeUIView<HelmRepositoryEditorVi
             .RowSpacing(8)
             .ColumnSpacing(12)
             .Children(
-                new TextBlock().Row(0).Col(0).Text(Assets.Resources.HelmRepositoryEditorView_Name),
+                new TextBlock().Row(0).Col(0).Text(HelmLanguageManager.Instance.HelmRepositoryEditorView_Name.ToBinding()),
                 new TextBox().Row(0).Col(1).Text(vm, x => x.Name, BindingMode.TwoWay),
-                new TextBlock().Row(1).Col(0).Text(Assets.Resources.HelmRepositoryEditorView_Url),
+                new TextBlock().Row(1).Col(0).Text(HelmLanguageManager.Instance.HelmRepositoryEditorView_Url.ToBinding()),
                 new TextBox().Row(1).Col(1).Text(vm, x => x.Url, BindingMode.TwoWay),
-                new TextBlock().Row(2).Col(0).Text(Assets.Resources.HelmRepositoryEditorView_Username),
+                new TextBlock().Row(2).Col(0).Text(HelmLanguageManager.Instance.HelmRepositoryEditorView_Username.ToBinding()),
                 new TextBox().Row(2).Col(1).Text(vm, x => x.Username, BindingMode.TwoWay),
-                new TextBlock().Row(3).Col(0).Text(Assets.Resources.HelmRepositoryEditorView_Password),
+                new TextBlock().Row(3).Col(0).Text(HelmLanguageManager.Instance.HelmRepositoryEditorView_Password.ToBinding()),
                 new TextBox().Row(3).Col(1).PasswordChar('●').Text(vm, x => x.Password, BindingMode.TwoWay),
                 new TextBlock()
                     .Row(4)
                     .ColSpan(2)
-                    .Text(Assets.Resources.HelmRepositoryEditorView_CredentialsNote),
+                    .Text(HelmLanguageManager.Instance.HelmRepositoryEditorView_CredentialsNote.ToBinding()),
                 new TextBlock()
                     .Row(5)
                     .ColSpan(2)
@@ -41,9 +41,9 @@ public sealed class HelmRepositoryEditorView : KubeUIView<HelmRepositoryEditorVi
                     .Children(
                         new Button()
                             .Command(vm, x => x.CancelCommand)
-                            .Content(SharedAssets.Resources.Shared_Cancel),
+                            .Content(FoundationLanguageManager.Instance.Shared_Cancel.ToBinding()),
                         new Button()
                             .Command(vm, x => x.SaveCommand)
-                            .Content(Assets.Resources.HelmRepositoryEditorView_Save)));
+                            .Content(HelmLanguageManager.Instance.HelmRepositoryEditorView_Save.ToBinding())));
     }
 }

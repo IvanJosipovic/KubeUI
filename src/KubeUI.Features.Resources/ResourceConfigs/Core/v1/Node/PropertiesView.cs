@@ -1,5 +1,6 @@
-﻿using k8s.Models;
-using KubeUI.Features.Resources.Properties.Controls;
+using k8s.Models;
+using KubeUI.Controls.Presentation;
+using KubeUI.Features.Resources.Properties;
 
 namespace KubeUI.Features.Resources.Core.v1.Node;
 
@@ -12,44 +13,38 @@ public sealed class PropertiesView : ViewBase<V1Node>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(Assets.Resources.NodePropertiesView_Operating_System!)
+                    .Key(ResourcesLanguageManager.Instance.NodePropertiesView_Operating_System.CurrentValue()!)
                     .Value(vm.Status?.NodeInfo?.OperatingSystem ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.NodePropertiesView_Architecture!)
+                    .Key(ResourcesLanguageManager.Instance.NodePropertiesView_Architecture.CurrentValue()!)
                     .Value(vm.Status?.NodeInfo?.Architecture ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.NodePropertiesView_Kernel_Version!)
+                    .Key(ResourcesLanguageManager.Instance.NodePropertiesView_Kernel_Version.CurrentValue()!)
                     .Value(vm.Status?.NodeInfo?.KernelVersion ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.NodePropertiesView_Container_Runtime!)
+                    .Key(ResourcesLanguageManager.Instance.NodePropertiesView_Container_Runtime.CurrentValue()!)
                     .Value(vm.Status?.NodeInfo?.ContainerRuntimeVersion ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.NodePropertiesView_Kubelet_Version!)
+                    .Key(ResourcesLanguageManager.Instance.NodePropertiesView_Kubelet_Version.CurrentValue()!)
                     .Value(vm.Status?.NodeInfo?.KubeletVersion ?? ""),
-                new ExpandableSection()
-                    .Header(SharedAssets.Resources.Shared_Status!)
-                    .Content(
-                        new StackPanel()
-                            .Children(
-                                new PropertyItem()
-                                    .Key(Assets.Resources.NodePropertiesView_Addresses!)
-                                    .Value(vm.Status?.Addresses?.Count ?? 0),
-                                new PropertyItem()
-                                    .Key(Assets.Resources.NodePropertiesView_Taints!)
-                                    .Value(vm.Spec?.Taints?.Count ?? 0),
-                                new PropertyItem()
-                                    .Key(SharedAssets.Resources.Shared_Conditions!)
-                                    .Value(vm.Status?.Conditions?.Count ?? 0))),
-                new ExpandableSection()
-                    .Header(SharedAssets.Resources.Shared_Resources!)
-                    .Content(
-                        new StackPanel()
-                            .Children(
-                                new PropertyItem()
-                                    .Key(SharedAssets.Resources.Shared_Capacity_Entries!)
-                                    .Value(vm.Status?.Capacity?.Count ?? 0),
-                                new PropertyItem()
-                                    .Key(Assets.Resources.NodePropertiesView_Allocatable_Entries!)
-                                    .Value(vm.Status?.Allocatable?.Count ?? 0))));
+                ResourcePropertiesSection.Create(
+                    FoundationLanguageManager.Instance.Shared_Status.ToBinding(),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.NodePropertiesView_Addresses.CurrentValue()!)
+                        .Value(vm.Status?.Addresses?.Count ?? 0),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.NodePropertiesView_Taints.CurrentValue()!)
+                        .Value(vm.Spec?.Taints?.Count ?? 0),
+                    new PropertyItem()
+                        .Key(FoundationLanguageManager.Instance.Shared_Conditions.CurrentValue()!)
+                        .Value(vm.Status?.Conditions?.Count ?? 0)),
+                ResourcePropertiesSection.Create(
+                    FoundationLanguageManager.Instance.Shared_Resources.ToBinding(),
+                    new PropertyItem()
+                        .Key(FoundationLanguageManager.Instance.Shared_Capacity_Entries.CurrentValue()!)
+                        .Value(vm.Status?.Capacity?.Count ?? 0),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.NodePropertiesView_Allocatable_Entries.CurrentValue()!)
+                        .Value(vm.Status?.Allocatable?.Count ?? 0)));
     }
 }

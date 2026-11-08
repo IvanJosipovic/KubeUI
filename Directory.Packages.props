@@ -14,6 +14,7 @@
     <PackageVersion Include="Avalonia.AvaloniaEdit" Version="12.0.0" />
     <PackageVersion Include="AvaloniaEdit.TextMate" Version="12.0.0" />
     <PackageVersion Include="Avalonia.Headless.XUnit" Version="12.1.5" />
+    <PackageVersion Include="Avalonia.Skia" Version="12.1.5" />
     
     <!-- Dock -->
     <PackageVersion Include="Dock.Model.Mvvm" Version="12.1.0.2" />
@@ -40,6 +41,7 @@
     <PackageVersion Include="HanumanInstitute.MvvmDialogs.Avalonia.Fluent" Version="2.4.0" />
     <PackageVersion Include="Irihi.Ursa" Version="2.2.0" />
     <PackageVersion Include="Irihi.Ursa.Themes.Semi" Version="2.2.0" />
+    <PackageVersion Include="Irihi.Lingua" Version="1.1.0" />
     <PackageVersion Include="LiveMarkdown.Avalonia" Version="2.5.1" />
     <PackageVersion Include="Semi.Avalonia" Version="12.1.0.1" />
     <PackageVersion Include="PropertyGenerator.Avalonia" Version="1.3.1" />

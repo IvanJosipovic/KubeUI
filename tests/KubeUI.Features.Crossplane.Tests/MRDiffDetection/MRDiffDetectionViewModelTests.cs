@@ -138,7 +138,7 @@ public sealed class MRDiffDetectionViewModelTests
         await WaitForAsync(() => viewModel.Providers.Count == 1);
         viewModel.SelectedProvider = viewModel.Providers.Single();
         await WaitForAsync(() => GetRows(viewModel).Length == 5);
-        await WaitForAsync(() => viewModel.Status == CrossplaneAssets.Resources.MRDiffDetectionView_TruncatedLog);
+        await WaitForAsync(() => viewModel.Status == CrossplaneLanguageManager.Instance.MRDiffDetectionView_TruncatedLog.CurrentValue());
         viewModel.SelectionModel.ShouldBeSameAs(viewModel.TableSource.SelectionModel);
         MRDiffDetectionViewModel.IsAvailable(cluster).ShouldBeTrue();
         var rows = GetRows(viewModel).ToDictionary(row => row.Uid, StringComparer.Ordinal);
@@ -259,7 +259,7 @@ public sealed class MRDiffDetectionViewModelTests
                 Kind = "Provider",
                 Metadata = new V1ObjectMeta { Name = "provider-demo" }
             });
-        await WaitForAsync(() => viewModel.Status == CrossplaneAssets.Resources.MRDiffDetectionView_SelectProvider);
+        await WaitForAsync(() => viewModel.Status == CrossplaneLanguageManager.Instance.MRDiffDetectionView_SelectProvider.CurrentValue());
         viewModel.SelectedProvider.ShouldBeNull();
         var seedingToken = await seedStarted.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
@@ -302,7 +302,7 @@ public sealed class MRDiffDetectionViewModelTests
 
         viewModel.Initialize(cluster);
 
-        await WaitForAsync(() => viewModel.Status == CrossplaneAssets.Resources.MRDiffDetectionView_SelectProvider);
+        await WaitForAsync(() => viewModel.Status == CrossplaneLanguageManager.Instance.MRDiffDetectionView_SelectProvider.CurrentValue());
         viewModel.Providers.ShouldBeEmpty();
         viewModel.SelectedProvider.ShouldBeNull();
         MRDiffDetectionViewModel.IsAvailable(cluster).ShouldBeFalse();
@@ -339,7 +339,7 @@ public sealed class MRDiffDetectionViewModelTests
 
         viewModel.Initialize(cluster);
 
-        await WaitForAsync(() => viewModel.Status != CrossplaneAssets.Resources.MRDiffDetectionView_SelectProvider);
+        await WaitForAsync(() => viewModel.Status != CrossplaneLanguageManager.Instance.MRDiffDetectionView_SelectProvider.CurrentValue());
         viewModel.Status.ShouldNotBeNull().ShouldContain("Unknown resource kind");
     }
 

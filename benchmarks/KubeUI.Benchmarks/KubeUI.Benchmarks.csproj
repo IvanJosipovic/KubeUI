@@ -20,9 +20,9 @@
   <ItemGroup>
     <Using Include="KubeUI.Controls.Presentation" />
     <Using Include="KubeUI.Controls.Platform" />
-    <Using Include="KubeUI.Features.Resources.Assets" Alias="ResourceAssets" />
+    <Using Include="KubeUI.Features.Resources.Assets" />
     <Using Include="KubeUI.Controls.Converters" />
-    <Using Include="KubeUI.App.App" Alias="KubeUIApplication" />
+    <Using Include="KubeUI.App" />
     <PackageReference Include="Moq" />
     <Compile Include="..\..\tests\KubeUI.Avalonia.Tests\Infra\TestApp.cs" Link="TestApp.cs" />
     <Compile Include="..\..\tests\KubeUI.Avalonia.Tests\Infra\TestSettingsService.cs" Link="TestSettingsService.cs" />

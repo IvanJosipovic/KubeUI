@@ -69,9 +69,9 @@ internal static class MainWindowDecorations
                     CompiledBinding.Create<Window, double>(window => window.FontSize, source: window)))
             .HorizontalAlignment(HorizontalAlignment.Left)
             .VerticalAlignment(VerticalAlignment.Top)
-            .ToolTip_Tip(Assets.Resources.MainWindow_Options)
+            .ToolTip_Tip(AppLanguageManager.Instance.MainWindow_Options.ToBinding())
             .ElementRole(WindowDecorationsElementRole.User)
-            .AutomationName(Assets.Resources.MainWindow_Options)
+            .AutomationName(AppLanguageManager.Instance.MainWindow_Options.CurrentValue()!)
             .AttachedFlyout(menu)
             .IsVisible(window, window => window.WindowState, BindingMode.OneWay,
                 new FuncValueConverter<WindowState, bool>(state => state != WindowState.FullScreen))

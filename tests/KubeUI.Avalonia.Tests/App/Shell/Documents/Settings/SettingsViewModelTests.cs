@@ -33,7 +33,7 @@ public sealed class SettingsViewModelTests
         using var window = Application.Current.CreateTestWindow(600, 900, view);
         window.Show();
         Dispatcher.UIThread.RunJobs();
-        var toggle = FindToggleRow(view, Assets.Resources.SettingsView_AutoDiscovery_Label!).Children.OfType<CheckBox>().Single();
+        var toggle = FindToggleRow(view, AppLanguageManager.Instance.SettingsView_AutoDiscovery_Label.CurrentValue()!).Children.OfType<CheckBox>().Single();
         try
         {
             toggle.IsChecked = false;
@@ -206,9 +206,9 @@ public sealed class SettingsViewModelTests
         Dispatcher.UIThread.RunJobs();
 
         var text = view.GetVisualDescendants().OfType<TextBlock>().Select(control => control.Text).ToList();
-        text.ShouldContain(Assets.Resources.SettingsView_AppearanceHeading);
-        text.ShouldContain(Assets.Resources.SettingsView_AIHeading);
-        text.ShouldContain(Assets.Resources.SettingsView_ApplicationHeading);
+        text.ShouldContain(AppLanguageManager.Instance.SettingsView_AppearanceHeading.CurrentValue()!);
+        text.ShouldContain(AppLanguageManager.Instance.SettingsView_AIHeading.CurrentValue()!);
+        text.ShouldContain(AppLanguageManager.Instance.SettingsView_ApplicationHeading.CurrentValue()!);
 
         view.GetVisualDescendants().OfType<CheckBox>().Select(checkBox => checkBox.IsChecked).ShouldContain(true);
         view.GetVisualDescendants().OfType<NumericUpDown>().Select(control => control.Value).ShouldContain(63888);
@@ -241,12 +241,12 @@ public sealed class SettingsViewModelTests
         Dispatcher.UIThread.RunJobs();
 
         view.GetVisualDescendants().OfType<TextBlock>().Select(text => text.Text)
-            .ShouldContain(Assets.Resources.SettingsView_FeaturesHeading);
+            .ShouldContain(AppLanguageManager.Instance.SettingsView_FeaturesHeading.CurrentValue()!);
 
-        var helmRow = FindToggleRow(view, Assets.Resources.SettingsView_HelmFeature_Label!);
-        var hubbleRow = FindToggleRow(view, Assets.Resources.SettingsView_HubbleFeature_Label!);
-        var jsonRow = FindToggleRow(view, Assets.Resources.SettingsView_DisableJsonSerializationReflection_Label!);
-        var yamlRow = FindToggleRow(view, Assets.Resources.SettingsView_DisableYamlSerializationReflection_Label!);
+        var helmRow = FindToggleRow(view, AppLanguageManager.Instance.SettingsView_HelmFeature_Label.CurrentValue()!);
+        var hubbleRow = FindToggleRow(view, AppLanguageManager.Instance.SettingsView_HubbleFeature_Label.CurrentValue()!);
+        var jsonRow = FindToggleRow(view, AppLanguageManager.Instance.SettingsView_DisableJsonSerializationReflection_Label.CurrentValue()!);
+        var yamlRow = FindToggleRow(view, AppLanguageManager.Instance.SettingsView_DisableYamlSerializationReflection_Label.CurrentValue()!);
         var helm = helmRow.Children.OfType<CheckBox>().Single();
         var hubble = hubbleRow.Children.OfType<CheckBox>().Single();
         var json = jsonRow.Children.OfType<CheckBox>().Single();
@@ -301,7 +301,7 @@ public sealed class SettingsViewModelTests
 
         viewModel.ExternalMcpClusterOptions.Single(option => option.Name == "prod").IsSelected.ShouldBeTrue();
         view.GetVisualDescendants().OfType<TextBlock>().Select(textBlock => textBlock.Text)
-            .ShouldContain(Assets.Resources.SettingsView_McpClients_Heading);
+            .ShouldContain(AppLanguageManager.Instance.SettingsView_McpClients_Heading.CurrentValue()!);
     }
 
     [Fact]
@@ -374,7 +374,7 @@ public sealed class SettingsViewModelTests
         viewModel.HasErrors.ShouldBeTrue();
         viewModel.GetErrors(nameof(SettingsViewModel.ExternalMcpClientName))
             .Cast<object>()
-            .ShouldContain(Assets.Resources.SettingsView_McpClientName_TooLong);
+            .ShouldContain(AppLanguageManager.Instance.SettingsView_McpClientName_TooLong.CurrentValue()!);
         settingsService.Verify(service => service.TrySaveSettings(), Times.Never);
     }
 
@@ -401,7 +401,7 @@ public sealed class SettingsViewModelTests
         viewModel.CreateExternalMcpCredentialCommand.Execute(null);
 
         viewModel.NewlyCreatedMcpToken.ShouldBeNull();
-        viewModel.McpGrantMessage.ShouldBe(Assets.Resources.SettingsView_McpTokenInvalid);
+        viewModel.McpGrantMessage.ShouldBe(AppLanguageManager.Instance.SettingsView_McpTokenInvalid.CurrentValue()!);
         settings.McpExternalClientGrants.ShouldBeEmpty();
         settingsService.Verify(service => service.TrySaveSettings(), Times.Never);
     }
@@ -448,7 +448,7 @@ public sealed class SettingsViewModelTests
         viewModel.CreateExternalMcpCredentialCommand.Execute(null);
 
         viewModel.NewlyCreatedMcpToken.ShouldBeNull();
-        viewModel.McpGrantMessage.ShouldBe(Assets.Resources.SettingsView_McpTokenCreateFailed);
+        viewModel.McpGrantMessage.ShouldBe(AppLanguageManager.Instance.SettingsView_McpTokenCreateFailed.CurrentValue()!);
         settings.McpExternalClientGrants.ShouldBeEmpty();
     }
 
@@ -469,7 +469,7 @@ public sealed class SettingsViewModelTests
 
         viewModel.RevokeExternalMcpCredentialCommand.Execute(null);
 
-        viewModel.McpGrantMessage.ShouldBe(Assets.Resources.SettingsView_McpTokenRevokeFailed);
+        viewModel.McpGrantMessage.ShouldBe(AppLanguageManager.Instance.SettingsView_McpTokenRevokeFailed.CurrentValue()!);
         viewModel.NewlyCreatedMcpToken.ShouldBe(token);
         settings.McpExternalClientGrants.Count.ShouldBe(1);
     }
@@ -495,7 +495,7 @@ public sealed class SettingsViewModelTests
         var clientNameBox = view.GetVisualDescendants().OfType<TextBox>()
             .Single(textBox => textBox.Name == nameof(SettingsViewModel.ExternalMcpClientName));
 
-        clientNameBox.PlaceholderText.ShouldBe(Assets.Resources.SettingsView_McpClientName_Watermark);
+        clientNameBox.PlaceholderText.ShouldBe(AppLanguageManager.Instance.SettingsView_McpClientName_Watermark.CurrentValue()!);
     }
 
     [Fact]

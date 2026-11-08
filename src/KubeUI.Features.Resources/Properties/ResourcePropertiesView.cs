@@ -6,7 +6,6 @@ using k8s.Models;
 using KubeUI.Controls.Presentation;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources;
-using KubeUI.Features.Resources.Common;
 using KubeUI.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Features.Resources.Properties;
@@ -176,13 +175,13 @@ public partial class ResourcePropertiesView<[DynamicallyAccessedMembers(Dynamica
 
         var obj = viewModel.Object;
 
-        _itemsPanel.Children.Add(new PropertyItem { Key = Assets.Resources.ResourcePropertiesView_Name, Value = obj.Metadata.Name });
+        _itemsPanel.Children.Add(new PropertyItem { Key = ResourcesLanguageManager.Instance.ResourcePropertiesView_Name.CurrentValue()!, Value = obj.Metadata.Name });
         if (viewModel.ResourceConfig?.IsNamespaced == true)
         {
-            _itemsPanel.Children.Add(new PropertyItem { Key = Assets.Resources.ResourcePropertiesView_Namespace, Value = obj.Metadata.NamespaceProperty });
+            _itemsPanel.Children.Add(new PropertyItem { Key = ResourcesLanguageManager.Instance.ResourcePropertiesView_Namespace.CurrentValue()!, Value = obj.Metadata.NamespaceProperty });
         }
 
-        _itemsPanel.Children.Add(new PropertyItem { Key = Assets.Resources.ResourcePropertiesView_Created, Value = obj.Metadata.CreationTimestamp });
+        _itemsPanel.Children.Add(new PropertyItem { Key = ResourcesLanguageManager.Instance.ResourcePropertiesView_Created.CurrentValue()!, Value = obj.Metadata.CreationTimestamp });
 
         if (viewModel.ResourceConfig == null)
         {
@@ -259,13 +258,13 @@ public partial class ResourcePropertiesView<[DynamicallyAccessedMembers(Dynamica
                 Width = 32,
                 Height = 32,
                 Padding = new Thickness(4),
-                Content = ResourceActionPresenter.CreateIcon(action),
+                Content = MenuPresenter.CreateIcon(action),
             };
             ToolTip.SetTip(button, action.Title);
 
             if (action.Items is { Count: > 0 } children)
             {
-                button.Flyout = ResourceActionPresenter.CreateFlyout(children);
+                button.Flyout = MenuPresenter.CreateFlyout(children);
             }
             else if (action.Command != null)
             {

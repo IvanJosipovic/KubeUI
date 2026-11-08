@@ -1,4 +1,4 @@
-﻿using FluentAvalonia.UI.Controls;
+using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
@@ -25,14 +25,14 @@ public sealed partial class V1NodeConfig : ResourceConfig<V1Node>
             new ResourceListColumn<V1Node, string>()
             {
                 Key = "instance-type",
-                Name = Assets.Resources.V1NodeConfig_Instance_Type!,
+                Name = ResourcesLanguageManager.Instance.V1NodeConfig_Instance_Type.CurrentValue()!,
                 Field = x => x?.Metadata?.Labels?.TryGetValue("node.kubernetes.io/instance-type", out var value) == true ? value : string.Empty,
                 WidthMode = DynamicTableViewWidthMode.Cells
             },
             new ResourceListColumn<V1Node, decimal>()
             {
                 Key = "cpu",
-                Name = Assets.Resources.V1NodeConfig_CPU!,
+                Name = ResourcesLanguageManager.Instance.V1NodeConfig_CPU.CurrentValue()!,
                 Field = x => x?.Status ?.Capacity ?.TryGetValue("cpu", out var value) == true && value != null ? value.ToDecimal() : 0,
                 Display = x => x?.Status?.Capacity?.TryGetValue("cpu", out var value) == true && value != null ? value.ToDecimal().ToString("0.##") + "c" : "0c",
                 WidthMode = DynamicTableViewWidthMode.Header
@@ -40,7 +40,7 @@ public sealed partial class V1NodeConfig : ResourceConfig<V1Node>
             new ResourceListColumn<V1Node, decimal>()
             {
                 Key = "memory",
-                Name = Assets.Resources.V1NodeConfig_Memory!,
+                Name = ResourcesLanguageManager.Instance.V1NodeConfig_Memory.CurrentValue()!,
                 Field = x => x?.Status ?.Capacity ?.TryGetValue("memory", out var value) == true && value != null ? value.ToDecimal() : 0,
                 Display = x => x?.Status?.Capacity?.TryGetValue("memory", out var value) == true && value != null ? (value.ToDecimal() / 1048576 / 1024).ToString("0.##") + "Gi" : "0Gi",
                 WidthMode = DynamicTableViewWidthMode.Header
@@ -48,7 +48,7 @@ public sealed partial class V1NodeConfig : ResourceConfig<V1Node>
             new ResourceListColumn<V1Node, decimal>()
             {
                 Key = "disk",
-                Name = Assets.Resources.V1NodeConfig_Disk!,
+                Name = ResourcesLanguageManager.Instance.V1NodeConfig_Disk.CurrentValue()!,
                 Field = x => x?.Status ?.Capacity ?.TryGetValue("ephemeral-storage", out var value) == true && value != null ? value.ToDecimal() : 0,
                 Display = x => x?.Status?.Capacity?.TryGetValue("ephemeral-storage", out var value) == true && value != null ? (value.ToDecimal() / 1048576 / 1024).ToString("0.##") + "Gi" : "0Gi",
                 WidthMode = DynamicTableViewWidthMode.Cells
@@ -56,21 +56,21 @@ public sealed partial class V1NodeConfig : ResourceConfig<V1Node>
             new ResourceListColumn<V1Node, string>()
             {
                 Key = "taints",
-                Name = Assets.Resources.V1NodeConfig_Taints!,
+                Name = ResourcesLanguageManager.Instance.V1NodeConfig_Taints.CurrentValue()!,
                 Field = x => x?.Spec?.Taints is { Count: > 0 } taints ? string.Join(", ", taints.Select(x => $"{x.Key}={x.Effect}")) : "",
                 WidthMode = DynamicTableViewWidthMode.Header
             },
             new ResourceListColumn<V1Node, string>()
             {
                 Key = "version",
-                Name = Assets.Resources.V1NodeConfig_Version!,
+                Name = ResourcesLanguageManager.Instance.V1NodeConfig_Version.CurrentValue()!,
                 Field = x => x?.Status?.NodeInfo?.KubeletVersion ?? string.Empty,
                 WidthMode = DynamicTableViewWidthMode.Header
             },
             new ResourceListColumn<V1Node, string>()
             {
                 Key = "status",
-                Name = Assets.Resources.V1NodeConfig_Status!,
+                Name = ResourcesLanguageManager.Instance.V1NodeConfig_Status.CurrentValue()!,
                 Field = x => x?.Status?.Conditions?.FirstOrDefault(x => x.Type == "Ready")?.Reason ?? string.Empty,
                 WidthMode = DynamicTableViewWidthMode.Cells
             },
@@ -83,21 +83,21 @@ public sealed partial class V1NodeConfig : ResourceConfig<V1Node>
         return [
             new()
             {
-                Title = Assets.Resources.V1NodeConfig_MenuItem_Cordon,
+                Title = ResourcesLanguageManager.Instance.V1NodeConfig_MenuItem_Cordon.CurrentValue()!,
                 FluentIcon = Icon.Stop,
                 Command = CordonNodeCommand,
                 CommandParameter = selectedItems?.ToList(),
             },
             new()
             {
-                Title = Assets.Resources.V1NodeConfig_MenuItem_UnCordon,
+                Title = ResourcesLanguageManager.Instance.V1NodeConfig_MenuItem_UnCordon.CurrentValue()!,
                 FluentIcon = Icon.Play,
                 Command = UnCordonNodeCommand,
                 CommandParameter = selectedItems?.ToList(),
             },
             new()
             {
-                Title = Assets.Resources.V1NodeConfig_MenuItem_Drain,
+                Title = ResourcesLanguageManager.Instance.V1NodeConfig_MenuItem_Drain.CurrentValue()!,
                 FluentIcon = Icon.ArrowSync,
                 Command = DrainNodeCommand,
                 CommandParameter = selectedItems?.ToList(),
@@ -110,10 +110,10 @@ public sealed partial class V1NodeConfig : ResourceConfig<V1Node>
     {
         ContentDialogSettings settings = new()
         {
-            Title = Assets.Resources.ResourceListView_CordonNode_Title,
-            Content = string.Format(Assets.Resources.ResourceListView_CordonNode_Content, items.Count),
-            PrimaryButtonText = Assets.Resources.ResourceListView_CordonNode_Primary,
-            SecondaryButtonText = Assets.Resources.ResourceListView_CordonNode_Secondary,
+            Title = ResourcesLanguageManager.Instance.ResourceListView_CordonNode_Title.CurrentValue()!,
+            Content = string.Format(ResourcesLanguageManager.Instance.ResourceListView_CordonNode_Content.CurrentValue()!, items.Count),
+            PrimaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_CordonNode_Primary.CurrentValue()!,
+            SecondaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_CordonNode_Secondary.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary
         };
 
@@ -153,10 +153,10 @@ public sealed partial class V1NodeConfig : ResourceConfig<V1Node>
     {
         ContentDialogSettings settings = new()
         {
-            Title = Assets.Resources.ResourceListView_UnCordonNode_Title,
-            Content = string.Format(Assets.Resources.ResourceListView_UnCordonNode_Content, items.Count),
-            PrimaryButtonText = Assets.Resources.ResourceListView_UnCordonNode_Primary,
-            SecondaryButtonText = Assets.Resources.ResourceListView_UnCordonNode_Secondary,
+            Title = ResourcesLanguageManager.Instance.ResourceListView_UnCordonNode_Title.CurrentValue()!,
+            Content = string.Format(ResourcesLanguageManager.Instance.ResourceListView_UnCordonNode_Content.CurrentValue()!, items.Count),
+            PrimaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_UnCordonNode_Primary.CurrentValue()!,
+            SecondaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_UnCordonNode_Secondary.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary
         };
 
@@ -196,10 +196,10 @@ public sealed partial class V1NodeConfig : ResourceConfig<V1Node>
     {
         ContentDialogSettings settings = new()
         {
-            Title = Assets.Resources.ResourceListView_DrainNode_Title,
-            Content = string.Format(Assets.Resources.ResourceListView_DrainNode_Content, items.Count),
-            PrimaryButtonText = Assets.Resources.ResourceListView_DrainNode_Primary,
-            SecondaryButtonText = Assets.Resources.ResourceListView_DrainNode_Secondary,
+            Title = ResourcesLanguageManager.Instance.ResourceListView_DrainNode_Title.CurrentValue()!,
+            Content = string.Format(ResourcesLanguageManager.Instance.ResourceListView_DrainNode_Content.CurrentValue()!, items.Count),
+            PrimaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_DrainNode_Primary.CurrentValue()!,
+            SecondaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_DrainNode_Secondary.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary
         };
 

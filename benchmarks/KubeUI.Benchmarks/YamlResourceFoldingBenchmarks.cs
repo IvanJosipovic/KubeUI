@@ -1,5 +1,6 @@
 using AvaloniaEdit.Document;
 using BenchmarkDotNet.Attributes;
+using KubeUI.Controls.Editors;
 using KubeUI.Features.Resources.Yaml;
 
 namespace KubeUI.Benchmarks;
@@ -33,7 +34,7 @@ public class YamlResourceFoldingBenchmarks
         var totalFoldings = 0;
         for (var index = 0; index < OperationsPerInvocation; index++)
         {
-            totalFoldings += YamlFoldingStrategy.CreateNewFoldings(_document, out _).Count();
+            totalFoldings += YamlIndentationFoldingStrategy.CreateNewFoldings(_document, out _).Count();
         }
 
         return totalFoldings;

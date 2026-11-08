@@ -1,4 +1,4 @@
-﻿using System.Reactive.Linq;
+using System.Reactive.Linq;
 using System.Windows.Input;
 using FluentIcons.Common;
 using k8s.Models;
@@ -225,7 +225,7 @@ internal sealed class NavigationTreeBuilder
             target,
             cluster,
             id,
-            Resources.PortForwarderListView_Title!,
+            ResourcesLanguageManager.Instance.PortForwarderListView_Title.CurrentValue()!,
             -450,
             Icon.CloudFlow,
             resource: null,

@@ -1,5 +1,8 @@
 # Helm Feature
 
+- Repository headers compose `KubeUI.Controls.Layout.CompactToolbar`; keep repository actions, localized counts/status, and refresh commands in Helm. Release updated cells use the shared Controls refresh lifecycle while retaining Helm timestamp formatting.
+- Release namespace filters compose Clusters' `NamespaceScopePicker`. Helm still owns linking/local selection, and an empty selection continues to mean all namespaces; the shared picker must not introduce a different empty-scope policy.
+
 - Helm feature code and Helm.NET client operations live in `KubeUI.Features.Helm`; shared Kubernetes runtime contracts stay in `KubeUI.Kubernetes`.
 - Docked Helm views inherit `KubeUIView<TViewModel>` so generated `ViewLocator` discovery can create them.
 - The Helm navigation section is a preview feature gated by `FeatureFlagKeys.Helm` (`kubeui.helm`), default off. Capture the flag when the section provider is created; enabling or disabling it requires an application restart.
@@ -14,7 +17,7 @@
 - Release rows support namespace-scoped or all-namespace listing, install, upgrade, status, values, rollback to a chosen revision, uninstall, and chart template preview. Rollback dialog includes revision history. Format the Updated column with the same pretty age text as resource Age cells.
 - Focused Helm lists map Enter to their primary row action (View charts, Install, Visualize) and Delete to their destructive row action (repository Delete, release Uninstall). Keep context-menu gesture hints synchronized; repository/release destructive actions retain their normal confirmation flow.
 - Refresh release data on every view load, including reattachment of an existing document, through a lifecycle behavior. Fetch all namespaces and apply namespace selection as a local table filter; an empty selection means all namespaces.
-- Keep Helm UI text in Resources.resx and cover service, navigation, and ViewModel behavior with tests.
+- Keep Helm UI text in `Assets/Resources.json` and cover service, navigation, and ViewModel behavior with tests.
 - Repository and release list headers follow resource-list layout: minimum height 32, vertical margin 2, left add-square action and item-count label with left margin 2, stretch spacer, right-aligned controls/actions, and bounded wrapping status text. Repository index updates stay in the right action group; do not displace the count.
 - Top-bar status messages must remain clear and concise (at most two words); log detailed exception text instead of displaying it in the header.
 - Distinguish downloading repository indexes (`ArrowDownload`, header action) from refreshing the displayed repository list (`ArrowSync`).
@@ -25,6 +28,7 @@
 - Replacing YAML with asynchronously loaded chart defaults must preserve the release form and YAML editor scroll positions and caret; loading defaults must not move either viewport.
 - Reuse `YamlSyntaxHighlightingBehavior` for the same theme-aware TextMate YAML colors as the resource viewer. Keep editor/model updates bidirectional.
 - Helm values YAML editors use the shared `YamlFoldingBehavior` for nested YAML folding; keep folding and theme-aware syntax highlighting enabled together.
+- Use Controls' `YamlEditorDefaults` for common editor options and Controls' YAML highlight/folding behaviors. Keep Helm values loading, form scrolling, and edit validation local.
 - Match the resource YAML editor's shared font weight, line numbers, scrollbars, default word-wrap state, and `TextEditorOptions`; retain release-specific loading and bounded-height behavior.
 - Helm.NET alpha.11 provides separate `ChartName`/`ChartVersion`, versioned template/install/upgrade, stored-release manifest retrieval, and native all-namespace listing. `HelmRelease.Revision` is an `int` and `HelmRelease.Updated` is a `DateTimeOffset`; format the Updated column with the pretty age helper and format timestamps in status/history text as UTC ISO-8601. The Helm service maps chart catalog listing to a single `SearchRepo` call over cached indexes and maps release manifest retrieval to `GetManifest`; do not expose a separate keyword chart search. Resolve an upgrade chart using exact chart-name matches from the cached catalog, deduplicated by reference across versions. Never use `HelmRelease.Chart` as a reference or guess between multiple repositories; request a manual reference when no unique match exists. Keep installed-release visualization live, not based on stored/template manifests.
 - Pass selected chart version to install and upgrade APIs, as well as versioned preview. Manual or OCI references can omit version to use Helm's default resolution. Stored-manifest retrieval returns saved release output and does not accept edited values; it must not replace editor template preview.

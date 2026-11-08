@@ -26,7 +26,7 @@ public sealed class ResourcePropertiesViewTests
         viewModel.ShowResource(workspace, new V1Pod { Metadata = new V1ObjectMeta { Name = "second" } });
         await TestApplicationExtensions.WaitForUiAsync();
         view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>()
-            .ShouldContain(item => item.Key == ResourceAssets.Resources.ResourcePropertiesView_Name && Equals(item.Value, "second"));
+            .ShouldContain(item => item.Key == ResourcesLanguageManager.Instance.ResourcePropertiesView_Name.CurrentValue()! && Equals(item.Value, "second"));
     }
 
     [AvaloniaFact]
@@ -61,7 +61,7 @@ public sealed class ResourcePropertiesViewTests
 
             var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
 
-            items.Any(x => x.Key == ResourceAssets.Resources.ResourcePropertiesView_Namespace).ShouldBeTrue();
+            items.Any(x => x.Key == ResourcesLanguageManager.Instance.ResourcePropertiesView_Namespace.CurrentValue()!).ShouldBeTrue();
         }
         finally
         {
@@ -160,7 +160,7 @@ public sealed class ResourcePropertiesViewTests
 
             var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
 
-            items.Any(x => x.Key == ResourceAssets.Resources.ResourcePropertiesView_Namespace).ShouldBeFalse();
+            items.Any(x => x.Key == ResourcesLanguageManager.Instance.ResourcePropertiesView_Namespace.CurrentValue()!).ShouldBeFalse();
         }
         finally
         {
@@ -209,7 +209,7 @@ public sealed class ResourcePropertiesViewTests
 
             var section = view.GetVisualDescendants()
                 .OfType<ExpandableSection>()
-                .Single(x => Equals(x.Header, ResourceAssets.Resources.PodPropertiesView_EphemeralContainers));
+                .Single(x => Equals(x.Header, ResourcesLanguageManager.Instance.PodPropertiesView_EphemeralContainers.CurrentValue()!));
 
             section.IsVisible.ShouldBeTrue();
         }

@@ -17,18 +17,20 @@
     <Using Include="Avalonia.Media" />
     <Using Include="Avalonia.Styling" />
     <Using Include="Avalonia.Threading" />
-    <Using Include="KubeUI.Avalonia.Styles" />
+    <Using Include="KubeUI.Foundation.Styles" />
     <Using Include="CommunityToolkit.Mvvm.ComponentModel" />
     <Using Include="CommunityToolkit.Mvvm.Input" />
-    <Using Include="KubeUI.Avalonia.Assets" Alias="SharedAssets" />
+    <Using Include="KubeUI.Foundation.Assets" />
+    <Using Include="KubeUI.Foundation.Localization" />
     <Using Include="KubeUI.Controls.Presentation" />
+    <Using Include="KubeUI.Controls.Editors" />
     <Using Include="KubeUI.Controls.Converters" />
     <Using Include="KubeUI.Controls.Styles" />
     <Using Include="KubeUI.Controls.DependencyInjection" />
     <Using Include="KubeUI.Controls.Docking" />
     <Using Include="KubeUI.Controls.Platform" />
     <Using Include="KubeUI.Controls.Threading" />
-    <Using Include="KubeUI.Features.Resources.Assets" Alias="Assets" />
+    <Using Include="KubeUI.Features.Resources.Assets" />
     <Using Include="KubeUI.Features.Resources.Contracts" />
     <Using Include="KubeUI.Kubernetes" />
     <Using Include="Microsoft.Extensions.DependencyInjection" />
@@ -41,8 +43,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="KubeUI.App" />
+    <InternalsVisibleTo Include="KubeUI.Features.Cilium" />
+    <InternalsVisibleTo Include="KubeUI.Features.Crossplane" />
+    <InternalsVisibleTo Include="KubeUI.Features.Helm" />
     <InternalsVisibleTo Include="KubeUI.Avalonia.Tests" />
     <InternalsVisibleTo Include="KubeUI.Features.Resources.Tests" />
+    <InternalsVisibleTo Include="KubeUI.Features.Cilium.Tests" />
+    <InternalsVisibleTo Include="KubeUI.Features.Crossplane.Tests" />
     <InternalsVisibleTo Include="KubeUI.Features.GatewayApi.Tests" />
     <InternalsVisibleTo Include="KubeUI.Features.Helm.Tests" />
     <InternalsVisibleTo Include="KubeUI.Benchmarks" />
@@ -55,21 +63,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="$(BaseIntermediateOutputPath)\Resources.Designer.cs" Condition="'$(DesignTimeBuild)' == 'true'" AutoGen="true" DesignTime="true" Visible="false" />
-    <EmbeddedResource Update="Assets\Resources.resx">
-      <PublicClass>true</PublicClass>
-      <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
-      <StronglyTypedNamespace>KubeUI.Features.Resources.Assets</StronglyTypedNamespace>
-      <StronglyTypedClassName>Resources</StronglyTypedClassName>
-      <StronglyTypedFileName>$(BaseIntermediateOutputPath)\Resources.Designer.cs</StronglyTypedFileName>
-    </EmbeddedResource>
+    <AdditionalFiles Include="Assets\Resources*.json" />
+    <Watch Include="Assets\Resources*.json" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Avalonia" />
+    <PackageReference Include="Irihi.Lingua" />
     <PackageReference Include="Avalonia.AvaloniaEdit" />
     <PackageReference Include="Avalonia.Markup.Declarative" />
-    <PackageReference Include="AvaloniaEdit.TextMate" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="Dock.Avalonia" />
     <PackageReference Include="Dock.Model.Mvvm" />
@@ -89,8 +91,6 @@
     <PackageReference Include="SvcSystems.Avalonia.DynamicTableView" />
     <PackageReference Include="SvcSystems.UI.Terminal" />
     <PackageReference Include="System.Reactive" />
-    <PackageReference Include="TextMateSharp" />
-    <PackageReference Include="TextMateSharp.Grammars" />
     <PackageReference Include="Westermo.GraphX.Controls.Avalonia" />
     <PackageReference Include="Westermo.GraphX.Controls.Avalonia.Themes.Fluent" />
     <PackageReference Include="Westermo.GraphX.Logic" />

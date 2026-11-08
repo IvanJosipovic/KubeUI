@@ -1,6 +1,8 @@
-﻿using Avalonia.Controls.Templates;
+using Avalonia.Controls.Templates;
 using k8s.Models;
 using KubeUI.Controls.Converters;
+using KubeUI.Controls.Presentation;
+using KubeUI.Features.Resources.Properties;
 using KubeUI.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Features.Resources.Workloads.v1.Pod;
@@ -14,69 +16,62 @@ public sealed class PropertiesView : ViewBase<V1Pod>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(Assets.Resources.PodPropertiesView_ControlledBy!)
-                    .Value(vm.Metadata.OwnerReferences?.FirstOrDefault(x => x.Controller == true)?.Name ?? "N/A"),
+                    .Key(ResourcesLanguageManager.Instance.PodPropertiesView_ControlledBy.CurrentValue()!)
+                    .Value(vm.Metadata.OwnerReferences?.FirstOrDefault(x => x.Controller == true)?.Name ?? FoundationLanguageManager.Instance.Shared_NotAvailable.CurrentValue()!),
                 new PropertyItem()
-                    .Key(Assets.Resources.PodPropertiesView_Status!)
+                    .Key(ResourcesLanguageManager.Instance.PodPropertiesView_Status.CurrentValue()!)
                     .Value(vm.Status?.Phase ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.PodPropertiesView_Node!)
+                    .Key(ResourcesLanguageManager.Instance.PodPropertiesView_Node.CurrentValue()!)
                     .Value(vm.Spec?.NodeName ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.PodPropertiesView_PodIp!)
+                    .Key(ResourcesLanguageManager.Instance.PodPropertiesView_PodIp.CurrentValue()!)
                     .Value(vm.Status?.PodIP ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.PodPropertiesView_Service_Account!)
+                    .Key(ResourcesLanguageManager.Instance.PodPropertiesView_Service_Account.CurrentValue()!)
                     .Value(vm.Spec?.ServiceAccountName ?? ""),
+                ResourcePropertiesSection.Create(
+                    FoundationLanguageManager.Instance.Shared_Metadata.ToBinding(),
+                    new CollectionItem()
+                        .Key(ResourcesLanguageManager.Instance.PodPropertiesView_Labels.CurrentValue()!)
+                        .Value(vm.Metadata?.Labels ?? new Dictionary<string, string>())
+                        .ItemTemplate(CreateKeyValueTemplate()),
+                    new CollectionItem()
+                        .Key(ResourcesLanguageManager.Instance.PodPropertiesView_Annotations.CurrentValue()!)
+                        .Value(vm.Metadata?.Annotations ?? new Dictionary<string, string>())
+                        .ItemTemplate(CreateKeyValueTemplate())),
+                ResourcePropertiesSection.Create(
+                    ResourcesLanguageManager.Instance.PodPropertiesView_Status.ToBinding(),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.PodPropertiesView_Pod_IPs.CurrentValue()!)
+                        .Value(vm.Status?.PodIPs?.Count ?? 0),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.PodPropertiesView_QoS_Class.CurrentValue()!)
+                        .Value(vm.Status?.QosClass ?? ""),
+                    new PropertyItem()
+                        .Key(FoundationLanguageManager.Instance.Shared_Conditions.CurrentValue()!)
+                        .Value(vm.Status?.Conditions?.Count ?? 0),
+                    new PropertyItem()
+                        .Key(FoundationLanguageManager.Instance.Shared_Tolerations.CurrentValue()!)
+                        .Value(vm.Spec?.Tolerations?.Count ?? 0),
+                    new PropertyItem()
+                        .Key(FoundationLanguageManager.Instance.Shared_Secrets.CurrentValue()!)
+                        .Value(vm.Spec?.ImagePullSecrets?.Count ?? 0),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.PodPropertiesView_Pod_Volumes.CurrentValue()!)
+                        .Value(vm.Spec?.Volumes?.Count ?? 0)),
                 new ExpandableSection()
-                    .Header(SharedAssets.Resources.Shared_Metadata!)
-                    .Content(
-                        new StackPanel()
-                            .Children(
-                                new CollectionItem()
-                                    .Key(Assets.Resources.PodPropertiesView_Labels!)
-                                    .Value(vm.Metadata?.Labels ?? new Dictionary<string, string>())
-                                    .ItemTemplate(CreateKeyValueTemplate()),
-                                new CollectionItem()
-                                    .Key(Assets.Resources.PodPropertiesView_Annotations!)
-                                    .Value(vm.Metadata?.Annotations ?? new Dictionary<string, string>())
-                                    .ItemTemplate(CreateKeyValueTemplate()))),
-                new ExpandableSection()
-                    .Header(Assets.Resources.PodPropertiesView_Status!)
-                    .IsExpanded(true)
-                    .Content(
-                        new StackPanel()
-                            .Children(
-                                new PropertyItem()
-                                    .Key(Assets.Resources.PodPropertiesView_Pod_IPs!)
-                                    .Value(vm.Status?.PodIPs?.Count ?? 0),
-                                new PropertyItem()
-                                    .Key(Assets.Resources.PodPropertiesView_QoS_Class!)
-                                    .Value(vm.Status?.QosClass ?? ""),
-                                new PropertyItem()
-                                    .Key(SharedAssets.Resources.Shared_Conditions!)
-                                    .Value(vm.Status?.Conditions?.Count ?? 0),
-                                new PropertyItem()
-                                    .Key(SharedAssets.Resources.Shared_Tolerations!)
-                                    .Value(vm.Spec?.Tolerations?.Count ?? 0),
-                                new PropertyItem()
-                                    .Key(SharedAssets.Resources.Shared_Secrets!)
-                                    .Value(vm.Spec?.ImagePullSecrets?.Count ?? 0),
-                                new PropertyItem()
-                                    .Key(Assets.Resources.PodPropertiesView_Pod_Volumes!)
-                                    .Value(vm.Spec?.Volumes?.Count ?? 0))),
-                new ExpandableSection()
-                    .Header(Assets.Resources.PodPropertiesView_InitContainers!)
+                    .Header(ResourcesLanguageManager.Instance.PodPropertiesView_InitContainers.ToBinding())
                     .IsExpanded(true)
                     .IsVisible(vm, x => x.Spec.InitContainers, BindingMode.OneWay, NotEmptyCollectionConverter.Instance)
                     .Content(CreateContainers(vm.Spec?.InitContainers ?? [])),
                 new ExpandableSection()
-                    .Header(Assets.Resources.PodPropertiesView_EphemeralContainers!)
+                    .Header(ResourcesLanguageManager.Instance.PodPropertiesView_EphemeralContainers.ToBinding())
                     .IsExpanded(true)
                     .IsVisible(vm, x => x.Spec.EphemeralContainers, BindingMode.OneWay, NotEmptyCollectionConverter.Instance)
                     .Content(CreateEphemeralContainers(vm.Spec?.EphemeralContainers ?? [])),
                 new ExpandableSection()
-                    .Header(Assets.Resources.PodPropertiesView_Containers!)
+                    .Header(ResourcesLanguageManager.Instance.PodPropertiesView_Containers.ToBinding())
                     .IsExpanded(true)
                     .Content(CreateContainers(vm.Spec?.Containers ?? [])));
     }
@@ -107,43 +102,43 @@ public sealed class PropertiesView : ViewBase<V1Pod>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Name!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Name.CurrentValue()!)
                     .Value(container.Name ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.PodPropertiesView_Image!)
+                    .Key(ResourcesLanguageManager.Instance.PodPropertiesView_Image.CurrentValue()!)
                     .Value(container.Image ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.PodPropertiesView_PullPolicy!)
+                    .Key(ResourcesLanguageManager.Instance.PodPropertiesView_PullPolicy.CurrentValue()!)
                     .Value(container.ImagePullPolicy ?? ""),
                 new CollectionItem()
-                    .Key(SharedAssets.Resources.Shared_Ports!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Ports.CurrentValue()!)
                     .Value(container.Ports ?? [])
                     .ItemTemplate(new FuncDataTemplate<V1ContainerPort>((port, _) =>
                         new SelectableTextBlock()
                             .Text(port.ContainerPort.ToString()))),
                 new CollectionItem()
-                    .Key(Assets.Resources.PodPropertiesView_Environment!)
+                    .Key(ResourcesLanguageManager.Instance.PodPropertiesView_Environment.CurrentValue()!)
                     .Value(container.Env ?? [])
                     .ItemTemplate(new FuncDataTemplate<V1EnvVar>((entry, _) =>
                         new SelectableTextBlock()
                             .Text($"{entry.Name}={entry.Value}"))),
                 new CollectionItem()
-                    .Key(Assets.Resources.PodPropertiesView_Mounts!)
+                    .Key(ResourcesLanguageManager.Instance.PodPropertiesView_Mounts.CurrentValue()!)
                     .Value(container.VolumeMounts ?? [])
                     .ItemTemplate(new FuncDataTemplate<V1VolumeMount>((mount, _) =>
                         new SelectableTextBlock()
                             .Text(mount.MountPath ?? ""))),
                 new CollectionItem()
-                    .Key(Assets.Resources.PodPropertiesView_Command!)
+                    .Key(ResourcesLanguageManager.Instance.PodPropertiesView_Command.CurrentValue()!)
                     .Value(container.Command ?? []),
                 new CollectionItem()
-                    .Key(Assets.Resources.PodPropertiesView_Arguments!)
+                    .Key(ResourcesLanguageManager.Instance.PodPropertiesView_Arguments.CurrentValue()!)
                     .Value(container.Args ?? []),
                 new CollectionItem()
-                    .Key(Assets.Resources.PodPropertiesView_Requests!)
+                    .Key(ResourcesLanguageManager.Instance.PodPropertiesView_Requests.CurrentValue()!)
                     .Value(container.Resources?.Requests ?? new Dictionary<string, ResourceQuantity>()),
                 new CollectionItem()
-                    .Key(SharedAssets.Resources.Shared_Limits!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Limits.CurrentValue()!)
                     .Value(container.Resources?.Limits ?? new Dictionary<string, ResourceQuantity>()));
     }
 
@@ -152,43 +147,43 @@ public sealed class PropertiesView : ViewBase<V1Pod>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Name!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Name.CurrentValue()!)
                     .Value(container.Name ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.PodPropertiesView_Image!)
+                    .Key(ResourcesLanguageManager.Instance.PodPropertiesView_Image.CurrentValue()!)
                     .Value(container.Image ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.PodPropertiesView_PullPolicy!)
+                    .Key(ResourcesLanguageManager.Instance.PodPropertiesView_PullPolicy.CurrentValue()!)
                     .Value(container.ImagePullPolicy ?? ""),
                 new CollectionItem()
-                    .Key(SharedAssets.Resources.Shared_Ports!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Ports.CurrentValue()!)
                     .Value(container.Ports ?? [])
                     .ItemTemplate(new FuncDataTemplate<V1ContainerPort>((port, _) =>
                         new SelectableTextBlock()
                             .Text(port.ContainerPort.ToString()))),
                 new CollectionItem()
-                    .Key(Assets.Resources.PodPropertiesView_Environment!)
+                    .Key(ResourcesLanguageManager.Instance.PodPropertiesView_Environment.CurrentValue()!)
                     .Value(container.Env ?? [])
                     .ItemTemplate(new FuncDataTemplate<V1EnvVar>((entry, _) =>
                         new SelectableTextBlock()
                             .Text($"{entry.Name}={entry.Value}"))),
                 new CollectionItem()
-                    .Key(Assets.Resources.PodPropertiesView_Mounts!)
+                    .Key(ResourcesLanguageManager.Instance.PodPropertiesView_Mounts.CurrentValue()!)
                     .Value(container.VolumeMounts ?? [])
                     .ItemTemplate(new FuncDataTemplate<V1VolumeMount>((mount, _) =>
                         new SelectableTextBlock()
                             .Text(mount.MountPath ?? ""))),
                 new CollectionItem()
-                    .Key(Assets.Resources.PodPropertiesView_Command!)
+                    .Key(ResourcesLanguageManager.Instance.PodPropertiesView_Command.CurrentValue()!)
                     .Value(container.Command ?? []),
                 new CollectionItem()
-                    .Key(Assets.Resources.PodPropertiesView_Arguments!)
+                    .Key(ResourcesLanguageManager.Instance.PodPropertiesView_Arguments.CurrentValue()!)
                     .Value(container.Args ?? []),
                 new CollectionItem()
-                    .Key(Assets.Resources.PodPropertiesView_Requests!)
+                    .Key(ResourcesLanguageManager.Instance.PodPropertiesView_Requests.CurrentValue()!)
                     .Value(container.Resources?.Requests ?? new Dictionary<string, ResourceQuantity>()),
                 new CollectionItem()
-                    .Key(SharedAssets.Resources.Shared_Limits!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Limits.CurrentValue()!)
                     .Value(container.Resources?.Limits ?? new Dictionary<string, ResourceQuantity>()));
     }
 }

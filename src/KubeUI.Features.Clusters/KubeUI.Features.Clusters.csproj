@@ -18,8 +18,9 @@
     <Using Include="KubeUI.Controls.Presentation" />
     <Using Include="KubeUI.Controls.DependencyInjection" />
     <Using Include="KubeUI.Controls.Platform" />
-    <Using Include="KubeUI.Avalonia.Styles" />
-    <Using Include="KubeUI.Features.Clusters.Assets" Alias="Assets" />
+    <Using Include="KubeUI.Foundation.Styles" />
+    <Using Include="KubeUI.Features.Clusters.Assets" />
+    <Using Include="KubeUI.Foundation.Localization" />
     <Using Include="Microsoft.Extensions.DependencyInjection" />
     <Using Include="Microsoft.Extensions.Logging" />
     <Using Include="SvcSystems.Avalonia.DynamicTableView" />
@@ -28,6 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="KubeUI.App" />
     <InternalsVisibleTo Include="KubeUI.Avalonia.Tests" />
     <InternalsVisibleTo Include="KubeUI.Features.Crossplane.Tests" />
     <ProjectCapability Include="Avalonia" />
@@ -37,24 +39,20 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="$(BaseIntermediateOutputPath)\Resources.Designer.cs" Condition="'$(DesignTimeBuild)' == 'true'" AutoGen="true" DesignTime="true" Visible="false" />
-    <EmbeddedResource Update="Assets\Resources.resx">
-      <PublicClass>true</PublicClass>
-      <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
-      <StronglyTypedNamespace>KubeUI.Features.Clusters.Assets</StronglyTypedNamespace>
-      <StronglyTypedClassName>Resources</StronglyTypedClassName>
-      <StronglyTypedFileName>$(BaseIntermediateOutputPath)\Resources.Designer.cs</StronglyTypedFileName>
-    </EmbeddedResource>
+    <AdditionalFiles Include="Assets\Resources*.json" />
+    <Watch Include="Assets\Resources*.json" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Avalonia" />
+    <PackageReference Include="Irihi.Lingua" />
     <PackageReference Include="Avalonia.Markup.Declarative" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="DynamicData" />
     <PackageReference Include="FluentAvaloniaUI" />
     <PackageReference Include="FluentIcons.Avalonia" />
     <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia.Fluent" />
+    <PackageReference Include="Irihi.Ursa" />
     <PackageReference Include="ServiceScan.SourceGenerator" PrivateAssets="all" />
     <PackageReference Include="SvcSystems.Avalonia.DynamicTableView" />
     <PackageReference Include="Xaml.Behaviors.Avalonia" />

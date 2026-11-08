@@ -1,5 +1,6 @@
-﻿using k8s.Models;
-using KubeUI.Features.Resources.Properties.Controls;
+using k8s.Models;
+using KubeUI.Controls.Presentation;
+using KubeUI.Features.Resources.Properties;
 
 namespace KubeUI.Features.Resources.Network.v1.Service;
 
@@ -12,61 +13,53 @@ public sealed class PropertiesView : ViewBase<V1Service>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Type!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Type.CurrentValue()!)
                     .Value(vm.Spec?.Type ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.ServicePropertiesView_Cluster_IP!)
+                    .Key(ResourcesLanguageManager.Instance.ServicePropertiesView_Cluster_IP.CurrentValue()!)
                     .Value(vm.Spec?.ClusterIP ?? ""),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Ports!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Ports.CurrentValue()!)
                     .Value(vm.Spec?.Ports?.Count ?? 0),
                 new PropertyItem()
-                    .Key(Assets.Resources.ServicePropertiesView_Load_Balancer_Ingress!)
+                    .Key(ResourcesLanguageManager.Instance.ServicePropertiesView_Load_Balancer_Ingress.CurrentValue()!)
                     .Value(vm.Status?.LoadBalancer?.Ingress?.Count ?? 0),
-                new ExpandableSection()
-                    .Header(Assets.Resources.ServicePropertiesView_Routing!)
-                    .IsExpanded(true)
-                    .Content(
-                        new StackPanel()
-                            .Children(
-                                new PropertyItem()
-                                    .Key(Assets.Resources.ServicePropertiesView_Selector!)
-                                    .Value(vm.Spec?.Selector?.Count ?? 0),
-                                new PropertyItem()
-                                    .Key(Assets.Resources.ServicePropertiesView_Session_Affinity!)
-                                    .Value(vm.Spec?.SessionAffinity ?? ""),
-                                new PropertyItem()
-                                    .Key(Assets.Resources.ServicePropertiesView_Internal_Traffic_Policy!)
-                                    .Value(vm.Spec?.InternalTrafficPolicy ?? ""),
-                                new PropertyItem()
-                                    .Key(Assets.Resources.ServicePropertiesView_External_Traffic_Policy!)
-                                    .Value(vm.Spec?.ExternalTrafficPolicy ?? ""),
-                                new PropertyItem()
-                                    .Key(Assets.Resources.ServicePropertiesView_Publish_Not_Ready_Addresses!)
-                                    .Value(vm.Spec?.PublishNotReadyAddresses ?? false))),
-                new ExpandableSection()
-                    .Header(Assets.Resources.ServicePropertiesView_Networking!)
-                    .IsExpanded(true)
-                    .Content(
-                        new StackPanel()
-                            .Children(
-                                new PropertyItem()
-                                    .Key(Assets.Resources.ServicePropertiesView_Cluster_IPs!)
-                                    .Value(vm.Spec?.ClusterIPs?.Count ?? 0),
-                                new PropertyItem()
-                                    .Key(Assets.Resources.ServicePropertiesView_External_IPs!)
-                                    .Value(vm.Spec?.ExternalIPs?.Count ?? 0),
-                                new PropertyItem()
-                                    .Key(Assets.Resources.ServicePropertiesView_External_Name!)
-                                    .Value(vm.Spec?.ExternalName ?? ""),
-                                new PropertyItem()
-                                    .Key(Assets.Resources.ServicePropertiesView_Load_Balancer_IP!)
-                                    .Value(vm.Spec?.LoadBalancerIP ?? ""),
-                                new PropertyItem()
-                                    .Key(Assets.Resources.ServicePropertiesView_Load_Balancer_Class!)
-                                    .Value(vm.Spec?.LoadBalancerClass ?? ""),
-                                new PropertyItem()
-                                    .Key(Assets.Resources.ServicePropertiesView_Health_Check_Node_Port!)
-                                    .Value(vm.Spec?.HealthCheckNodePort ?? 0))));
+                ResourcePropertiesSection.Create(
+                    ResourcesLanguageManager.Instance.ServicePropertiesView_Routing.ToBinding(),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.ServicePropertiesView_Selector.CurrentValue()!)
+                        .Value(vm.Spec?.Selector?.Count ?? 0),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.ServicePropertiesView_Session_Affinity.CurrentValue()!)
+                        .Value(vm.Spec?.SessionAffinity ?? ""),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.ServicePropertiesView_Internal_Traffic_Policy.CurrentValue()!)
+                        .Value(vm.Spec?.InternalTrafficPolicy ?? ""),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.ServicePropertiesView_External_Traffic_Policy.CurrentValue()!)
+                        .Value(vm.Spec?.ExternalTrafficPolicy ?? ""),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.ServicePropertiesView_Publish_Not_Ready_Addresses.CurrentValue()!)
+                        .Value(vm.Spec?.PublishNotReadyAddresses ?? false)),
+                ResourcePropertiesSection.Create(
+                    ResourcesLanguageManager.Instance.ServicePropertiesView_Networking.ToBinding(),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.ServicePropertiesView_Cluster_IPs.CurrentValue()!)
+                        .Value(vm.Spec?.ClusterIPs?.Count ?? 0),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.ServicePropertiesView_External_IPs.CurrentValue()!)
+                        .Value(vm.Spec?.ExternalIPs?.Count ?? 0),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.ServicePropertiesView_External_Name.CurrentValue()!)
+                        .Value(vm.Spec?.ExternalName ?? ""),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.ServicePropertiesView_Load_Balancer_IP.CurrentValue()!)
+                        .Value(vm.Spec?.LoadBalancerIP ?? ""),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.ServicePropertiesView_Load_Balancer_Class.CurrentValue()!)
+                        .Value(vm.Spec?.LoadBalancerClass ?? ""),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.ServicePropertiesView_Health_Check_Node_Port.CurrentValue()!)
+                        .Value(vm.Spec?.HealthCheckNodePort ?? 0)));
     }
 }

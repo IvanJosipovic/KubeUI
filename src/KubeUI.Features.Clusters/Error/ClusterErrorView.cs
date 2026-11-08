@@ -23,7 +23,7 @@ public sealed partial class ClusterErrorView : KubeUIView<ClusterErrorViewModel>
                 new TextBlock()
                     .Row(0)
                     .Padding(5, 0, 0, 0)
-                    .Text(Assets.Resources.ClusterErrorView_Header),
+                    .Text(ClustersLanguageManager.Instance.ClusterErrorView_Header.ToBinding()),
                 new SelectableTextBlock()
                     .Row(1)
                     .Padding(5, 0, 0, 0)

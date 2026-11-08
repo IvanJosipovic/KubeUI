@@ -39,24 +39,24 @@ internal static class MainMenu
 
     private static MenuGroup[] CreateGroups(MainViewModel vm) =>
     [
-        new(Assets.Resources.MainView_Menu_File,
+        new(AppLanguageManager.Instance.MainView_Menu_File.CurrentValue()!,
         [
-            new(Assets.Resources.MainView_Menu_File_LoadKubeConfig, vm.LoadKubeConfigCommand),
-            new(Assets.Resources.MainView_Menu_File_ImportAksCluster, vm.ImportAksClusterCommand),
-            new(Assets.Resources.MainView_Menu_File_Clusters, vm.OpenClustersCommand),
-            new(Assets.Resources.MainView_Menu_File_Settings, vm.OpenSettingsCommand),
+            new(AppLanguageManager.Instance.MainView_Menu_File_LoadKubeConfig.CurrentValue()!, vm.LoadKubeConfigCommand),
+            new(AppLanguageManager.Instance.MainView_Menu_File_ImportAksCluster.CurrentValue()!, vm.ImportAksClusterCommand),
+            new(AppLanguageManager.Instance.MainView_Menu_File_Clusters.CurrentValue()!, vm.OpenClustersCommand),
+            new(AppLanguageManager.Instance.MainView_Menu_File_Settings.CurrentValue()!, vm.OpenSettingsCommand),
             null,
-            new(Assets.Resources.MainView_Menu_File_Exit, vm.CloseCommand)
+            new(AppLanguageManager.Instance.MainView_Menu_File_Exit.CurrentValue()!, vm.CloseCommand)
         ]),
-        new(Assets.Resources.MainView_Menu_Window,
+        new(AppLanguageManager.Instance.MainView_Menu_Window.CurrentValue()!,
         [
-            new(Assets.Resources.MainView_Menu_Window_ResetLayout, vm.ResetLayoutCommand),
-            new(Assets.Resources.MainView_Menu_Window_SwitchTheme, vm.SwitchThemeCommand)
+            new(AppLanguageManager.Instance.MainView_Menu_Window_ResetLayout.CurrentValue()!, vm.ResetLayoutCommand),
+            new(AppLanguageManager.Instance.MainView_Menu_Window_SwitchTheme.CurrentValue()!, vm.SwitchThemeCommand)
         ]),
-        new(Assets.Resources.MainView_Menu_Help,
+        new(AppLanguageManager.Instance.MainView_Menu_Help.CurrentValue()!,
         [
-            new(Assets.Resources.MainView_Menu_Help_CheckForUpdates, vm.CheckForUpdatesCommand),
-            new(Assets.Resources.MainView_Menu_Help_About, vm.OpenAboutCommand)
+            new(AppLanguageManager.Instance.MainView_Menu_Help_CheckForUpdates.CurrentValue()!, vm.CheckForUpdatesCommand),
+            new(AppLanguageManager.Instance.MainView_Menu_Help_About.CurrentValue()!, vm.OpenAboutCommand)
         ])
     ];
 

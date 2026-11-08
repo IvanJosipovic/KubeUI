@@ -1,4 +1,4 @@
-﻿using k8s.Models;
+using k8s.Models;
 using KubeUI.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Features.Resources.Network.v1.EndpointSlice;
@@ -12,13 +12,13 @@ public sealed class PropertiesView : ViewBase<V1EndpointSlice>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(Assets.Resources.EndpointSlicePropertiesView_Address_Type!)
+                    .Key(ResourcesLanguageManager.Instance.EndpointSlicePropertiesView_Address_Type.CurrentValue()!)
                     .Value(vm.AddressType ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.EndpointSlicePropertiesView_Endpoints!)
+                    .Key(ResourcesLanguageManager.Instance.EndpointSlicePropertiesView_Endpoints.CurrentValue()!)
                     .Value(vm.Endpoints?.Count ?? 0),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Ports!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Ports.CurrentValue()!)
                     .Value(vm.Ports?.Count ?? 0));
     }
 }

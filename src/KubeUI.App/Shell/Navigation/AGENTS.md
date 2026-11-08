@@ -1,5 +1,7 @@
 # Navigation Feature
 
+- Use Controls' `TreeViewItemContextMenuBehavior` for right-click targeting and popup lifetime; row menus and their navigation commands stay in this feature.
+
 ## Current Behavior
 
 - `NavigationViewModel` mirrors the cluster catalog. Adding, removing, replacing, or resetting catalog entries updates the corresponding cluster navigation nodes.

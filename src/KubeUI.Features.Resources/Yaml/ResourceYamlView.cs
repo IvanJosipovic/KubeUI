@@ -12,6 +12,8 @@ using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using k8s.Models;
 using KubeUI.Controls.DependencyInjection;
+using KubeUI.Controls.Editors.Behaviors;
+using KubeUI.Controls.Layout;
 using KubeUI.Controls.Presentation;
 using KubeUI.Controls.Styles;
 using KubeUI.Features.Clusters.Presentation;
@@ -67,81 +69,70 @@ public sealed partial class ResourceYamlView : KubeUIView<ResourceYamlViewModel>
                 hoverPopup);
     }
 
-    private StackPanel CreateReadOnlyToolbar(ResourceYamlViewModel vm)
+    private CompactToolbar CreateReadOnlyToolbar(ResourceYamlViewModel vm)
     {
-        return new StackPanel()
-            .Row(0)
-            .IsVisible(vm, x => x.EditMode, BindingMode.OneWay, SharedConverters.Not)
-            .Orientation(Orientation.Horizontal)
-            .Children(
+        return new CompactToolbar
+        {
+            Leading = CompactToolbar.Group(
                 new Button()
                     .IsVisible(vm, x => x.IsReadOnlyLocked, BindingMode.OneWay, SharedConverters.Not)
                     .Command(vm, x => x.SetEditModeCommand)
-                    .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(Assets.Resources.ResourceYamlView_Edit))
+                    .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(ResourcesLanguageManager.Instance.ResourceYamlView_Edit.CurrentValue()!))
                     .Content(new FluentIcon().Icon(Icon.DocumentEdit)),
                 new ToggleButton()
                     .Name("HideNoisyFieldsToggle", Scope)
                     .IsVisible(vm, x => x.IsReadOnlyLocked, BindingMode.OneWay, SharedConverters.Not)
                     .IsChecked(vm, x => x.HideNoisyFields, BindingMode.TwoWay)
-                    .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(Assets.Resources.ResourceYamlView_HideNoisyFields))
+                    .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(ResourcesLanguageManager.Instance.ResourceYamlView_HideNoisyFields.CurrentValue()!))
                     .Content(new FluentIcon().Icon(Icon.EyeOff)),
-                CreateWordWrapToggle(vm));
+                CreateWordWrapToggle(vm))
+        }.Row(0)
+            .IsVisible(vm, x => x.EditMode, BindingMode.OneWay, SharedConverters.Not);
     }
 
-    private static StackPanel CreateEditToolbar(ResourceYamlViewModel vm)
+    private static CompactToolbar CreateEditToolbar(ResourceYamlViewModel vm)
     {
-        return new StackPanel()
-            .Row(0)
-            .IsVisible(vm, x => x.EditMode)
-            .Orientation(Orientation.Horizontal)
-            .Children(
+        return new CompactToolbar
+        {
+            Leading = CompactToolbar.Group(
                 new Button()
                     .Command(vm, x => x.SaveCommand)
                     .IsEnabled(vm, x => x.CanSaveAction)
-                    .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(Assets.Resources.ResourceYamlView_Save))
+                    .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(ResourcesLanguageManager.Instance.ResourceYamlView_Save.CurrentValue()!))
                     .Content(new FluentIcon().Icon(Icon.Save)),
                 new Button()
                     .Command(vm, x => x.DryRunCommand)
                     .IsEnabled(vm, x => x.CanDryRunAction)
-                    .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(Assets.Resources.ResourceYamlView_DryRun))
+                    .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(ResourcesLanguageManager.Instance.ResourceYamlView_DryRun.CurrentValue()!))
                     .Content(new FluentIcon().Icon(Icon.CheckmarkCircle)),
                 new Button()
                     .Command(vm, x => x.SetEditModeCommand)
-                    .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(Assets.Resources.ResourceYamlView_Cancel))
+                    .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(ResourcesLanguageManager.Instance.ResourceYamlView_Cancel.CurrentValue()!))
                     .Content(new FluentIcon().Icon(Icon.Dismiss)),
-                CreateWordWrapToggle(vm));
+                CreateWordWrapToggle(vm))
+        }.Row(0)
+            .IsVisible(vm, x => x.EditMode);
     }
 
     private static ToggleButton CreateWordWrapToggle(ResourceYamlViewModel vm)
     {
         return new ToggleButton()
             .IsChecked(vm, x => x.WordWrap, BindingMode.TwoWay)
-            .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(Assets.Resources.ResourceYamlView_WordWrap))
+            .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(ResourcesLanguageManager.Instance.ResourceYamlView_WordWrap.CurrentValue()!))
             .Content(new FluentIcon().Icon(Icon.TextWrap));
     }
 
     [RequiresUnreferencedCode("Calls KubeUI.Features.Resources.Yaml.ResourceYamlView.CreateEditorContextMenu(ResourceYamlViewModel, TextEditor)")]
     private static TextEditor CreateEditor(ResourceYamlViewModel vm, Popup hoverPopup)
     {
-        var editor = new TextEditor()
+        var editor = new TextEditor();
+        YamlEditorDefaults.Apply(editor);
+        editor
             .Row(2)
             .FontFamily(new DynamicResourceExtension(Typography.CodeFontFamilyResourceKey))
             .FontSize(new DynamicResourceExtension(Typography.CodeFontSizeResourceKey))
-            .FontWeight(FontWeight.Normal)
-            .HorizontalScrollBarVisibility(ScrollBarVisibility.Auto)
             .IsReadOnly(vm, x => x.EditMode, BindingMode.OneWay, SharedConverters.Not)
-            .ShowLineNumbers(true)
-            .VerticalScrollBarVisibility(ScrollBarVisibility.Visible)
-            .WordWrap(vm, x => x.WordWrap)
-            .Options(new TextEditorOptions
-            {
-                ConvertTabsToSpaces = true,
-                EnableEmailHyperlinks = false,
-                EnableHyperlinks = false,
-                HighlightCurrentLine = true,
-                IndentationSize = 2,
-                ShowBoxForControlCharacters = false
-            });
+            .WordWrap(vm, x => x.WordWrap);
 
         var behaviors = Interaction.GetBehaviors(editor);
         behaviors.Add(new YamlEditorBehavior());
@@ -181,13 +172,13 @@ public sealed partial class ResourceYamlView : KubeUIView<ResourceYamlViewModel>
     {
         return new ContextMenu()
             .Items(
-                CreateEditorMenuItem(vm, Assets.Resources.ResourceYamlView_Action_Cut, new KeyGesture(Key.X, KeyModifiers.Control), Icon.Cut, editor.Cut, requiresEditMode: true),
-                CreateEditorMenuItem(vm, SharedAssets.Resources.Shared_Action_Copy, new KeyGesture(Key.C, KeyModifiers.Control), Icon.Copy, editor.Copy, requiresEditMode: false),
-                CreateEditorMenuItem(vm, Assets.Resources.ResourceYamlView_Action_Paste, new KeyGesture(Key.V, KeyModifiers.Control), Icon.ClipboardPaste, editor.Paste, requiresEditMode: true),
-                CreateEditorMenuItem(vm, Assets.Resources.ResourceYamlView_Action_Delete, null, Icon.Delete, editor.Delete, requiresEditMode: true),
+                CreateEditorMenuItem(vm, ResourcesLanguageManager.Instance.ResourceYamlView_Action_Cut.CurrentValue()!, new KeyGesture(Key.X, KeyModifiers.Control), Icon.Cut, editor.Cut, requiresEditMode: true),
+                CreateEditorMenuItem(vm, FoundationLanguageManager.Instance.Shared_Action_Copy.CurrentValue()!, new KeyGesture(Key.C, KeyModifiers.Control), Icon.Copy, editor.Copy, requiresEditMode: false),
+                CreateEditorMenuItem(vm, ResourcesLanguageManager.Instance.ResourceYamlView_Action_Paste.CurrentValue()!, new KeyGesture(Key.V, KeyModifiers.Control), Icon.ClipboardPaste, editor.Paste, requiresEditMode: true),
+                CreateEditorMenuItem(vm, ResourcesLanguageManager.Instance.ResourceYamlView_Action_Delete.CurrentValue()!, null, Icon.Delete, editor.Delete, requiresEditMode: true),
                 new Separator().IsVisible(vm, x => x.EditMode),
-                CreateEditorMenuItem(vm, Assets.Resources.ResourceYamlView_Action_Undo, new KeyGesture(Key.Z, KeyModifiers.Control), Icon.ArrowUndo, () => editor.Undo(), requiresEditMode: true),
-                CreateEditorMenuItem(vm, Assets.Resources.ResourceYamlView_Action_Redo, new KeyGesture(Key.Y, KeyModifiers.Control), Icon.ArrowRedo, () => editor.Redo(), requiresEditMode: true));
+                CreateEditorMenuItem(vm, ResourcesLanguageManager.Instance.ResourceYamlView_Action_Undo.CurrentValue()!, new KeyGesture(Key.Z, KeyModifiers.Control), Icon.ArrowUndo, () => editor.Undo(), requiresEditMode: true),
+                CreateEditorMenuItem(vm, ResourcesLanguageManager.Instance.ResourceYamlView_Action_Redo.CurrentValue()!, new KeyGesture(Key.Y, KeyModifiers.Control), Icon.ArrowRedo, () => editor.Redo(), requiresEditMode: true));
     }
 
     [RequiresUnreferencedCode("Calls Avalonia.Xaml.Interactions.Core.EventTriggerBehavior.EventTriggerBehavior()")]

@@ -48,19 +48,19 @@ public sealed class MainWindowMenuTests
 
             Describe(NativeMenu.GetMenu(window).ShouldNotBeNull(), viewModel).ShouldBe(
             [
-                Assets.Resources.MainView_Menu_File!,
-                $"  {Assets.Resources.MainView_Menu_File_LoadKubeConfig} -> {nameof(viewModel.LoadKubeConfigCommand)}",
-                $"  {Assets.Resources.MainView_Menu_File_ImportAksCluster} -> {nameof(viewModel.ImportAksClusterCommand)}",
-                $"  {Assets.Resources.MainView_Menu_File_Clusters} -> {nameof(viewModel.OpenClustersCommand)}",
-                $"  {Assets.Resources.MainView_Menu_File_Settings} -> {nameof(viewModel.OpenSettingsCommand)}",
+                AppLanguageManager.Instance.MainView_Menu_File.CurrentValue()!,
+                $"  {AppLanguageManager.Instance.MainView_Menu_File_LoadKubeConfig.CurrentValue()!} -> {nameof(viewModel.LoadKubeConfigCommand)}",
+                $"  {AppLanguageManager.Instance.MainView_Menu_File_ImportAksCluster.CurrentValue()!} -> {nameof(viewModel.ImportAksClusterCommand)}",
+                $"  {AppLanguageManager.Instance.MainView_Menu_File_Clusters.CurrentValue()!} -> {nameof(viewModel.OpenClustersCommand)}",
+                $"  {AppLanguageManager.Instance.MainView_Menu_File_Settings.CurrentValue()!} -> {nameof(viewModel.OpenSettingsCommand)}",
                 "  ---",
-                $"  {Assets.Resources.MainView_Menu_File_Exit} -> {nameof(viewModel.CloseCommand)}",
-                Assets.Resources.MainView_Menu_Window!,
-                $"  {Assets.Resources.MainView_Menu_Window_ResetLayout} -> {nameof(viewModel.ResetLayoutCommand)}",
-                $"  {Assets.Resources.MainView_Menu_Window_SwitchTheme} -> {nameof(viewModel.SwitchThemeCommand)}",
-                Assets.Resources.MainView_Menu_Help!,
-                $"  {Assets.Resources.MainView_Menu_Help_CheckForUpdates} -> {nameof(viewModel.CheckForUpdatesCommand)}",
-                $"  {Assets.Resources.MainView_Menu_Help_About} -> {nameof(viewModel.OpenAboutCommand)}",
+                $"  {AppLanguageManager.Instance.MainView_Menu_File_Exit.CurrentValue()!} -> {nameof(viewModel.CloseCommand)}",
+                AppLanguageManager.Instance.MainView_Menu_Window.CurrentValue()!,
+                $"  {AppLanguageManager.Instance.MainView_Menu_Window_ResetLayout.CurrentValue()!} -> {nameof(viewModel.ResetLayoutCommand)}",
+                $"  {AppLanguageManager.Instance.MainView_Menu_Window_SwitchTheme.CurrentValue()!} -> {nameof(viewModel.SwitchThemeCommand)}",
+                AppLanguageManager.Instance.MainView_Menu_Help.CurrentValue()!,
+                $"  {AppLanguageManager.Instance.MainView_Menu_Help_CheckForUpdates.CurrentValue()!} -> {nameof(viewModel.CheckForUpdatesCommand)}",
+                $"  {AppLanguageManager.Instance.MainView_Menu_Help_About.CurrentValue()!} -> {nameof(viewModel.OpenAboutCommand)}",
             ]);
         }
         finally

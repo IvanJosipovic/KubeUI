@@ -3,5 +3,6 @@
     "terminal.integrated.defaultProfile.linux": "pwsh",
     "terminal.integrated.defaultProfile.windows": "PowerShell",
     "terminal.integrated.defaultProfile.osx": "pwsh",
-    "files.eol": "\n"
+    "files.eol": "\n",
+    "codeQL.githubDatabase.download": "never"
 }

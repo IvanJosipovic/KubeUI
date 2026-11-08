@@ -23,25 +23,21 @@
     <InternalsVisibleTo Include="KubeUI.Avalonia.Tests" />
     <InternalsVisibleTo Include="KubeUI.Features.AI.Tests" />
     <InternalsVisibleTo Include="KubeUI.Desktop" />
-    <Using Include="KubeUI.Features.AI.Assets" Alias="Assets" />
+    <Using Include="KubeUI.Features.AI.Assets" />
+    <Using Include="KubeUI.Foundation.Localization" />
     <Using Include="KubeUI.Controls.Presentation" />
     <Using Include="KubeUI.Controls.DependencyInjection" />
     <ProjectReference Include="..\KubeUI.Controls\KubeUI.Controls.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="$(BaseIntermediateOutputPath)\Resources.Designer.cs" Condition="'$(DesignTimeBuild)' == 'true'" AutoGen="true" DesignTime="true" Visible="false" />
-    <EmbeddedResource Update="Assets\Resources.resx">
-      <PublicClass>true</PublicClass>
-      <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
-      <StronglyTypedNamespace>KubeUI.Features.AI.Assets</StronglyTypedNamespace>
-      <StronglyTypedClassName>Resources</StronglyTypedClassName>
-      <StronglyTypedFileName>$(BaseIntermediateOutputPath)\Resources.Designer.cs</StronglyTypedFileName>
-    </EmbeddedResource>
+    <AdditionalFiles Include="Assets\Resources*.json" />
+    <Watch Include="Assets\Resources*.json" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="SvcSystems.AI.AgentClientProtocol" />
+    <PackageReference Include="Irihi.Lingua" />
     <PackageReference Include="Avalonia.Markup.Declarative" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="FluentAvaloniaUI" />

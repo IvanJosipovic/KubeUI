@@ -15,7 +15,7 @@ internal sealed class CrossplaneNavigationSectionProvider : INavigationSectionPr
     {
         Section = new NavigationSection(
             "crossplane",
-            Assets.Resources.NavigationView_Crossplane!,
+            CrossplaneLanguageManager.Instance.CrossplaneNavigationSectionProvider_SectionTitle.CurrentValue()!,
             NavigationSectionOrder.AfterCustomResources,
             null,
             IconAssetPath,
@@ -25,7 +25,7 @@ internal sealed class CrossplaneNavigationSectionProvider : INavigationSectionPr
         [
             new NavigationDocument(
                 FeatureId,
-                Assets.Resources.MRDiffDetectionView_Title!,
+                CrossplaneLanguageManager.Instance.MRDiffDetectionView_Title.CurrentValue()!,
                 100,
                 Icon.DataUsage,
                 MRDiffDetectionViewModel.IsAvailable,

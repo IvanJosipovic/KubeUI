@@ -1,4 +1,4 @@
-﻿using k8s.Models;
+using k8s.Models;
 
 namespace KubeUI.Features.Resources.Core.v1.Namespace;
 
@@ -14,14 +14,14 @@ public sealed partial class V1NamespaceConfig(IServiceProvider serviceProvider) 
             new ResourceListColumn<V1Namespace, string>()
             {
                 Key = "labels",
-                Name = Assets.Resources.V1NamespaceConfig_Labels!,
+                Name = ResourcesLanguageManager.Instance.V1NamespaceConfig_Labels.CurrentValue()!,
                 Field = x => x?.Metadata?.Labels is { Count: > 0 } labels ? string.Join(", ", labels.Select(x => x.Key + "=" + x.Value)) : "",
                 Width = 2, WidthMode = DynamicTableViewWidthMode.Star
             },
             new ResourceListColumn<V1Namespace, string>()
             {
                 Key = "status",
-                Name = Assets.Resources.V1NamespaceConfig_Status!,
+                Name = ResourcesLanguageManager.Instance.V1NamespaceConfig_Status.CurrentValue()!,
                 Field = x => x?.Status?.Phase ?? "",
                 WidthMode = DynamicTableViewWidthMode.Header
             },

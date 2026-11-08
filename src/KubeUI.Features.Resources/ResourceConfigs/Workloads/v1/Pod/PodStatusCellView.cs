@@ -1,6 +1,5 @@
 using k8s.Models;
 using KubeUI.Controls.Styles;
-using KubeUI.Features.Resources.List.Controls;
 
 namespace KubeUI.Features.Resources.Workloads.v1.Pod;
 
@@ -20,16 +19,16 @@ public sealed class PodStatusCellView : RefreshingCellTextBlock
         }
 
         var status = pod.Metadata?.DeletionTimestamp.HasValue == true
-            ? Assets.Resources.PodStatusCell_Terminating!
+            ? ResourcesLanguageManager.Instance.PodStatusCellView_Terminating.CurrentValue()!
             : pod.Status?.Conditions?.FirstOrDefault(condition => condition.Type == "Ready") is { } ready
                 ? ready.Status == "True"
-                    ? Assets.Resources.PodStatusCell_Running!
+                    ? ResourcesLanguageManager.Instance.PodStatusCellView_Running.CurrentValue()!
                     : ready.Reason == "PodCompleted"
-                        ? Assets.Resources.PodStatusCell_PodCompleted!
-                        : ready.Reason ?? Assets.Resources.PodStatusCell_Unknown!
-                : Assets.Resources.PodStatusCell_Unknown!;
+                        ? ResourcesLanguageManager.Instance.PodStatusCellView_PodCompleted.CurrentValue()!
+                        : ready.Reason ?? ResourcesLanguageManager.Instance.PodStatusCellView_Unknown.CurrentValue()!
+                : ResourcesLanguageManager.Instance.PodStatusCellView_Unknown.CurrentValue()!;
 
-        Foreground = status == Assets.Resources.PodStatusCell_PodCompleted || status == Assets.Resources.PodStatusCell_Running
+        Foreground = status == ResourcesLanguageManager.Instance.PodStatusCellView_PodCompleted.CurrentValue()! || status == ResourcesLanguageManager.Instance.PodStatusCellView_Running.CurrentValue()!
             ? ApplicationBrushResources.GetBrush("PodStatusReadyBrush")
             : ApplicationBrushResources.GetBrush("PodStatusWarningBrush");
         return status;

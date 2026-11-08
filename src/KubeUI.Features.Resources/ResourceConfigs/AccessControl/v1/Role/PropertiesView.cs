@@ -1,4 +1,4 @@
-﻿using k8s.Models;
+using k8s.Models;
 using KubeUI.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Features.Resources.AccessControl.v1.Role;
@@ -12,7 +12,7 @@ public sealed class PropertiesView : ViewBase<V1Role>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Rules)
+                    .Key(FoundationLanguageManager.Instance.Shared_Rules.CurrentValue()!)
                     .Value(vm.Rules.Count));
     }
 }

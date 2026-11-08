@@ -1,4 +1,4 @@
-﻿using k8s.Models;
+using k8s.Models;
 using KubeUI.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Features.Resources.Configuration.v1.ResourceQuota;
@@ -12,16 +12,16 @@ public sealed class PropertiesView : ViewBase<V1ResourceQuota>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(Assets.Resources.ResourceQuotaPropertiesView_Spec_Hard)
+                    .Key(ResourcesLanguageManager.Instance.ResourceQuotaPropertiesView_Spec_Hard.CurrentValue()!)
                     .Value(vm.Spec.Hard.Count),
                 new PropertyItem()
-                    .Key(Assets.Resources.ResourceQuotaPropertiesView_Spec_Scopes)
+                    .Key(ResourcesLanguageManager.Instance.ResourceQuotaPropertiesView_Spec_Scopes.CurrentValue()!)
                     .Value(vm.Spec.Scopes.Count),
                 new PropertyItem()
-                    .Key(Assets.Resources.ResourceQuotaPropertiesView_Status_Hard)
+                    .Key(ResourcesLanguageManager.Instance.ResourceQuotaPropertiesView_Status_Hard.CurrentValue()!)
                     .Value(vm.Status.Hard.Count),
                 new PropertyItem()
-                    .Key(Assets.Resources.ResourceQuotaPropertiesView_Status_Used)
+                    .Key(ResourcesLanguageManager.Instance.ResourceQuotaPropertiesView_Status_Used.CurrentValue()!)
                     .Value(vm.Status.Used.Count));
     }
 }

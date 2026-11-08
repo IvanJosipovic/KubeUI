@@ -1,4 +1,4 @@
-﻿using FluentIcons.Common;
+using FluentIcons.Common;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -33,21 +33,21 @@ public sealed partial class V1ReplicaSetConfig : ScalableWorkloadConfig<V1Replic
             new ResourceListColumn<V1ReplicaSet, int>()
             {
                 Key = "desired",
-                Name = Assets.Resources.V1ReplicaSetConfig_Desired!,
+                Name = ResourcesLanguageManager.Instance.V1ReplicaSetConfig_Desired.CurrentValue()!,
                 Field = x => x.Spec.Replicas ?? 0,
                 WidthMode = DynamicTableViewWidthMode.Header
             },
             new ResourceListColumn<V1ReplicaSet, int>()
             {
                 Key = "current",
-                Name = Assets.Resources.V1ReplicaSetConfig_Current!,
+                Name = ResourcesLanguageManager.Instance.V1ReplicaSetConfig_Current.CurrentValue()!,
                 Field = x => x.Status.AvailableReplicas ?? 0,
                 WidthMode = DynamicTableViewWidthMode.Header
             },
             new ResourceListColumn<V1ReplicaSet, int>()
             {
                 Key = "ready",
-                Name = Assets.Resources.V1ReplicaSetConfig_Ready!,
+                Name = ResourcesLanguageManager.Instance.V1ReplicaSetConfig_Ready.CurrentValue()!,
                 Field = x => x.Status.ReadyReplicas ?? 0,
                 WidthMode = DynamicTableViewWidthMode.Header
             },

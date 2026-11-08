@@ -24,21 +24,27 @@
   <ItemGroup>
     <Using Include="Xunit" />
     <Using Include="KubeUI.App" />
-    <Using Include="KubeUI.Avalonia.Assets" Alias="Assets" />
-    <Using Include="KubeUI.Features.Cilium.Assets" Alias="CiliumAssets" />
-    <Using Include="KubeUI.Features.Clusters.Assets" Alias="ClusterAssets" />
+    <Using Include="KubeUI.App.Assets" />
+    <Using Include="KubeUI.Foundation.Assets" />
+    <Using Include="KubeUI.Features.Cilium.Assets" />
+    <Using Include="KubeUI.Features.Clusters.Assets" />
     <Using Include="KubeUI.Controls.Converters" />
     <Using Include="KubeUI.Controls.Presentation" />
     <Using Include="KubeUI.Controls.DependencyInjection" />
     <Using Include="KubeUI.Controls.Docking" />
     <Using Include="KubeUI.Controls.Platform" />
     <Using Include="KubeUI.Controls.Threading" />
-    <Using Include="KubeUI.Avalonia.Styles" />
+    <Using Include="KubeUI.Foundation.Styles" />
+    <Using Include="KubeUI.Foundation.Localization" />
     <Using Include="KubeUI.Kubernetes" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectCapability Include="Avalonia" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="Foundation\Localization\TestLocalizationResources.json" />
   </ItemGroup>
 
   <Target Name="DisableAnalyzers" BeforeTargets="CoreCompile">

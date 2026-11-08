@@ -25,7 +25,7 @@ public sealed class DirectionIcon : Border
 
         this.GetObservable(DirectionProperty).Subscribe(d =>
         {
-            var ingressBrush = ApplicationBrushResources.GetBrush("PodStatusReadyBrush");
+            var ingressBrush = ApplicationBrushResources.GetBrush("SemanticSuccessBrush");
             var egressBrush = ApplicationBrushResources.GetBrush("VisualizationRelationshipStorageBrush");
 
             var icon = d switch
@@ -51,8 +51,8 @@ public sealed class DirectionIcon : Border
             {
                 var tooltip = d switch
                 {
-                    KubeUIFlowDirection.Ingress => Assets.Resources.FlowDirection_Ingress,
-                    KubeUIFlowDirection.Egress => Assets.Resources.FlowDirection_Egress,
+                    KubeUIFlowDirection.Ingress => CiliumLanguageManager.Instance.FlowDirection_Ingress.CurrentValue()!,
+                    KubeUIFlowDirection.Egress => CiliumLanguageManager.Instance.FlowDirection_Egress.CurrentValue()!,
                     _ => null
                 };
 

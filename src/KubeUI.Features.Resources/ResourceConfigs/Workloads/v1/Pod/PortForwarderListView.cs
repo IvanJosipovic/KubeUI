@@ -1,4 +1,4 @@
-﻿using System.Windows.Input;
+using System.Windows.Input;
 using Avalonia.Input;
 using Avalonia.VisualTree;
 using FluentIcons.Avalonia;
@@ -42,13 +42,13 @@ public partial class PortForwarderListView : KubeUIView<PortForwarderListViewMod
         foreach (var portForwarder in targets.OfType<PortForwarder>())
         {
             yield return new MenuItem()
-                .Header(Assets.Resources.PortForwarderListView_OpenInBrowser)
+                .Header(ResourcesLanguageManager.Instance.PortForwarderListView_OpenInBrowser.ToBinding())
                 .Command(vm, x => x.OpenCommand)
                 .CommandParameter(portForwarder)
                 .InputGesture(new KeyGesture(Key.Enter))
                 .Icon(new FluentIcon().Icon(Icon.Open));
             yield return new MenuItem()
-                .Header(Assets.Resources.PortForwarderListView_Remove)
+                .Header(ResourcesLanguageManager.Instance.PortForwarderListView_Remove.ToBinding())
                 .Command(vm, x => x.RemoveCommand)
                 .CommandParameter(portForwarder)
                 .InputGesture(new KeyGesture(Key.Delete))

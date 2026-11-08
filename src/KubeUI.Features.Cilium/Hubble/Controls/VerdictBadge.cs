@@ -28,18 +28,18 @@ public sealed class VerdictBadge : Border
         {
             Background = v switch
             {
-                FlowVerdict.Forwarded => ApplicationBrushResources.GetBrush("PodStatusReadyBrush"),
-                FlowVerdict.Dropped or FlowVerdict.Error => ApplicationBrushResources.GetBrush("ContainerStatusErrorBrush"),
-                _ => ApplicationBrushResources.GetBrush("SubtleOutlineBrush")
+                FlowVerdict.Forwarded => ApplicationBrushResources.GetBrush("SemanticSuccessBrush"),
+                FlowVerdict.Dropped or FlowVerdict.Error => ApplicationBrushResources.GetBrush("SemanticErrorBrush"),
+                _ => ApplicationBrushResources.GetBrush("SemanticMutedBrush")
             };
             Child = new TextBlock
             {
                 Text = v switch
                 {
-                    FlowVerdict.Forwarded => Assets.Resources.FlowVerdict_Allowed,
-                    FlowVerdict.Dropped => Assets.Resources.FlowVerdict_Dropped,
-                    FlowVerdict.Error => Assets.Resources.FlowVerdict_Error,
-                    _ => Assets.Resources.FlowVerdict_Unknown
+                    FlowVerdict.Forwarded => CiliumLanguageManager.Instance.FlowVerdict_Allowed.CurrentValue()!,
+                    FlowVerdict.Dropped => CiliumLanguageManager.Instance.FlowVerdict_Dropped.CurrentValue()!,
+                    FlowVerdict.Error => CiliumLanguageManager.Instance.FlowVerdict_Error.CurrentValue()!,
+                    _ => CiliumLanguageManager.Instance.FlowVerdict_Unknown.CurrentValue()!
                 },
                 Foreground = ApplicationBrushResources.GetBrush("SystemBaseHighBrush"),
                 FontSize = 11,

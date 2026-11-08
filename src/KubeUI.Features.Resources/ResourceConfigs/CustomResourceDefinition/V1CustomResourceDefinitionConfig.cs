@@ -1,4 +1,4 @@
-﻿using FluentIcons.Common;
+using FluentIcons.Common;
 using k8s.Models;
 using KubeUI.Controls.Docking;
 using KubeUI.Features.Resources.Common;
@@ -19,7 +19,7 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfig<V1
 
     public override NavigationPlacement Navigation => NavigationPlacement.InSection(
         NavigationSections.CustomResourcesId,
-        name: Assets.Resources.V1CustomResourceDefinitionConfig_NavigationName,
+        name: ResourcesLanguageManager.Instance.V1CustomResourceDefinitionConfig_NavigationName.CurrentValue()!,
         order: -1);
 
     protected override IList<IResourceListColumn> CreateDefaultColumns()
@@ -28,7 +28,7 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfig<V1
             new ResourceListColumn<V1CustomResourceDefinition, string>()
             {
                 Key = "name",
-                Name = Assets.Resources.V1CustomResourceDefinitionConfig_Name!,
+                Name = ResourcesLanguageManager.Instance.V1CustomResourceDefinitionConfig_Name.CurrentValue()!,
                 Field = x => x.Spec.Names.Kind,
                 Sort = SortDirection.Ascending,
                 Width = 2, WidthMode = DynamicTableViewWidthMode.Star,
@@ -36,21 +36,21 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfig<V1
             new ResourceListColumn<V1CustomResourceDefinition, string>()
             {
                 Key = "group",
-                Name = Assets.Resources.V1CustomResourceDefinitionConfig_Group!,
+                Name = ResourcesLanguageManager.Instance.V1CustomResourceDefinitionConfig_Group.CurrentValue()!,
                 Field = x => x.Spec.Group,
                 Width = 1, WidthMode = DynamicTableViewWidthMode.Star,
             },
             new ResourceListColumn<V1CustomResourceDefinition, string>()
             {
                 Key = "version",
-                Name = Assets.Resources.V1CustomResourceDefinitionConfig_Version!,
+                Name = ResourcesLanguageManager.Instance.V1CustomResourceDefinitionConfig_Version.CurrentValue()!,
                 Field = x => x.Spec.Versions.First(x => x.Storage).Name,
                 WidthMode = DynamicTableViewWidthMode.Cells
             },
             new ResourceListColumn<V1CustomResourceDefinition, string>()
             {
                 Key = "scope",
-                Name = Assets.Resources.V1CustomResourceDefinitionConfig_Scope!,
+                Name = ResourcesLanguageManager.Instance.V1CustomResourceDefinitionConfig_Scope.CurrentValue()!,
                 Field = x => x.Spec.Scope,
                 WidthMode = DynamicTableViewWidthMode.Cells
             },
@@ -67,7 +67,7 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfig<V1
         return [
             new()
             {
-                Title = Assets.Resources.V1CustomResourceDefinitionConfig_MenuItem_ViewItems,
+                Title = ResourcesLanguageManager.Instance.V1CustomResourceDefinitionConfig_MenuItem_ViewItems.CurrentValue()!,
                 FluentIcon = Icon.AppsList,
                 Command = ListCRDCommand,
                 CommandParameter = selectedItem

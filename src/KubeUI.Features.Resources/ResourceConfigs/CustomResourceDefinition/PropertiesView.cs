@@ -1,5 +1,6 @@
-﻿using k8s.Models;
-using KubeUI.Features.Resources.Properties.Controls;
+using k8s.Models;
+using KubeUI.Controls.Presentation;
+using KubeUI.Features.Resources.Properties;
 
 namespace KubeUI.Features.Resources.CustomResourceDefinition;
 
@@ -12,28 +13,24 @@ public sealed class PropertiesView : ViewBase<V1CustomResourceDefinition>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(Assets.Resources.CustomResourceDefinitionPropertiesView_Group!)
+                    .Key(ResourcesLanguageManager.Instance.CustomResourceDefinitionPropertiesView_Group.CurrentValue()!)
                     .Value(vm.Spec?.Group ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.CustomResourceDefinitionPropertiesView_Scope!)
+                    .Key(ResourcesLanguageManager.Instance.CustomResourceDefinitionPropertiesView_Scope.CurrentValue()!)
                     .Value(vm.Spec?.Scope ?? ""),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Kind!)
+                    .Key(FoundationLanguageManager.Instance.Shared_Kind.CurrentValue()!)
                     .Value(vm.Spec?.Names?.Kind ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.CustomResourceDefinitionPropertiesView_Versions!)
+                    .Key(ResourcesLanguageManager.Instance.CustomResourceDefinitionPropertiesView_Versions.CurrentValue()!)
                     .Value(vm.Spec?.Versions?.Count ?? 0),
-                new ExpandableSection()
-                    .Header(SharedAssets.Resources.Shared_Status!)
-                    .IsExpanded(true)
-                    .Content(
-                        new StackPanel()
-                            .Children(
-                                new PropertyItem()
-                                    .Key(Assets.Resources.CustomResourceDefinitionPropertiesView_Accepted_Kind!)
-                                    .Value(vm.Status?.AcceptedNames?.Kind ?? ""),
-                                new PropertyItem()
-                                    .Key(Assets.Resources.CustomResourceDefinitionPropertiesView_Stored_Versions!)
-                                    .Value(vm.Status?.StoredVersions?.Count ?? 0))));
+                ResourcePropertiesSection.Create(
+                    FoundationLanguageManager.Instance.Shared_Status.ToBinding(),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.CustomResourceDefinitionPropertiesView_Accepted_Kind.CurrentValue()!)
+                        .Value(vm.Status?.AcceptedNames?.Kind ?? ""),
+                    new PropertyItem()
+                        .Key(ResourcesLanguageManager.Instance.CustomResourceDefinitionPropertiesView_Stored_Versions.CurrentValue()!)
+                        .Value(vm.Status?.StoredVersions?.Count ?? 0)));
     }
 }

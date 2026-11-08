@@ -1,5 +1,6 @@
-﻿using k8s.Models;
+using k8s.Models;
 using KubernetesClient.Informer.Client;
+using KubeUI.Controls.Presentation;
 using KubeUI.Features.Resources.Properties;
 using KubeUI.Features.Resources.Properties.Controls;
 
@@ -22,17 +23,17 @@ public sealed class PropertiesView : ViewBase<V1ConfigMap>, IResourcePropertiesR
             static value => value,
             static value => value);
         _binaryDataProperty = new PropertyItem()
-            .Key(Assets.Resources.ConfigMapPropertiesView_Binary_Data)
+            .Key(ResourcesLanguageManager.Instance.ConfigMapPropertiesView_Binary_Data.CurrentValue()!)
             .Value(vm.BinaryData?.Count ?? 0);
         _immutableProperty = new PropertyItem()
-            .Key(Assets.Resources.ConfigMapPropertiesView_Immutable)
+            .Key(ResourcesLanguageManager.Instance.ConfigMapPropertiesView_Immutable.CurrentValue()!)
             .Value(vm.Immutable);
 
         return new StackPanel()
             .Children(
                 _binaryDataProperty,
                 new ExpandableSection()
-                    .Header(SharedAssets.Resources.Shared_Data)
+                    .Header(FoundationLanguageManager.Instance.Shared_Data.ToBinding())
                     .IsExpanded(true)
                     .Content(_dataDisplay),
                 _immutableProperty);

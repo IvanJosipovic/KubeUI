@@ -11,6 +11,7 @@ using AvaloniaEdit.Folding;
 using AvaloniaEdit.Indentation;
 using KubernetesClient.Informer.Client;
 using KubeUI.Controls.DependencyInjection;
+using KubeUI.Controls.Editors.Behaviors;
 using KubeUI.Controls.Styles;
 using KubeUI.Kubernetes;
 
@@ -54,7 +55,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
     }
 
     private FoldingManager? _foldingManager;
-    private FoldingMarginWithLogicalChildCleanup? _foldingMargin;
+    private LeakSafeFoldingMargin? _foldingMargin;
     private ResourceYamlViewModel? _currentViewModel;
     private readonly Dictionary<string, Queue<bool>> _savedFoldStates = new(StringComparer.Ordinal);
     private CompletionWindow? _completionWindow;
@@ -169,7 +170,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         {
             _foldingManager = FoldingManager.Install(AssociatedObject.TextArea);
             var defaultMargin = AssociatedObject.TextArea.LeftMargins.OfType<FoldingMargin>().Single();
-            _foldingMargin = new FoldingMarginWithLogicalChildCleanup
+            _foldingMargin = new LeakSafeFoldingMargin
             {
                 FoldingManager = defaultMargin.FoldingManager,
             };
@@ -233,7 +234,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
         {
             if (_foldingMargin != null)
             {
-                FoldingMarginWithLogicalChildCleanup.ClearLogicalChildren(_foldingMargin);
+                LeakSafeFoldingMargin.ClearLogicalChildren(_foldingMargin);
                 AssociatedObject?.TextArea.LeftMargins.Remove(_foldingMargin);
                 _foldingMargin = null;
             }
@@ -885,7 +886,7 @@ public sealed class YamlEditorBehavior : Behavior<TextEditor>
                     LoadSavedFoldStates(vm);
                 }
 
-                var newFoldings = YamlFoldingStrategy.CreateNewFoldings(AssociatedObject.Document!, out var firstErrorOffset)
+                var newFoldings = YamlIndentationFoldingStrategy.CreateNewFoldings(AssociatedObject.Document!, out var firstErrorOffset)
                     .ToList();
 
                 _foldingManager.UpdateFoldings(newFoldings, firstErrorOffset);

@@ -34,6 +34,6 @@ internal static class HelmValuesYaml
         }
 
         var values = serializer.Deserialize<Dictionary<string, object?>>(yaml);
-        return values ?? throw new InvalidOperationException(Assets.Resources.HelmReleaseEditorView_ValuesMustBeObject);
+        return values ?? throw new InvalidOperationException(HelmLanguageManager.Instance.HelmReleaseEditorView_ValuesMustBeObject.CurrentValue()!);
     }
 }

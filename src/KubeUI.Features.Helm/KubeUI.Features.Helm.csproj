@@ -26,18 +26,20 @@
     <Using Include="FluentIcons.Avalonia" />
     <Using Include="FluentIcons.Common" />
     <Using Include="Helm.NET" />
-    <Using Include="KubeUI.Avalonia.Assets" Alias="SharedAssets" />
-    <Using Include="KubeUI.Avalonia.Styles" />
+    <Using Include="KubeUI.Foundation.Assets" />
+    <Using Include="KubeUI.Foundation.Styles" />
     <Using Include="KubeUI.Controls.Converters" />
     <Using Include="KubeUI.Controls.DependencyInjection" />
     <Using Include="KubeUI.Controls.Docking" />
     <Using Include="KubeUI.Controls.Platform" />
     <Using Include="KubeUI.Controls.Presentation" />
+    <Using Include="KubeUI.Controls.Editors" />
     <Using Include="KubeUI.Controls.Threading" />
     <Using Include="KubeUI.Controls.Styles" />
-    <Using Include="KubeUI.Features.Helm.Assets" Alias="Assets" />
+    <Using Include="KubeUI.Features.Helm.Assets" />
+    <Using Include="KubeUI.Foundation.Localization" />
     <Using Include="KubeUI.Features.Resources" />
-    <Using Include="KubeUI.Features.Resources.Assets" Alias="ResourceAssets" />
+    <Using Include="KubeUI.Features.Resources.Assets" />
     <Using Include="KubeUI.Kubernetes" />
     <Using Include="Microsoft.Extensions.DependencyInjection" />
     <Using Include="Microsoft.Extensions.Logging" />
@@ -61,22 +63,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="$(BaseIntermediateOutputPath)\Resources.Designer.cs" Condition="'$(DesignTimeBuild)' == 'true'" AutoGen="true" DesignTime="true" Visible="false" />
     <AvaloniaResource Include="Assets\**\*.svg" />
-    <EmbeddedResource Update="Assets\Resources.resx">
-      <PublicClass>true</PublicClass>
-      <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
-      <StronglyTypedNamespace>KubeUI.Features.Helm.Assets</StronglyTypedNamespace>
-      <StronglyTypedClassName>Resources</StronglyTypedClassName>
-      <StronglyTypedFileName>$(BaseIntermediateOutputPath)\Resources.Designer.cs</StronglyTypedFileName>
-    </EmbeddedResource>
+    <AdditionalFiles Include="Assets\Resources*.json" />
+    <Watch Include="Assets\Resources*.json" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Avalonia" />
+    <PackageReference Include="Irihi.Lingua" />
     <PackageReference Include="Avalonia.AvaloniaEdit" />
     <PackageReference Include="Avalonia.Markup.Declarative" />
-    <PackageReference Include="AvaloniaEdit.TextMate" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="Dock.Model.Mvvm" />
     <PackageReference Include="DynamicData" />
@@ -88,8 +84,6 @@
     <PackageReference Include="ServiceScan.SourceGenerator" PrivateAssets="all" />
     <PackageReference Include="System.Reactive" />
     <PackageReference Include="SvcSystems.Avalonia.DynamicTableView" />
-    <PackageReference Include="TextMateSharp" />
-    <PackageReference Include="TextMateSharp.Grammars" />
     <PackageReference Include="Xaml.Behaviors.Avalonia" />
     <PackageReference Include="YamlDotNet" />
   </ItemGroup>

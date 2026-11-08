@@ -6,7 +6,7 @@ public sealed partial class HomeViewModel : ViewModelBase
 {
     public HomeViewModel()
     {
-        Title = Assets.Resources.HomeView_Title;
+        Title = AppLanguageManager.Instance.HomeView_Title.CurrentValue()!;
         Id = nameof(HomeViewModel);
     }
 

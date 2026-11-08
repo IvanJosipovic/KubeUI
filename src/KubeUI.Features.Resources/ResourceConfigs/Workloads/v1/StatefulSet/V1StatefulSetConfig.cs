@@ -1,4 +1,4 @@
-﻿using FluentIcons.Common;
+using FluentIcons.Common;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -33,7 +33,7 @@ public sealed partial class V1StatefulSetConfig : ScalableWorkloadConfig<V1State
             new ResourceListColumn<V1StatefulSet, int>()
             {
                 Key = "replicas",
-                Name = Assets.Resources.V1StatefulSetConfig_Replicas!,
+                Name = ResourcesLanguageManager.Instance.V1StatefulSetConfig_Replicas.CurrentValue()!,
                 Field = x => x.Status.Replicas,
                 WidthMode = DynamicTableViewWidthMode.Header
             },
@@ -48,7 +48,7 @@ public sealed partial class V1StatefulSetConfig : ScalableWorkloadConfig<V1State
             CreateScaleMenuItem(selectedItems),
             new()
             {
-                Title = Assets.Resources.V1StatefulSetConfig_MenuItem_Restart,
+                Title = ResourcesLanguageManager.Instance.V1StatefulSetConfig_MenuItem_Restart.CurrentValue()!,
                 FluentIcon = Icon.ArrowSync,
                 Command = RestartCommand,
                 CommandParameter = selectedItems?.ToList()

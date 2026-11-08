@@ -4,7 +4,7 @@ namespace KubeUI.App.Infrastructure;
 
 internal static class ApplicationIcons
 {
-    internal const string ControlPlaneIconPath = "avares://KubeUI.Avalonia/Assets/kube/infrastructure_components/unlabeled/control-plane.svg";
+    internal const string ControlPlaneIconPath = "avares://KubeUI.Foundation/Assets/kube/infrastructure_components/unlabeled/control-plane.svg";
 
     private static readonly Lazy<SvgSource> s_controlPlaneSource = new(
         () => SvgSource.Load(ControlPlaneIconPath)

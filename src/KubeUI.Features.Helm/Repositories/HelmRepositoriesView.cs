@@ -1,6 +1,7 @@
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using Helm.NET;
+using KubeUI.Controls.Layout;
 using KubeUI.Controls.Presentation;
 
 namespace KubeUI.Features.Helm.Repositories;
@@ -22,45 +23,31 @@ public sealed class HelmRepositoriesView : KubeUIView<HelmRepositoriesViewModel>
         return new Grid()
             .Rows("Auto,*")
             .Children(
-                new Grid()
-                    .Row(0)
-                    .MinHeight(32)
-                    .Margin(0, 2, 0, 2)
-                    .Cols("Auto,Auto,*,Auto")
-                    .Children(
-                        new Button()
-                            .Col(0)
-                            .Margin(2, 0, 0, 0)
-                            .Command(vm, x => x.NewRepositoryCommand)
-                            .Content(new FluentIcon().Icon(Icon.AddSquare))
-                            .ToolTip_Tip(Assets.Resources.HelmRepositoriesView_New),
-                        new Label()
-                            .Col(1)
-                            .Margin(2, 0, 0, 0)
-                            .VerticalContentAlignment(VerticalAlignment.Center)
-                            .Content(CompiledBinding.Create<HelmRepositoriesViewModel, int>(
-                                x => x.ItemCount, source: vm,
-                                stringFormat: Assets.Resources.HelmRepositoriesView_ItemsFormat)),
-                        new StackPanel()
-                            .Col(3)
-                            .MaxWidth(700)
-                            .HorizontalAlignment(HorizontalAlignment.Right)
-                            .Orientation(Orientation.Horizontal)
-                            .Children(
-                                new TextBlock()
-                                    .MaxWidth(300)
-                                    .VerticalAlignment(VerticalAlignment.Center)
-                                    .TextWrapping(TextWrapping.Wrap)
-                                    .Text(vm, x => x.Status),
-                                new Button()
-                                    .Margin(0, 0, 2, 0)
-                                    .Command(vm, x => x.UpdateIndexesCommand)
-                                    .Content(new FluentIcon().Icon(Icon.ArrowDownload))
-                                    .ToolTip_Tip(Assets.Resources.HelmRepositoriesView_UpdateIndexes),
-                                new Button()
-                                    .Command(vm, x => x.RefreshCommand)
-                                    .Content(new FluentIcon().Icon(Icon.ArrowSync))
-                                    .ToolTip_Tip(SharedAssets.Resources.Shared_Refresh))),
+                new CompactToolbar
+                {
+                    Leading = new Button()
+                        .Command(vm, x => x.NewRepositoryCommand)
+                        .Content(new FluentIcon().Icon(Icon.AddSquare))
+                        .ToolTip_Tip(HelmLanguageManager.Instance.HelmRepositoriesView_New.ToBinding()),
+                    Middle = new Label()
+                        .Content(CompiledBinding.Create<HelmRepositoriesViewModel, int>(
+                            x => x.ItemCount, source: vm,
+                            stringFormat: HelmLanguageManager.Instance.HelmRepositoriesView_ItemsFormat.CurrentValue()!)),
+                    Trailing = CompactToolbar.Group(
+                            new TextBlock()
+                                .MaxWidth(300)
+                                .TextWrapping(TextWrapping.Wrap)
+                                .Text(vm, x => x.Status),
+                            new Button()
+                                .Command(vm, x => x.UpdateIndexesCommand)
+                                .Content(new FluentIcon().Icon(Icon.ArrowDownload))
+                                .ToolTip_Tip(HelmLanguageManager.Instance.HelmRepositoriesView_UpdateIndexes.ToBinding()),
+                            new Button()
+                                .Command(vm, x => x.RefreshCommand)
+                                .Content(new FluentIcon().Icon(Icon.ArrowSync))
+                                .ToolTip_Tip(FoundationLanguageManager.Instance.Shared_Refresh.ToBinding()))
+                        .MaxWidth(700)
+                }.Row(0),
                 table.Row(1));
     }
 
@@ -69,17 +56,17 @@ public sealed class HelmRepositoriesView : KubeUIView<HelmRepositoriesViewModel>
         foreach (var repository in targets.OfType<HelmRepository>())
         {
             yield return new MenuItem()
-                .Header(Assets.Resources.HelmRepositoriesView_ViewCharts)
+                .Header(HelmLanguageManager.Instance.HelmRepositoriesView_ViewCharts.ToBinding())
                 .Command(vm, x => x.ViewChartsCommand)
                 .CommandParameter(repository)
                 .Icon(new FluentIcon().Icon(Icon.DataUsage));
             yield return new MenuItem()
-                .Header(Assets.Resources.HelmRepositoriesView_Edit)
+                .Header(HelmLanguageManager.Instance.HelmRepositoriesView_Edit.ToBinding())
                 .Command(vm, x => x.EditRepositoryCommand)
                 .CommandParameter(repository)
                 .Icon(new FluentIcon().Icon(Icon.Edit));
             yield return new MenuItem()
-                .Header(Assets.Resources.HelmRepositoriesView_Delete)
+                .Header(HelmLanguageManager.Instance.HelmRepositoriesView_Delete.ToBinding())
                 .Command(vm, x => x.DeleteRepositoryCommand)
                 .CommandParameter(repository)
                 .Icon(new FluentIcon().Icon(Icon.Delete));

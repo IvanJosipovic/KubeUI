@@ -1,13 +1,14 @@
 # Resource-Kind Features
 
 ## Ownership
-- Each Kubernetes resource kind is a feature root under `Resources/<Category>/<Version>/<Kind>/`.
+- Each Kubernetes resource kind is a feature root under `ResourceConfigs/<Category>/<Version>/<Kind>/` in this project.
 - Resource-kind folders own their config plus any local views, controls, view models, converters, and helpers.
-- Keep only generic resource infrastructure at `Resources/` root.
+- Keep only generic resource infrastructure at the project root and in cross-resource capability folders; do not move kind-specific behavior there.
 
 ## Constraints
 - Do not introduce category-level shared views or view models for behavior owned by one resource kind.
 - If a helper is reused by multiple resource kinds, keep it shared and document why.
+- Use `Properties/ResourcePropertiesSection` for expandable property sections; keep each section's resource-specific header and contents in its kind view.
 - Typed built-in resource configs derive from `ResourceConfig<T>` so initialization registers their model and typed seeder.
 - Dynamically discovered CRDs use `CustomResourceConfig : ResourceConfig<GenericKubernetesObject>`; override typed model registration because CRD models are registered from live definitions. Kind origin is described by `ResourceOrigin` plus `CustomResourceDefinition`/`IsCustomResource`. `V1CustomResourceDefinitionConfig` remains a typed built-in config.
 - `CustomResourceConfig.Configure` requires a definition with a served storage version and reports an explicit `InvalidOperationException` when one is missing. `Definition` stays null until the configuration succeeds, so a failed configure does not leave a half-configured instance.

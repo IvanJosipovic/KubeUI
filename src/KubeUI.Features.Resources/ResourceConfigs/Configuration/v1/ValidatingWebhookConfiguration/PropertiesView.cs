@@ -1,4 +1,4 @@
-﻿using k8s.Models;
+using k8s.Models;
 using KubeUI.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Features.Resources.Configuration.v1.ValidatingWebhookConfiguration;
@@ -12,7 +12,7 @@ public sealed class PropertiesView : ViewBase<V1ValidatingWebhookConfiguration>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Webhooks)
+                    .Key(FoundationLanguageManager.Instance.Shared_Webhooks.CurrentValue()!)
                     .Value(vm.Webhooks.Count));
     }
 }

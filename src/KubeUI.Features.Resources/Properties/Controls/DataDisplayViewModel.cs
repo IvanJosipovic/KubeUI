@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Nodes;
+using System.Text.Json.Nodes;
 using FluentAvalonia.UI.Controls;
 using k8s;
 using k8s.Models;
@@ -189,13 +189,13 @@ internal sealed partial class DataDisplayViewModel<TResource, TValue> : ViewMode
             || string.IsNullOrWhiteSpace(_resource.Metadata.Name)
             || string.IsNullOrWhiteSpace(_resource.Metadata.NamespaceProperty))
         {
-            SetActionResult(false, Assets.Resources.DataDisplay_SaveFailed, Assets.Resources.DataDisplay_PatchUnavailable);
+            SetActionResult(false, ResourcesLanguageManager.Instance.DataDisplay_SaveFailed.CurrentValue()!, ResourcesLanguageManager.Instance.DataDisplay_PatchUnavailable.CurrentValue()!);
             return;
         }
 
         if (!Cluster.Runtime.Permissions.CanI(_kind, Verb.Patch, _resource.Metadata.NamespaceProperty))
         {
-            SetActionResult(false, Assets.Resources.DataDisplay_SaveFailed, Assets.Resources.DataDisplay_PatchPermissionDenied);
+            SetActionResult(false, ResourcesLanguageManager.Instance.DataDisplay_SaveFailed.CurrentValue()!, ResourcesLanguageManager.Instance.DataDisplay_PatchPermissionDenied.CurrentValue()!);
             UpdateCanEdit();
             return;
         }
@@ -236,11 +236,11 @@ internal sealed partial class DataDisplayViewModel<TResource, TValue> : ViewMode
 
             ReplaceRows(savedData);
             EditMode = true;
-            SetActionResult(true, Assets.Resources.DataDisplay_SaveSucceeded, Assets.Resources.DataDisplay_SaveSucceededMessage);
+            SetActionResult(true, ResourcesLanguageManager.Instance.DataDisplay_SaveSucceeded.CurrentValue()!, ResourcesLanguageManager.Instance.DataDisplay_SaveSucceededMessage.CurrentValue()!);
         }
         catch (Exception exception)
         {
-            SetActionResult(false, Assets.Resources.DataDisplay_SaveFailed, ResourceUtilities.GetUserFacingErrorMessage(exception));
+            SetActionResult(false, ResourcesLanguageManager.Instance.DataDisplay_SaveFailed.CurrentValue()!, ResourceUtilities.GetUserFacingErrorMessage(exception));
         }
         finally
         {
@@ -345,7 +345,7 @@ internal sealed partial class DataDisplayViewModel<TResource, TValue> : ViewMode
         {
             if (string.IsNullOrWhiteSpace(row.Key) || !keys.Add(row.Key))
             {
-                validationMessage = Assets.Resources.DataDisplay_InvalidKey;
+                validationMessage = ResourcesLanguageManager.Instance.DataDisplay_InvalidKey.CurrentValue()!;
                 break;
             }
         }

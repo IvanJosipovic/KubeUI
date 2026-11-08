@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Input;
@@ -10,6 +10,7 @@ using CommunityToolkit.Mvvm.Input;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using KubeUI.Controls.Converters;
+using KubeUI.Controls.Layout;
 using KubeUI.Controls.Presentation;
 using KubeUI.Controls.Styles;
 using KubeUI.Features.Resources.Infrastructure;
@@ -46,71 +47,42 @@ public sealed partial class PodLogsView : KubeUIView<PodLogsViewModel>
                 CreateEditor(vm));
     }
 
-    private Grid CreateTopBar(PodLogsViewModel vm)
+    private CompactToolbar CreateTopBar(PodLogsViewModel vm)
     {
-        return new Grid()
-            .Row(0)
-            .Rows("Auto")
-            .Children(
-                new ScrollViewer()
-                    .HorizontalScrollBarVisibility(ScrollBarVisibility.Auto)
-                    .VerticalScrollBarVisibility(ScrollBarVisibility.Disabled)
-                    .Content(CreateLogControlsBar(vm)));
-    }
-
-    private Grid CreateLogControlsBar(PodLogsViewModel vm)
-    {
-        return new Grid()
-            .Row(0)
-            .Height(32)
-            .Cols("*,Auto")
-            .Margin(2, 0)
-            .Children(
-                CreateSelectionControls(vm),
-                CreateActionControls(vm));
+        return new CompactToolbar
+        {
+            Leading = CreateSelectionControls(vm),
+            Trailing = CreateActionControls(vm)
+        }.Row(0);
     }
 
     private StackPanel CreateSelectionControls(PodLogsViewModel vm)
     {
-        return new StackPanel()
-            .Col(0)
-            .Orientation(Orientation.Horizontal)
-            .Spacing(4)
-            .Children(
+        return CompactToolbar.Group(
                CreateSourcesSelector(vm),
-               new TextBlock()
-                    .MaxWidth(400)
-                    .VerticalAlignment(VerticalAlignment.Center)
+                new TextBlock()
+                     .MaxWidth(400)
                     .Text(vm, x => x.ConnectionError)
                     .IsVisible(vm, x => x.ConnectionError, converter: HasErrorConverter)
                     .TextTrimming(TextTrimming.CharacterEllipsis),
-                new StackPanel()
-                    .Orientation(Orientation.Horizontal)
-                    .Spacing(4)
-                    .VerticalAlignment(VerticalAlignment.Center)
-                    .IsVisible(vm, x => x.StreamLimitWarning, converter: HasErrorConverter)
-                    .Children(
-                        new FluentIcon().Icon(Icon.Warning),
-                        new TextBlock()
-                            .MaxWidth(320)
-                            .Text(vm, x => x.StreamLimitWarning)
-                            .TextTrimming(TextTrimming.CharacterEllipsis)),
-                new StackPanel()
-                    .Orientation(Orientation.Horizontal)
-                    .Spacing(4)
-                    .VerticalAlignment(VerticalAlignment.Center)
+                CompactToolbar.Group(
+                    new FluentIcon().Icon(Icon.Warning),
+                    new TextBlock()
+                        .MaxWidth(320)
+                        .Text(vm, x => x.StreamLimitWarning)
+                        .TextTrimming(TextTrimming.CharacterEllipsis))
+                    .IsVisible(vm, x => x.StreamLimitWarning, converter: HasErrorConverter),
+                CompactToolbar.Group(
+                    new FluentIcon().Icon(Icon.Warning),
+                    new TextBlock()
+                        .MaxWidth(320)
+                        .Text(vm, x => x.LogUpdateStatus)
+                        .TextTrimming(TextTrimming.CharacterEllipsis),
+                    new Button()
+                        .Command(vm, x => x.FollowLogsCommand)
+                        .Content(ResourcesLanguageManager.Instance.PodLogsView_ResumeFollowing.ToBinding()))
                     .IsVisible(vm, x => x.IsDisplayPaused)
-                    .Children(
-                        new FluentIcon().Icon(Icon.Warning),
-                        new TextBlock()
-                            .MaxWidth(320)
-                            .VerticalAlignment(VerticalAlignment.Center)
-                            .Text(vm, x => x.LogUpdateStatus)
-                            .TextTrimming(TextTrimming.CharacterEllipsis),
-                        new Button()
-                            .VerticalAlignment(VerticalAlignment.Center)
-                            .Command(vm, x => x.FollowLogsCommand)
-                            .Content(Assets.Resources.PodLogsView_ResumeFollowing)));
+            );
     }
 
     private static TreeComboBox CreateSourcesSelector(PodLogsViewModel vm)
@@ -134,10 +106,8 @@ public sealed partial class PodLogsView : KubeUIView<PodLogsViewModel>
             ItemContainerTheme = itemTheme,
         }
             .Width(SourcesWidth)
-            .MaxHeight(32)
             .MaxDropDownHeight(500)
-            .VerticalAlignment(VerticalAlignment.Center)
-            .PlaceholderText(Assets.Resources.PodLogsView_Sources)
+            .PlaceholderText(ResourcesLanguageManager.Instance.PodLogsView_Sources.ToBinding())
             .ItemsSource(vm, x => x.SourceTreeItems)
             .ItemTemplate(template)
             .Styles(
@@ -148,44 +118,40 @@ public sealed partial class PodLogsView : KubeUIView<PodLogsViewModel>
 
     private StackPanel CreateActionControls(PodLogsViewModel vm)
     {
-        return new StackPanel()
-            .Col(1)
-            .Orientation(Orientation.Horizontal)
-            .Spacing(2)
-            .Children(
+        return CompactToolbar.Group(
                 new Button()
                     .Command(vm, x => x.ClearCommand)
-                    .ToolTip_Tip(Assets.Resources.PodLogsView_Clear)
+                    .ToolTip_Tip(ResourcesLanguageManager.Instance.PodLogsView_Clear.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.Broom)),
                 new Button()
                     .Command(vm, x => x.DownloadLogsCommand)
-                    .ToolTip_Tip(Assets.Resources.PodLogsView_Download)
+                    .ToolTip_Tip(ResourcesLanguageManager.Instance.PodLogsView_Download.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.Save)),
                 new ToggleButton()
                     .IsChecked(vm, x => x.AutoScrollToBottom, BindingMode.TwoWay)
-                    .ToolTip_Tip(Assets.Resources.PodLogsView_FollowLogs)
+                    .ToolTip_Tip(ResourcesLanguageManager.Instance.PodLogsView_FollowLogs.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.ArrowDownload)),
                 new Button()
                     .Command(vm, x => x.JumpToControlledByLogsCommand)
                     .IsVisible(vm, x => x.CanJumpToController)
-                    .ToolTip_Tip(Assets.Resources.PodLogsView_Controller)
+                    .ToolTip_Tip(ResourcesLanguageManager.Instance.PodLogsView_Controller.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.ArrowUp)),
                 new ToggleButton()
                     .IsChecked(vm, x => x.Previous, BindingMode.TwoWay)
-                    .ToolTip_Tip(Assets.Resources.PodLogsView_Previous)
+                    .ToolTip_Tip(ResourcesLanguageManager.Instance.PodLogsView_Previous.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.ArrowUndo)),
                 new ToggleButton()
                     .IsChecked(vm, x => x.Timestamps, BindingMode.TwoWay)
-                    .ToolTip_Tip(Assets.Resources.PodLogsView_Timestamps)
+                    .ToolTip_Tip(ResourcesLanguageManager.Instance.PodLogsView_Timestamps.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.Timer)),
                 new ToggleButton()
                     .IsChecked(vm, x => x.ShowResourceNames, BindingMode.TwoWay)
                     .IsEnabled(vm, x => x.CanShowResourceNames)
-                    .ToolTip_Tip(Assets.Resources.PodLogsView_ShowResourceNames)
+                    .ToolTip_Tip(ResourcesLanguageManager.Instance.PodLogsView_ShowResourceNames.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.Tag)),
                 new ToggleButton()
                     .IsChecked(vm, x => x.WordWrap, BindingMode.TwoWay)
-                    .ToolTip_Tip(Assets.Resources.PodLogsView_WordWrap)
+                    .ToolTip_Tip(ResourcesLanguageManager.Instance.PodLogsView_WordWrap.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.TextWrap)));
     }
 
@@ -230,13 +196,14 @@ public sealed partial class PodLogsView : KubeUIView<PodLogsViewModel>
 
     private static ContextMenu CreateContextMenu(TextEditor editor)
     {
-        return new ContextMenu()
-            .Items(
-                new MenuItem()
-                    .Header(SharedAssets.Resources.Shared_Action_Copy)
-                    .InputGesture(new KeyGesture(Key.C, KeyModifiers.Control))
-                    .Icon(new FluentIcon().Icon(Icon.Copy))
-                    .Command(new RelayCommand(editor.Copy)));
+        var item = new MenuItem()
+            .Header(FoundationLanguageManager.Instance.Shared_Action_Copy.ToBinding())
+            .InputGesture(new KeyGesture(Key.C, KeyModifiers.Control))
+            .Icon(new FluentIcon().Icon(Icon.Copy));
+
+        item.Command = new RelayCommand(editor.Copy);
+
+        return new ContextMenu().Items(item);
     }
 
 }
