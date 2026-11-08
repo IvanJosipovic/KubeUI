@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" />
+    <PackageReference Include="Avalonia.Headless.XUnit" />
   </ItemGroup>
 
   <ItemGroup>

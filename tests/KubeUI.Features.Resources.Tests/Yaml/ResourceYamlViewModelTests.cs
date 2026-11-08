@@ -185,6 +185,25 @@ public class ResourceYamlViewModelTests
     }
 
     [AvaloniaFact]
+    public void YamlFoldingStrategy_IncludesCommentsBeforeSiblingBoundary()
+    {
+        var document = new TextDocument("""
+            root:
+              child:
+                key: value
+
+              sibling: value
+            outside: value
+            """.ReplaceLineEndings("\n"));
+
+        var foldings = YamlFoldingStrategy.CreateNewFoldings(document, out _).ToArray();
+
+        foldings.Select(static folding => folding.Name.Trim()).ShouldBe(["root:", "child:"]);
+        foldings[0].EndOffset.ShouldBe(document.GetLineByNumber(5).EndOffset);
+        foldings[1].EndOffset.ShouldBe(document.GetLineByNumber(4).EndOffset);
+    }
+
+    [AvaloniaFact]
     public void YamlFoldingStrategy_IdentifiesMultilineNoisyMetadataFields()
     {
         var text = new TextDocument("""

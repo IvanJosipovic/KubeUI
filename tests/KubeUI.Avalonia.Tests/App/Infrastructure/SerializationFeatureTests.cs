@@ -231,9 +231,16 @@ public sealed class SerializationFeatureTests
         KubernetesClientConfiguration clientConfiguration = new();
         jsonSerializer.ConfigureClient(clientConfiguration);
         var resource = CreateResource();
-        V1Pod pod = new() { Metadata = new V1ObjectMeta { Name = "generated-pod" } };
+        V1Pod pod = new()
+        {
+            ApiVersion = V1Pod.KubeApiVersion,
+            Kind = V1Pod.KubeKind,
+            Metadata = new V1ObjectMeta { Name = "generated-pod" },
+        };
         jsonSerializer.Deserialize<V1Pod>(jsonSerializer.Serialize(pod)).Metadata.Name.ShouldBe("generated-pod");
-        yamlSerializer.Deserialize<V1Pod>(yamlSerializer.Serialize(pod)).Metadata.Name.ShouldBe("generated-pod");
+        var podYaml = yamlSerializer.Serialize(pod);
+        GetRootYamlMappingKeys(podYaml).ShouldBe(["apiVersion", "kind", "metadata"]);
+        yamlSerializer.Deserialize<V1Pod>(podYaml).Metadata.Name.ShouldBe("generated-pod");
         if (disableJsonReflection)
         {
             Should.Throw<NotSupportedException>(() => Utilities.CloneObject(resource, jsonSerializer));
@@ -261,9 +268,19 @@ public sealed class SerializationFeatureTests
         }
         else
         {
-            AssertResource(yamlSerializer.Deserialize<ReflectionOnlyResource>(yamlSerializer.Serialize(resource)));
+            var resourceYaml = yamlSerializer.Serialize(resource);
+            GetRootYamlMappingKeys(resourceYaml).ShouldBe(["apiVersion", "kind", "metadata", "spec"]);
+            AssertResource(yamlSerializer.Deserialize<ReflectionOnlyResource>(resourceYaml));
             AssertResource(yamlSerializer.Deserialize<ReflectionOnlyResource>(Yaml));
         }
+    }
+
+    private static string[] GetRootYamlMappingKeys(string yaml)
+    {
+        return yaml.Split('\n')
+            .Where(static line => line.Length > 0 && !char.IsWhiteSpace(line[0]))
+            .Select(static line => line[..line.IndexOf(':')])
+            .ToArray();
     }
 
     private const string Json = """
@@ -297,10 +314,10 @@ public sealed class SerializationFeatureTests
 
     public sealed class ReflectionOnlyResource : IKubernetesObject<V1ObjectMeta>
     {
-        public string ApiVersion { get; set; } = string.Empty;
-        public string Kind { get; set; } = string.Empty;
-        public V1ObjectMeta Metadata { get; set; } = new();
         public ReflectionOnlySpec Spec { get; set; } = new();
+        public V1ObjectMeta Metadata { get; set; } = new();
+        public string Kind { get; set; } = string.Empty;
+        public string ApiVersion { get; set; } = string.Empty;
     }
 
     public sealed class ReflectionOnlySpec
