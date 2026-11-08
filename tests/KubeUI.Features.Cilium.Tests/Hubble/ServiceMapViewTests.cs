@@ -719,7 +719,6 @@ public sealed class ServiceMapViewTests
     }
 
     [AvaloniaFact]
-    [Obsolete]
     public async Task Dense_mock_graph_layout_preview()
     {
         var graph = CreateDenseMockGraph();
@@ -754,7 +753,7 @@ public sealed class ServiceMapViewTests
             bitmap.Render(window);
             var screenshotPath = Environment.GetEnvironmentVariable("KUBEUI_SERVICE_MAP_SCREENSHOT_PATH")
                 ?? Path.Combine(Path.GetTempPath(), "kubeui-service-map-mock.png");
-            bitmap.Save(screenshotPath);
+            bitmap.Save(screenshotPath, PngBitmapEncoderOptions.Default);
         }
     }
 
@@ -860,7 +859,6 @@ public sealed class ServiceMapViewTests
     }
 
     [AvaloniaFact]
-    [Obsolete]
     public async Task View_loads_empty_map_and_updates_when_graph_changes()
     {
         var services = Application.Current.GetTestServices();
@@ -1005,7 +1003,7 @@ public sealed class ServiceMapViewTests
             bitmap.Render(window);
             var screenshotPath = Environment.GetEnvironmentVariable("KUBEUI_SERVICE_MAP_SCREENSHOT_PATH")
                 ?? Path.Combine(Path.GetTempPath(), "kubeui-service-map-toolbar.png");
-            bitmap.Save(screenshotPath);
+            bitmap.Save(screenshotPath, PngBitmapEncoderOptions.Default);
         }
 
     }
