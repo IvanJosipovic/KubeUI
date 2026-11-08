@@ -44,11 +44,11 @@ public sealed class MRDiffDetectionViewTests
 
         var searchBox = leading.Children.OfType<TextBox>().ShouldHaveSingleItem();
         searchBox.VerticalAlignment.ShouldBe(global::Avalonia.Layout.VerticalAlignment.Stretch);
-        searchBox.VerticalContentAlignment.ShouldBe(global::Avalonia.Layout.VerticalAlignment.Center);
         searchBox.Background.ShouldBe(global::Avalonia.Media.Brushes.Transparent);
 
         toolbar.Measure(new Size(1000, 40));
         toolbar.Arrange(new Rect(0, 0, 1000, 40));
+        searchBox.VerticalContentAlignment.ShouldBe(global::Avalonia.Layout.VerticalAlignment.Center);
         providerSelector.Bounds.Height.ShouldBe(searchBox.Bounds.Height);
 
         toolbar.Middle.ShouldBeOfType<TextBlock>();

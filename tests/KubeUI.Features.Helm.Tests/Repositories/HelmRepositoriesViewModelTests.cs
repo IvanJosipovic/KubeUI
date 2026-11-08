@@ -59,7 +59,7 @@ public sealed class HelmRepositoriesViewModelTests : IDisposable
             repositoryHeader.Margin.ShouldBe(releaseHeader.Margin);
             var leading = repositoryHeader.Leading.ShouldBeOfType<Button>();
             leading.Command.ShouldBeSameAs(repositories.NewRepositoryCommand);
-            var count = repositoryHeader.Count.ShouldBeOfType<Label>();
+            var count = repositoryHeader.Middle.ShouldBeOfType<Label>();
             count.Content.ShouldBe(string.Format(HelmLanguageManager.Instance.HelmRepositoriesView_ItemsFormat.CurrentValue()!, 1));
             var leadingPosition = leading.TranslatePoint(default, repositoryHeader)!.Value;
             leadingPosition.X.ShouldBe(2);

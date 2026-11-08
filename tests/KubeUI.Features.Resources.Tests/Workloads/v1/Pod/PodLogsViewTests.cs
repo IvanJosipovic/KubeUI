@@ -9,6 +9,7 @@ using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using k8s;
 using k8s.Models;
+using KubeUI.Controls.Layout;
 using KubeUI.Features.Resources.Workloads.v1.Pod.Behaviors;
 using KubeUI.Features.Resources.Workloads.v1.Pod.Services;
 using KubeUI.Features.Resources.Workloads.v1.Pod.ViewModels;
@@ -240,12 +241,8 @@ public sealed class PodLogsViewTests
             sourceCheckBox.IsChecked.ShouldBeNull();
             templateNode.UpdateIsChecked(true);
             sourceCheckBox.IsChecked.ShouldBe(true);
-            var logControlsBar = selectionControls.Parent.ShouldBeOfType<Grid>();
-            var topBarScrollViewer = logControlsBar.Parent.ShouldBeOfType<ScrollViewer>();
-            var topBar = topBarScrollViewer.Parent.ShouldBeOfType<Grid>();
-            var actionControls = logControlsBar.Children
-                .OfType<StackPanel>()
-                .Single(panel => Grid.GetColumn(panel) == 1);
+            var logControlsBar = selectionControls.Parent.ShouldBeOfType<CompactToolbar>();
+            var actionControls = logControlsBar.Trailing.ShouldBeOfType<StackPanel>();
             actionControls.Children
                 .OfType<TemplatedControl>()
                 .Select(control => ToolTip.GetTip(control))
@@ -270,8 +267,8 @@ public sealed class PodLogsViewTests
                 .OfType<Button>()
                 .Single(button => ReferenceEquals(button.Command, viewModel.ClearCommand));
             viewModel.SelectedScopeItems.Single().DisplayName.ShouldBe("Pod/default/app-7c9dd9f4f4-abcde");
-            logControlsBar.Margin.ShouldBe(new Thickness(2, 0));
-            topBar.Children.Count.ShouldBe(1);
+            logControlsBar.Margin.ShouldBe(new Thickness(0, 2));
+            logControlsBar.Children.Count.ShouldBe(2);
             Grid.GetRow(logControlsBar).ShouldBe(0);
             view.GetVisualDescendants().OfType<Ursa.Controls.MultiComboBox>().ShouldBeEmpty();
             sourcesSelector.Width.ShouldBe(300);
@@ -970,8 +967,8 @@ public sealed class PodLogsViewTests
                 .OfType<Ursa.Controls.TreeComboBox>()
                 .Single();
             Control topBar = view.GetVisualDescendants()
-                .OfType<Grid>()
-                .Single(grid => grid.Height == 32);
+                .OfType<CompactToolbar>()
+                .Single();
 
             topBar.Bounds.Height.ShouldBeLessThanOrEqualTo(32);
             sourcesSelector.Bounds.Height.ShouldBeLessThanOrEqualTo(32);

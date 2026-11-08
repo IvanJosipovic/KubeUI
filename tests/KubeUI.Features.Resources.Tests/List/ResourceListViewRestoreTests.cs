@@ -55,6 +55,9 @@ public sealed class ResourceListViewRestoreTests
         await WaitForHeadersAsync(table, currentHeaders);
         await WaitForAsync(() => table.Source == secondViewModel.TableSource
             && table.GetVisualDescendants().OfType<TableViewRow>().Count() == 1);
+        await WaitForAsync(() => secondViewModel.SelectionModel.SelectedItems
+            .Cast<V1Pod>()
+            .Any(static pod => pod.Metadata.Name == "second-target"));
 
         ReferenceEquals(table.Source, firstViewModel.TableSource).ShouldBeFalse();
         table.Source.ShouldBeSameAs(secondViewModel.TableSource);
