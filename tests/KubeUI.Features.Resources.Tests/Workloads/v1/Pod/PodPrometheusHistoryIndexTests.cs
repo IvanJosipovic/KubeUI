@@ -10,17 +10,18 @@ namespace KubeUI.Avalonia.Tests.Resources.Workloads.v1.Pod;
 public sealed class PodPrometheusHistoryIndexTests
 {
     [Fact]
-    public async Task GetHistoryAsync_reuses_the_index_for_an_equivalent_result()
+    public async Task GetHistoryAsync_reuses_the_index_for_shared_query_series()
     {
         var index = new PodPrometheusHistoryIndex();
         var result = CreateResult();
 
         var first = await index.GetHistoryAsync(result, "default", "pod-1", TestContext.Current.CancellationToken);
-        var second = await index.GetHistoryAsync(CreateResult(), "default", "pod-1", TestContext.Current.CancellationToken);
+        var second = await index.GetHistoryAsync(new MetricResultSet { Metrics = result.Metrics }, "default", "pod-1", TestContext.Current.CancellationToken);
 
         first.Cpu.ShouldBe(second.Cpu);
         first.Memory.ShouldBe(second.Memory);
-        // The cache is keyed by the content of the result, so the second result reuses the index.
+        // Request result wrappers share the cached MetricSeries instances, so the index key avoids
+        // re-reading every sample merely to recognize the same underlying query result.
         index.IndexBuildCount.ShouldBe(1);
     }
 

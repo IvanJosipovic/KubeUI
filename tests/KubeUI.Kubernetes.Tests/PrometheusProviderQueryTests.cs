@@ -21,6 +21,27 @@ public sealed class PrometheusProviderQueryTests
         query.ShouldNotContain(") by (node)");
     }
 
+    [Theory]
+    [InlineData("fsSize", "node_filesystem_size_bytes")]
+    [InlineData("fsUsage", "node_filesystem_size_bytes")]
+    public void BuildNodeFilesystemQuery_uses_node_exporter_instance_labels(string queryName, string metricName)
+    {
+        var provider = new ExternalPrometheusProvider();
+        IReadOnlyDictionary<string, string> options = new Dictionary<string, string>
+        {
+            ["instance"] = "10\\.0\\.0\\.1",
+            ["mountpoints"] = "^/$",
+        };
+
+        var query = provider.BuildQuery(MetricCategory.Nodes, queryName, options);
+
+        query.ShouldContain($"{metricName}{{instance=~");
+        query.ShouldContain("mountpoint=~\"^/$\"");
+        query.ShouldContain(") by (instance)");
+        query.ShouldNotContain("kube_pod_info");
+        query.ShouldNotContain("on (pod");
+    }
+
     [Fact]
     public void BuildPodQuery_escapes_regex_backslashes_for_prometheus_string_literal()
     {
@@ -136,6 +157,31 @@ public sealed class PrometheusProviderQueryTests
             client,
             new ClusterMetricsSettings(),
             cancellation.Token));
+    }
+
+    [Fact]
+    public async Task ExternalProvider_copies_persisted_authentication_settings_to_resolved_endpoint()
+    {
+        var provider = new ExternalPrometheusProvider();
+        using var client = new k8s.Kubernetes(new k8s.KubernetesClientConfiguration { Host = "http://localhost" });
+        var header = new PrometheusHeader { Name = "X-Api-Key", Value = "initial" };
+        var settings = new ClusterMetricsSettings
+        {
+            PrometheusDirectUrl = "https://prometheus.example",
+            PrometheusCustomHeaders = [header],
+            PrometheusBasicAuthUsername = "metrics-user",
+            PrometheusBasicAuthPassword = "secret",
+            PrometheusRequireHttpsForAuthentication = false,
+        };
+
+        var endpoint = await provider.TryResolveServiceAsync(client, settings);
+        header.Value = "changed-after-resolution";
+
+        endpoint.ShouldNotBeNull();
+        endpoint.CustomHeaders.ShouldHaveSingleItem().Value.ShouldBe("initial");
+        endpoint.BasicAuthUsername.ShouldBe("metrics-user");
+        endpoint.BasicAuthPassword.ShouldBe("secret");
+        endpoint.RequireHttpsForAuthentication.ShouldBeFalse();
     }
 
     [Theory]

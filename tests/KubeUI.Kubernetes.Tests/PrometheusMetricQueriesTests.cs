@@ -50,6 +50,29 @@ public sealed class PrometheusMetricQueriesTests
     }
 
     [Fact]
+    public async Task RequestAsync_caller_cancellation_does_not_cancel_a_coalesced_request()
+    {
+        var queryClient = new RecordingPrometheusQueryClient { WaitForRelease = true };
+        queryClient.EnqueueResponse(CreateSuccessResponse(1.25));
+        var queries = new PrometheusMetricQueries(NullLogger.Instance, queryClient, TimeProvider.System);
+        await using var cluster = CreateCluster();
+        using var cancellation = new CancellationTokenSource();
+
+        var canceledCaller = queries.RequestAsync(
+            cluster, CreateEndpoint(), CreateProvider(), CreateRequest(), CancellationToken.None, cancellation.Token);
+        var remainingCaller = queries.RequestAsync(
+            cluster, CreateEndpoint(), CreateProvider(), CreateRequest(), CancellationToken.None, CancellationToken.None);
+
+        await queryClient.QueryStarted.Task.WaitAsync(TestContext.Current.CancellationToken);
+        await cancellation.CancelAsync();
+        await Should.ThrowAsync<OperationCanceledException>(async () => await canceledCaller);
+        queryClient.Release();
+
+        (await remainingCaller).HadRequestFailures.ShouldBeFalse();
+        queryClient.QueryCalls.ShouldBe(1);
+    }
+
+    [Fact]
     public async Task RequestAsync_does_not_cache_a_failed_query()
     {
         var queryClient = new RecordingPrometheusQueryClient
@@ -152,8 +175,7 @@ public sealed class PrometheusMetricQueriesTests
         null,
         "http://prometheus.example",
         false,
-        string.Empty,
-        null);
+        string.Empty);
 
     private static IPrometheusProvider CreateProvider() => new ExternalPrometheusProvider();
 

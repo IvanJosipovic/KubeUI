@@ -1,4 +1,4 @@
-using System.Text;
+using System.Runtime.CompilerServices;
 using KubeUI.Features.Resources.Metrics.Controls;
 using KubeUI.Kubernetes;
 
@@ -9,8 +9,8 @@ public sealed class PodPrometheusHistoryIndex
 {
     private const int MaximumIndexedResultSets = 4;
     private readonly Lock _sync = new();
-    private readonly Dictionary<string, Lazy<Task<PodMetricHistoryIndexData>>> _indexes = new(StringComparer.Ordinal);
-    private readonly Queue<string> _indexOrder = new();
+    private readonly Dictionary<MetricSeriesSetKey, Lazy<Task<PodMetricHistoryIndexData>>> _indexes = [];
+    private readonly Queue<MetricSeriesSetKey> _indexOrder = new();
     private int _indexBuildCount;
 
     /// <summary>Creates a bounded cache for aggregated Pod Prometheus histories.</summary>
@@ -30,7 +30,7 @@ public sealed class PodPrometheusHistoryIndex
 
         // The cache is keyed by the content of the result rather than by its identity, so an
         // equivalent result produced by a different request still reuses the existing index.
-        var cacheKey = CreateCacheKey(result);
+        var cacheKey = MetricSeriesSetKey.Create(result);
         Lazy<Task<PodMetricHistoryIndexData>> lazyIndex;
         lock (_sync)
         {
@@ -60,35 +60,6 @@ public sealed class PodPrometheusHistoryIndex
         }
 
         return Merge(index.UnlabeledHistory, podHistory);
-    }
-
-    private static string CreateCacheKey(MetricResultSet result)
-    {
-        var builder = new StringBuilder();
-        foreach (var metric in result.Metrics.OrderBy(static metric => metric.Key, StringComparer.Ordinal))
-        {
-            builder.Append(metric.Key).Append('|');
-            foreach (var series in metric.Value.OrderBy(static series => series.Name, StringComparer.Ordinal))
-            {
-                builder.Append(series.Name).Append(':');
-                foreach (var label in series.Labels.OrderBy(static label => label.Key, StringComparer.Ordinal))
-                {
-                    builder.Append(label.Key).Append('=').Append(label.Value).Append(',');
-                }
-
-                // The point values are part of the index, so they have to be part of the key. Without
-                // them a result with the same series and labels but different samples would reuse a
-                // stale index and report the previous values.
-                foreach (var point in series.Points)
-                {
-                    builder.Append(point.Timestamp.ToUnixTimeMilliseconds()).Append('=').Append(point.Value).Append(',');
-                }
-
-                builder.Append(';');
-            }
-        }
-
-        return builder.ToString();
     }
 
     private PodMetricHistoryIndexData BuildIndex(MetricResultSet result)
@@ -191,6 +162,75 @@ public sealed class PodPrometheusHistoryIndex
         MetricHistoryData UnlabeledHistory);
 
     private readonly record struct PodMetricHistoryKey(string NamespaceName, string PodName);
+
+    /// <summary>
+    /// Uses the cached series instances as the result-set identity. Recomputing a textual key from
+    /// every label and point for each recycled CPU/memory cell made key creation proportional to the
+    /// full namespace response, even when the index was already cached.
+    /// </summary>
+    private sealed class MetricSeriesSetKey : IEquatable<MetricSeriesSetKey>
+    {
+        private readonly MetricSeries[] _series;
+        private readonly int _cpuSeriesCount;
+        private readonly int _hashCode;
+
+        private MetricSeriesSetKey(MetricSeries[] series, int cpuSeriesCount)
+        {
+            _series = series;
+            _cpuSeriesCount = cpuSeriesCount;
+            var hash = new HashCode();
+            hash.Add(cpuSeriesCount);
+            foreach (var item in series)
+            {
+                hash.Add(RuntimeHelpers.GetHashCode(item));
+            }
+
+            _hashCode = hash.ToHashCode();
+        }
+
+        public static MetricSeriesSetKey Create(MetricResultSet result)
+        {
+            result.Metrics.TryGetValue("cpuUsage", out var cpuSeries);
+            result.Metrics.TryGetValue("memoryUsage", out var memorySeries);
+            var cpuCount = cpuSeries?.Count ?? 0;
+            var series = new MetricSeries[cpuCount + (memorySeries?.Count ?? 0)];
+            for (var index = 0; index < cpuCount; index++)
+            {
+                series[index] = cpuSeries![index];
+            }
+
+            for (var index = 0; index < (memorySeries?.Count ?? 0); index++)
+            {
+                series[cpuCount + index] = memorySeries![index];
+            }
+
+            return new MetricSeriesSetKey(series, cpuCount);
+        }
+
+        public bool Equals(MetricSeriesSetKey? other)
+        {
+            if (other is null || _hashCode != other._hashCode
+                || _cpuSeriesCount != other._cpuSeriesCount
+                || _series.Length != other._series.Length)
+            {
+                return false;
+            }
+
+            for (var index = 0; index < _series.Length; index++)
+            {
+                if (!ReferenceEquals(_series[index], other._series[index]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        public override bool Equals(object? obj) => obj is MetricSeriesSetKey other && Equals(other);
+
+        public override int GetHashCode() => _hashCode;
+    }
 
     private sealed class MutablePodMetricHistory
     {

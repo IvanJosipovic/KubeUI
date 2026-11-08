@@ -1,4 +1,3 @@
-using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -13,6 +12,7 @@ public sealed partial class PrometheusQueryClient : IPrometheusQueryClient, IDis
     private readonly SemaphoreSlim _transportGate = new(1, 1);
     private HttpClient? _httpClient;
     private string? _endpointKey;
+    private string? _azureMonitorAccessToken;
     private bool _disposed;
 
     public PrometheusQueryClient(ILogger<PrometheusQueryClient> logger)
@@ -140,20 +140,16 @@ public sealed partial class PrometheusQueryClient : IPrometheusQueryClient, IDis
                     PrepareServicePortForwardTransport(cluster, endpoint);
                 }
 
-                if (_httpClient is not null
-                    && !endpoint.UseAzureMonitorAuthentication
-                    && !string.IsNullOrWhiteSpace(endpoint.BearerToken))
+                if (_httpClient is not null)
                 {
-                    _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", endpoint.BearerToken);
-                }
-                else if (_httpClient is not null && endpoint.UseAzureMonitorAuthentication)
-                {
-                    // The Azure Monitor token is valid for roughly an hour, so it is attached to the
-                    // transport once instead of being resolved for every individual query.
-                    var token = await GetAzureMonitorTokenAsync(cancellationToken).ConfigureAwait(false);
-                    if (!string.IsNullOrWhiteSpace(token))
+                    ValidateAuthentication(endpoint, _httpClient.BaseAddress!);
+                    if (endpoint.UseAzureMonitorAuthentication)
                     {
-                        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                        var token = await GetAzureMonitorTokenAsync(cancellationToken).ConfigureAwait(false);
+                        if (!string.IsNullOrWhiteSpace(token))
+                        {
+                            Volatile.Write(ref _azureMonitorAccessToken, token);
+                        }
                     }
                 }
 
@@ -177,6 +173,7 @@ public sealed partial class PrometheusQueryClient : IPrometheusQueryClient, IDis
         _httpClient?.Dispose();
         _httpClient = null;
         _endpointKey = null;
+        Volatile.Write(ref _azureMonitorAccessToken, null);
     }
 
     private void LogPreparedTransport(Cluster cluster, ResolvedPrometheusEndpoint endpoint)
@@ -207,11 +204,18 @@ public sealed partial class PrometheusQueryClient : IPrometheusQueryClient, IDis
 
     private static string CreateEndpointKey(Cluster cluster, ResolvedPrometheusEndpoint endpoint)
     {
-        // The bearer token is hashed rather than embedded so the credential is not retained in a
-        // long-lived string used as a cache key.
-        var tokenHash = string.IsNullOrWhiteSpace(endpoint.BearerToken)
-            ? string.Empty
-            : Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(endpoint.BearerToken)));
+        // Hash credentials rather than retaining them in the long-lived endpoint cache key.
+        var credentials = new StringBuilder();
+        credentials.Append(endpoint.BasicAuthUsername).Append('\0').Append(endpoint.BasicAuthPassword);
+        if (endpoint.CustomHeaders is not null)
+        {
+            foreach (var header in endpoint.CustomHeaders)
+            {
+                credentials.Append('\0').Append(header.Name).Append('\0').Append(header.Value);
+            }
+        }
+
+        var credentialHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(credentials.ToString())));
 
         return string.Join(
             "|",
@@ -223,7 +227,8 @@ public sealed partial class PrometheusQueryClient : IPrometheusQueryClient, IDis
             endpoint.DirectUrl ?? string.Empty,
             endpoint.UseHttps,
             endpoint.PathPrefix,
-            tokenHash,
+            credentialHash,
+            endpoint.RequireHttpsForAuthentication,
             endpoint.UseAzureMonitorAuthentication);
     }
 }

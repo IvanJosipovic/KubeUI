@@ -1,3 +1,4 @@
+using System.Collections.Specialized;
 using KubeUI.Controls.Presentation;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Kubernetes;
@@ -8,10 +9,14 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
 {
     private ClusterSettings? _subscribedClusterSettings;
     private ClusterMetricsSettings? _subscribedMetricsSettings;
+    private ObservableCollection<PrometheusHeader>? _subscribedPrometheusHeaders;
     private INotifyPropertyChanged? _subscribedRuntime;
     private readonly IAzureMonitorWorkspaceService _azureMonitorWorkspaceService;
+    private readonly DispatcherTimer _settingsSaveTimer = new(DispatcherPriority.Background);
     private int _workspaceLoadVersion;
     private bool _disposed;
+    private bool _settingsSavePending;
+    private bool _metricsReinitializePending;
 
     public IClusterPreferenceStore SettingsService { get; }
 
@@ -41,6 +46,8 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         SettingsService = settingsService;
         _azureMonitorWorkspaceService = azureMonitorWorkspaceService;
         AzureMonitorStatusText = L10n.Instance.ClusterSettingsView_AzureMonitorNotChecked.CurrentValue()!;
+        _settingsSaveTimer.Interval = TimeSpan.FromMilliseconds(300);
+        _settingsSaveTimer.Tick += OnSettingsSaveTimerTick;
     }
 
     public void Initialize(ClusterWorkspace cluster)
@@ -143,6 +150,33 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
     public bool ShowPrometheusDirectUrlSettings => ShowPrometheusSettings && SelectedPrometheusProvider?.Value != PrometheusProviderKind.AzureMonitor;
 
     public bool ShowPrometheusCustomTransportSettings => ShowPrometheusSettings && SelectedPrometheusProvider?.Value != PrometheusProviderKind.AzureMonitor;
+
+    public bool ShowInsecureAuthenticationWarning
+    {
+        get
+        {
+            if (!ShowPrometheusCustomTransportSettings
+                || ClusterSettings.MetricsSettings.PrometheusRequireHttpsForAuthentication
+                || !HasPrometheusAuthentication)
+            {
+                return false;
+            }
+
+            var directUrl = ClusterSettings.MetricsSettings.PrometheusDirectUrl;
+            if (Uri.TryCreate(directUrl, UriKind.Absolute, out var uri))
+            {
+                return uri.Scheme != Uri.UriSchemeHttps;
+            }
+
+            return !ClusterSettings.MetricsSettings.PrometheusUseHttps;
+        }
+    }
+
+    private bool HasPrometheusAuthentication =>
+        ClusterSettings.MetricsSettings.PrometheusCustomHeaders.Any(static header =>
+            !string.IsNullOrWhiteSpace(header.Name) || !string.IsNullOrEmpty(header.Value))
+        || !string.IsNullOrEmpty(ClusterSettings.MetricsSettings.PrometheusBasicAuthUsername)
+        || !string.IsNullOrEmpty(ClusterSettings.MetricsSettings.PrometheusBasicAuthPassword);
 
     public bool ShowAzureMonitorSettings => ShowPrometheusSettings && SelectedPrometheusProvider?.Value == PrometheusProviderKind.AzureMonitor;
 
@@ -364,7 +398,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         {
             ClusterSettings.Namespaces.Add(Namespace);
 
-            SettingsService.SaveSettings();
+            QueueSettingsSave();
 
             Namespace = "";
         }
@@ -377,7 +411,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         {
             ClusterSettings.Namespaces.Remove(ns);
 
-            SettingsService.SaveSettings();
+            QueueSettingsSave();
         }
     }
 
@@ -389,7 +423,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         }
 
         ClusterSettings.DebugContainerImage = value;
-        SettingsService.SaveSettings();
+        QueueSettingsSave();
     }
 
     partial void OnClusterSettingsChanged(ClusterSettings value)
@@ -407,7 +441,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
 
     private void OnClusterSettingsPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        SettingsService.SaveSettings();
+        QueueSettingsSave(reinitializeMetrics: e.PropertyName == nameof(ClusterSettings.MetricsSettings));
 
         if (e.PropertyName == nameof(ClusterSettings.MetricsSettings))
         {
@@ -425,15 +459,77 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
 
         _subscribedMetricsSettings = metricsSettings;
         _subscribedMetricsSettings.PropertyChanged += OnMetricsSettingsPropertyChanged;
+        SubscribePrometheusHeaders(metricsSettings.PrometheusCustomHeaders);
+    }
+
+    private void SubscribePrometheusHeaders(ObservableCollection<PrometheusHeader> headers)
+    {
+        if (_subscribedPrometheusHeaders is not null)
+        {
+            _subscribedPrometheusHeaders.CollectionChanged -= OnPrometheusHeadersCollectionChanged;
+            UnsubscribePrometheusHeaderItems(_subscribedPrometheusHeaders);
+        }
+
+        _subscribedPrometheusHeaders = headers;
+        _subscribedPrometheusHeaders.CollectionChanged += OnPrometheusHeadersCollectionChanged;
+        SubscribePrometheusHeaderItems(_subscribedPrometheusHeaders);
+    }
+
+    private void SubscribePrometheusHeaderItems(IEnumerable<PrometheusHeader> headers)
+    {
+        foreach (var header in headers)
+        {
+            header.PropertyChanged -= OnPrometheusHeaderPropertyChanged;
+            header.PropertyChanged += OnPrometheusHeaderPropertyChanged;
+        }
+    }
+
+    private void UnsubscribePrometheusHeaderItems(IEnumerable<PrometheusHeader> headers)
+    {
+        foreach (var header in headers)
+        {
+            header.PropertyChanged -= OnPrometheusHeaderPropertyChanged;
+        }
+    }
+
+    private void OnPrometheusHeadersCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.OldItems is not null)
+        {
+            foreach (PrometheusHeader header in e.OldItems)
+            {
+                header.PropertyChanged -= OnPrometheusHeaderPropertyChanged;
+            }
+        }
+
+        if (e.NewItems is not null)
+        {
+            foreach (PrometheusHeader header in e.NewItems)
+            {
+                header.PropertyChanged -= OnPrometheusHeaderPropertyChanged;
+                header.PropertyChanged += OnPrometheusHeaderPropertyChanged;
+            }
+        }
+
+        QueueSettingsSave(reinitializeMetrics: true);
+        RaiseMetricsPropertiesChanged();
+    }
+
+    private void OnPrometheusHeaderPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        QueueSettingsSave(reinitializeMetrics: true);
+        RaiseMetricsPropertiesChanged();
     }
 
     private void OnMetricsSettingsPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        SettingsService.SaveSettings();
-        if (e.PropertyName is nameof(ClusterMetricsSettings.MetricsServiceType) or nameof(ClusterMetricsSettings.PrometheusProviderKind))
+        if (e.PropertyName == nameof(ClusterMetricsSettings.PrometheusCustomHeaders))
         {
-            RaiseMetricsPropertiesChanged();
+            SubscribePrometheusHeaders(ClusterSettings.MetricsSettings.PrometheusCustomHeaders);
         }
+
+        QueueSettingsSave(reinitializeMetrics: true);
+        RaiseMetricsPropertiesChanged();
     }
 
     private void OnRuntimePropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -443,6 +539,38 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
             or nameof(IClusterRuntime.ActiveMetricsBackend))
         {
             OnPropertyChanged(nameof(ActiveMetricsServiceText));
+        }
+    }
+
+    private void QueueSettingsSave(bool reinitializeMetrics = false)
+    {
+        _settingsSavePending = true;
+        _metricsReinitializePending |= reinitializeMetrics;
+        _settingsSaveTimer.Stop();
+        _settingsSaveTimer.Start();
+    }
+
+    private void OnSettingsSaveTimerTick(object? sender, EventArgs e)
+    {
+        _settingsSaveTimer.Stop();
+        FlushSettingsSave(reinitializeMetrics: true);
+    }
+
+    private void FlushSettingsSave(bool reinitializeMetrics)
+    {
+        if (_settingsSavePending)
+        {
+            _settingsSavePending = false;
+            SettingsService.SaveSettings();
+        }
+
+        if (_metricsReinitializePending)
+        {
+            _metricsReinitializePending = false;
+            if (reinitializeMetrics && Cluster?.Runtime.Connected == true)
+            {
+                _ = Cluster.Runtime.ReinitializeMetricsAsync();
+            }
         }
     }
 
@@ -468,7 +596,23 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         OnPropertyChanged(nameof(ShowPrometheusDirectUrlSettings));
         OnPropertyChanged(nameof(ShowPrometheusCustomTransportSettings));
         OnPropertyChanged(nameof(ShowAzureMonitorSettings));
+        OnPropertyChanged(nameof(ShowInsecureAuthenticationWarning));
         OnPropertyChanged(nameof(ActiveMetricsServiceText));
+    }
+
+    [RelayCommand]
+    private void AddPrometheusHeader()
+    {
+        ClusterSettings.MetricsSettings.PrometheusCustomHeaders.Add(new PrometheusHeader());
+    }
+
+    [RelayCommand]
+    private void RemovePrometheusHeader(PrometheusHeader? header)
+    {
+        if (header is not null)
+        {
+            ClusterSettings.MetricsSettings.PrometheusCustomHeaders.Remove(header);
+        }
     }
 
     /// <summary>Releases the event subscriptions held by this view model.</summary>
@@ -486,6 +630,10 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
 
         _disposed = true;
 
+        _settingsSaveTimer.Stop();
+        _settingsSaveTimer.Tick -= OnSettingsSaveTimerTick;
+        FlushSettingsSave(reinitializeMetrics: true);
+
         if (_subscribedRuntime is not null)
         {
             _subscribedRuntime.PropertyChanged -= OnRuntimePropertyChanged;
@@ -502,6 +650,13 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         {
             _subscribedMetricsSettings.PropertyChanged -= OnMetricsSettingsPropertyChanged;
             _subscribedMetricsSettings = null;
+        }
+
+        if (_subscribedPrometheusHeaders is not null)
+        {
+            _subscribedPrometheusHeaders.CollectionChanged -= OnPrometheusHeadersCollectionChanged;
+            UnsubscribePrometheusHeaderItems(_subscribedPrometheusHeaders);
+            _subscribedPrometheusHeaders = null;
         }
     }
 }

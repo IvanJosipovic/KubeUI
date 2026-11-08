@@ -257,7 +257,14 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                     _ = EnsureOpenApiSchemasAsync();
                     if (_metricsService is not null)
                     {
-                        await _metricsService.InitializeAsync(this).ConfigureAwait(false);
+                        try
+                        {
+                            await _metricsService.InitializeAsync(this).ConfigureAwait(false);
+                        }
+                        catch (Exception metricsException)
+                        {
+                            _logger.LogError(metricsException, "Failed to initialize metrics for cluster {Name}.", Name);
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -319,6 +326,37 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         }
 
         _logger.LogInformation("Disconnected from {name}", Name);
+    }
+
+    /// <summary>Reapplies the configured metrics backend without disconnecting the Kubernetes client.</summary>
+    public async Task ReinitializeMetricsAsync()
+    {
+        if (_metricsService is null || !Connected || Volatile.Read(ref _disposeStarted) != 0)
+        {
+            return;
+        }
+
+        await _connectionLimiter.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            if (!Connected || Volatile.Read(ref _disposeStarted) != 0)
+            {
+                return;
+            }
+
+            try
+            {
+                await _metricsService.InitializeAsync(this).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to reinitialize metrics for cluster {Name}.", Name);
+            }
+        }
+        finally
+        {
+            _connectionLimiter.Release();
+        }
     }
 
     public Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()

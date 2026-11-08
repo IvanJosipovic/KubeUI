@@ -46,6 +46,8 @@ public interface IClusterRuntime
     void RemovePortForward(PortForwarder pf);
     Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task Connect();
+    /// <summary>Reapplies the current cluster metrics settings when the cluster is connected.</summary>
+    Task ReinitializeMetricsAsync() => Task.CompletedTask;
     Task EnsureOpenApiSchemasAsync();
     Task Disconnect();
     Task DeleteResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();

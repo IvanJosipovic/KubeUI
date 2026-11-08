@@ -11,6 +11,7 @@ internal sealed class PrometheusMetricQueries(
     private static readonly TimeSpan s_retryBaseDelay = TimeSpan.FromSeconds(1);
     private static readonly TimeSpan s_requestTimeout = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan s_cacheDuration = TimeSpan.FromMinutes(1);
+    private const int s_maximumCachedQueries = 512;
     private readonly ResiliencePipeline<HttpResponseMessage> _pipeline = new ResiliencePipelineBuilder<HttpResponseMessage>
     {
         Name = nameof(PrometheusMetricQueries),
@@ -39,9 +40,8 @@ internal sealed class PrometheusMetricQueries(
     {
         var (start, end, stepSeconds) = ResolveTimeRange(request);
 
-        using var linked = CancellationTokenSource.CreateLinkedTokenSource(lifecycleToken, cancellationToken);
         var loaded = await Task.WhenAll(request.Queries.Select(query =>
-            LoadSeriesAsync(cluster, endpoint, provider, query, request.Category, start, end, stepSeconds, request.Frames, linked.Token))).ConfigureAwait(false);
+            LoadSeriesAsync(cluster, endpoint, provider, query, request.Category, start, end, stepSeconds, request.Frames, lifecycleToken, cancellationToken))).ConfigureAwait(false);
 
         return new MetricResultSet
         {
@@ -79,11 +79,12 @@ internal sealed class PrometheusMetricQueries(
     /// make every other query in the same panel uncacheable, which would multiply request volume
     /// against the cluster's Prometheus on each refresh.
     /// </remarks>
-    private async Task<(string Name, IReadOnlyList<MetricSeries> Series, bool Failed)> LoadSeriesAsync(Cluster cluster, ResolvedPrometheusEndpoint endpoint, IPrometheusProvider provider, MetricQueryDefinition definition, MetricCategory category, DateTimeOffset start, DateTimeOffset end, int stepSeconds, int frames, CancellationToken cancellationToken)
+    private async Task<(string Name, IReadOnlyList<MetricSeries> Series, bool Failed)> LoadSeriesAsync(Cluster cluster, ResolvedPrometheusEndpoint endpoint, IPrometheusProvider provider, MetricQueryDefinition definition, MetricCategory category, DateTimeOffset start, DateTimeOffset end, int stepSeconds, int frames, CancellationToken lifecycleToken, CancellationToken cancellationToken)
     {
         var key = CreateQueryCacheKey(definition, category, start, end, stepSeconds, frames);
 
         InflightRequest inflight;
+        InflightRequest? newInflight = null;
         lock (_sync)
         {
             if (_queryCache.TryGetValue(key, out var cached) && timeProvider.GetUtcNow() - cached.Timestamp < s_cacheDuration)
@@ -93,37 +94,69 @@ internal sealed class PrometheusMetricQueries(
 
             if (!_inflight.TryGetValue(key, out inflight!))
             {
-                inflight = new InflightRequest(QuerySeriesAsync(cluster, endpoint, provider, definition, category, start, end, stepSeconds, frames, cancellationToken));
+                inflight = new InflightRequest(QuerySeriesAsync(cluster, endpoint, provider, definition, category, start, end, stepSeconds, frames, lifecycleToken));
                 _inflight[key] = inflight;
+                newInflight = inflight;
             }
         }
 
-        SeriesLoadResult loaded;
-        try
+        if (newInflight is not null)
         {
-            loaded = await inflight.Task.ConfigureAwait(false);
-        }
-        finally
-        {
-            // Only the owner of the in-flight entry may remove it, and only while it is still the
-            // current entry. Removing unconditionally would let a later request for the same key
-            // attach to an already-completed task and observe a stale result.
-            lock (_sync)
-            {
-                if (_inflight.TryGetValue(key, out var current) && ReferenceEquals(current, inflight))
-                {
-                    _inflight.Remove(key);
-                }
-            }
+            _ = newInflight.Task.ContinueWith(
+                completed => OnInflightCompleted(key, newInflight, completed),
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
         }
 
-        if (!loaded.Failed)
-        {
-            lock (_sync)
-                _queryCache[key] = new CachedSeries(timeProvider.GetUtcNow(), loaded.Series);
-        }
+        var loaded = await inflight.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
 
         return (definition.Name, loaded.Series, loaded.Failed);
+    }
+
+    private void OnInflightCompleted(string key, InflightRequest inflight, Task<SeriesLoadResult> completed)
+    {
+        lock (_sync)
+        {
+            if (!_inflight.TryGetValue(key, out var current) || !ReferenceEquals(current, inflight))
+            {
+                return;
+            }
+
+            _inflight.Remove(key);
+
+            if (completed.IsFaulted)
+            {
+                _ = completed.Exception;
+                return;
+            }
+
+            if (completed.Status != TaskStatus.RanToCompletion || completed.Result.Failed)
+            {
+                return;
+            }
+
+            PruneExpiredCacheEntries();
+            if (_queryCache.Count >= s_maximumCachedQueries && !_queryCache.ContainsKey(key))
+            {
+                var oldest = _queryCache.MinBy(static pair => pair.Value.Timestamp).Key;
+                _queryCache.Remove(oldest);
+            }
+
+            _queryCache[key] = new CachedSeries(timeProvider.GetUtcNow(), completed.Result.Series);
+        }
+    }
+
+    private void PruneExpiredCacheEntries()
+    {
+        var now = timeProvider.GetUtcNow();
+        foreach (var key in _queryCache
+            .Where(pair => now - pair.Value.Timestamp >= s_cacheDuration)
+            .Select(static pair => pair.Key)
+            .ToArray())
+        {
+            _queryCache.Remove(key);
+        }
     }
 
     private async Task<SeriesLoadResult> QuerySeriesAsync(Cluster cluster, ResolvedPrometheusEndpoint endpoint, IPrometheusProvider provider, MetricQueryDefinition definition, MetricCategory category, DateTimeOffset start, DateTimeOffset end, int stepSeconds, int frames, CancellationToken cancellationToken)
@@ -201,21 +234,41 @@ internal sealed class PrometheusMetricQueries(
     {
         if (values.Count == 0)
             return [];
-        var points = values.OrderBy(static item => item.Timestamp).Select(static item => new MetricPoint(item.Timestamp, item.Value)).ToList();
+        var points = values.OrderBy(static item => item.Timestamp).Select(static item => new MetricPoint(item.Timestamp, item.Value)).ToArray();
         if (frames <= 0)
             return points;
-        var normalized = new List<MetricPoint>(points);
+        var normalized = new List<MetricPoint>(Math.Max(points.Length, frames));
+        normalized.AddRange(points);
+        HashSet<DateTimeOffset> timestamps = new(points.Length);
+        foreach (var point in points)
+        {
+            timestamps.Add(point.Timestamp);
+        }
+
         var cursor = points[0].Timestamp;
         var end = points[^1].Timestamp;
         while (cursor < end)
         {
             cursor = cursor.AddSeconds(step);
-            if (!normalized.Any(point => point.Timestamp == cursor))
+            if (timestamps.Add(cursor))
                 normalized.Add(new MetricPoint(cursor, 0));
         }
         normalized.Sort(static (left, right) => left.Timestamp.CompareTo(right.Timestamp));
-        while (normalized.Count < frames)
-            normalized.Insert(0, new MetricPoint(normalized[0].Timestamp.AddSeconds(-step), 0));
+
+        var paddingCount = Math.Max(0, frames - normalized.Count);
+        if (paddingCount > 0)
+        {
+            var padded = new List<MetricPoint>(normalized.Count + paddingCount);
+            var firstTimestamp = normalized[0].Timestamp;
+            for (var index = paddingCount; index > 0; index--)
+            {
+                padded.Add(new MetricPoint(firstTimestamp.AddSeconds(-(long)index * step), 0));
+            }
+
+            padded.AddRange(normalized);
+            normalized = padded;
+        }
+
         return normalized;
     }
 

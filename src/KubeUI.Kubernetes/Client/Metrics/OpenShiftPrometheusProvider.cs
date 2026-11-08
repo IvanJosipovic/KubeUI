@@ -12,7 +12,7 @@ public sealed class OpenShiftPrometheusProvider : PrometheusProviderBase
     {
         if (!string.IsNullOrWhiteSpace(settings.PrometheusDirectUrl))
         {
-            return new ResolvedPrometheusEndpoint(
+            return ApplyAuthenticationSettings(new ResolvedPrometheusEndpoint(
                 Kind,
                 Name,
                 IsConfigurable,
@@ -21,8 +21,7 @@ public sealed class OpenShiftPrometheusProvider : PrometheusProviderBase
                 settings.PrometheusServicePort,
                 settings.PrometheusDirectUrl,
                 settings.PrometheusUseHttps,
-                NormalizePrefix(settings.PrometheusPathPrefix),
-                settings.PrometheusBearerToken);
+                NormalizePrefix(settings.PrometheusPathPrefix)), settings);
         }
 
         var service = await FindNamespacedServiceAsync(client, "prometheus-k8s", "openshift-monitoring", cancellationToken).ConfigureAwait(false);

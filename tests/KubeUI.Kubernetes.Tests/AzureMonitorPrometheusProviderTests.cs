@@ -6,12 +6,25 @@ namespace KubeUI.Kubernetes.Tests;
 public sealed class AzureMonitorPrometheusProviderTests
 {
     [Fact]
-    public void Cluster_metrics_settings_do_not_serialize_bearer_token()
+    public void Cluster_metrics_settings_persist_static_authentication_credentials()
     {
-        var serialized = JsonSerializer.Serialize(new ClusterMetricsSettings { PrometheusBearerToken = "secret-token" }, MetricsTestJsonContext.Default.ClusterMetricsSettings);
+        var serialized = JsonSerializer.Serialize(new ClusterMetricsSettings
+        {
+            PrometheusCustomHeaders = [new PrometheusHeader { Name = "Authorization", Value = "Bearer secret-token" }],
+            PrometheusBasicAuthUsername = "metrics-user",
+            PrometheusBasicAuthPassword = "secret-password",
+        }, MetricsTestJsonContext.Default.ClusterMetricsSettings);
 
-        serialized.ShouldNotContain("secret-token");
-        serialized.ShouldNotContain("PrometheusBearerToken");
+        serialized.ShouldContain("secret-token");
+        serialized.ShouldContain("secret-password");
+        serialized.ShouldContain("PrometheusCustomHeaders");
+        serialized.ShouldContain("PrometheusBasicAuthPassword");
+
+        var restored = JsonSerializer.Deserialize(serialized, MetricsTestJsonContext.Default.ClusterMetricsSettings);
+        restored.ShouldNotBeNull();
+        restored.PrometheusCustomHeaders.ShouldHaveSingleItem().Value.ShouldBe("Bearer secret-token");
+        restored.PrometheusBasicAuthPassword.ShouldBe("secret-password");
+        restored.PrometheusRequireHttpsForAuthentication.ShouldBeTrue();
     }
 
     [Fact]
@@ -30,7 +43,7 @@ public sealed class AzureMonitorPrometheusProviderTests
         endpoint.ProviderKind.ShouldBe(PrometheusProviderKind.AzureMonitor);
         endpoint.DirectUrl.ShouldBe("https://amw.eastus.prometheus.monitor.azure.com");
         endpoint.UseAzureMonitorAuthentication.ShouldBeTrue();
-        endpoint.BearerToken.ShouldBeNull();
+        endpoint.CustomHeaders.ShouldBeNull();
     }
 
     [Theory]

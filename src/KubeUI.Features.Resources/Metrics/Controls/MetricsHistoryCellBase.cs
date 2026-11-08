@@ -382,9 +382,10 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
             {
                 if (requestVersion == _requestVersion && ReferenceEquals(_metricsServerCancellation, cancellation))
                 {
-                    _metricsServerCancellation.Dispose();
                     _metricsServerCancellation = null;
                 }
+
+                cancellation.Dispose();
             });
         }
     }
@@ -405,7 +406,7 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
             return;
         }
 
-        var cancellation = new CancellationTokenSource();
+        var cancellation = _prometheusCancellation ?? new CancellationTokenSource();
         _prometheusCancellation = cancellation;
         var requestVersion = ++_requestVersion;
 
@@ -414,7 +415,7 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
             var requestEnd = DateTimeOffset.FromUnixTimeSeconds(_timeProvider.GetUtcNow().ToUnixTimeSeconds() / 60 * 60);
             var result = await cluster.Runtime.RequestMetricsAsync(
                 CreatePrometheusRequest(resource, requestEnd),
-                CancellationToken.None).WaitAsync(cancellation.Token).ConfigureAwait(false);
+                cancellation.Token).WaitAsync(cancellation.Token).ConfigureAwait(false);
             var history = await AggregatePrometheusHistoryAsync(
                 result,
                 resource,
@@ -453,11 +454,12 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
         {
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
-                if (requestVersion == _requestVersion)
+                if (ReferenceEquals(_prometheusCancellation, cancellation))
                 {
-                    _prometheusCancellation?.Dispose();
                     _prometheusCancellation = null;
                 }
+
+                cancellation.Dispose();
             });
         }
     }
@@ -558,12 +560,8 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
     private void CancelPendingRequest()
     {
         _requestVersion++;
-        _prometheusCancellation?.Cancel();
-        _prometheusCancellation?.Dispose();
-        _prometheusCancellation = null;
-        _metricsServerCancellation?.Cancel();
-        _metricsServerCancellation?.Dispose();
-        _metricsServerCancellation = null;
+        Interlocked.Exchange(ref _prometheusCancellation, null)?.Cancel();
+        Interlocked.Exchange(ref _metricsServerCancellation, null)?.Cancel();
     }
 
     private static bool IsSameResource(TResource? previousResource, TResource currentResource)
@@ -581,6 +579,13 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
 
         var previousMetadata = previousKubernetesResource.Metadata;
         var currentMetadata = currentKubernetesResource.Metadata;
+        if (previousMetadata?.Uid is { Length: > 0 }
+            || currentMetadata?.Uid is { Length: > 0 })
+        {
+            return previousMetadata?.Uid is { Length: > 0 } uid
+                && string.Equals(uid, currentMetadata?.Uid, StringComparison.Ordinal);
+        }
+
         return previousMetadata?.Name is { Length: > 0 } name
             && string.Equals(name, currentMetadata?.Name, StringComparison.Ordinal)
             && string.Equals(previousKubernetesResource.ApiVersion, currentKubernetesResource.ApiVersion, StringComparison.Ordinal)

@@ -44,8 +44,8 @@ public abstract class PrometheusProviderBase : IPrometheusProvider
             "podUsage" => """sum(kube_pod_info) by (node)""",
             "podCapacity" => """sum(kube_node_status_capacity{resource="pods"}) by (node)""",
             "podAllocatableCapacity" => """sum(kube_node_status_allocatable{resource="pods"}) by (node)""",
-            "fsSize" => $$"""sum(node_filesystem_size_bytes{mountpoint=~"{{mountpointSelector}}"} * on (pod,namespace) group_left(node) kube_pod_info) by (node)""",
-            "fsUsage" => $$"""sum((node_filesystem_size_bytes{mountpoint=~"{{mountpointSelector}}"} - node_filesystem_avail_bytes{mountpoint=~"{{mountpointSelector}}"}) * on (pod, namespace) group_left(node) kube_pod_info) by (node)""",
+            "fsSize" => $$"""sum(node_filesystem_size_bytes{instance=~"({{instanceSelector}})(:[0-9]+)?",mountpoint=~"{{mountpointSelector}}"}) by (instance)""",
+            "fsUsage" => $$"""sum((node_filesystem_size_bytes{instance=~"({{instanceSelector}})(:[0-9]+)?",mountpoint=~"{{mountpointSelector}}"} - node_filesystem_avail_bytes{instance=~"({{instanceSelector}})(:[0-9]+)?",mountpoint=~"{{mountpointSelector}}"}) by (instance)""",
             _ => throw new InvalidOperationException($"Unsupported node query '{queryName}'."),
         };
     }
@@ -194,7 +194,7 @@ public abstract class PrometheusProviderBase : IPrometheusProvider
             throw new InvalidOperationException($"Prometheus service for provider '{providerName}' is missing required metadata.");
         }
 
-        return new ResolvedPrometheusEndpoint(
+        return ApplyAuthenticationSettings(new ResolvedPrometheusEndpoint(
             providerKind,
             providerName,
             isConfigurable,
@@ -203,8 +203,22 @@ public abstract class PrometheusProviderBase : IPrometheusProvider
             port.Port,
             settings.PrometheusDirectUrl,
             settings.PrometheusUseHttps,
-            NormalizePrefix(settings.PrometheusPathPrefix),
-            settings.PrometheusBearerToken);
+            NormalizePrefix(settings.PrometheusPathPrefix)), settings);
+    }
+
+    protected static ResolvedPrometheusEndpoint ApplyAuthenticationSettings(
+        ResolvedPrometheusEndpoint endpoint,
+        ClusterMetricsSettings settings)
+    {
+        return endpoint with
+        {
+            CustomHeaders = settings.PrometheusCustomHeaders
+                .Select(static header => new PrometheusHeader { Name = header.Name, Value = header.Value })
+                .ToArray(),
+            BasicAuthUsername = settings.PrometheusBasicAuthUsername,
+            BasicAuthPassword = settings.PrometheusBasicAuthPassword,
+            RequireHttpsForAuthentication = settings.PrometheusRequireHttpsForAuthentication,
+        };
     }
 
     protected static string GetRateAccuracy(IReadOnlyDictionary<string, string> options) => GetOption(options, "rateAccuracy", "1m");

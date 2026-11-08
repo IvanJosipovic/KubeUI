@@ -17,7 +17,7 @@ public sealed class ManualPrometheusProvider : PrometheusProviderBase
             return Task.FromResult<ResolvedPrometheusEndpoint?>(null);
         }
 
-        return Task.FromResult<ResolvedPrometheusEndpoint?>(new ResolvedPrometheusEndpoint(
+        return Task.FromResult<ResolvedPrometheusEndpoint?>(ApplyAuthenticationSettings(new ResolvedPrometheusEndpoint(
             Kind,
             Name,
             IsConfigurable,
@@ -26,7 +26,6 @@ public sealed class ManualPrometheusProvider : PrometheusProviderBase
             settings.PrometheusServicePort,
             settings.PrometheusDirectUrl,
             settings.PrometheusUseHttps,
-            NormalizePrefix(settings.PrometheusPathPrefix),
-            settings.PrometheusBearerToken));
+            NormalizePrefix(settings.PrometheusPathPrefix)), settings));
     }
 }

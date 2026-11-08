@@ -37,7 +37,6 @@ public sealed class AzureMonitorPrometheusProvider : PrometheusProviderBase
             endpoint.GetLeftPart(UriPartial.Authority),
             endpoint.Scheme == Uri.UriSchemeHttps,
             endpoint.AbsolutePath.TrimEnd('/'),
-            null,
             UseAzureMonitorAuthentication: true));
     }
 }

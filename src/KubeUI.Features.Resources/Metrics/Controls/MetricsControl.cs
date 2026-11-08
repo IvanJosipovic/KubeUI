@@ -349,7 +349,6 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
         _lifecycleCancellation = null;
         UnsubscribeCluster();
         DisposeTabs();
-        _refreshGate.Dispose();
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -552,12 +551,6 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
         }
 
         IsVisible = true;
-
-        if (Pod != null && Container != null)
-        {
-            await RefreshPodContainerCoreAsync(cancellationToken);
-            return;
-        }
 
         if (_cluster.Runtime.ActiveMetricsBackend.Type == MetricsServiceType.KubernetesMetricsServer)
         {

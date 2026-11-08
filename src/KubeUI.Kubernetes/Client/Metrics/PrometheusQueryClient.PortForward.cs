@@ -77,6 +77,7 @@ public sealed partial class PrometheusQueryClient
 #pragma warning disable CA2000 // HttpClient owns the handler and disposes it when the client is disposed.
             client = new HttpClient(new SocketsHttpHandler
             {
+                AllowAutoRedirect = false,
                 ConnectCallback = async (_, cancellationToken) =>
                 {
                     Socket socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);

@@ -164,16 +164,6 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
         _cluster = null;
     }
 
-    /// <summary>Releases the resources owned by the metrics service.</summary>
-    /// <remarks>
-    /// This is separate from <see cref="StopAsync"/> so that stopping a cluster and disposing the
-    /// service are independent operations, and disposing the service twice is safe.
-    /// </remarks>
-    internal void ReleaseResources()
-    {
-        _kubernetesMetricsCollector.Dispose();
-    }
-
     public Task<MetricResultSet> RequestMetricsAsync(MetricRequest request, CancellationToken cancellationToken = default)
     {
         if (_cluster == null
@@ -377,8 +367,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
             _logger.LogDebug(ex, "Ignoring failure while stopping the metrics service.");
         }
 
-        // The collector owns its own synchronization primitives and is disposed separately, so that a
-        // later StopAsync on an already disposed service stays safe.
+        _kubernetesMetricsCollector.Dispose();
     }
 
     private static string DescribeEndpoint(ResolvedPrometheusEndpoint endpoint)

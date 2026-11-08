@@ -243,7 +243,7 @@ public sealed class MetricsServiceTests
             PrometheusDirectUrl = "https://example.invalid",
             PrometheusPathPrefix = "/custom",
             PrometheusUseHttps = true,
-            PrometheusBearerToken = "token",
+            PrometheusCustomHeaders = [new PrometheusHeader { Name = "Authorization", Value = "Bearer token" }],
             AzureMonitorWorkspaceId = "workspace",
             AzureMonitorQueryEndpoint = "https://example.invalid",
         };
@@ -261,7 +261,7 @@ public sealed class MetricsServiceTests
         queryClient.PreparedEndpoint.ServicePort.ShouldBe(9090);
         queryClient.PreparedEndpoint.DirectUrl.ShouldBeNull();
         queryClient.PreparedEndpoint.UseHttps.ShouldBeFalse();
-        queryClient.PreparedEndpoint.BearerToken.ShouldBeNull();
+        queryClient.PreparedEndpoint.CustomHeaders.ShouldBeEmpty();
         saved.PrometheusProviderKind.ShouldBe(savedProvider);
         saved.PrometheusDirectUrl.ShouldBe("https://example.invalid");
     }

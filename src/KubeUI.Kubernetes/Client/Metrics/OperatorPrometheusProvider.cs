@@ -14,7 +14,7 @@ public sealed class OperatorPrometheusProvider : PrometheusProviderBase
             && !string.IsNullOrWhiteSpace(settings.PrometheusServiceName)
             && settings.PrometheusServicePort is > 0)
         {
-            return new ResolvedPrometheusEndpoint(
+            return ApplyAuthenticationSettings(new ResolvedPrometheusEndpoint(
                 Kind,
                 Name,
                 IsConfigurable,
@@ -23,8 +23,7 @@ public sealed class OperatorPrometheusProvider : PrometheusProviderBase
                 settings.PrometheusServicePort,
                 settings.PrometheusDirectUrl,
                 settings.PrometheusUseHttps,
-                NormalizePrefix(settings.PrometheusPathPrefix),
-                settings.PrometheusBearerToken);
+                NormalizePrefix(settings.PrometheusPathPrefix)), settings);
         }
 
         var service = await FindFirstServiceForAllNamespacesAsync(client, "operated-prometheus=true", cancellationToken).ConfigureAwait(false);
