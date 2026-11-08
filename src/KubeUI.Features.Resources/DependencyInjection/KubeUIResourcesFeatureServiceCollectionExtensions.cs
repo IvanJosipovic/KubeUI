@@ -4,6 +4,7 @@ using KubeUI.Features.Resources.Icons;
 using KubeUI.Features.Resources.List;
 using KubeUI.Features.Resources.List.Controls;
 using KubeUI.Features.Resources.Properties;
+using KubeUI.Features.Resources.ResourceConfigs.Workloads.v1.Pod;
 using KubeUI.Features.Resources.Visualization;
 using KubeUI.Features.Resources.Workloads.v1.Pod.Services;
 using KubeUI.Features.Resources.Workloads.v1.Pod.ViewModels;
@@ -24,6 +25,7 @@ public static partial class KubeUIResourcesFeatureServiceCollectionExtensions
         services.AddSingleton<IResourceVisualizationService, ResourceVisualizationService>();
         services.AddSingleton<IResourceListDocumentFactory>(static _ => new ResourceListDocumentFactory());
         services.AddSingleton<IYamlValidationService, YamlSyntaxValidationService>();
+        services.AddSingleton<PodPrometheusHistoryIndex>();
         services.AddTransient(typeof(ResourceListViewModel<>));
         services.AddTransient<Func<VisualizationViewModel>>(sp => () => sp.GetRequiredService<VisualizationViewModel>());
         services.AddTransient<Func<ResourceYamlViewModel>>(sp => () => sp.GetRequiredService<ResourceYamlViewModel>());
