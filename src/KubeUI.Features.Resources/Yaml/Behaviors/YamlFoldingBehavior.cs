@@ -9,7 +9,7 @@ namespace KubeUI.Features.Resources.Yaml.Behaviors;
 public sealed class YamlFoldingBehavior : Behavior<TextEditor>
 {
     private FoldingManager? _foldingManager;
-    private LeakSafeFoldingMargin? _foldingMargin;
+    private FoldingMarginWithLogicalChildCleanup? _foldingMargin;
     private DispatcherTimer? _updateTimer;
 
     protected override void OnAttached()
@@ -27,7 +27,7 @@ public sealed class YamlFoldingBehavior : Behavior<TextEditor>
 
         _foldingManager = FoldingManager.Install(AssociatedObject.TextArea);
         var defaultMargin = AssociatedObject.TextArea.LeftMargins.OfType<FoldingMargin>().Single();
-        _foldingMargin = new LeakSafeFoldingMargin { FoldingManager = defaultMargin.FoldingManager };
+        _foldingMargin = new FoldingMarginWithLogicalChildCleanup { FoldingManager = defaultMargin.FoldingManager };
         var marginIndex = AssociatedObject.TextArea.LeftMargins.IndexOf(defaultMargin);
         AssociatedObject.TextArea.LeftMargins.RemoveAt(marginIndex);
         AssociatedObject.TextArea.LeftMargins.Insert(marginIndex, _foldingMargin);
@@ -53,7 +53,7 @@ public sealed class YamlFoldingBehavior : Behavior<TextEditor>
         {
             if (_foldingMargin is not null)
             {
-                LeakSafeFoldingMargin.ClearLogicalChildren(_foldingMargin);
+                FoldingMarginWithLogicalChildCleanup.ClearLogicalChildren(_foldingMargin);
                 AssociatedObject?.TextArea.LeftMargins.Remove(_foldingMargin);
                 _foldingMargin = null;
             }

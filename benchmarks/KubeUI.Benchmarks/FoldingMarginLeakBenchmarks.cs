@@ -42,7 +42,7 @@ public class FoldingMarginLeakBenchmarks
         {
             if (clearBeforeRefresh)
             {
-                LeakSafeFoldingMargin.ClearLogicalChildren(margin);
+                FoldingMarginWithLogicalChildCleanup.ClearLogicalChildren(margin);
             }
 
             for (var marker = 0; marker < markersPerRefresh; marker++)
