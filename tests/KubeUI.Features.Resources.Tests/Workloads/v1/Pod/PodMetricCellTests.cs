@@ -1593,7 +1593,7 @@ public sealed class PodMetricCellTests
             TimeProvider.SetUtcNow(DateTimeOffset.UtcNow.AddSeconds(1));
             foreach (var sample in samples)
             {
-                _metricsService.PodMetrics.Add(sample);
+                _metricsService.KubernetesPodMetrics.Add(sample);
             }
 
             _metricsService.RebuildMetricSnapshots();
@@ -1601,16 +1601,16 @@ public sealed class PodMetricCellTests
 
         public void AddMetricsServerSample(PodMetrics sample)
         {
-            _metricsService.PodMetrics.Add(sample);
+            _metricsService.KubernetesPodMetrics.Add(sample);
             _metricsService.RebuildMetricSnapshots();
         }
 
         public void ReplaceMetricsServerSamples(params PodMetrics[] samples)
         {
-            _metricsService.PodMetrics.Clear();
+            _metricsService.KubernetesPodMetrics.Clear();
             foreach (var sample in samples)
             {
-                _metricsService.PodMetrics.Add(sample);
+                _metricsService.KubernetesPodMetrics.Add(sample);
             }
 
             _metricsService.RebuildMetricSnapshots();
@@ -1622,7 +1622,7 @@ public sealed class PodMetricCellTests
             TimeProvider.SetUtcNow(DateTimeOffset.UtcNow.AddSeconds(1));
             foreach (var sample in samples)
             {
-                _metricsService.NodeMetrics.Add(sample);
+                _metricsService.KubernetesNodeMetrics.Add(sample);
             }
 
             _metricsService.RebuildMetricSnapshots();

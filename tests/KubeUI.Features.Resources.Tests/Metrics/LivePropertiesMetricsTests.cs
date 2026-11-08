@@ -31,7 +31,7 @@ public sealed class LivePropertiesMetricsTests
             config.Type = KubernetesBackend.Live;
             config.Name = context;
         });
-        workspace.Runtime.ActiveMetricsBackend.Type.ShouldBe(MetricsServiceType.Prometheus);
+        workspace.Runtime.Metrics.ActiveMetricsBackend.Type.ShouldBe(MetricsServiceType.Prometheus);
         var pod = await workspace.Runtime.Client!.CoreV1.ReadNamespacedPodAsync(podName, podNamespace, cancellationToken: timeout.Token);
         await AssertChartsAsync(workspace, pod, timeout.Token);
     }
@@ -52,7 +52,7 @@ public sealed class LivePropertiesMetricsTests
         }
         catch (TimeoutException)
         {
-            Assert.Fail($"Backend={workspace.Runtime.ActiveMetricsBackend}; status={control.StatusText}; tabs={control.Tabs.Count}");
+            Assert.Fail($"Backend={workspace.Runtime.Metrics.ActiveMetricsBackend}; status={control.StatusText}; tabs={control.Tabs.Count}");
         }
         control.ShowTabs.ShouldBeTrue();
         control.SelectedPanel.ShouldNotBeNull();

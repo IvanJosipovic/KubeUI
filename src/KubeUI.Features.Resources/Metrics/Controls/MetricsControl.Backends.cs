@@ -59,7 +59,7 @@ internal static class MetricsControlPrometheusBackend
 
             var request = ApplySelectedTimeRange(panel.Request, selectedTimeRange);
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token, cancellationToken);
-            var result = await cluster.Runtime.RequestMetricsAsync(request, linkedCts.Token).ConfigureAwait(false);
+            var result = await cluster.Runtime.Metrics.QueryPrometheusAsync(request, linkedCts.Token).ConfigureAwait(false);
             var series = CreateSeries(panel, result);
             if (series.Count == 0)
             {
@@ -117,7 +117,7 @@ internal static class MetricsControlPrometheusBackend
 
             var request = ApplySelectedTimeRange(panel.Request, selectedTimeRange);
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token, cancellationToken);
-            var result = await cluster.Runtime.RequestMetricsAsync(request, linkedCts.Token).ConfigureAwait(false);
+            var result = await cluster.Runtime.Metrics.QueryPrometheusAsync(request, linkedCts.Token).ConfigureAwait(false);
             var series = CreateSeries(panel, result);
             if (series.Count == 0)
             {
@@ -261,7 +261,7 @@ internal static class MetricsControlMetricsServerBackend
         string containerName)
     {
         var samples = new List<MetricsServerSamplePoint>();
-        foreach (var metric in cluster.Runtime.GetAllPodMetricsSnapshot())
+        foreach (var metric in cluster.Runtime.Metrics.GetAllKubernetesPodMetricsSnapshot())
         {
             if (!string.Equals(metric.Name(), pod.Name(), StringComparison.Ordinal)
                 || !string.Equals(metric.Namespace(), pod.Namespace(), StringComparison.Ordinal)
@@ -338,7 +338,7 @@ internal static class MetricsControlMetricsServerBackend
         }
 
         Dictionary<DateTime, (double Cpu, double Memory)> aggregates = [];
-        foreach (var metric in cluster.Runtime.GetAllPodMetricsSnapshot())
+        foreach (var metric in cluster.Runtime.Metrics.GetAllKubernetesPodMetricsSnapshot())
         {
             if (!metric.Timestamp.HasValue
                 || !selectedPods.Contains((metric.Namespace(), metric.Name())))
@@ -373,7 +373,7 @@ internal static class MetricsControlMetricsServerBackend
     private static List<MetricsServerSamplePoint> CreateNodeMetricsServerSamples(ClusterWorkspace cluster, V1Node node)
     {
         var samples = new List<MetricsServerSamplePoint>();
-        foreach (var metric in cluster.Runtime.GetAllNodeMetricsSnapshot())
+        foreach (var metric in cluster.Runtime.Metrics.GetAllKubernetesNodeMetricsSnapshot())
         {
             if (!string.Equals(metric.Name(), node.Name(), StringComparison.Ordinal)
                 || !metric.Timestamp.HasValue)

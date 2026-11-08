@@ -27,7 +27,7 @@ public abstract class PodMetricsHistoryCellBase : MetricsHistoryCellBase<V1Pod>
         DateTimeOffset end)
     {
         Dictionary<DateTimeOffset, (double Cpu, double Memory)> samples = [];
-        foreach (var metric in cluster.Runtime.GetPodMetricsSnapshot(pod.Namespace(), pod.Name() ?? string.Empty))
+        foreach (var metric in cluster.Runtime.Metrics.GetKubernetesPodMetricsSnapshot(pod.Namespace(), pod.Name() ?? string.Empty))
         {
             if (!metric.Timestamp.HasValue)
             {

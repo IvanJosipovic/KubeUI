@@ -35,23 +35,25 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
         _settings = settings;
         _prometheusProviders = prometheusProviders.ToDictionary(static x => x.Kind);
         _prometheusQueryClient = prometheusQueryClient;
-        _kubernetesMetricsCollector = new KubernetesMetricsCollector(logger, dispatcher, PodMetrics, NodeMetrics);
+        _kubernetesMetricsCollector = new KubernetesMetricsCollector(logger, dispatcher, KubernetesPodMetrics, KubernetesNodeMetrics);
         _prometheusMetricQueries = new PrometheusMetricQueries(logger, prometheusQueryClient, timeProvider);
     }
 
+    /// <inheritdoc />
     [ObservableProperty]
-    public partial ObservableCollection<PodMetrics> PodMetrics { get; set; } = [];
-
-    [ObservableProperty]
-    public partial ObservableCollection<NodeMetrics> NodeMetrics { get; set; } = [];
+    public partial ObservableCollection<PodMetrics> KubernetesPodMetrics { get; set; } = [];
 
     /// <inheritdoc />
-    public ImmutableArray<PodMetrics> GetPodMetricsSnapshot(string? namespaceName, string podName)
-        => _kubernetesMetricsCollector.GetPodMetricsSnapshot(namespaceName, podName);
+    [ObservableProperty]
+    public partial ObservableCollection<NodeMetrics> KubernetesNodeMetrics { get; set; } = [];
 
     /// <inheritdoc />
-    public ImmutableArray<NodeMetrics> GetNodeMetricsSnapshot(string nodeName)
-        => _kubernetesMetricsCollector.GetNodeMetricsSnapshot(nodeName);
+    public ImmutableArray<PodMetrics> GetKubernetesPodMetricsSnapshot(string? namespaceName, string podName)
+        => _kubernetesMetricsCollector.GetKubernetesPodMetricsSnapshot(namespaceName, podName);
+
+    /// <inheritdoc />
+    public ImmutableArray<NodeMetrics> GetKubernetesNodeMetricsSnapshot(string nodeName)
+        => _kubernetesMetricsCollector.GetKubernetesNodeMetricsSnapshot(nodeName);
 
     /// <summary>Rebuilds the per-resource snapshot indexes from the current metric collections.</summary>
     /// <remarks>
@@ -61,19 +63,22 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
     internal void RebuildMetricSnapshots() => _kubernetesMetricsCollector.RebuildSnapshotIndexes();
 
     /// <inheritdoc />
-    public ImmutableArray<PodMetrics> GetAllPodMetricsSnapshot()
-        => _kubernetesMetricsCollector.GetAllPodMetricsSnapshot();
+    public ImmutableArray<PodMetrics> GetAllKubernetesPodMetricsSnapshot()
+        => _kubernetesMetricsCollector.GetAllKubernetesPodMetricsSnapshot();
 
     /// <inheritdoc />
-    public ImmutableArray<NodeMetrics> GetAllNodeMetricsSnapshot()
-        => _kubernetesMetricsCollector.GetAllNodeMetricsSnapshot();
+    public ImmutableArray<NodeMetrics> GetAllKubernetesNodeMetricsSnapshot()
+        => _kubernetesMetricsCollector.GetAllKubernetesNodeMetricsSnapshot();
 
+    /// <inheritdoc />
     [ObservableProperty]
     public partial bool IsMetricsAvailable { get; set; }
 
+    /// <inheritdoc />
     [ObservableProperty]
     public partial ActiveMetricsBackend ActiveMetricsBackend { get; set; } = ActiveMetricsBackend.None;
 
+    /// <inheritdoc />
     public async Task InitializeAsync(Cluster cluster)
     {
         ArgumentNullException.ThrowIfNull(cluster);
@@ -130,6 +135,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
         }
     }
 
+    /// <inheritdoc />
     public Task<IReadOnlyList<MetricProviderInfo>> GetAvailablePrometheusProvidersAsync()
     {
         IReadOnlyList<MetricProviderInfo> providers = _prometheusProviders.Values
@@ -140,6 +146,7 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
         return Task.FromResult(providers);
     }
 
+    /// <inheritdoc />
     public async Task StopAsync()
     {
         if (_cluster != null)
@@ -164,7 +171,8 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
         _cluster = null;
     }
 
-    public Task<MetricResultSet> RequestMetricsAsync(MetricRequest request, CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    public Task<MetricResultSet> QueryPrometheusAsync(MetricRequest request, CancellationToken cancellationToken = default)
     {
         if (_cluster == null
             || _resolvedPrometheusProvider == null

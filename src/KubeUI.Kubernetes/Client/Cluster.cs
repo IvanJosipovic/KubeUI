@@ -24,6 +24,9 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 {
     public IClusterAuthorization Permissions => this;
 
+    /// <inheritdoc />
+    public IClusterMetrics Metrics => _metricsService;
+
     private readonly IKubernetesJsonSerializer _jsonSerializer;
     private readonly IKubernetesYamlSerializer _yamlSerializer;
 
@@ -42,7 +45,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     private IServiceProvider _serviceProvider;
 
     private IThreadDispatcher _dispatcher;
-    private readonly IMetricsService? _metricsService;
+    private readonly IMetricsService _metricsService;
 
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
     public event Action<IClusterRuntime>? NamespaceSelectionRequired;
@@ -120,7 +123,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             loggerFactory.CreateLogger<KubernetesOpenApiSchemaLoader>());
         _settings = settings;
         _serviceProvider = serviceProvider;
-        _metricsService = metricsService ?? serviceProvider.GetService<IMetricsService>();
+        _metricsService = metricsService ?? serviceProvider.GetService<IMetricsService>() ?? new NullMetricsService();
         _dispatcher = dispatcher;
         _authorizationOptions = authorizationOptions?.Value ?? new ClusterAuthorizationOptions();
     }
@@ -135,13 +138,10 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         }
 
         StopNamespaceSubscription();
-        if (_metricsService is not null)
+        await _metricsService.StopAsync().ConfigureAwait(false);
+        if (_metricsService is IDisposable metricsDisposable)
         {
-            await _metricsService.StopAsync().ConfigureAwait(false);
-            if (_metricsService is IDisposable metricsDisposable)
-            {
-                metricsDisposable.Dispose();
-            }
+            metricsDisposable.Dispose();
         }
         await StopResourceInformersAsync().ConfigureAwait(false);
         _openApiSchemaLoader.Dispose();
@@ -255,16 +255,13 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
                     _ = RefreshApiGroupDiscoveryListAsync();
                     _ = EnsureOpenApiSchemasAsync();
-                    if (_metricsService is not null)
+                    try
                     {
-                        try
-                        {
-                            await _metricsService.InitializeAsync(this).ConfigureAwait(false);
-                        }
-                        catch (Exception metricsException)
-                        {
-                            _logger.LogError(metricsException, "Failed to initialize metrics for cluster {Name}.", Name);
-                        }
+                        await _metricsService.InitializeAsync(this).ConfigureAwait(false);
+                    }
+                    catch (Exception metricsException)
+                    {
+                        _logger.LogError(metricsException, "Failed to initialize metrics for cluster {Name}.", Name);
                     }
                 }
                 catch (Exception ex)
@@ -293,7 +290,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
         try
         {
-            await StopMetrics().ConfigureAwait(false);
+            await _metricsService.StopAsync().ConfigureAwait(false);
             StopPortForwarders();
             StopNamespaceSubscription();
 
@@ -331,7 +328,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     /// <summary>Reapplies the configured metrics backend without disconnecting the Kubernetes client.</summary>
     public async Task ReinitializeMetricsAsync()
     {
-        if (_metricsService is null || !Connected || Volatile.Read(ref _disposeStarted) != 0)
+        if (_metricsService is NullMetricsService || !Connected || Volatile.Read(ref _disposeStarted) != 0)
         {
             return;
         }
@@ -1063,14 +1060,6 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         foreach (var portForwarder in PortForwarders.ToList())
         {
             RemovePortForward(portForwarder);
-        }
-    }
-
-    private async Task StopMetrics()
-    {
-        if (_metricsService is not null)
-        {
-            await _metricsService.StopAsync().ConfigureAwait(false);
         }
     }
 

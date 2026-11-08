@@ -22,7 +22,7 @@ public abstract class NodeMetricsHistoryCellBase : MetricsHistoryCellBase<V1Node
     {
         List<MetricPoint> cpu = [];
         List<MetricPoint> memory = [];
-        foreach (var metric in cluster.Runtime.GetNodeMetricsSnapshot(node.Name() ?? string.Empty))
+        foreach (var metric in cluster.Runtime.Metrics.GetKubernetesNodeMetricsSnapshot(node.Name() ?? string.Empty))
         {
             if (!metric.Timestamp.HasValue)
             {

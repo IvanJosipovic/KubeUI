@@ -1,35 +1,14 @@
-using System.Collections.Immutable;
-using k8s.Models;
-
 namespace KubeUI.Kubernetes;
 
-public interface IMetricsService
+/// <summary>Runs the configured Kubernetes Metrics Server or Prometheus metrics backend for one cluster.</summary>
+public interface IMetricsService : IClusterMetrics
 {
-    ObservableCollection<PodMetrics> PodMetrics { get; }
-
-    ObservableCollection<NodeMetrics> NodeMetrics { get; }
-
-    /// <summary>Gets an immutable snapshot of retained metrics for one namespaced Pod.</summary>
-    ImmutableArray<PodMetrics> GetPodMetricsSnapshot(string? namespaceName, string podName);
-
-    /// <summary>Gets an immutable snapshot of retained metrics for one Node.</summary>
-    ImmutableArray<NodeMetrics> GetNodeMetricsSnapshot(string nodeName);
-
-    /// <summary>Gets an immutable snapshot of every retained Pod metric.</summary>
-    ImmutableArray<PodMetrics> GetAllPodMetricsSnapshot();
-
-    /// <summary>Gets an immutable snapshot of every retained Node metric.</summary>
-    ImmutableArray<NodeMetrics> GetAllNodeMetricsSnapshot();
-
-    bool IsMetricsAvailable { get; }
-
-    ActiveMetricsBackend ActiveMetricsBackend { get; }
-
+    /// <summary>Starts the configured backend, selecting Kubernetes Metrics Server or Prometheus.</summary>
     Task InitializeAsync(Cluster cluster);
 
+    /// <summary>Stops the active metrics backend and clears retained samples.</summary>
     Task StopAsync();
 
-    Task<MetricResultSet> RequestMetricsAsync(MetricRequest request, CancellationToken cancellationToken = default);
-
+    /// <summary>Gets the registered Prometheus providers.</summary>
     Task<IReadOnlyList<MetricProviderInfo>> GetAvailablePrometheusProvidersAsync();
 }

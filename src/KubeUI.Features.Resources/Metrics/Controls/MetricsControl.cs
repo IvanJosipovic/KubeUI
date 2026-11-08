@@ -370,17 +370,19 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
 
     private void SubscribeCluster()
     {
-        if (_cluster?.Runtime is INotifyPropertyChanged propertyChanged)
+        if (_cluster is null)
         {
-            propertyChanged.PropertyChanged += OnClusterPropertyChanged;
+            return;
         }
 
-        if (_cluster?.Runtime.PodMetrics is INotifyCollectionChanged podMetrics)
+        _cluster.Runtime.Metrics.PropertyChanged += OnMetricsPropertyChanged;
+
+        if (_cluster.Runtime.Metrics.KubernetesPodMetrics is INotifyCollectionChanged podMetrics)
         {
             podMetrics.CollectionChanged += OnMetricsCollectionChanged;
         }
 
-        if (_cluster?.Runtime.NodeMetrics is INotifyCollectionChanged nodeMetrics)
+        if (_cluster.Runtime.Metrics.KubernetesNodeMetrics is INotifyCollectionChanged nodeMetrics)
         {
             nodeMetrics.CollectionChanged += OnMetricsCollectionChanged;
         }
@@ -388,17 +390,19 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
 
     private void UnsubscribeCluster()
     {
-        if (_cluster?.Runtime is INotifyPropertyChanged propertyChanged)
+        if (_cluster is null)
         {
-            propertyChanged.PropertyChanged -= OnClusterPropertyChanged;
+            return;
         }
 
-        if (_cluster?.Runtime.PodMetrics is INotifyCollectionChanged podMetrics)
+        _cluster.Runtime.Metrics.PropertyChanged -= OnMetricsPropertyChanged;
+
+        if (_cluster.Runtime.Metrics.KubernetesPodMetrics is INotifyCollectionChanged podMetrics)
         {
             podMetrics.CollectionChanged -= OnMetricsCollectionChanged;
         }
 
-        if (_cluster?.Runtime.NodeMetrics is INotifyCollectionChanged nodeMetrics)
+        if (_cluster.Runtime.Metrics.KubernetesNodeMetrics is INotifyCollectionChanged nodeMetrics)
         {
             nodeMetrics.CollectionChanged -= OnMetricsCollectionChanged;
         }
@@ -412,10 +416,10 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
         }
     }
 
-    private void OnClusterPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    private void OnMetricsPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(IClusterRuntime.ActiveMetricsBackend)
-            or nameof(IClusterRuntime.IsMetricsAvailable))
+        if (e.PropertyName is nameof(IClusterMetrics.ActiveMetricsBackend)
+            or nameof(IClusterMetrics.IsMetricsAvailable))
         {
             if (_cluster != null)
             {
@@ -552,7 +556,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
 
         IsVisible = true;
 
-        if (_cluster.Runtime.ActiveMetricsBackend.Type == MetricsServiceType.KubernetesMetricsServer)
+        if (_cluster.Runtime.Metrics.ActiveMetricsBackend.Type == MetricsServiceType.KubernetesMetricsServer)
         {
             var hadVisibleMetricsServerChart = ShowTabs && SelectedPanel?.Series.Count > 0;
             ShowTimeRangeSelector = false;
@@ -578,7 +582,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             return;
         }
 
-        if (_cluster.Runtime.ActiveMetricsBackend.Type != MetricsServiceType.Prometheus)
+        if (_cluster.Runtime.Metrics.ActiveMetricsBackend.Type != MetricsServiceType.Prometheus)
         {
             DisposeTabs();
             SelectedTab = null;
@@ -756,7 +760,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
         }
 
         IsVisible = true;
-        if (_cluster.Runtime.ActiveMetricsBackend.Type == MetricsServiceType.KubernetesMetricsServer)
+        if (_cluster.Runtime.Metrics.ActiveMetricsBackend.Type == MetricsServiceType.KubernetesMetricsServer)
         {
             var hadVisibleMetricsServerChart = ShowTabs && SelectedPanel?.Series.Count > 0;
             ShowTimeRangeSelector = false;
@@ -780,7 +784,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             return;
         }
 
-        if (_cluster.Runtime.ActiveMetricsBackend.Type != MetricsServiceType.Prometheus)
+        if (_cluster.Runtime.Metrics.ActiveMetricsBackend.Type != MetricsServiceType.Prometheus)
         {
             DisposeTabs();
             SelectedTab = null;

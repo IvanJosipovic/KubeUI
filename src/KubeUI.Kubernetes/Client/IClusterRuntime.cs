@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using DynamicData;
 using k8s;
 using k8s.KubeConfigModels;
@@ -13,8 +12,8 @@ public interface IClusterRuntime
     bool Connected { get; set; }
     ClusterStatus Status { get; set; }
     string? LastError { get; set; }
-    bool IsMetricsAvailable { get; }
-    ActiveMetricsBackend ActiveMetricsBackend { get; }
+    /// <summary>Gets metrics capability for Kubernetes Metrics Server and Prometheus backends.</summary>
+    IClusterMetrics Metrics { get; }
     bool ListNamespaces { get; set; }
     event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
     event Action<IClusterRuntime>? NamespaceSelectionRequired;
@@ -29,16 +28,9 @@ public interface IClusterRuntime
     string KubeConfigPath { get; set; }
     string Name { get; set; }
     ReadOnlyObservableCollection<V1Namespace> Namespaces { get; }
-    ObservableCollection<NodeMetrics> NodeMetrics { get; }
-    ObservableCollection<PodMetrics> PodMetrics { get; }
     ObservableCollection<PortForwarder> PortForwarders { get; }
     IClusterAuthorization Permissions { get; }
     bool IsResourceNamespaced(GroupApiVersionKind kind);
-    ImmutableArray<PodMetrics> GetPodMetricsSnapshot(string? namespaceName, string podName);
-    ImmutableArray<NodeMetrics> GetNodeMetricsSnapshot(string nodeName);
-    ImmutableArray<PodMetrics> GetAllPodMetricsSnapshot();
-    ImmutableArray<NodeMetrics> GetAllNodeMetricsSnapshot();
-    Task<MetricResultSet> RequestMetricsAsync(MetricRequest request, CancellationToken cancellationToken = default);
     bool IsResourceNamespaced<T>();
     PortForwarder AddPodPortForward(string @namespace, string podName, int containerPort);
     Task AddPodEphemeralDebugContainer(V1Pod pod, string? targetContainerName, string image);

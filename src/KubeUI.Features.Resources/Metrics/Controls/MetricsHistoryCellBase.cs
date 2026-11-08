@@ -204,7 +204,7 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
             return;
         }
 
-        var backend = Cluster.Runtime.ActiveMetricsBackend;
+        var backend = Cluster.Runtime.Metrics.ActiveMetricsBackend;
         if (backend.Type is not (MetricsServiceType.KubernetesMetricsServer or MetricsServiceType.Prometheus))
         {
             _resource = resource;
@@ -413,7 +413,7 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
         try
         {
             var requestEnd = DateTimeOffset.FromUnixTimeSeconds(_timeProvider.GetUtcNow().ToUnixTimeSeconds() / 60 * 60);
-            var result = await cluster.Runtime.RequestMetricsAsync(
+            var result = await cluster.Runtime.Metrics.QueryPrometheusAsync(
                 CreatePrometheusRequest(resource, requestEnd),
                 cancellation.Token).WaitAsync(cancellation.Token).ConfigureAwait(false);
             var history = await AggregatePrometheusHistoryAsync(

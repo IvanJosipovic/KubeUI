@@ -111,7 +111,7 @@ internal sealed class KubernetesMetricsCollector(
         _syncLock.Dispose();
     }
 
-    public ImmutableArray<PodMetrics> GetPodMetricsSnapshot(string? namespaceName, string podName)
+    public ImmutableArray<PodMetrics> GetKubernetesPodMetricsSnapshot(string? namespaceName, string podName)
     {
         if (string.IsNullOrWhiteSpace(podName))
         {
@@ -123,7 +123,7 @@ internal sealed class KubernetesMetricsCollector(
         return snapshot.TryGetValue(key, out var metrics) ? metrics : ImmutableArray<PodMetrics>.Empty;
     }
 
-    public ImmutableArray<NodeMetrics> GetNodeMetricsSnapshot(string nodeName)
+    public ImmutableArray<NodeMetrics> GetKubernetesNodeMetricsSnapshot(string nodeName)
     {
         if (string.IsNullOrWhiteSpace(nodeName))
         {
@@ -136,7 +136,7 @@ internal sealed class KubernetesMetricsCollector(
 
     /// <summary>Gets an immutable snapshot of every retained pod metric.</summary>
     /// <returns>The retained pod metrics.</returns>
-    public ImmutableArray<PodMetrics> GetAllPodMetricsSnapshot()
+    public ImmutableArray<PodMetrics> GetAllKubernetesPodMetricsSnapshot()
     {
         lock (_snapshotLock)
         {
@@ -146,7 +146,7 @@ internal sealed class KubernetesMetricsCollector(
 
     /// <summary>Gets an immutable snapshot of every retained node metric.</summary>
     /// <returns>The retained node metrics.</returns>
-    public ImmutableArray<NodeMetrics> GetAllNodeMetricsSnapshot()
+    public ImmutableArray<NodeMetrics> GetAllKubernetesNodeMetricsSnapshot()
     {
         lock (_snapshotLock)
         {

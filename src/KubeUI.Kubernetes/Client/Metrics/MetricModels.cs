@@ -10,6 +10,7 @@ public enum MetricCategory
     Namespace,
 }
 
+/// <summary>Describes the active Kubernetes Metrics Server or Prometheus backend.</summary>
 public sealed record ActiveMetricsBackend(MetricsServiceType Type, PrometheusProviderKind? PrometheusProviderKind = null)
 {
     public static ActiveMetricsBackend None { get; } = new(MetricsServiceType.None);
@@ -21,8 +22,10 @@ public sealed record ActiveMetricsBackend(MetricsServiceType Type, PrometheusPro
 
 public sealed record MetricProviderInfo(PrometheusProviderKind Kind, string Name, bool IsConfigurable);
 
+/// <summary>Represents one timestamped Prometheus sample.</summary>
 public sealed record MetricPoint(DateTimeOffset Timestamp, double Value);
 
+/// <summary>Represents one Prometheus time series and its samples.</summary>
 public sealed class MetricSeries
 {
     public required string Name { get; init; }
@@ -32,6 +35,7 @@ public sealed class MetricSeries
     public IReadOnlyList<MetricPoint> Points { get; init; } = [];
 }
 
+/// <summary>Contains time-series data returned by Prometheus queries.</summary>
 public sealed class MetricResultSet
 {
     public IDictionary<string, IReadOnlyList<MetricSeries>> Metrics { get; init; } = new Dictionary<string, IReadOnlyList<MetricSeries>>(StringComparer.Ordinal);
@@ -54,6 +58,7 @@ public sealed class MetricResultSet
     public static MetricResultSet BackendUnavailableResult { get; } = new() { BackendUnavailable = true, HadRequestFailures = true };
 }
 
+/// <summary>Defines one named Prometheus query and its options.</summary>
 public sealed class MetricQueryDefinition
 {
     public required string Name { get; init; }
@@ -61,6 +66,7 @@ public sealed class MetricQueryDefinition
     public IReadOnlyDictionary<string, string> Options { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
 }
 
+/// <summary>Describes a Prometheus query batch and its time range.</summary>
 public sealed class MetricRequest
 {
     public required MetricCategory Category { get; init; }

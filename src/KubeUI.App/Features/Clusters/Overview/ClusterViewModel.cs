@@ -43,7 +43,7 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
         var snapshot = ClusterMetricSnapshotBuilder.Build(
             Cluster.Runtime.GetResourceList<V1Pod>(),
             Cluster.Runtime.GetResourceList<V1Node>(),
-            Cluster.Runtime.PodMetrics);
+            Cluster.Runtime.Metrics.KubernetesPodMetrics);
 
         PodGaugeData.TotalPods.Value = snapshot.TotalPods;
         PodGaugeData.MaxPods.Value = snapshot.MaxPods;

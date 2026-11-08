@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using k8s;
 using k8s.Models;
 using Microsoft.Extensions.DependencyInjection;
@@ -305,20 +306,26 @@ public sealed class PrometheusMetricQueriesTests
 
     private sealed class NoopMetricsService : IMetricsService
     {
-        public ObservableCollection<PodMetrics> PodMetrics { get; } = [];
+        public event PropertyChangedEventHandler? PropertyChanged
+        {
+            add { }
+            remove { }
+        }
 
-        public ObservableCollection<NodeMetrics> NodeMetrics { get; } = [];
+        public ObservableCollection<PodMetrics> KubernetesPodMetrics { get; } = [];
 
-        public ImmutableArray<PodMetrics> GetPodMetricsSnapshot(string? namespaceName, string podName)
+        public ObservableCollection<NodeMetrics> KubernetesNodeMetrics { get; } = [];
+
+        public ImmutableArray<PodMetrics> GetKubernetesPodMetricsSnapshot(string? namespaceName, string podName)
             => ImmutableArray<PodMetrics>.Empty;
 
-        public ImmutableArray<NodeMetrics> GetNodeMetricsSnapshot(string nodeName)
+        public ImmutableArray<NodeMetrics> GetKubernetesNodeMetricsSnapshot(string nodeName)
             => ImmutableArray<NodeMetrics>.Empty;
 
-        public ImmutableArray<PodMetrics> GetAllPodMetricsSnapshot()
+        public ImmutableArray<PodMetrics> GetAllKubernetesPodMetricsSnapshot()
             => ImmutableArray<PodMetrics>.Empty;
 
-        public ImmutableArray<NodeMetrics> GetAllNodeMetricsSnapshot()
+        public ImmutableArray<NodeMetrics> GetAllKubernetesNodeMetricsSnapshot()
             => ImmutableArray<NodeMetrics>.Empty;
 
         public bool IsMetricsAvailable => false;
@@ -329,7 +336,7 @@ public sealed class PrometheusMetricQueriesTests
 
         public Task StopAsync() => Task.CompletedTask;
 
-        public Task<MetricResultSet> RequestMetricsAsync(MetricRequest request, CancellationToken cancellationToken = default)
+        public Task<MetricResultSet> QueryPrometheusAsync(MetricRequest request, CancellationToken cancellationToken = default)
             => Task.FromResult(MetricResultSet.Empty);
 
         public Task<IReadOnlyList<MetricProviderInfo>> GetAvailablePrometheusProvidersAsync()

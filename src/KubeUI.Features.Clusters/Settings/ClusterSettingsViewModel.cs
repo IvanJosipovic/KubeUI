@@ -11,6 +11,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
     private ClusterMetricsSettings? _subscribedMetricsSettings;
     private ObservableCollection<PrometheusHeader>? _subscribedPrometheusHeaders;
     private INotifyPropertyChanged? _subscribedRuntime;
+    private IClusterMetrics? _subscribedClusterMetrics;
     private readonly IAzureMonitorWorkspaceService _azureMonitorWorkspaceService;
     private readonly DispatcherTimer _settingsSaveTimer = new(DispatcherPriority.Background);
     private int _workspaceLoadVersion;
@@ -57,12 +58,20 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
             _subscribedRuntime.PropertyChanged -= OnRuntimePropertyChanged;
         }
 
+        if (_subscribedClusterMetrics is not null)
+        {
+            _subscribedClusterMetrics.PropertyChanged -= OnClusterMetricsPropertyChanged;
+        }
+
         Cluster = cluster;
         _subscribedRuntime = Cluster.Runtime as INotifyPropertyChanged;
         if (_subscribedRuntime is not null)
         {
             _subscribedRuntime.PropertyChanged += OnRuntimePropertyChanged;
         }
+
+        _subscribedClusterMetrics = Cluster.Runtime.Metrics;
+        _subscribedClusterMetrics.PropertyChanged += OnClusterMetricsPropertyChanged;
 
         Id = nameof(ClusterSettingsViewModel) + Cluster.Runtime.Name;
         ClusterSettings = SettingsService.GetClusterSettings(cluster.Runtime);
@@ -348,23 +357,23 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
                 return ClustersLanguageManager.Instance.ClusterSettingsView_ActiveMetricsServiceNotConnected.CurrentValue()!;
             }
 
-            if (!Cluster.Runtime.IsMetricsAvailable || Cluster.Runtime.ActiveMetricsBackend.Type == MetricsServiceType.None)
+            if (!Cluster.Runtime.Metrics.IsMetricsAvailable || Cluster.Runtime.Metrics.ActiveMetricsBackend.Type == MetricsServiceType.None)
             {
                 return ClusterSettings?.MetricsSettings.MetricsServiceType == MetricsServiceType.None
                     ? ClustersLanguageManager.Instance.ClusterSettingsView_ActiveMetricsServiceDisabled.CurrentValue()!
                     : ClustersLanguageManager.Instance.ClusterSettingsView_ActiveMetricsServiceUnavailable.CurrentValue()!;
             }
 
-            return Cluster.Runtime.ActiveMetricsBackend.Type switch
+            return Cluster.Runtime.Metrics.ActiveMetricsBackend.Type switch
             {
                 MetricsServiceType.KubernetesMetricsServer => ClustersLanguageManager.Instance.ClusterSettingsView_ActiveMetricsServiceMetricsServer.CurrentValue()!,
-                MetricsServiceType.Prometheus when Cluster.Runtime.ActiveMetricsBackend.PrometheusProviderKind is { } provider
+                MetricsServiceType.Prometheus when Cluster.Runtime.Metrics.ActiveMetricsBackend.PrometheusProviderKind is { } provider
                     => string.Format(
                         ClustersLanguageManager.Instance.ClusterSettingsView_ActiveMetricsServicePrometheusFormat.CurrentValue()!,
                         ClustersLanguageManager.Instance.ClusterSettingsView_MetricsServicePrometheus.CurrentValue(),
                         GetPrometheusProviderLabel(provider)),
                 MetricsServiceType.Prometheus => ClustersLanguageManager.Instance.ClusterSettingsView_MetricsServicePrometheus.CurrentValue()!,
-                _ => Cluster.Runtime.ActiveMetricsBackend.Type.ToString(),
+                _ => Cluster.Runtime.Metrics.ActiveMetricsBackend.Type.ToString(),
             };
         }
     }
@@ -540,9 +549,16 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
 
     private void OnRuntimePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(IClusterRuntime.Connected)
-            or nameof(IClusterRuntime.IsMetricsAvailable)
-            or nameof(IClusterRuntime.ActiveMetricsBackend))
+        if (e.PropertyName == nameof(IClusterRuntime.Connected))
+        {
+            OnPropertyChanged(nameof(ActiveMetricsServiceText));
+        }
+    }
+
+    private void OnClusterMetricsPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(IClusterMetrics.IsMetricsAvailable)
+            or nameof(IClusterMetrics.ActiveMetricsBackend))
         {
             OnPropertyChanged(nameof(ActiveMetricsServiceText));
         }
@@ -644,6 +660,12 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         {
             _subscribedRuntime.PropertyChanged -= OnRuntimePropertyChanged;
             _subscribedRuntime = null;
+        }
+
+        if (_subscribedClusterMetrics is not null)
+        {
+            _subscribedClusterMetrics.PropertyChanged -= OnClusterMetricsPropertyChanged;
+            _subscribedClusterMetrics = null;
         }
 
         if (_subscribedClusterSettings is not null)

@@ -27,7 +27,7 @@ public abstract class PodMetricCellBase : RefreshingCellTextBlock, IInitializeCl
             return string.Empty;
         }
 
-        var metric = Cluster.Runtime.PodMetrics.FirstOrDefault(metric =>
+        var metric = Cluster.Runtime.Metrics.KubernetesPodMetrics.FirstOrDefault(metric =>
             metric.Name() == pod.Name() && metric.Namespace() == pod.Namespace());
 
         return metric == null ? string.Empty : FormatMetric(metric);

@@ -52,7 +52,7 @@ public sealed class RecordingTests
             .Speak("I'll connect to the demo cluster.")
             .OpenCluster("demo-cluster")
             .Speak("Prometheus is ready. Open Pods to compare CPU and memory consumption.",
-                _ => workspace?.Runtime is { IsMetricsAvailable: true, ActiveMetricsBackend.Type: MetricsServiceType.Prometheus })
+                _ => workspace?.Runtime.Metrics is { IsMetricsAvailable: true, ActiveMetricsBackend.Type: MetricsServiceType.Prometheus })
             .SelectNavigation("Pods")
             .Speak(
                 "The Pod list shows CPU and memory usage. I'll find the web Pod.",

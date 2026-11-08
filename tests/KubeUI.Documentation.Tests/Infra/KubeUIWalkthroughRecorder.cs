@@ -173,12 +173,12 @@ internal static class KubeUIWalkthroughRecorder
                 await workspace.Connect();
                 await workspace.Runtime.EnsureOpenApiSchemasAsync();
                 await WaitForConditionAsync(() =>
-                    workspace.Runtime.IsMetricsAvailable
-                    && workspace.Runtime.NodeMetrics.Count == 3
-                    && workspace.Runtime.PodMetrics.Count == expectedPodMetrics
-                    && workspace.Runtime.NodeMetrics.All(metric =>
+                    workspace.Runtime.Metrics.IsMetricsAvailable
+                    && workspace.Runtime.Metrics.KubernetesNodeMetrics.Count == 3
+                    && workspace.Runtime.Metrics.KubernetesPodMetrics.Count == expectedPodMetrics
+                    && workspace.Runtime.Metrics.KubernetesNodeMetrics.All(metric =>
                         metric.Usage.ContainsKey("cpu") && metric.Usage.ContainsKey("memory"))
-                    && workspace.Runtime.PodMetrics.All(metric =>
+                    && workspace.Runtime.Metrics.KubernetesPodMetrics.All(metric =>
                         metric.Containers.Count > 0
                         && metric.Containers.All(container =>
                             container.Usage.ContainsKey("cpu") && container.Usage.ContainsKey("memory"))));

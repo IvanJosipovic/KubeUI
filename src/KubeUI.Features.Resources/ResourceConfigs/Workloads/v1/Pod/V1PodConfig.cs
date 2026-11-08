@@ -90,7 +90,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
             Key = "cpu",
             Name = ResourcesLanguageManager.Instance.V1PodConfig_CPU.CurrentValue()!,
             CustomControl = typeof(MetricsHistoryCPUCellView),
-            Field = x => Cluster.Runtime.GetPodMetricsSnapshot(x.Namespace(), x.Name() ?? string.Empty).LastOrDefault()?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
+            Field = x => Cluster.Runtime.Metrics.GetKubernetesPodMetricsSnapshot(x.Namespace(), x.Name() ?? string.Empty).LastOrDefault()?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
             Width = 80,
             WidthMode = DynamicTableViewWidthMode.Pixel
         });
@@ -99,7 +99,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
             Key = "memory",
             Name = ResourcesLanguageManager.Instance.V1PodConfig_Memory.CurrentValue()!,
             CustomControl = typeof(MetricsHistoryMemoryCellView),
-            Field = x => Cluster.Runtime.GetPodMetricsSnapshot(x.Namespace(), x.Name() ?? string.Empty).LastOrDefault()?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
+            Field = x => Cluster.Runtime.Metrics.GetKubernetesPodMetricsSnapshot(x.Namespace(), x.Name() ?? string.Empty).LastOrDefault()?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
             Width = 80,
             WidthMode = DynamicTableViewWidthMode.Pixel
         });
