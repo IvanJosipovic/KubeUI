@@ -13,11 +13,11 @@ public sealed class PodLogExportService(IPlatformServices platformServices) : IP
         cancellationToken.ThrowIfCancellationRequested();
         FilePickerSaveOptions options = new()
         {
-            Title = Assets.Resources.PodLogsView_Download,
+            Title = L10n.Instance.PodLogsView_Download.CurrentValue()!,
             SuggestedFileName = suggestedFileName,
             FileTypeChoices =
             [
-                new FilePickerFileType(Assets.Resources.PodLogsView_FileTypeText)
+                new FilePickerFileType(L10n.Instance.PodLogsView_FileTypeText.CurrentValue()!)
                 {
                     Patterns = ["*.log", "*.txt"],
                 },

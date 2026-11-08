@@ -77,13 +77,13 @@ public sealed partial class ResourceYamlView : KubeUIView<ResourceYamlViewModel>
                 new Button()
                     .IsVisible(vm, x => x.IsReadOnlyLocked, BindingMode.OneWay, SharedConverters.Not)
                     .Command(vm, x => x.SetEditModeCommand)
-                    .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(Assets.Resources.ResourceYamlView_Edit))
+                    .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(L10n.Instance.ResourceYamlView_Edit.CurrentValue()!))
                     .Content(new FluentIcon().Icon(Icon.DocumentEdit)),
                 new ToggleButton()
                     .Name("HideNoisyFieldsToggle", Scope)
                     .IsVisible(vm, x => x.IsReadOnlyLocked, BindingMode.OneWay, SharedConverters.Not)
                     .IsChecked(vm, x => x.HideNoisyFields, BindingMode.TwoWay)
-                    .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(Assets.Resources.ResourceYamlView_HideNoisyFields))
+                    .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(L10n.Instance.ResourceYamlView_HideNoisyFields.CurrentValue()!))
                     .Content(new FluentIcon().Icon(Icon.EyeOff)),
                 CreateWordWrapToggle(vm));
     }
@@ -98,16 +98,16 @@ public sealed partial class ResourceYamlView : KubeUIView<ResourceYamlViewModel>
                 new Button()
                     .Command(vm, x => x.SaveCommand)
                     .IsEnabled(vm, x => x.CanSaveAction)
-                    .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(Assets.Resources.ResourceYamlView_Save))
+                    .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(L10n.Instance.ResourceYamlView_Save.CurrentValue()!))
                     .Content(new FluentIcon().Icon(Icon.Save)),
                 new Button()
                     .Command(vm, x => x.DryRunCommand)
                     .IsEnabled(vm, x => x.CanDryRunAction)
-                    .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(Assets.Resources.ResourceYamlView_DryRun))
+                    .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(L10n.Instance.ResourceYamlView_DryRun.CurrentValue()!))
                     .Content(new FluentIcon().Icon(Icon.CheckmarkCircle)),
                 new Button()
                     .Command(vm, x => x.SetEditModeCommand)
-                    .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(Assets.Resources.ResourceYamlView_Cancel))
+                    .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(L10n.Instance.ResourceYamlView_Cancel.CurrentValue()!))
                     .Content(new FluentIcon().Icon(Icon.Dismiss)),
                 CreateWordWrapToggle(vm));
     }
@@ -116,7 +116,7 @@ public sealed partial class ResourceYamlView : KubeUIView<ResourceYamlViewModel>
     {
         return new ToggleButton()
             .IsChecked(vm, x => x.WordWrap, BindingMode.TwoWay)
-            .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(Assets.Resources.ResourceYamlView_WordWrap))
+            .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(L10n.Instance.ResourceYamlView_WordWrap.CurrentValue()!))
             .Content(new FluentIcon().Icon(Icon.TextWrap));
     }
 
@@ -181,13 +181,13 @@ public sealed partial class ResourceYamlView : KubeUIView<ResourceYamlViewModel>
     {
         return new ContextMenu()
             .Items(
-                CreateEditorMenuItem(vm, Assets.Resources.ResourceYamlView_Action_Cut, new KeyGesture(Key.X, KeyModifiers.Control), Icon.Cut, editor.Cut, requiresEditMode: true),
-                CreateEditorMenuItem(vm, SharedAssets.Resources.Shared_Action_Copy, new KeyGesture(Key.C, KeyModifiers.Control), Icon.Copy, editor.Copy, requiresEditMode: false),
-                CreateEditorMenuItem(vm, Assets.Resources.ResourceYamlView_Action_Paste, new KeyGesture(Key.V, KeyModifiers.Control), Icon.ClipboardPaste, editor.Paste, requiresEditMode: true),
-                CreateEditorMenuItem(vm, Assets.Resources.ResourceYamlView_Action_Delete, null, Icon.Delete, editor.Delete, requiresEditMode: true),
+                CreateEditorMenuItem(vm, L10n.Instance.ResourceYamlView_Action_Cut.CurrentValue()!, new KeyGesture(Key.X, KeyModifiers.Control), Icon.Cut, editor.Cut, requiresEditMode: true),
+                CreateEditorMenuItem(vm, SharedL10n.Instance.Shared_Action_Copy.CurrentValue()!, new KeyGesture(Key.C, KeyModifiers.Control), Icon.Copy, editor.Copy, requiresEditMode: false),
+                CreateEditorMenuItem(vm, L10n.Instance.ResourceYamlView_Action_Paste.CurrentValue()!, new KeyGesture(Key.V, KeyModifiers.Control), Icon.ClipboardPaste, editor.Paste, requiresEditMode: true),
+                CreateEditorMenuItem(vm, L10n.Instance.ResourceYamlView_Action_Delete.CurrentValue()!, null, Icon.Delete, editor.Delete, requiresEditMode: true),
                 new Separator().IsVisible(vm, x => x.EditMode),
-                CreateEditorMenuItem(vm, Assets.Resources.ResourceYamlView_Action_Undo, new KeyGesture(Key.Z, KeyModifiers.Control), Icon.ArrowUndo, () => editor.Undo(), requiresEditMode: true),
-                CreateEditorMenuItem(vm, Assets.Resources.ResourceYamlView_Action_Redo, new KeyGesture(Key.Y, KeyModifiers.Control), Icon.ArrowRedo, () => editor.Redo(), requiresEditMode: true));
+                CreateEditorMenuItem(vm, L10n.Instance.ResourceYamlView_Action_Undo.CurrentValue()!, new KeyGesture(Key.Z, KeyModifiers.Control), Icon.ArrowUndo, () => editor.Undo(), requiresEditMode: true),
+                CreateEditorMenuItem(vm, L10n.Instance.ResourceYamlView_Action_Redo.CurrentValue()!, new KeyGesture(Key.Y, KeyModifiers.Control), Icon.ArrowRedo, () => editor.Redo(), requiresEditMode: true));
     }
 
     [RequiresUnreferencedCode("Calls Avalonia.Xaml.Interactions.Core.EventTriggerBehavior.EventTriggerBehavior()")]

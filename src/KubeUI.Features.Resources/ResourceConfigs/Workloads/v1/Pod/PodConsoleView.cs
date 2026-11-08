@@ -35,7 +35,7 @@ public sealed class PodConsoleView : KubeUIView<PodConsoleViewModel>
                     .Children(
                         new Label()
                             .VerticalAlignment(VerticalAlignment.Center)
-                            .Content(Assets.Resources.PodLogsView_PodLabel),
+                            .Content(L10n.Instance.PodLogsView_PodLabel.ToBinding()),
                         new Label()
                             .VerticalAlignment(VerticalAlignment.Center)
                             .Content($"{vm.Object?.Metadata?.NamespaceProperty}/{vm.Object?.Metadata?.Name}/{vm.ContainerName}")),

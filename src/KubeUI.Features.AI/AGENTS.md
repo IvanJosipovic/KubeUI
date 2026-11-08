@@ -6,7 +6,7 @@
 - Configure the selected agent through persisted settings. The chat panel does not own an agent selector.
 - Consume only the feature's ACP abstractions; do not expose ACP protocol types from views or view models.
 - Keep selected-resource context to multiple resource identities and lightweight metadata; agents fetch full details through MCP.
-- Keep chat and permission-dialog text in this project's `Assets/Resources.resx` using `{ViewOrControlName}_{Name}` keys.
+- Keep chat and permission-dialog text in this project's `Assets/Resources.json` using `{ViewOrControlName}_{Name}` keys.
 - Log ACP session-creation failures with `ILogger`, preserving useful redacted diagnostics.
 - Receive host settings through `IAgentChatSettings`; do not reference `KubeUI.App` from this project.
 

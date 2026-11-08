@@ -189,13 +189,13 @@ internal sealed partial class DataDisplayViewModel<TResource, TValue> : ViewMode
             || string.IsNullOrWhiteSpace(_resource.Metadata.Name)
             || string.IsNullOrWhiteSpace(_resource.Metadata.NamespaceProperty))
         {
-            SetActionResult(false, Assets.Resources.DataDisplay_SaveFailed, Assets.Resources.DataDisplay_PatchUnavailable);
+            SetActionResult(false, L10n.Instance.DataDisplay_SaveFailed.CurrentValue()!, L10n.Instance.DataDisplay_PatchUnavailable.CurrentValue()!);
             return;
         }
 
         if (!Cluster.Runtime.Permissions.CanI(_kind, Verb.Patch, _resource.Metadata.NamespaceProperty))
         {
-            SetActionResult(false, Assets.Resources.DataDisplay_SaveFailed, Assets.Resources.DataDisplay_PatchPermissionDenied);
+            SetActionResult(false, L10n.Instance.DataDisplay_SaveFailed.CurrentValue()!, L10n.Instance.DataDisplay_PatchPermissionDenied.CurrentValue()!);
             UpdateCanEdit();
             return;
         }
@@ -236,11 +236,11 @@ internal sealed partial class DataDisplayViewModel<TResource, TValue> : ViewMode
 
             ReplaceRows(savedData);
             EditMode = true;
-            SetActionResult(true, Assets.Resources.DataDisplay_SaveSucceeded, Assets.Resources.DataDisplay_SaveSucceededMessage);
+            SetActionResult(true, L10n.Instance.DataDisplay_SaveSucceeded.CurrentValue()!, L10n.Instance.DataDisplay_SaveSucceededMessage.CurrentValue()!);
         }
         catch (Exception exception)
         {
-            SetActionResult(false, Assets.Resources.DataDisplay_SaveFailed, ResourceUtilities.GetUserFacingErrorMessage(exception));
+            SetActionResult(false, L10n.Instance.DataDisplay_SaveFailed.CurrentValue()!, ResourceUtilities.GetUserFacingErrorMessage(exception));
         }
         finally
         {
@@ -345,7 +345,7 @@ internal sealed partial class DataDisplayViewModel<TResource, TValue> : ViewMode
         {
             if (string.IsNullOrWhiteSpace(row.Key) || !keys.Add(row.Key))
             {
-                validationMessage = Assets.Resources.DataDisplay_InvalidKey;
+                validationMessage = L10n.Instance.DataDisplay_InvalidKey.CurrentValue()!;
                 break;
             }
         }

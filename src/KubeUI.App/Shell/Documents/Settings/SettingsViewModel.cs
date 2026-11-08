@@ -129,7 +129,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable, INot
         IClusterRuntimeCatalog? clusterCatalog = null,
         IMcpServerState? mcpServerState = null)
     {
-        Title = Assets.Resources.SettingsView_Title;
+        Title = L10n.Instance.SettingsView_Title.CurrentValue()!;
         Id = nameof(SettingsViewModel);
 
         SettingsService = settingsService;
@@ -166,7 +166,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable, INot
 
         if (_mcpServerState?.BoundPort is null)
         {
-            McpGrantMessage = Assets.Resources.SettingsView_McpServerUnavailable;
+            McpGrantMessage = L10n.Instance.SettingsView_McpServerUnavailable.CurrentValue()!;
             return;
         }
 
@@ -179,7 +179,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable, INot
             var created = _mcpCredentialService.CreateExternalCredential(ExternalMcpClientName, clusters);
             NewlyCreatedMcpToken = created.Token;
             SelectedExternalMcpGrant = created.Grant;
-            McpGrantMessage = Assets.Resources.SettingsView_McpTokenCreated;
+            McpGrantMessage = L10n.Instance.SettingsView_McpTokenCreated.CurrentValue()!;
             OnPropertyChanged(nameof(ExternalMcpGrants));
             OnPropertyChanged(nameof(HasNoExternalMcpGrants));
             ResetExternalMcpCredentialForm();
@@ -187,12 +187,12 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable, INot
         catch (ArgumentException)
         {
             NewlyCreatedMcpToken = null;
-            McpGrantMessage = Assets.Resources.SettingsView_McpTokenInvalid;
+            McpGrantMessage = L10n.Instance.SettingsView_McpTokenInvalid.CurrentValue()!;
         }
         catch (InvalidOperationException)
         {
             NewlyCreatedMcpToken = null;
-            McpGrantMessage = Assets.Resources.SettingsView_McpTokenCreateFailed;
+            McpGrantMessage = L10n.Instance.SettingsView_McpTokenCreateFailed.CurrentValue()!;
         }
     }
 
@@ -208,7 +208,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable, INot
             {
                 SelectedExternalMcpGrant = null;
                 NewlyCreatedMcpToken = null;
-                McpGrantMessage = Assets.Resources.SettingsView_McpTokenRevoked;
+                McpGrantMessage = L10n.Instance.SettingsView_McpTokenRevoked.CurrentValue()!;
                 OnPropertyChanged(nameof(ExternalMcpGrants));
                 OnPropertyChanged(nameof(HasNoExternalMcpGrants));
                 ValidateExternalMcpClientName();
@@ -216,7 +216,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable, INot
         }
         catch (InvalidOperationException)
         {
-            McpGrantMessage = Assets.Resources.SettingsView_McpTokenRevokeFailed;
+            McpGrantMessage = L10n.Instance.SettingsView_McpTokenRevokeFailed.CurrentValue()!;
         }
     }
 
@@ -273,12 +273,12 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable, INot
     {
         var normalizedName = ExternalMcpClientName.Trim();
         _externalMcpClientNameError = string.IsNullOrWhiteSpace(ExternalMcpClientName)
-            ? Assets.Resources.SettingsView_McpClientName_Required
+            ? L10n.Instance.SettingsView_McpClientName_Required.CurrentValue()!
             : normalizedName.Length > MaximumExternalMcpClientNameLength
-                ? Assets.Resources.SettingsView_McpClientName_TooLong
+                ? L10n.Instance.SettingsView_McpClientName_TooLong.CurrentValue()!
                 : SettingsService.Settings.McpExternalClientGrants.Any(grant =>
                     string.Equals(grant.Name.Trim(), normalizedName, StringComparison.OrdinalIgnoreCase))
-                    ? Assets.Resources.SettingsView_McpClientName_Duplicate
+                    ? L10n.Instance.SettingsView_McpClientName_Duplicate.CurrentValue()!
                     : null;
         OnPropertyChanged(nameof(HasErrors));
         ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(ExternalMcpClientName)));

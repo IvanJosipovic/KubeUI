@@ -46,7 +46,7 @@ public sealed class ServiceMapViewModelFlowTests
             try
             {
                 await TestWait.UntilAsync(
-                    () => viewModel.ConnectionStatus == CiliumAssets.Resources.ServiceMapView_StatusSelectNamespace,
+                    () => viewModel.ConnectionStatus == CiliumL10n.Instance.ServiceMapView_StatusSelectNamespace.CurrentValue(),
                     TimeSpan.FromSeconds(10),
                     cancellationToken: TestContext.Current.CancellationToken,
                     beforePoll: () => Dispatcher.UIThread.RunJobs());

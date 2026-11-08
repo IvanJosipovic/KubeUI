@@ -72,7 +72,7 @@ public sealed class MRDiffDetectionViewTests
             .Cast<MenuItem>()
             .ShouldHaveSingleItem();
 
-        menuItem.Header.ShouldBe(ResourceAssets.Resources.ResourceConfigBase_MenuItem_ViewYaml);
+        menuItem.Header.ShouldBe(ResourceL10n.Instance.ResourceConfigBase_MenuItem_ViewYaml.CurrentValue()!);
         menuItem.Command.ShouldBe(viewModel.ViewYamlCommand);
         menuItem.CommandParameter.ShouldBeSameAs(row);
         menuItem.InputGesture.ShouldBe(new KeyGesture(Key.Enter));

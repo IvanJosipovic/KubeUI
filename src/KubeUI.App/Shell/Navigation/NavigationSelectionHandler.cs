@@ -92,7 +92,7 @@ internal sealed class NavigationSelectionHandler
     {
         var files = await _platformServices.OpenFilePickerAsync(new()
         {
-            Title = Assets.Resources.NavigationView_LoadYaml,
+            Title = L10n.Instance.NavigationView_LoadYaml.CurrentValue()!,
             AllowMultiple = true,
             FileTypeFilter = [new("Yaml") { Patterns = ["*.yaml", "*.yml"] }]
         }).ConfigureAwait(false);
@@ -115,7 +115,7 @@ internal sealed class NavigationSelectionHandler
     {
         var folders = await _platformServices.OpenFolderPickerAsync(new()
         {
-            Title = Assets.Resources.NavigationView_LoadFolder,
+            Title = L10n.Instance.NavigationView_LoadFolder.CurrentValue()!,
             AllowMultiple = false
         }).ConfigureAwait(false);
 

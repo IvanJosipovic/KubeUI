@@ -27,12 +27,12 @@ public sealed class ImportAksClusterView : KubeUIView<ImportAksClusterViewModel>
                     .FontSize(new DynamicResourceExtension(Typography.TitleFontSizeResourceKey))
                     .Text(vm, x => x.Title),
                 new TextBlock()
-                    .Text(Assets.Resources.ImportAksClusterView_Description)
+                    .Text(L10n.Instance.ImportAksClusterView_Description.ToBinding())
                     .TextWrapping(TextWrapping.Wrap),
                 new TextBlock()
                     .FontStyle(FontStyle.Italic)
                     .Opacity(0.8)
-                    .Text(Assets.Resources.ImportAksClusterView_Prerequisites)
+                    .Text(L10n.Instance.ImportAksClusterView_Prerequisites.ToBinding())
                     .TextWrapping(TextWrapping.Wrap),
                 new Border()
                     .Padding(12)
@@ -55,7 +55,7 @@ public sealed class ImportAksClusterView : KubeUIView<ImportAksClusterViewModel>
                             .Row(0)
                             .Col(0)
                             .VerticalAlignment(VerticalAlignment.Center)
-                            .Text(Assets.Resources.ImportAksClusterView_Subscription),
+                            .Text(L10n.Instance.ImportAksClusterView_Subscription.ToBinding()),
                         new ComboBox()
                             .Row(0)
                             .Col(1)
@@ -74,7 +74,7 @@ public sealed class ImportAksClusterView : KubeUIView<ImportAksClusterViewModel>
                             .Row(1)
                             .Col(0)
                             .VerticalAlignment(VerticalAlignment.Center)
-                            .Text(Assets.Resources.ImportAksClusterView_Cluster),
+                            .Text(L10n.Instance.ImportAksClusterView_Cluster.ToBinding()),
                         new ListBox()
                             .Row(1)
                             .Col(1)
@@ -89,10 +89,10 @@ public sealed class ImportAksClusterView : KubeUIView<ImportAksClusterViewModel>
                                             .Text(cluster, x => x.Name),
                                         new TextBlock()
                                             .Opacity(0.65)
-                                            .Text(cluster, x => x.ResourceGroupName, BindingMode.OneWay, Converters.StringFormat(Assets.Resources.ImportAksClusterView_ResourceGroupFormat)),
+                                            .Text(cluster, x => x.ResourceGroupName, BindingMode.OneWay, Converters.StringFormat(L10n.Instance.ImportAksClusterView_ResourceGroupFormat.CurrentValue()!)),
                                         new TextBlock()
                                             .Opacity(0.65)
-                                            .Text(cluster, x => x.KubernetesVersion, BindingMode.OneWay, Converters.StringFormat(Assets.Resources.ImportAksClusterView_VersionFormat)))),
+                                            .Text(cluster, x => x.KubernetesVersion, BindingMode.OneWay, Converters.StringFormat(L10n.Instance.ImportAksClusterView_VersionFormat.CurrentValue()!)))),
                         new StackPanel()
                             .Row(2)
                             .Col(1)
@@ -100,10 +100,10 @@ public sealed class ImportAksClusterView : KubeUIView<ImportAksClusterViewModel>
                             .Spacing(8)
                             .Children(
                                 new Button()
-                                    .Content(Assets.Resources.ImportAksClusterView_Refresh)
+                                    .Content(L10n.Instance.ImportAksClusterView_Refresh.ToBinding())
                                     .Command(vm, x => x.RefreshCommand),
                                 new Button()
-                                    .Content(Assets.Resources.ImportAksClusterView_Import)
+                                    .Content(L10n.Instance.ImportAksClusterView_Import.ToBinding())
                                     .Command(vm, x => x.ImportCommand))),
                 new ScrollViewer()
                     .MaxHeight(140)

@@ -12,16 +12,16 @@ public sealed class PropertiesView : ViewBase<V1Ingress>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(Assets.Resources.IngressPropertiesView_Ingress_Class!)
+                    .Key(L10n.Instance.IngressPropertiesView_Ingress_Class.CurrentValue()!)
                     .Value(vm.Spec?.IngressClassName ?? ""),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Rules!)
+                    .Key(SharedL10n.Instance.Shared_Rules.CurrentValue()!)
                     .Value(vm.Spec?.Rules?.Count ?? 0),
                 new PropertyItem()
-                    .Key(Assets.Resources.IngressPropertiesView_TLS_Entries!)
+                    .Key(L10n.Instance.IngressPropertiesView_TLS_Entries.CurrentValue()!)
                     .Value(vm.Spec?.Tls?.Count ?? 0),
                 new PropertyItem()
-                    .Key(Assets.Resources.IngressPropertiesView_Load_Balancer_Entries!)
+                    .Key(L10n.Instance.IngressPropertiesView_Load_Balancer_Entries.CurrentValue()!)
                     .Value(vm.Status?.LoadBalancer?.Ingress?.Count ?? 0));
     }
 }

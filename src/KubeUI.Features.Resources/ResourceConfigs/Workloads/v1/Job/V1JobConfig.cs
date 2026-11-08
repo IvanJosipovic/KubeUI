@@ -23,7 +23,7 @@ public sealed partial class V1JobConfig : ResourceConfig<V1Job>
             new ResourceListColumn<V1Job, int>()
             {
                 Key = "completions",
-                Name = Assets.Resources.V1JobConfig_Completions!,
+                Name = L10n.Instance.V1JobConfig_Completions.CurrentValue()!,
                 Display = x => $"{x.Status.Succeeded ?? 0}/{x.Spec.Completions ?? 0}",
                 Field = x => x.Spec.Completions ?? 0,
                 WidthMode = DynamicTableViewWidthMode.Header
@@ -32,7 +32,7 @@ public sealed partial class V1JobConfig : ResourceConfig<V1Job>
             new ResourceListColumn<V1Job, string>()
             {
                 Key = "conditions",
-                Name = Assets.Resources.V1JobConfig_Conditions!,
+                Name = L10n.Instance.V1JobConfig_Conditions.CurrentValue()!,
                 Field = x => x.Status?.Conditions?.FirstOrDefault(y => y.Status == "True")?.Type ?? "",
                 WidthMode = DynamicTableViewWidthMode.Header
             },

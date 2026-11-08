@@ -12,42 +12,42 @@ public sealed class PropertiesView : ViewBase<Corev1Event>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(Assets.Resources.EventPropertiesView_Message!)
+                    .Key(L10n.Instance.EventPropertiesView_Message.CurrentValue()!)
                     .Value(vm.Message ?? ""),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Source!)
+                    .Key(SharedL10n.Instance.Shared_Source.CurrentValue()!)
                     .Value($"{vm.Source?.Component ?? ""}/{vm.Source?.Host ?? ""}"),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Reason!)
+                    .Key(SharedL10n.Instance.Shared_Reason.CurrentValue()!)
                     .Value(vm.Reason ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.EventPropertiesView_First_Seen!)
+                    .Key(L10n.Instance.EventPropertiesView_First_Seen.CurrentValue()!)
                     .Value(vm.FirstTimestamp ?? DateTime.MinValue),
                 new PropertyItem()
-                    .Key(Assets.Resources.EventPropertiesView_Last_Seen!)
+                    .Key(L10n.Instance.EventPropertiesView_Last_Seen.CurrentValue()!)
                     .Value(vm.LastTimestamp ?? DateTime.MinValue),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Count!)
+                    .Key(SharedL10n.Instance.Shared_Count.CurrentValue()!)
                     .Value(vm.Count ?? 0),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Type!)
+                    .Key(SharedL10n.Instance.Shared_Type.CurrentValue()!)
                     .Value(vm.Type ?? ""),
                 new ExpandableSection()
-                    .Header(Assets.Resources.EventPropertiesView_InvolvedObject!)
+                    .Header(L10n.Instance.EventPropertiesView_InvolvedObject.ToBinding())
                     .Content(
                         new StackPanel()
                             .Children(
                                 new PropertyItem()
-                                    .Key(SharedAssets.Resources.Shared_Kind!)
+                                    .Key(SharedL10n.Instance.Shared_Kind.CurrentValue()!)
                                     .Value($"{vm.InvolvedObject?.ApiVersion ?? ""}/{vm.InvolvedObject?.Kind ?? ""}"),
                                 new PropertyItem()
-                                    .Key(SharedAssets.Resources.Shared_Name!)
+                                    .Key(SharedL10n.Instance.Shared_Name.CurrentValue()!)
                                     .Value(vm.InvolvedObject?.Name ?? ""),
                                 new PropertyItem()
-                                    .Key(Assets.Resources.EventPropertiesView_Namespace!)
+                                    .Key(L10n.Instance.EventPropertiesView_Namespace.CurrentValue()!)
                                     .Value(vm.InvolvedObject?.NamespaceProperty ?? ""),
                                 new PropertyItem()
-                                    .Key(Assets.Resources.EventPropertiesView_Field_Path!)
+                                    .Key(L10n.Instance.EventPropertiesView_Field_Path.CurrentValue()!)
                                     .Value(vm.InvolvedObject?.FieldPath ?? ""))));
     }
 }

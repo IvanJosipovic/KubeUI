@@ -792,9 +792,9 @@ public class NavigationViewModelTests
         workspace.Runtime.Status.ShouldBe(ClusterStatus.Errored);
 
         (Application.Current as TestApp)?.ContentDialogSettings.ShouldNotBeNull();
-        (Application.Current as TestApp)?.ContentDialogSettings.Title.ShouldBe(ClusterAssets.Resources.Cluster_Missing_Namespace_Permission_Title);
-        (Application.Current as TestApp)?.ContentDialogSettings.Content.ShouldBe(ClusterAssets.Resources.Cluster_Missing_Namespace_Permission_Content);
-        (Application.Current as TestApp)?.ContentDialogSettings.PrimaryButtonText.ShouldBe(ClusterAssets.Resources.Cluster_Missing_Namespace_Permission_Primary);
+        (Application.Current as TestApp)?.ContentDialogSettings.Title.ShouldBe(ClusterL10n.Instance.ClusterSettingsViewModel_Missing_Namespace_Permission_Title.CurrentValue());
+        (Application.Current as TestApp)?.ContentDialogSettings.Content.ShouldBe(ClusterL10n.Instance.ClusterSettingsViewModel_Missing_Namespace_Permission_Content.CurrentValue());
+        (Application.Current as TestApp)?.ContentDialogSettings.PrimaryButtonText.ShouldBe(ClusterL10n.Instance.ClusterSettingsViewModel_Missing_Namespace_Permission_Primary.CurrentValue());
         (Application.Current as TestApp)?.ContentDialogSettings.DefaultButton.ShouldBe(FAContentDialogButton.Primary);
     }
 
@@ -851,7 +851,7 @@ public class NavigationViewModelTests
 
         var clusterNode = vm.Clusters.Single(x => x.Cluster == workspace);
         clusterNode.NavigationItems.Count.ShouldBeGreaterThan(0);
-        clusterNode.ConnectionMenuHeader.ShouldBe(Assets.Resources.NavigationView_ContextMenu_Disconnect);
+        clusterNode.ConnectionMenuHeader.ShouldBe(AppL10n.Instance.NavigationView_ContextMenu_Disconnect.CurrentValue()!);
         var changedProperties = new List<string?>();
         clusterNode.PropertyChanged += (_, e) => changedProperties.Add(e.PropertyName);
 
@@ -860,7 +860,7 @@ public class NavigationViewModelTests
 
         await WaitForAsync(() => !workspace.Runtime.Connected && workspace.Runtime.Status == ClusterStatus.None);
         clusterNode.NavigationItems.Count.ShouldBe(0);
-        clusterNode.ConnectionMenuHeader.ShouldBe(Assets.Resources.NavigationView_ContextMenu_Connect);
+        clusterNode.ConnectionMenuHeader.ShouldBe(AppL10n.Instance.NavigationView_ContextMenu_Connect.CurrentValue()!);
         changedProperties.ShouldContain(nameof(ClusterNavigationNode.ConnectionMenuHeader));
         changedProperties.ShouldContain(nameof(ClusterNavigationNode.ConnectionMenuIcon));
     }

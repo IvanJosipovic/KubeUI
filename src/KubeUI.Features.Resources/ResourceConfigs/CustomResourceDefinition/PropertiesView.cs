@@ -12,28 +12,28 @@ public sealed class PropertiesView : ViewBase<V1CustomResourceDefinition>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(Assets.Resources.CustomResourceDefinitionPropertiesView_Group!)
+                    .Key(L10n.Instance.CustomResourceDefinitionPropertiesView_Group.CurrentValue()!)
                     .Value(vm.Spec?.Group ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.CustomResourceDefinitionPropertiesView_Scope!)
+                    .Key(L10n.Instance.CustomResourceDefinitionPropertiesView_Scope.CurrentValue()!)
                     .Value(vm.Spec?.Scope ?? ""),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Kind!)
+                    .Key(SharedL10n.Instance.Shared_Kind.CurrentValue()!)
                     .Value(vm.Spec?.Names?.Kind ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.CustomResourceDefinitionPropertiesView_Versions!)
+                    .Key(L10n.Instance.CustomResourceDefinitionPropertiesView_Versions.CurrentValue()!)
                     .Value(vm.Spec?.Versions?.Count ?? 0),
                 new ExpandableSection()
-                    .Header(SharedAssets.Resources.Shared_Status!)
+                    .Header(SharedL10n.Instance.Shared_Status.ToBinding())
                     .IsExpanded(true)
                     .Content(
                         new StackPanel()
                             .Children(
                                 new PropertyItem()
-                                    .Key(Assets.Resources.CustomResourceDefinitionPropertiesView_Accepted_Kind!)
+                                    .Key(L10n.Instance.CustomResourceDefinitionPropertiesView_Accepted_Kind.CurrentValue()!)
                                     .Value(vm.Status?.AcceptedNames?.Kind ?? ""),
                                 new PropertyItem()
-                                    .Key(Assets.Resources.CustomResourceDefinitionPropertiesView_Stored_Versions!)
+                                    .Key(L10n.Instance.CustomResourceDefinitionPropertiesView_Stored_Versions.CurrentValue()!)
                                     .Value(vm.Status?.StoredVersions?.Count ?? 0))));
     }
 }

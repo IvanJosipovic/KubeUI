@@ -12,10 +12,10 @@ public sealed class PropertiesView : ViewBase<V1ClusterRole>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Rules)
+                    .Key(SharedL10n.Instance.Shared_Rules.CurrentValue()!)
                     .Value(vm.Rules.Count),
                 new PropertyItem()
-                    .Key(Assets.Resources.ClusterRolePropertiesView_Aggregation_Selectors)
+                    .Key(L10n.Instance.ClusterRolePropertiesView_Aggregation_Selectors.CurrentValue()!)
                     .Value(vm.AggregationRule.ClusterRoleSelectors.Count));
     }
 }

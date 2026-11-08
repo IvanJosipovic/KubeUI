@@ -12,61 +12,61 @@ public sealed class PropertiesView : ViewBase<V1Service>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Type!)
+                    .Key(SharedL10n.Instance.Shared_Type.CurrentValue()!)
                     .Value(vm.Spec?.Type ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.ServicePropertiesView_Cluster_IP!)
+                    .Key(L10n.Instance.ServicePropertiesView_Cluster_IP.CurrentValue()!)
                     .Value(vm.Spec?.ClusterIP ?? ""),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Ports!)
+                    .Key(SharedL10n.Instance.Shared_Ports.CurrentValue()!)
                     .Value(vm.Spec?.Ports?.Count ?? 0),
                 new PropertyItem()
-                    .Key(Assets.Resources.ServicePropertiesView_Load_Balancer_Ingress!)
+                    .Key(L10n.Instance.ServicePropertiesView_Load_Balancer_Ingress.CurrentValue()!)
                     .Value(vm.Status?.LoadBalancer?.Ingress?.Count ?? 0),
                 new ExpandableSection()
-                    .Header(Assets.Resources.ServicePropertiesView_Routing!)
+                    .Header(L10n.Instance.ServicePropertiesView_Routing.ToBinding())
                     .IsExpanded(true)
                     .Content(
                         new StackPanel()
                             .Children(
                                 new PropertyItem()
-                                    .Key(Assets.Resources.ServicePropertiesView_Selector!)
+                                    .Key(L10n.Instance.ServicePropertiesView_Selector.CurrentValue()!)
                                     .Value(vm.Spec?.Selector?.Count ?? 0),
                                 new PropertyItem()
-                                    .Key(Assets.Resources.ServicePropertiesView_Session_Affinity!)
+                                    .Key(L10n.Instance.ServicePropertiesView_Session_Affinity.CurrentValue()!)
                                     .Value(vm.Spec?.SessionAffinity ?? ""),
                                 new PropertyItem()
-                                    .Key(Assets.Resources.ServicePropertiesView_Internal_Traffic_Policy!)
+                                    .Key(L10n.Instance.ServicePropertiesView_Internal_Traffic_Policy.CurrentValue()!)
                                     .Value(vm.Spec?.InternalTrafficPolicy ?? ""),
                                 new PropertyItem()
-                                    .Key(Assets.Resources.ServicePropertiesView_External_Traffic_Policy!)
+                                    .Key(L10n.Instance.ServicePropertiesView_External_Traffic_Policy.CurrentValue()!)
                                     .Value(vm.Spec?.ExternalTrafficPolicy ?? ""),
                                 new PropertyItem()
-                                    .Key(Assets.Resources.ServicePropertiesView_Publish_Not_Ready_Addresses!)
+                                    .Key(L10n.Instance.ServicePropertiesView_Publish_Not_Ready_Addresses.CurrentValue()!)
                                     .Value(vm.Spec?.PublishNotReadyAddresses ?? false))),
                 new ExpandableSection()
-                    .Header(Assets.Resources.ServicePropertiesView_Networking!)
+                    .Header(L10n.Instance.ServicePropertiesView_Networking.ToBinding())
                     .IsExpanded(true)
                     .Content(
                         new StackPanel()
                             .Children(
                                 new PropertyItem()
-                                    .Key(Assets.Resources.ServicePropertiesView_Cluster_IPs!)
+                                    .Key(L10n.Instance.ServicePropertiesView_Cluster_IPs.CurrentValue()!)
                                     .Value(vm.Spec?.ClusterIPs?.Count ?? 0),
                                 new PropertyItem()
-                                    .Key(Assets.Resources.ServicePropertiesView_External_IPs!)
+                                    .Key(L10n.Instance.ServicePropertiesView_External_IPs.CurrentValue()!)
                                     .Value(vm.Spec?.ExternalIPs?.Count ?? 0),
                                 new PropertyItem()
-                                    .Key(Assets.Resources.ServicePropertiesView_External_Name!)
+                                    .Key(L10n.Instance.ServicePropertiesView_External_Name.CurrentValue()!)
                                     .Value(vm.Spec?.ExternalName ?? ""),
                                 new PropertyItem()
-                                    .Key(Assets.Resources.ServicePropertiesView_Load_Balancer_IP!)
+                                    .Key(L10n.Instance.ServicePropertiesView_Load_Balancer_IP.CurrentValue()!)
                                     .Value(vm.Spec?.LoadBalancerIP ?? ""),
                                 new PropertyItem()
-                                    .Key(Assets.Resources.ServicePropertiesView_Load_Balancer_Class!)
+                                    .Key(L10n.Instance.ServicePropertiesView_Load_Balancer_Class.CurrentValue()!)
                                     .Value(vm.Spec?.LoadBalancerClass ?? ""),
                                 new PropertyItem()
-                                    .Key(Assets.Resources.ServicePropertiesView_Health_Check_Node_Port!)
+                                    .Key(L10n.Instance.ServicePropertiesView_Health_Check_Node_Port.CurrentValue()!)
                                     .Value(vm.Spec?.HealthCheckNodePort ?? 0))));
     }
 }

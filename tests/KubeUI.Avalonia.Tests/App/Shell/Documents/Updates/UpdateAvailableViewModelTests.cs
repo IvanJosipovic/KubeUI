@@ -49,7 +49,7 @@ public sealed class UpdateAvailableViewModelTests
             ("2.2.0", " ")
         ]);
 
-        markdown.ShouldBe(Assets.Resources.UpdateAvailableView_NoReleaseNotes);
+        markdown.ShouldBe(AppL10n.Instance.UpdateAvailableView_NoReleaseNotes.CurrentValue()!);
     }
 
     [Fact]
@@ -63,7 +63,7 @@ public sealed class UpdateAvailableViewModelTests
                 ("2.3.0", "## 2.3.0\n\nAdded update view.")
             ]);
 
-        presentation.CurrentVersion.ShouldBe(Assets.Resources.UpdateAvailableView_CurrentVersion_Unknown);
+        presentation.CurrentVersion.ShouldBe(AppL10n.Instance.UpdateAvailableView_CurrentVersion_Unknown.CurrentValue()!);
         presentation.LatestVersion.ShouldBe("2.3.0");
         presentation.ReleaseNotesMarkdown.ShouldContain("## 2.2.0");
         presentation.ReleaseNotesMarkdown.ShouldContain("## 2.3.0");
@@ -184,7 +184,7 @@ public sealed class UpdateAvailableViewModelTests
         await viewModel.UpdateCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
 
         dialogs.ShouldHaveSingleItem();
-        dialogs[0].Title.ShouldBe(Assets.Resources.UpdateAvailableView_Confirm_Title);
+        dialogs[0].Title.ShouldBe(AppL10n.Instance.UpdateAvailableView_Confirm_Title.CurrentValue()!);
         dialogs[0].Content.ShouldBe("Are you sure you want to update to 2.2.0?");
         dialogs[0].DefaultButton.ShouldBe(FAContentDialogButton.Secondary);
         updateStarted.ShouldBe(shouldUpdate);
@@ -225,8 +225,8 @@ public sealed class UpdateAvailableViewModelTests
         await viewModel.UpdateCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
 
         dialogs.Count.ShouldBe(2);
-        dialogs[1].Title.ShouldBe(Assets.Resources.UpdateAvailableView_Failure_Title);
-        dialogs[1].Content.ShouldBe(Assets.Resources.UpdateAvailableView_Failure_Content);
+        dialogs[1].Title.ShouldBe(AppL10n.Instance.UpdateAvailableView_Failure_Title.CurrentValue()!);
+        dialogs[1].Content.ShouldBe(AppL10n.Instance.UpdateAvailableView_Failure_Content.CurrentValue()!);
         viewModel.IsUpdating.ShouldBeFalse();
         viewModel.CanClose.ShouldBeTrue();
     }
@@ -243,7 +243,7 @@ public sealed class UpdateAvailableViewModelTests
             "## 2.2.0\n\nNew feature.",
             _ => Task.CompletedTask);
 
-        viewModel.Title.ShouldBe(Assets.Resources.UpdateAvailableView_Title);
+        viewModel.Title.ShouldBe(AppL10n.Instance.UpdateAvailableView_Title.CurrentValue()!);
         viewModel.VersionSummary.ShouldBe("Update Available 2.1.0 -> 2.2.0");
         viewModel.LatestVersion.ShouldBe("2.2.0");
         viewModel.MarkdownBuilder.ToString().ShouldContain("New feature.");
@@ -270,7 +270,7 @@ public sealed class UpdateAvailableViewModelTests
         header.FontSize.ShouldBe(GetResource(Application.Current!, Typography.TitleFontSizeResourceKey));
         descendants.OfType<MarkdownRenderer>().ShouldHaveSingleItem();
         descendants.OfType<Button>()
-            .Any(button => button.Content?.ToString() == Assets.Resources.UpdateAvailableView_Update)
+            .Any(button => button.Content?.ToString() == AppL10n.Instance.UpdateAvailableView_Update.CurrentValue()!)
             .ShouldBeTrue();
         descendants.OfType<ProgressBar>().ShouldHaveSingleItem();
     }

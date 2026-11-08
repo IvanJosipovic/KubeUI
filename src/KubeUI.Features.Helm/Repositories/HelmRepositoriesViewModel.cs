@@ -59,14 +59,14 @@ public sealed partial class HelmRepositoriesViewModel : ViewModelBase, IInitiali
             _repositories,
             static repository => repository.Name,
             [
-                CreateColumn("name", Assets.Resources.HelmRepositoriesView_Name!, static repository => repository.Name, DynamicTableViewWidthMode.Star, 1),
-                CreateColumn("url", Assets.Resources.HelmRepositoriesView_Url!, static repository => repository.Url, DynamicTableViewWidthMode.Star, 2)
+                CreateColumn("name", L10n.Instance.HelmRepositoriesView_Name.CurrentValue()!, static repository => repository.Name, DynamicTableViewWidthMode.Star, 1),
+                CreateColumn("url", L10n.Instance.HelmRepositoriesView_Url.CurrentValue()!, static repository => repository.Url, DynamicTableViewWidthMode.Star, 2)
             ],
             options: new DynamicTableViewSourceOptions { SelectionIdentityMode = DynamicTableViewSelectionIdentityMode.Key });
         _tableSource.SelectionModel.SingleSelect = true;
         _tableSource.SetSort([new("name", ListSortDirection.Ascending)]);
         _tableSource.SelectionModel.SelectionChanged += SelectionChanged;
-        Title = Assets.Resources.HelmRepositoriesView_Title;
+        Title = L10n.Instance.HelmRepositoriesView_Title.CurrentValue()!;
     }
 
     public void Initialize(ClusterWorkspace cluster)
@@ -99,7 +99,7 @@ public sealed partial class HelmRepositoriesViewModel : ViewModelBase, IInitiali
         catch (Exception exception)
         {
             _logger?.LogError(exception, "Failed to refresh Helm repositories");
-            Status = Assets.Resources.HelmRepositoriesView_RefreshFailed!;
+            Status = L10n.Instance.HelmRepositoriesView_RefreshFailed.CurrentValue()!;
         }
     }
 
@@ -114,12 +114,12 @@ public sealed partial class HelmRepositoriesViewModel : ViewModelBase, IInitiali
         try
         {
             await _helmService.UpdateRepositoriesAsync(_connection, cancellationToken);
-            Status = Assets.Resources.HelmRepositoriesView_IndexesUpdated!;
+            Status = L10n.Instance.HelmRepositoriesView_IndexesUpdated.CurrentValue()!;
         }
         catch (Exception exception)
         {
             _logger?.LogError(exception, "Failed to update Helm repository indexes");
-            Status = Assets.Resources.HelmRepositoriesView_IndexUpdateFailed!;
+            Status = L10n.Instance.HelmRepositoriesView_IndexUpdateFailed.CurrentValue()!;
         }
     }
 
@@ -145,10 +145,10 @@ public sealed partial class HelmRepositoriesViewModel : ViewModelBase, IInitiali
 
         var result = await _dialogService.ShowContentDialogAsync(this, new ContentDialogSettings
         {
-            Title = Assets.Resources.HelmRepositoriesView_DeleteTitle,
-            Content = string.Format(Assets.Resources.HelmRepositoriesView_DeleteContent!, repository.Name),
-            PrimaryButtonText = Assets.Resources.HelmRepositoriesView_Delete,
-            SecondaryButtonText = SharedAssets.Resources.Shared_Cancel,
+            Title = L10n.Instance.HelmRepositoriesView_DeleteTitle.CurrentValue()!,
+            Content = string.Format(L10n.Instance.HelmRepositoriesView_DeleteContent.CurrentValue()!, repository.Name),
+            PrimaryButtonText = L10n.Instance.HelmRepositoriesView_Delete.CurrentValue()!,
+            SecondaryButtonText = SharedL10n.Instance.Shared_Cancel.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary
         });
 
@@ -165,7 +165,7 @@ public sealed partial class HelmRepositoriesViewModel : ViewModelBase, IInitiali
         catch (Exception exception)
         {
             _logger?.LogError(exception, "Failed to delete Helm repository {RepositoryName}", repository.Name);
-            Status = Assets.Resources.HelmRepositoriesView_DeleteFailed!;
+            Status = L10n.Instance.HelmRepositoriesView_DeleteFailed.CurrentValue()!;
         }
     }
 

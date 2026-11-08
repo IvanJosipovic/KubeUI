@@ -12,40 +12,40 @@ public sealed class PropertiesView : ViewBase<V1PersistentVolumeClaim>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Phase!)
+                    .Key(SharedL10n.Instance.Shared_Phase.CurrentValue()!)
                     .Value(vm.Status?.Phase ?? ""),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Storage_Class!)
+                    .Key(SharedL10n.Instance.Shared_Storage_Class.CurrentValue()!)
                     .Value(vm.Spec?.StorageClassName ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.PersistentVolumeClaimPropertiesView_Volume_Name!)
+                    .Key(L10n.Instance.PersistentVolumeClaimPropertiesView_Volume_Name.CurrentValue()!)
                     .Value(vm.Spec?.VolumeName ?? ""),
                 new PropertyItem()
-                    .Key(SharedAssets.Resources.Shared_Access_Modes!)
+                    .Key(SharedL10n.Instance.Shared_Access_Modes.CurrentValue()!)
                     .Value(vm.Spec?.AccessModes?.Count ?? 0),
                 new ExpandableSection()
-                    .Header(SharedAssets.Resources.Shared_Configuration!)
+                    .Header(SharedL10n.Instance.Shared_Configuration.ToBinding())
                     .IsExpanded(true)
                     .Content(
                         new StackPanel()
                             .Children(
                                 new PropertyItem()
-                                    .Key(SharedAssets.Resources.Shared_Volume_Mode!)
+                                    .Key(SharedL10n.Instance.Shared_Volume_Mode.CurrentValue()!)
                                     .Value(vm.Spec?.VolumeMode ?? ""),
                                 new PropertyItem()
-                                    .Key(Assets.Resources.PersistentVolumeClaimPropertiesView_Requested_Storage!)
+                                    .Key(L10n.Instance.PersistentVolumeClaimPropertiesView_Requested_Storage.CurrentValue()!)
                                     .Value(vm.Spec?.Resources?.Requests?.Count ?? 0))),
                 new ExpandableSection()
-                    .Header(SharedAssets.Resources.Shared_Status!)
+                    .Header(SharedL10n.Instance.Shared_Status.ToBinding())
                     .IsExpanded(true)
                     .Content(
                         new StackPanel()
                             .Children(
                                 new PropertyItem()
-                                    .Key(SharedAssets.Resources.Shared_Capacity_Entries!)
+                                    .Key(SharedL10n.Instance.Shared_Capacity_Entries.CurrentValue()!)
                                     .Value(vm.Status?.Capacity?.Count ?? 0),
                                 new PropertyItem()
-                                    .Key(SharedAssets.Resources.Shared_Conditions!)
+                                    .Key(SharedL10n.Instance.Shared_Conditions.CurrentValue()!)
                                     .Value(vm.Status?.Conditions?.Count ?? 0))));
     }
 }

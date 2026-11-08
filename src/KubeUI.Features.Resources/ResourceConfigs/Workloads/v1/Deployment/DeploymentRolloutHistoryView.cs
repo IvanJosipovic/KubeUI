@@ -29,7 +29,7 @@ public sealed class DeploymentRolloutHistoryView : KubeUIView<DeploymentRolloutH
                 new Button()
                     .Row(2)
                     .HorizontalAlignment(HorizontalAlignment.Right)
-                    .Content(Assets.Resources.DeploymentRolloutHistoryViewModel_Undo)
+                    .Content(L10n.Instance.DeploymentRolloutHistoryViewModel_Undo.ToBinding())
                     .Command(vm, x => x.UndoCommand));
     }
 }

@@ -111,7 +111,7 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
         SubscribeToSelectedNamespaces();
         ApplyFilter();
 
-        Title = Assets.Resources.FlowListView_Title;
+        Title = L10n.Instance.FlowListView_Title.CurrentValue()!;
     }
 
     public void Initialize(ClusterWorkspace cluster)
@@ -141,10 +141,10 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
         Id = $"FlowList-{cluster.Runtime.Name}";
         try
         {
-            ConnectionStatus = Assets.Resources.FlowListView_StatusConnecting;
+            ConnectionStatus = L10n.Instance.FlowListView_StatusConnecting.CurrentValue()!;
             if (!await cluster.Runtime.IsCiliumInstalledAsync(linkedCancellation.Token).ConfigureAwait(true))
             {
-                ConnectionStatus = Assets.Resources.FlowListView_StatusCiliumNotDetected;
+                ConnectionStatus = L10n.Instance.FlowListView_StatusCiliumNotDetected.CurrentValue()!;
                 return;
             }
 
@@ -158,12 +158,12 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
         }
         catch (OperationCanceledException) when (linkedCancellation.IsCancellationRequested)
         {
-            ConnectionStatus = Assets.Resources.FlowListView_StatusDisconnected;
+            ConnectionStatus = L10n.Instance.FlowListView_StatusDisconnected.CurrentValue()!;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unable to initialize Hubble flow list");
-            ConnectionStatus = $"{Assets.Resources.FlowListView_StatusError}: {ex.Message}";
+            ConnectionStatus = $"{L10n.Instance.FlowListView_StatusError.CurrentValue()!}: {ex.Message}";
             IsConnected = false;
         }
     }
@@ -174,63 +174,63 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
         [
             new DynamicTableViewColumn<FlowViewModel>(
                 "Timestamp",
-                Assets.Resources.FlowListView_ColumnTimestamp,
+                L10n.Instance.FlowListView_ColumnTimestamp.CurrentValue()!,
                 typeof(DateTime),
                 flow => flow.Timestamp,
                 flow => flow.Timestamp.ToString("HH:mm:ss.fff")),
             new DynamicTableViewColumn<FlowViewModel>(
                 "Verdict",
-                Assets.Resources.FlowListView_ColumnVerdict,
+                L10n.Instance.FlowListView_ColumnVerdict.CurrentValue()!,
                 typeof(FlowVerdict),
                 flow => flow.Verdict,
                 flow => FormatVerdict(flow.Verdict)),
             new DynamicTableViewColumn<FlowViewModel>(
                 "Direction",
-                Assets.Resources.FlowListView_ColumnDirection,
-                typeof(FlowDirection),
+                L10n.Instance.FlowListView_ColumnDirection.CurrentValue()!,
+                typeof(KubeUI.Features.Cilium.Hubble.FlowDirection),
                 flow => flow.Direction,
                 flow => FormatDirection(flow.Direction)),
             new DynamicTableViewColumn<FlowViewModel>(
                 "Source",
-                Assets.Resources.FlowListView_ColumnSource,
+                L10n.Instance.FlowListView_ColumnSource.CurrentValue()!,
                 typeof(string),
                 flow => flow.SourcePod,
                 null),
             new DynamicTableViewColumn<FlowViewModel>(
                 "Destination",
-                Assets.Resources.FlowListView_ColumnDestination,
+                L10n.Instance.FlowListView_ColumnDestination.CurrentValue()!,
                 typeof(string),
                 flow => flow.DestinationPod,
                 null),
             new DynamicTableViewColumn<FlowViewModel>(
                 "Protocol",
-                Assets.Resources.FlowListView_ColumnProtocol,
+                L10n.Instance.FlowListView_ColumnProtocol.CurrentValue()!,
                 typeof(string),
                 flow => flow.Protocol,
                 null),
             new DynamicTableViewColumn<FlowViewModel>(
                 "Port",
-                Assets.Resources.FlowListView_ColumnPort,
+                L10n.Instance.FlowListView_ColumnPort.CurrentValue()!,
                 typeof(int),
                 flow => flow.DestinationPort,
                 null),
             new DynamicTableViewColumn<FlowViewModel>(
                 "Latency",
-                Assets.Resources.FlowListView_ColumnLatency,
+                L10n.Instance.FlowListView_ColumnLatency.CurrentValue()!,
                 typeof(string),
                 flow => flow.LatencyHumanReadable,
                 null),
             new DynamicTableViewColumn<FlowViewModel>(
                 "PolicyName",
-                Assets.Resources.FlowListView_ColumnPolicy,
+                L10n.Instance.FlowListView_ColumnPolicy.CurrentValue()!,
                 typeof(string),
-                flow => flow.MatchedPolicyName ?? Assets.Resources.FlowListView_NoPolicy,
+                flow => flow.MatchedPolicyName ?? L10n.Instance.FlowListView_NoPolicy.CurrentValue()!,
                 null,
                 new FuncDataTemplate<FlowViewModel>((flow, _) => flow is null
                     ? new TextBlock()
                     : new TextBlock
                     {
-                        Text = flow.MatchedPolicyName ?? Assets.Resources.FlowListView_NoPolicy,
+                        Text = flow.MatchedPolicyName ?? L10n.Instance.FlowListView_NoPolicy.CurrentValue()!,
                         Foreground = flow.Verdict == FlowVerdict.Dropped
                             ? ApplicationBrushResources.GetBrush("ContainerStatusErrorBrush")
                             : ApplicationBrushResources.GetBrush("SubtleOutlineBrush")
@@ -253,18 +253,18 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
     internal static string FormatDirection(FlowDirection direction)
         => direction switch
         {
-            FlowDirection.Ingress => Assets.Resources.FlowDirection_Ingress,
-            FlowDirection.Egress => Assets.Resources.FlowDirection_Egress,
-            _ => Assets.Resources.FlowDirection_Unknown
+            KubeUI.Features.Cilium.Hubble.FlowDirection.Ingress => L10n.Instance.FlowDirection_Ingress.CurrentValue()!,
+            KubeUI.Features.Cilium.Hubble.FlowDirection.Egress => L10n.Instance.FlowDirection_Egress.CurrentValue()!,
+            _ => L10n.Instance.FlowDirection_Unknown.CurrentValue()!
         };
 
     internal static string FormatVerdict(FlowVerdict verdict)
         => verdict switch
         {
-            FlowVerdict.Forwarded => Assets.Resources.FlowVerdict_Allowed,
-            FlowVerdict.Dropped => Assets.Resources.FlowVerdict_Dropped,
-            FlowVerdict.Error => Assets.Resources.FlowVerdict_Error,
-            _ => Assets.Resources.FlowVerdict_Unknown
+            FlowVerdict.Forwarded => L10n.Instance.FlowVerdict_Allowed.CurrentValue()!,
+            FlowVerdict.Dropped => L10n.Instance.FlowVerdict_Dropped.CurrentValue()!,
+            FlowVerdict.Error => L10n.Instance.FlowVerdict_Error.CurrentValue()!,
+            _ => L10n.Instance.FlowVerdict_Unknown.CurrentValue()!
         };
 
     internal void OnFlowsReceived(IList<FlowViewModel> flows)
@@ -380,10 +380,10 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
 
             ConnectionStatus = status switch
             {
-                HubbleConnectionStatus.Disconnected => Assets.Resources.FlowListView_StatusDisconnected,
-                HubbleConnectionStatus.Connecting => Assets.Resources.FlowListView_StatusConnecting,
-                HubbleConnectionStatus.Connected => Assets.Resources.FlowListView_StatusConnected,
-                HubbleConnectionStatus.Error => Assets.Resources.FlowListView_StatusError,
+                HubbleConnectionStatus.Disconnected => L10n.Instance.FlowListView_StatusDisconnected.CurrentValue()!,
+                HubbleConnectionStatus.Connecting => L10n.Instance.FlowListView_StatusConnecting.CurrentValue()!,
+                HubbleConnectionStatus.Connected => L10n.Instance.FlowListView_StatusConnected.CurrentValue()!,
+                HubbleConnectionStatus.Error => L10n.Instance.FlowListView_StatusError.CurrentValue()!,
                 _ => status.ToString()
             };
             IsConnected = status == HubbleConnectionStatus.Connected;

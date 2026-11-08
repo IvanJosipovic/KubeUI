@@ -58,20 +58,20 @@ public sealed partial class ServiceMapView : KubeUIView<ServiceMapViewModel>
                             .ItemsSource(new[] { TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(60) })
                             .SelectedItem(CompiledBinding.Create<ServiceMapViewModel, TimeSpan>(x => x.TimeWindow, mode: BindingMode.TwoWay))
                             .ItemTemplate(new FuncDataTemplate<TimeSpan>((timeWindow, _) => new TextBlock()
-                                .Text($"{timeWindow.TotalMinutes} {Assets.Resources.ServiceMapView_TimeWindowMinutes}"))),
+                                .Text($"{timeWindow.TotalMinutes} {L10n.Instance.ServiceMapView_TimeWindowMinutes.CurrentValue()!}"))),
                         new ToggleButton()
                             .Width(32)
                             .Height(32)
                             .VerticalAlignment(VerticalAlignment.Center)
                             .IsChecked(CompiledBinding.Create<ServiceMapViewModel, bool>(x => x.AggregateByNamespace, mode: BindingMode.TwoWay))
-                            .ToolTip_Tip(Assets.Resources.ServiceMapView_TooltipAggregate)
+                            .ToolTip_Tip(L10n.Instance.ServiceMapView_TooltipAggregate.ToBinding())
                             .Content(new FluentIcon().Icon(Icon.DataUsage)),
                         new ToggleButton()
                             .Width(32)
                             .Height(32)
                             .VerticalAlignment(VerticalAlignment.Center)
                             .IsChecked(CompiledBinding.Create<ServiceMapViewModel, bool>(x => x.ShowOnlyErrors, mode: BindingMode.TwoWay))
-                            .ToolTip_Tip(Assets.Resources.ServiceMapView_TooltipErrorsOnly)
+                            .ToolTip_Tip(L10n.Instance.ServiceMapView_TooltipErrorsOnly.ToBinding())
                             .Content(new FluentIcon().Icon(Icon.Warning))),
                 new StackPanel()
                     .Col(1)
@@ -98,7 +98,7 @@ public sealed partial class ServiceMapView : KubeUIView<ServiceMapViewModel>
                         new ToggleButton()
                             .Margin(0, 0, 2, 0)
                             .IsChecked(CompiledBinding.Create<ServiceMapViewModel, bool>(x => x.IsNamespaceSelectionLinked, source: vm, mode: BindingMode.TwoWay))
-                            .ToolTip_Tip(ResourceAssets.Resources.ResourceListView_NamespaceLink)
+                            .ToolTip_Tip(ResourceL10n.Instance.ResourceListView_NamespaceLink.ToBinding())
                             .Content(new FluentIcon().Icon(Icon.Link))));
     }
 
@@ -117,24 +117,24 @@ public sealed partial class ServiceMapView : KubeUIView<ServiceMapViewModel>
                 mode: BindingMode.TwoWay))
             .ItemTemplate(new FuncDataTemplate<LayoutAlgorithmTypeEnum>((algorithm, _) =>
                 new TextBlock().Text(GetLayoutAlgorithmName(algorithm))))
-            .ToolTip_Tip(Assets.Resources.ServiceMapView_LayoutAlgorithm);
+            .ToolTip_Tip(L10n.Instance.ServiceMapView_LayoutAlgorithm.CurrentValue()!);
     }
 
     private static string GetLayoutAlgorithmName(LayoutAlgorithmTypeEnum algorithm)
     {
         return algorithm switch
         {
-            LayoutAlgorithmTypeEnum.BoundedFR => Assets.Resources.ServiceMapView_Layout_BoundedFR!,
-            LayoutAlgorithmTypeEnum.Circular => Assets.Resources.ServiceMapView_Layout_Circular!,
-            LayoutAlgorithmTypeEnum.CompoundFDP => Assets.Resources.ServiceMapView_Layout_CompoundFDP!,
-            LayoutAlgorithmTypeEnum.EfficientSugiyama => Assets.Resources.ServiceMapView_Layout_EfficientSugiyama!,
-            LayoutAlgorithmTypeEnum.FR => Assets.Resources.ServiceMapView_Layout_FR!,
-            LayoutAlgorithmTypeEnum.ISOM => Assets.Resources.ServiceMapView_Layout_ISOM!,
-            LayoutAlgorithmTypeEnum.KK => Assets.Resources.ServiceMapView_Layout_KK!,
-            LayoutAlgorithmTypeEnum.LinLog => Assets.Resources.ServiceMapView_Layout_LinLog!,
-            LayoutAlgorithmTypeEnum.SimpleRandom => Assets.Resources.ServiceMapView_Layout_Random!,
-            LayoutAlgorithmTypeEnum.Sugiyama => Assets.Resources.ServiceMapView_Layout_Sugiyama!,
-            LayoutAlgorithmTypeEnum.Tree => Assets.Resources.ServiceMapView_Layout_Tree!,
+            LayoutAlgorithmTypeEnum.BoundedFR => L10n.Instance.ServiceMapView_Layout_BoundedFR.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.Circular => L10n.Instance.ServiceMapView_Layout_Circular.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.CompoundFDP => L10n.Instance.ServiceMapView_Layout_CompoundFDP.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.EfficientSugiyama => L10n.Instance.ServiceMapView_Layout_EfficientSugiyama.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.FR => L10n.Instance.ServiceMapView_Layout_FR.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.ISOM => L10n.Instance.ServiceMapView_Layout_ISOM.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.KK => L10n.Instance.ServiceMapView_Layout_KK.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.LinLog => L10n.Instance.ServiceMapView_Layout_LinLog.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.SimpleRandom => L10n.Instance.ServiceMapView_Layout_Random.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.Sugiyama => L10n.Instance.ServiceMapView_Layout_Sugiyama.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.Tree => L10n.Instance.ServiceMapView_Layout_Tree.CurrentValue()!,
             _ => algorithm.ToString()
         };
     }
@@ -152,7 +152,7 @@ public sealed partial class ServiceMapView : KubeUIView<ServiceMapViewModel>
             .HorizontalAlignment(HorizontalAlignment.Stretch)
             .Classes("ClearButton")
             .ItemsSource(CompiledBinding.Create<ServiceMapViewModel, IEnumerable>(x => x.Cluster!.Runtime.Namespaces, source: viewModel))
-            .PlaceholderText(ResourceAssets.Resources.ResourceListView_SelectNamespace)
+            .PlaceholderText(ResourceL10n.Instance.ResourceListView_SelectNamespace.ToBinding())
             .SelectedItems(CompiledBinding.Create<ServiceMapViewModel, IList>(x => x.SelectedNamespaces, source: viewModel))
             .ItemTemplate(template)
             .SelectedItemTemplate(template);

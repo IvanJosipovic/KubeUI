@@ -20,7 +20,7 @@ public sealed partial class V1NetworkPolicyConfig : ResourceConfig<V1NetworkPoli
             new ResourceListColumn<V1NetworkPolicy, string>()
             {
                 Key = "policy-types",
-                Name = Assets.Resources.V1NetworkPolicyConfig_Policy_Types!,
+                Name = L10n.Instance.V1NetworkPolicyConfig_Policy_Types.CurrentValue()!,
                 Field = x => x.Spec?.PolicyTypes is { Count: > 0 } policyTypes ? string.Join(", ", policyTypes) : "",
                 Width = 1, WidthMode = DynamicTableViewWidthMode.Star,
             },

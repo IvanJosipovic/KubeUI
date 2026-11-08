@@ -21,7 +21,7 @@ public sealed partial class V1RoleBindingConfig : ResourceConfig<V1RoleBinding>
             new ResourceListColumn<V1RoleBinding, string>()
             {
                 Key = "bindings",
-                Name = Assets.Resources.V1RoleBindingConfig_Bindings!,
+                Name = L10n.Instance.V1RoleBindingConfig_Bindings.CurrentValue()!,
                 Field = x => x.Subjects is { Count: > 0 } subjects ? string.Join(", ", subjects.Select(y => y.Name)) : "",
                 Width = 1, WidthMode = DynamicTableViewWidthMode.Star,
             },

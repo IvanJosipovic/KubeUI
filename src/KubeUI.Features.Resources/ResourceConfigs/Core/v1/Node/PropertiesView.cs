@@ -12,44 +12,44 @@ public sealed class PropertiesView : ViewBase<V1Node>
         return new StackPanel()
             .Children(
                 new PropertyItem()
-                    .Key(Assets.Resources.NodePropertiesView_Operating_System!)
+                    .Key(L10n.Instance.NodePropertiesView_Operating_System.CurrentValue()!)
                     .Value(vm.Status?.NodeInfo?.OperatingSystem ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.NodePropertiesView_Architecture!)
+                    .Key(L10n.Instance.NodePropertiesView_Architecture.CurrentValue()!)
                     .Value(vm.Status?.NodeInfo?.Architecture ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.NodePropertiesView_Kernel_Version!)
+                    .Key(L10n.Instance.NodePropertiesView_Kernel_Version.CurrentValue()!)
                     .Value(vm.Status?.NodeInfo?.KernelVersion ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.NodePropertiesView_Container_Runtime!)
+                    .Key(L10n.Instance.NodePropertiesView_Container_Runtime.CurrentValue()!)
                     .Value(vm.Status?.NodeInfo?.ContainerRuntimeVersion ?? ""),
                 new PropertyItem()
-                    .Key(Assets.Resources.NodePropertiesView_Kubelet_Version!)
+                    .Key(L10n.Instance.NodePropertiesView_Kubelet_Version.CurrentValue()!)
                     .Value(vm.Status?.NodeInfo?.KubeletVersion ?? ""),
                 new ExpandableSection()
-                    .Header(SharedAssets.Resources.Shared_Status!)
+                    .Header(SharedL10n.Instance.Shared_Status.ToBinding())
                     .Content(
                         new StackPanel()
                             .Children(
                                 new PropertyItem()
-                                    .Key(Assets.Resources.NodePropertiesView_Addresses!)
+                                    .Key(L10n.Instance.NodePropertiesView_Addresses.CurrentValue()!)
                                     .Value(vm.Status?.Addresses?.Count ?? 0),
                                 new PropertyItem()
-                                    .Key(Assets.Resources.NodePropertiesView_Taints!)
+                                    .Key(L10n.Instance.NodePropertiesView_Taints.CurrentValue()!)
                                     .Value(vm.Spec?.Taints?.Count ?? 0),
                                 new PropertyItem()
-                                    .Key(SharedAssets.Resources.Shared_Conditions!)
+                                    .Key(SharedL10n.Instance.Shared_Conditions.CurrentValue()!)
                                     .Value(vm.Status?.Conditions?.Count ?? 0))),
                 new ExpandableSection()
-                    .Header(SharedAssets.Resources.Shared_Resources!)
+                    .Header(SharedL10n.Instance.Shared_Resources.ToBinding())
                     .Content(
                         new StackPanel()
                             .Children(
                                 new PropertyItem()
-                                    .Key(SharedAssets.Resources.Shared_Capacity_Entries!)
+                                    .Key(SharedL10n.Instance.Shared_Capacity_Entries.CurrentValue()!)
                                     .Value(vm.Status?.Capacity?.Count ?? 0),
                                 new PropertyItem()
-                                    .Key(Assets.Resources.NodePropertiesView_Allocatable_Entries!)
+                                    .Key(L10n.Instance.NodePropertiesView_Allocatable_Entries.CurrentValue()!)
                                     .Value(vm.Status?.Allocatable?.Count ?? 0))));
     }
 }

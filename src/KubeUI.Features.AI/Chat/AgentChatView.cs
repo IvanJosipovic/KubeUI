@@ -18,7 +18,7 @@ public sealed class AgentChatView : KubeUIView<AgentChatViewModel>
 
         var promptEditor = new TextBox()
             .Name("PromptEditor")
-            .PlaceholderText(Assets.Resources.AgentChatView_PromptPlaceholder)
+            .PlaceholderText(L10n.Instance.AgentChatView_PromptPlaceholder.ToBinding())
             .Text(vm, x => x.Prompt)
             .AcceptsReturn(true)
             .TextWrapping(TextWrapping.Wrap)
@@ -39,7 +39,7 @@ public sealed class AgentChatView : KubeUIView<AgentChatViewModel>
                     .Margin(0, 0, 0, 8)
                     .Children(
                         new TextBlock()
-                            .Text(Assets.Resources.AgentChatView_AgentLabel),
+                            .Text(L10n.Instance.AgentChatView_AgentLabel.ToBinding()),
                         new TextBlock()
                             .Text(vm, x => x.SelectedAgent.Name))
                     .Row(0),
@@ -60,13 +60,13 @@ public sealed class AgentChatView : KubeUIView<AgentChatViewModel>
                         promptEditor.Row(0),
                         new Button()
                                     .Name("SendButton")
-                                    .Content(Assets.Resources.AgentChatView_Send)
+                                    .Content(L10n.Instance.AgentChatView_Send.ToBinding())
                                     .Command(vm, x => x.SendCommand)
                                     .IsVisible(vm, x => !x.IsBusy)
                             .Col(1),
                         new Button()
                                     .Name("CancelButton")
-                                    .Content(Assets.Resources.AgentChatView_Cancel)
+                                    .Content(L10n.Instance.AgentChatView_Cancel.ToBinding())
                                     .Command(vm, x => x.CancelCommand)
                                     .IsVisible(vm, x => x.IsBusy)
                             .Col(2)));

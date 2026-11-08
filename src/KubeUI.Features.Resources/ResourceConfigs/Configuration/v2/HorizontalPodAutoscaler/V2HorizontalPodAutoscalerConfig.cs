@@ -20,21 +20,21 @@ public sealed partial class V2HorizontalPodAutoscalerConfig : ResourceConfig<V2H
             new ResourceListColumn<V2HorizontalPodAutoscaler, int>()
             {
                 Key = "min-pods",
-                Name = Assets.Resources.V2HorizontalPodAutoscalerConfig_Min_Pods!,
+                Name = L10n.Instance.V2HorizontalPodAutoscalerConfig_Min_Pods.CurrentValue()!,
                 Field = x => x.Spec.MinReplicas ?? 0,
                 WidthMode = DynamicTableViewWidthMode.Header
             },
             new ResourceListColumn<V2HorizontalPodAutoscaler, int>()
             {
                 Key = "max-pods",
-                Name = Assets.Resources.V2HorizontalPodAutoscalerConfig_Max_Pods!,
+                Name = L10n.Instance.V2HorizontalPodAutoscalerConfig_Max_Pods.CurrentValue()!,
                 Field = x => x.Spec.MaxReplicas,
                 WidthMode = DynamicTableViewWidthMode.Header
             },
             new ResourceListColumn<V2HorizontalPodAutoscaler, int>()
             {
                 Key = "replica",
-                Name = Assets.Resources.V2HorizontalPodAutoscalerConfig_Replica!,
+                Name = L10n.Instance.V2HorizontalPodAutoscalerConfig_Replica.CurrentValue()!,
                 Field = x => x.Status.CurrentReplicas ?? 0,
                 WidthMode = DynamicTableViewWidthMode.Header
             },
@@ -42,7 +42,7 @@ public sealed partial class V2HorizontalPodAutoscalerConfig : ResourceConfig<V2H
             new ResourceListColumn<V2HorizontalPodAutoscaler, string>()
             {
                 Key = "conditions",
-                Name = Assets.Resources.V2HorizontalPodAutoscalerConfig_Conditions!,
+                Name = L10n.Instance.V2HorizontalPodAutoscalerConfig_Conditions.CurrentValue()!,
                 Field = x => x.Status.Conditions?.FirstOrDefault(y => y.Status == "True")?.Type ?? "",
                 WidthMode = DynamicTableViewWidthMode.Header
             },

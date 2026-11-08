@@ -259,7 +259,7 @@ public sealed class MainViewModelTests
 
         menu.Items
             .OfType<MenuItem>()
-            .Single(item => item.Header?.ToString() == Assets.Resources.MainView_Menu_Help)
+            .Single(item => item.Header?.ToString() == AppL10n.Instance.MainView_Menu_Help.CurrentValue()!)
             .Items
             .OfType<MenuItem>()
             .Single(item => item.Header?.ToString() == "_Check for Updates")

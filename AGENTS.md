@@ -22,7 +22,7 @@ This document defines the repository-wide architectural and coding rules. For Av
 
 ### Layering
 - KubeUI.Kubernetes: non-UI Kubernetes/runtime/shared contracts
-- KubeUI.Avalonia: Avalonia framework dependencies, generated extensions, shared assets and theme foundation
+- KubeUI.Foundation: Avalonia framework dependencies, generated extensions, shared assets and theme foundation
 - KubeUI.Controls: reusable controls and shared UI contracts
 - KubeUI.Features.*: feature runtime and feature UI
 - KubeUI.App: main shell, cross-feature UI composition and application services
@@ -31,7 +31,7 @@ This document defines the repository-wide architectural and coding rules. For Av
 ### Boundaries
 - KubeUI.Desktop depends on KubeUI.App
 - KubeUI.App and KubeUI.Features.* depend on KubeUI.Controls
-- KubeUI.Controls depends on KubeUI.Avalonia
+- KubeUI.Controls depends on KubeUI.Foundation
 - Feature projects may depend on KubeUI.Kubernetes and acyclic feature capabilities
 
 ## 3) Dependency Injection
@@ -71,7 +71,9 @@ This document defines the repository-wide architectural and coding rules. For Av
 - Avoid static state except truly immutable constants.
 - Prefer explicit types where clarity is improved; avoid `var` in public APIs.
 - All public APIs must be documented and unit-tested.
-- Resource keys in `Resources.resx` must use `{ViewOrControlName}_{Name}` for view/control-owned UI text, `{ResourceConfigName}_{Name}` for resource-list column headers and resource-config actions, or `Shared_{Name}` for labels shared across multiple views, controls, or configs.
+- Resource keys in each project's `Assets/Resources.json` must use `{ViewOrControlName}_{Name}` for view/control-owned UI text, `{ResourceConfigName}_{Name}` for resource-list column headers and resource-config actions, `{EnumTypeName}_{Value}` for enum display labels, `<Kind>PropertiesView_{Name}` for per-kind generated property views (the view class is always `PropertiesView`), or `Shared_{Name}` for labels shared across multiple views, controls, or configs. The first key segment must be `Shared`, a type declared in the same project, or a documented pattern above, and the key must live in the project that declares its owner type — `JsonResourcesContractTests` enforces this and rejects unreferenced (dead) keys.
+- `KubeUI.App` owns its shell UI text in its own `Assets/Resources.json` behind `KubeUI.App.Assets.LanguageManager` (alias `AppL10n` in test projects). Exception: `[McpServerTool]` `Title`/`Description` attribute literals stay English because attribute arguments are compile-time constants and the SDK registers tools by attribute scanning.
+- Bind localized text on live controls with `L10n.Instance.Key.ToBinding()` (aliases: `SharedL10n` for `KubeUI.Foundation.Assets.LanguageManager`, `ResourceL10n` for the Resources feature). Use `CurrentValue()` only for structural strings, one-shot messages, comparisons, and URIs; every such call is a known non-reactive site.
 - No hacks or weird workarounds; if you think you need one, ask for guidance.
 - When a new feature is added, update the closest Agents.md with the feature requirements
 - Use `System.Threading.Lock` for mutual exclusion. As a project convention, do not reacquire a lock already held by the current thread, even though the lock is reentrant. Never await while holding a lock; release it before any `await` that could re-enter guarded code.
@@ -80,7 +82,7 @@ This document defines the repository-wide architectural and coding rules. For Av
 - Desktop Release publishes use full trimming and must retain visible linker diagnostics.
 - Fix KubeUI-owned trim warnings with static registration, source generation, or correct annotations.
 - Keep a third-party assembly whole only when its used runtime feature depends on reflection or dynamic loading and a focused test covers that feature.
-- Release trim analysis is enabled for KubeUI libraries; analyzer warnings fail Release builds for KubeUI.Features.AI and KubeUI.Kubernetes, and IL2091 fails KubeUI.Avalonia builds.
+- Release trim analysis is enabled for KubeUI libraries; analyzer warnings fail Release builds for KubeUI.Features.AI and KubeUI.Kubernetes, and IL2091 fails KubeUI.Foundation builds.
 - Avalonia reflection warnings remain visible for features whose assemblies are rooted by Desktop; review new diagnostics and record the specific fix or assembly keep.
 - Do not suppress trim warnings project-wide.
 

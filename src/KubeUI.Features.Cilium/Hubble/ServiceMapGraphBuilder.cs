@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using KubeUI.Features.Cilium.Hubble.Models;
 
 namespace KubeUI.Features.Cilium.Hubble;
@@ -223,7 +224,7 @@ public sealed class ServiceMapGraphBuilder
             node = new ServiceMapNode
             {
                 Id = key,
-                Name = isExternal ? "World" : ns,
+                Name = isExternal ? L10n.Instance.ServiceMapGraphBuilder_WorldNodeName.CurrentValue()! : ns,
                 Namespace = ns,
                 WorkloadType = "namespace"
             };
@@ -365,7 +366,7 @@ public sealed class ServiceMapGraphBuilder
                 return new EndpointNode($"{dnsName}-{side}", dnsName, ns, "dns");
             }
 
-            return new EndpointNode($"world-{side}", "World", ns, "world");
+            return new EndpointNode($"world-{side}", L10n.Instance.ServiceMapGraphBuilder_WorldNodeName.CurrentValue()!, ns, "world");
         }
 
         if (!string.IsNullOrWhiteSpace(pod))
@@ -378,7 +379,9 @@ public sealed class ServiceMapGraphBuilder
             return new EndpointNode($"ip/{ip}", ip, ns, null);
         }
 
-        var displayName = identity == 0 ? "World" : $"Identity {identity}";
+        var displayName = identity == 0
+            ? L10n.Instance.ServiceMapGraphBuilder_WorldNodeName.CurrentValue()!
+            : string.Format(CultureInfo.CurrentCulture, L10n.Instance.ServiceMapGraphBuilder_IdentityDisplayName.CurrentValue()!, identity);
         var key = identity == 0 ? "world" : $"identity/{identity}";
         return new EndpointNode(key, displayName, ns, null);
     }

@@ -177,14 +177,14 @@ public partial class ResourceListView : KubeUIView<IResourceListViewModel>
                     .Margin(2, 0, 0, 0)
                     .Command(CompiledBinding.Create<IResourceListViewModel, ICommand?>(x => x.ResourceConfig.NewResourceCommand))
                     .IsVisible(CompiledBinding.Create<IResourceListViewModel, bool>(x => x.ResourceConfig.ShowNewResource))
-                    .ToolTip_Tip(Assets.Resources.ResourceListView_NewResource)
+                    .ToolTip_Tip(L10n.Instance.ResourceListView_NewResource.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.AddSquare)),
                 new Label()
                     .Col(1)
                     .Margin(2, 0, 0, 0)
                     .VerticalContentAlignment(VerticalAlignment.Center)
                     .Content(CompiledBinding.Create<IResourceListViewModel, int>(x => x.ItemCount,
-                        stringFormat: Assets.Resources.ResourceListView_ItemsFormat)),
+                        stringFormat: L10n.Instance.ResourceListView_ItemsFormat.CurrentValue()!)),
                 new StackPanel()
                     .Col(3)
                     .MaxWidth(456)
@@ -199,14 +199,14 @@ public partial class ResourceListView : KubeUIView<IResourceListViewModel>
                             .VerticalAlignment(VerticalAlignment.Stretch)
                             .VerticalContentAlignment(VerticalAlignment.Center)
                             .Background(Brushes.Transparent)
-                            .PlaceholderText(Assets.Resources.ResourceListView_SearchWatermark)
+                            .PlaceholderText(L10n.Instance.ResourceListView_SearchWatermark.ToBinding())
                             .Text(CompiledBinding.Create<IResourceListViewModel, string>(x => x.SearchQuery, mode: BindingMode.TwoWay)),
                         CreateNamespaceSelector(),
                         new ToggleButton()
                             .Margin(0, 0, 2, 0)
                             .IsChecked(CompiledBinding.Create<IResourceListViewModel, bool>(x => x.IsNamespaceSelectionLinked, mode: BindingMode.TwoWay))
                             .IsVisible(CompiledBinding.Create<IResourceListViewModel, bool>(x => x.ResourceConfig.IsNamespaced))
-                            .ToolTip_Tip(Assets.Resources.ResourceListView_NamespaceLink)
+                            .ToolTip_Tip(L10n.Instance.ResourceListView_NamespaceLink.ToBinding())
                             .Content(new FluentIcon().Icon(Icon.Link))));
     }
 
@@ -222,7 +222,7 @@ public partial class ResourceListView : KubeUIView<IResourceListViewModel>
             .Classes("ClearButton")
             .IsVisible(CompiledBinding.Create<IResourceListViewModel, bool>(x => x.ResourceConfig.IsNamespaced))
             .ItemsSource(CompiledBinding.Create<IResourceListViewModel, IEnumerable>(x => x.Cluster.Runtime.Namespaces))
-            .PlaceholderText(Assets.Resources.ResourceListView_SelectNamespace)
+            .PlaceholderText(L10n.Instance.ResourceListView_SelectNamespace.ToBinding())
             .SelectedItems(CompiledBinding.Create<IResourceListViewModel, IList>(x => x.SelectedNamespaces))
             .ItemTemplate(template)
             .SelectedItemTemplate(template);

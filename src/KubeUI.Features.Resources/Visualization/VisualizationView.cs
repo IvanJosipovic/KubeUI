@@ -47,17 +47,17 @@ public sealed partial class VisualizationView : KubeUIView<VisualizationViewMode
             .Children(
                 new ToggleButton()
                     .IsChecked(vm, x => x.HideNoise, BindingMode.TwoWay)
-                    .ToolTip_Tip(Assets.Resources.VisualizationView_HideNoiseTooltip)
+                    .ToolTip_Tip(L10n.Instance.VisualizationView_HideNoiseTooltip.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.EyeOff)),
                 new ToggleButton()
                     .IsChecked(vm, x => x.ShowNotReadyOnly, BindingMode.TwoWay)
-                    .ToolTip_Tip(Assets.Resources.VisualizationView_ShowNotReadyOnlyTooltip)
+                    .ToolTip_Tip(L10n.Instance.VisualizationView_ShowNotReadyOnlyTooltip.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.Warning)),
                 new Label()
                     .VerticalContentAlignment(VerticalAlignment.Center)
                     .Content(CompiledBinding.Create<VisualizationViewModel, int>(x => x.Graph!.Resources.Count,
                         source: vm,
-                        stringFormat: Assets.Resources.VisualizationView_ItemsFormat)),
+                        stringFormat: L10n.Instance.VisualizationView_ItemsFormat.CurrentValue()!)),
                 new Label()
                     .Content(vm, x => x.RootResourceDisplay)
                     .VerticalContentAlignment(VerticalAlignment.Center)
@@ -78,7 +78,7 @@ public sealed partial class VisualizationView : KubeUIView<VisualizationViewMode
                     .Width(200)
                     .MaxHeight(20)
                     .Classes("ClearButton")
-                    .ToolTip_Tip(Assets.Resources.VisualizationView_ResourceTypesTooltip)
+                    .ToolTip_Tip(L10n.Instance.VisualizationView_ResourceTypesTooltip.ToBinding())
                     .ItemsSource(vm, x => x.ResourceTypes)
                     .SelectedItems(vm, x => x.SelectedResourceTypes)
                     .IsEnabled(vm, x => x.HasResourceTypes),
@@ -90,7 +90,7 @@ public sealed partial class VisualizationView : KubeUIView<VisualizationViewMode
                     .Classes("ClearButton")
                     .ItemsSource(vm, x => x.Cluster.Runtime.Namespaces)
                     .SelectedItems(vm, x => x.SelectedNamespaces)
-                    .PlaceholderText(Assets.Resources.ResourceListView_SelectNamespace)
+                    .PlaceholderText(L10n.Instance.ResourceListView_SelectNamespace.ToBinding())
                     .SelectedItemTemplate(template)
                     .ItemTemplate(template)
                     .IsEnabled(vm, x => x.IsNamespaceSelectionEnabled)
@@ -98,7 +98,7 @@ public sealed partial class VisualizationView : KubeUIView<VisualizationViewMode
                 new ToggleButton()
                     .Margin(0, 0, 2, 0)
                     .IsChecked(vm, x => x.IsNamespaceSelectionLinked, BindingMode.TwoWay)
-                    .ToolTip_Tip(Assets.Resources.ResourceListView_NamespaceLink)
+                    .ToolTip_Tip(L10n.Instance.ResourceListView_NamespaceLink.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.Link))
                     .IsEnabled(vm, x => x.IsNamespaceSelectionEnabled)
                     .IsVisible(vm, x => x.IsNamespaceSelectorVisible));
@@ -123,7 +123,7 @@ public sealed partial class VisualizationView : KubeUIView<VisualizationViewMode
                 .Children(
                     new TextBlock()
                         .Row(0)
-                        .Text(Assets.Resources.VisualizationView_ErrorHeader),
+                        .Text(L10n.Instance.VisualizationView_ErrorHeader.ToBinding()),
                     new SelectableTextBlock()
                         .Row(1)
                         .Text(vm, x => x.ErrorMessage)

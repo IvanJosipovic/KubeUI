@@ -27,7 +27,7 @@
     <InternalsVisibleTo Include="KubeUI.Avalonia.Tests" />
     <InternalsVisibleTo Include="KubeUI.Features.Resources.Tests" />
     <InternalsVisibleTo Include="KubeUI.Benchmarks" />
-    <ProjectReference Include="..\KubeUI.Avalonia\KubeUI.Avalonia.csproj" />
+    <ProjectReference Include="..\KubeUI.Foundation\KubeUI.Foundation.csproj" />
   </ItemGroup>
 
   <ItemGroup>

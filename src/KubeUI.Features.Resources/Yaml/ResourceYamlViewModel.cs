@@ -120,7 +120,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IClusterWorkspaceCon
         IKubernetesYamlSerializer yamlSerializer,
         IYamlValidationService yamlValidationService)
     {
-        Title = Assets.Resources.ResourceYamlView_Title;
+        Title = L10n.Instance.ResourceYamlView_Title.CurrentValue()!;
         _logger = logger;
         _yamlSerializer = yamlSerializer;
         _yamlValidationService = yamlValidationService;
@@ -152,7 +152,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IClusterWorkspaceCon
     {
         _readOnlyYaml = null;
         IsReadOnlyLocked = false;
-        Title = Assets.Resources.ResourceYamlView_Title;
+        Title = L10n.Instance.ResourceYamlView_Title.CurrentValue()!;
         Cluster = cluster;
         Cluster.Runtime.OnChange += Cluster_OnChange;
         _resourceKind = resourceKind;
@@ -279,7 +279,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IClusterWorkspaceCon
         {
             var diagnostic = ValidationDiagnostics[0];
             var message = $"{diagnostic.Message} (line {diagnostic.StartLine}, column {diagnostic.StartColumn})";
-            SetActionResult(false, Assets.Resources.ResourceYamlView_SaveFailed, message);
+            SetActionResult(false, L10n.Instance.ResourceYamlView_SaveFailed.CurrentValue()!, message);
             return;
         }
 
@@ -288,12 +288,12 @@ public partial class ResourceYamlViewModel : ViewModelBase, IClusterWorkspaceCon
             var byteArray = Encoding.UTF8.GetBytes(YamlDocument.Text);
             await using MemoryStream stream = new(byteArray);
             await Cluster!.Runtime.ImportYaml(stream);
-            SetActionResult(true, Assets.Resources.ResourceYamlView_SaveSucceeded, Assets.Resources.ResourceYamlView_SaveSucceededMessage);
+            SetActionResult(true, L10n.Instance.ResourceYamlView_SaveSucceeded.CurrentValue()!, L10n.Instance.ResourceYamlView_SaveSucceededMessage.CurrentValue()!);
         }
         catch (Exception ex)
         {
             SetServerValidationDiagnostics(ex);
-            SetActionResult(false, Assets.Resources.ResourceYamlView_SaveFailed, ResourceUtilities.GetUserFacingErrorMessage(ex));
+            SetActionResult(false, L10n.Instance.ResourceYamlView_SaveFailed.CurrentValue()!, ResourceUtilities.GetUserFacingErrorMessage(ex));
             _logger.LogError(ex, "Error Saving Yaml");
         }
     }
@@ -312,7 +312,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IClusterWorkspaceCon
         {
             var diagnostic = ValidationDiagnostics[0];
             var message = $"{diagnostic.Message} (line {diagnostic.StartLine}, column {diagnostic.StartColumn})";
-            SetActionResult(false, Assets.Resources.ResourceYamlView_DryRunFailed, message);
+            SetActionResult(false, L10n.Instance.ResourceYamlView_DryRunFailed.CurrentValue()!, message);
             return;
         }
 
@@ -321,12 +321,12 @@ public partial class ResourceYamlViewModel : ViewModelBase, IClusterWorkspaceCon
             var byteArray = Encoding.UTF8.GetBytes(YamlDocument.Text);
             await using MemoryStream stream = new(byteArray);
             await Cluster!.Runtime.DryRunYaml(stream);
-            SetActionResult(true, Assets.Resources.ResourceYamlView_DryRunSucceeded, Assets.Resources.ResourceYamlView_DryRunSucceededMessage);
+            SetActionResult(true, L10n.Instance.ResourceYamlView_DryRunSucceeded.CurrentValue()!, L10n.Instance.ResourceYamlView_DryRunSucceededMessage.CurrentValue()!);
         }
         catch (Exception ex)
         {
             SetServerValidationDiagnostics(ex);
-            SetActionResult(false, Assets.Resources.ResourceYamlView_DryRunFailed, ResourceUtilities.GetUserFacingErrorMessage(ex));
+            SetActionResult(false, L10n.Instance.ResourceYamlView_DryRunFailed.CurrentValue()!, ResourceUtilities.GetUserFacingErrorMessage(ex));
             _logger.LogError(ex, "Error Dry Running Yaml");
         }
     }
@@ -506,7 +506,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IClusterWorkspaceCon
             var diagnostic = ValidationDiagnostics[0];
             SetActionResult(
                 false,
-                Assets.Resources.ResourceYamlView_ValidationFailed,
+                L10n.Instance.ResourceYamlView_ValidationFailed.CurrentValue()!,
                 $"{diagnostic.Message} (line {diagnostic.StartLine}, column {diagnostic.StartColumn})",
                 fromValidation: true);
             return;
