@@ -1,4 +1,4 @@
-﻿using k8s.Models;
+using k8s.Models;
 
 namespace KubeUI.Features.Resources.Configuration.v1.ConfigMap;
 
@@ -20,7 +20,7 @@ public sealed partial class V1ConfigMapConfig : ResourceConfig<V1ConfigMap>
             new ResourceListColumn<V1ConfigMap, string>()
             {
                 Key = "keys",
-                Name = L10n.Instance.V1ConfigMapConfig_Keys.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1ConfigMapConfig_Keys.CurrentValue()!,
                 Field = x => x.Data is { Count: > 0 } data ? string.Join(", ", data.Keys) : "",
                 WidthMode = DynamicTableViewWidthMode.Header
             },

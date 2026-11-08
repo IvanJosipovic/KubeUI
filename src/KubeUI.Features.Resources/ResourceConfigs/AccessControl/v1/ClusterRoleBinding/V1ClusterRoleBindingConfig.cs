@@ -1,4 +1,4 @@
-﻿using k8s.Models;
+using k8s.Models;
 
 namespace KubeUI.Features.Resources.AccessControl.v1.ClusterRoleBinding;
 
@@ -19,7 +19,7 @@ public sealed partial class V1ClusterRoleBindingConfig : ResourceConfig<V1Cluste
             new ResourceListColumn<V1ClusterRoleBinding, string>()
             {
                 Key = "bindings",
-                Name = L10n.Instance.V1ClusterRoleBindingConfig_Bindings.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1ClusterRoleBindingConfig_Bindings.CurrentValue()!,
                 Field = x => x.Subjects is { Count: > 0 } subjects ? string.Join(", ", subjects.Select(y => y.Name)) : "",
                 Width = 1, WidthMode = DynamicTableViewWidthMode.Star,
             },

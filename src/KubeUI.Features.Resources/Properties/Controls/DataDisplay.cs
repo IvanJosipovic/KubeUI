@@ -1,4 +1,4 @@
-﻿using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using FluentAvalonia.UI.Controls;
@@ -89,7 +89,7 @@ internal sealed class DataDisplay<TResource, TValue> : UserControl, IInitializeC
                 new Button()
                     .Command(viewModel, x => x.BeginEditCommand)
                     .IsVisible(viewModel, x => x.CanEdit)
-                    .ToolTip_Tip(L10n.Instance.DataDisplay_Edit.ToBinding())
+                    .ToolTip_Tip(ResourcesLanguageManager.Instance.DataDisplay_Edit.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.DocumentEdit)));
     }
 
@@ -102,15 +102,15 @@ internal sealed class DataDisplay<TResource, TValue> : UserControl, IInitializeC
                 new Button()
                     .Command(viewModel, x => x.SaveCommand)
                     .IsEnabled(viewModel, x => x.CanSave)
-                    .ToolTip_Tip(L10n.Instance.DataDisplay_Save.ToBinding())
+                    .ToolTip_Tip(ResourcesLanguageManager.Instance.DataDisplay_Save.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.Save)),
                 new Button()
                     .Command(viewModel, x => x.AddCommand)
-                    .ToolTip_Tip(L10n.Instance.DataDisplay_Add.ToBinding())
+                    .ToolTip_Tip(ResourcesLanguageManager.Instance.DataDisplay_Add.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.Add)),
                 new Button()
                     .Command(viewModel, x => x.CancelCommand)
-                    .ToolTip_Tip(L10n.Instance.DataDisplay_Cancel.ToBinding())
+                    .ToolTip_Tip(ResourcesLanguageManager.Instance.DataDisplay_Cancel.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.Dismiss)));
     }
 
@@ -151,7 +151,7 @@ internal sealed class DataDisplay<TResource, TValue> : UserControl, IInitializeC
                     .Command(viewModel, x => x.RemoveCommand)
                     .CommandParameter(row)
                     .IsVisible(viewModel, x => x.EditMode)
-                    .ToolTip_Tip(L10n.Instance.DataDisplay_Remove.ToBinding())
+                    .ToolTip_Tip(ResourcesLanguageManager.Instance.DataDisplay_Remove.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.Delete)));
     }
 

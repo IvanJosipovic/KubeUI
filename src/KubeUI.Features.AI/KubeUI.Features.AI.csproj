@@ -23,7 +23,7 @@
     <InternalsVisibleTo Include="KubeUI.Avalonia.Tests" />
     <InternalsVisibleTo Include="KubeUI.Features.AI.Tests" />
     <InternalsVisibleTo Include="KubeUI.Desktop" />
-    <Using Include="KubeUI.Features.AI.Assets.LanguageManager" Alias="L10n" />
+    <Using Include="KubeUI.Features.AI.Assets" />
     <Using Include="KubeUI.Foundation.Localization" />
     <Using Include="KubeUI.Controls.Presentation" />
     <Using Include="KubeUI.Controls.DependencyInjection" />

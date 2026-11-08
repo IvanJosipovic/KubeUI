@@ -1,4 +1,4 @@
-﻿using Avalonia.Collections;
+using Avalonia.Collections;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
@@ -39,21 +39,21 @@ public sealed partial class V1ServiceConfig : ResourceConfig<V1Service>
             new ResourceListColumn<V1Service, string>()
             {
                 Key = "type",
-                Name = L10n.Instance.V1ServiceConfig_Type.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1ServiceConfig_Type.CurrentValue()!,
                 Field = x => x.Spec.Type,
                 WidthMode = DynamicTableViewWidthMode.Cells
             },
             new ResourceListColumn<V1Service, string>()
             {
                 Key = "cluster-ip",
-                Name = L10n.Instance.V1ServiceConfig_Cluster_IP.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1ServiceConfig_Cluster_IP.CurrentValue()!,
                 Field = x => x.Spec.ClusterIP,
                 WidthMode = DynamicTableViewWidthMode.Cells
             },
             new ResourceListColumn<V1Service, int>()
             {
                 Key = "ports",
-                Name = L10n.Instance.V1ServiceConfig_Ports.CurrentValue()!,
+                Name = ResourcesLanguageManager.Instance.V1ServiceConfig_Ports.CurrentValue()!,
                 Display = x => x.Spec?.Ports is { Count: > 0 } ports ? string.Join(", ", ports.Select(x => $"{x.Port}{(string.IsNullOrEmpty(x.Name) ? "" : ":" + x.Name)}/{x.Protocol}")) : "",
                 Field = x => x.Spec?.Ports?.FirstOrDefault()?.Port ?? 0,
                 WidthMode = DynamicTableViewWidthMode.Cells
@@ -74,13 +74,13 @@ public sealed partial class V1ServiceConfig : ResourceConfig<V1Service>
         return [
             new()
             {
-                Title = L10n.Instance.V1ServiceConfig_MenuItem_PortForwarding.CurrentValue()!,
+                Title = ResourcesLanguageManager.Instance.V1ServiceConfig_MenuItem_PortForwarding.CurrentValue()!,
                 FluentIcon = Icon.CloudFlow,
                 Items = selectedItem?.Spec?.Ports == null
                     ? null
                     : new AvaloniaList<MenuItemViewModel>(selectedItem.Spec.Ports.Select(p => new MenuItemViewModel()
                     {
-                        Title = string.Format(L10n.Instance.V1ServiceConfig_MenuItem_PortFormat.CurrentValue()!, p.Name, p.Port),
+                        Title = string.Format(ResourcesLanguageManager.Instance.V1ServiceConfig_MenuItem_PortFormat.CurrentValue()!, p.Name, p.Port),
                         Command = PortForwardServiceCommand,
                         CommandParameter = new ArrayList { selectedItem, p },
                     }).ToList()),
@@ -97,10 +97,10 @@ public sealed partial class V1ServiceConfig : ResourceConfig<V1Service>
 
             ContentDialogSettings settings = new()
             {
-                Title = L10n.Instance.ResourceListView_PortForward_Title.CurrentValue()!,
-                Content = string.Format(L10n.Instance.ResourceListView_PortForward_Content.CurrentValue()!, containerPort.Port, pf.LocalPort),
-                PrimaryButtonText = L10n.Instance.ResourceListView_PortForward_Primary.CurrentValue()!,
-                SecondaryButtonText = L10n.Instance.ResourceListView_PortForward_Secondary.CurrentValue()!,
+                Title = ResourcesLanguageManager.Instance.ResourceListView_PortForward_Title.CurrentValue()!,
+                Content = string.Format(ResourcesLanguageManager.Instance.ResourceListView_PortForward_Content.CurrentValue()!, containerPort.Port, pf.LocalPort),
+                PrimaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_PortForward_Primary.CurrentValue()!,
+                SecondaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_PortForward_Secondary.CurrentValue()!,
                 DefaultButton = FAContentDialogButton.Secondary
             };
 

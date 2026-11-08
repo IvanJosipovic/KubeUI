@@ -1,7 +1,7 @@
 # Avalonia Tests
 
 ## Structure
-- Keep cross-feature, App-shell, Controls, Desktop startup, and Foundation tests in this shared headless assembly, grouped under `App/`, `Controls/`, `Desktop/`, and `Foundation/`.
+- Keep cross-feature, App-shell, Desktop startup, and Foundation tests in this shared headless assembly, grouped under `App/`, `Desktop/`, and `Foundation/`. Keep Controls consumer/integration tests here only when they need App composition; App-independent Controls tests belong in `KubeUI.Controls.Tests`.
 - Keep each feature's tests in a matching `KubeUI.Features.<Feature>.Tests` project under `tests/`, with test files grouped by feature. Use shared test infrastructure rather than copying setup across projects.
 - Keep shared Avalonia test setup in `Infra/`.
 - Shared Kubernetes test helpers are imported from `KubeUI.Testing.Kubernetes.Scenarios`, `KubeUI.Testing.Kubernetes.Transport`, and `KubeUI.Testing.Kubernetes.Infrastructure`; polling helpers are in `KubeUI.Testing.Utilities`.

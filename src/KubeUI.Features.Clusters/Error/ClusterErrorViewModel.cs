@@ -4,7 +4,7 @@ public sealed partial class ClusterErrorViewModel : ViewModelBase
 {
     public ClusterErrorViewModel()
     {
-        Title = L10n.Instance.ClusterErrorView_Title.CurrentValue()!;
+        Title = ClustersLanguageManager.Instance.ClusterErrorView_Title.CurrentValue()!;
         Id = nameof(ClusterErrorViewModel);
     }
 

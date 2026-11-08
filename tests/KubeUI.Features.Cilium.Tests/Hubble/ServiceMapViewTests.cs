@@ -276,7 +276,7 @@ public sealed class ServiceMapViewTests
             .Value;
         vertexControl.ContextMenu.ShouldNotBeNull();
         var viewItem = vertexControl.ContextMenu!.Items.OfType<MenuItem>().Single();
-        viewItem.Header.ShouldBe(CiliumL10n.Instance.ServiceMapGraphControl_View.CurrentValue());
+        viewItem.Header.ShouldBe(CiliumLanguageManager.Instance.ServiceMapGraphControl_View.CurrentValue());
         viewItem.Command.ShouldNotBeNull();
         viewItem.Command!.CanExecute(viewItem.CommandParameter).ShouldBeTrue();
         viewItem.Command.Execute(viewItem.CommandParameter);
@@ -325,15 +325,15 @@ public sealed class ServiceMapViewTests
         var properties = view.GetVisualDescendants()
             .OfType<PropertyItem>()
             .ToDictionary(static item => item.Key, static item => item.Value?.ToString());
-        properties[CiliumL10n.Instance.ServiceMapNodePropertiesView_Id.CurrentValue()!].ShouldBe(node.Id);
-        properties[CiliumL10n.Instance.ServiceMapNodePropertiesView_Name.CurrentValue()!].ShouldBe(node.Name);
-        properties[CiliumL10n.Instance.ServiceMapNodePropertiesView_Namespace.CurrentValue()!].ShouldBe(node.Namespace);
-        properties[CiliumL10n.Instance.ServiceMapNodePropertiesView_WorkloadType.CurrentValue()!].ShouldBe(node.WorkloadType);
-        properties[CiliumL10n.Instance.ServiceMapNodePropertiesView_IngressFlows.CurrentValue()!].ShouldBe("3");
-        properties[CiliumL10n.Instance.ServiceMapNodePropertiesView_EgressFlows.CurrentValue()!].ShouldBe("5");
-        properties[CiliumL10n.Instance.ServiceMapNodePropertiesView_AllowedFlows.CurrentValue()!].ShouldBe("7");
-        properties[CiliumL10n.Instance.ServiceMapNodePropertiesView_DeniedFlows.CurrentValue()!].ShouldBe("1");
-        var accessPoints = properties[CiliumL10n.Instance.ServiceMapNodePropertiesView_AccessPoints.CurrentValue()!];
+        properties[CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_Id.CurrentValue()!].ShouldBe(node.Id);
+        properties[CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_Name.CurrentValue()!].ShouldBe(node.Name);
+        properties[CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_Namespace.CurrentValue()!].ShouldBe(node.Namespace);
+        properties[CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_WorkloadType.CurrentValue()!].ShouldBe(node.WorkloadType);
+        properties[CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_IngressFlows.CurrentValue()!].ShouldBe("3");
+        properties[CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_EgressFlows.CurrentValue()!].ShouldBe("5");
+        properties[CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_AllowedFlows.CurrentValue()!].ShouldBe("7");
+        properties[CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_DeniedFlows.CurrentValue()!].ShouldBe("1");
+        var accessPoints = properties[CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_AccessPoints.CurrentValue()!];
         accessPoints.ShouldContain("TCP:8080");
         accessPoints.ShouldContain("4 flows");
         accessPoints.ShouldContain("HTTP");
@@ -876,7 +876,7 @@ public sealed class ServiceMapViewTests
         ReferenceEquals(graphControl.Graph, viewModel.Graph).ShouldBeTrue();
         var emptyState = view.GetVisualDescendants()
             .OfType<TextBlock>()
-            .Single(textBlock => textBlock.Text == CiliumL10n.Instance.ServiceMapView_SelectNamespacePrompt.CurrentValue());
+            .Single(textBlock => textBlock.Text == CiliumLanguageManager.Instance.ServiceMapView_SelectNamespacePrompt.CurrentValue());
         emptyState.IsVisible.ShouldBeTrue();
         var graphSummary = view.GetVisualDescendants()
             .OfType<TextBlock>()
@@ -942,7 +942,7 @@ public sealed class ServiceMapViewTests
             .Single(border => border.Classes.Contains("ServiceMapNode"));
         ToolTip.GetTip(serverNodeBorder)!.ToString().ShouldContain("TCP:8080");
         ToolTip.GetTip(graphControl.Area.GetVisualDescendants().OfType<EdgeControl>().Single())
-            .ShouldBe(CiliumL10n.Instance.ServiceMapGraphControl_EdgeTooltipFormat.CurrentValue()
+            .ShouldBe(CiliumLanguageManager.Instance.ServiceMapGraphControl_EdgeTooltipFormat.CurrentValue()
                 .Replace("{0}", "2", StringComparison.Ordinal)
                 .Replace("{1}", "TCP 8080 (2)", StringComparison.Ordinal));
         emptyState.IsVisible.ShouldBeFalse();

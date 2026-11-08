@@ -42,7 +42,7 @@ public sealed partial class UpdateAvailableViewModel : ViewModelBase
         _platformServices = platformServices;
         _logger = logger;
         Id = nameof(UpdateAvailableViewModel);
-        Title = L10n.Instance.UpdateAvailableView_Title.CurrentValue()!;
+        Title = AppLanguageManager.Instance.UpdateAvailableView_Title.CurrentValue()!;
         CanClose = true;
     }
 
@@ -54,7 +54,7 @@ public sealed partial class UpdateAvailableViewModel : ViewModelBase
     {
         LatestVersion = latestVersion;
         VersionSummary = string.Format(
-            L10n.Instance.UpdateAvailableView_VersionSummaryFormat.CurrentValue()!,
+            AppLanguageManager.Instance.UpdateAvailableView_VersionSummaryFormat.CurrentValue()!,
             currentVersion,
             latestVersion);
         MarkdownBuilder.Clear();
@@ -84,7 +84,7 @@ public sealed partial class UpdateAvailableViewModel : ViewModelBase
         IsUpdating = true;
         CanClose = false;
         DownloadProgress = 0;
-        DownloadProgressText = string.Format(L10n.Instance.UpdateAvailableView_DownloadProgress.CurrentValue()!, 0);
+        DownloadProgressText = string.Format(AppLanguageManager.Instance.UpdateAvailableView_DownloadProgress.CurrentValue()!, 0);
 
         try
         {
@@ -121,7 +121,7 @@ public sealed partial class UpdateAvailableViewModel : ViewModelBase
         {
             DownloadProgress = Math.Clamp(progress, 0, 100);
             DownloadProgressText = string.Format(
-                L10n.Instance.UpdateAvailableView_DownloadProgress.CurrentValue()!,
+                AppLanguageManager.Instance.UpdateAvailableView_DownloadProgress.CurrentValue()!,
                 DownloadProgress);
         });
     }
@@ -148,17 +148,17 @@ public sealed partial class UpdateAvailableViewModel : ViewModelBase
 
         return markdown.Length > 0
             ? markdown.ToString()
-            : L10n.Instance.UpdateAvailableView_NoReleaseNotes.CurrentValue()!;
+            : AppLanguageManager.Instance.UpdateAvailableView_NoReleaseNotes.CurrentValue()!;
     }
 
     internal static ContentDialogSettings CreateUpdateConfirmationDialogSettings(string latestVersion)
     {
         return new ContentDialogSettings
         {
-            Title = L10n.Instance.UpdateAvailableView_Confirm_Title.CurrentValue()!,
-            Content = string.Format(L10n.Instance.UpdateAvailableView_Confirm_Content.CurrentValue()!, latestVersion),
-            PrimaryButtonText = L10n.Instance.UpdateAvailableView_Confirm_Primary.CurrentValue()!,
-            SecondaryButtonText = L10n.Instance.UpdateAvailableView_Confirm_Secondary.CurrentValue()!,
+            Title = AppLanguageManager.Instance.UpdateAvailableView_Confirm_Title.CurrentValue()!,
+            Content = string.Format(AppLanguageManager.Instance.UpdateAvailableView_Confirm_Content.CurrentValue()!, latestVersion),
+            PrimaryButtonText = AppLanguageManager.Instance.UpdateAvailableView_Confirm_Primary.CurrentValue()!,
+            SecondaryButtonText = AppLanguageManager.Instance.UpdateAvailableView_Confirm_Secondary.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary
         };
     }
@@ -167,9 +167,9 @@ public sealed partial class UpdateAvailableViewModel : ViewModelBase
     {
         return new ContentDialogSettings
         {
-            Title = L10n.Instance.UpdateAvailableView_Failure_Title.CurrentValue()!,
-            Content = L10n.Instance.UpdateAvailableView_Failure_Content.CurrentValue()!,
-            PrimaryButtonText = L10n.Instance.UpdateAvailableView_Failure_Primary.CurrentValue()!,
+            Title = AppLanguageManager.Instance.UpdateAvailableView_Failure_Title.CurrentValue()!,
+            Content = AppLanguageManager.Instance.UpdateAvailableView_Failure_Content.CurrentValue()!,
+            PrimaryButtonText = AppLanguageManager.Instance.UpdateAvailableView_Failure_Primary.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Primary
         };
     }

@@ -13,9 +13,9 @@ public sealed class LanguageManagerTests
     {
         var seen = new List<string?>();
 
-        using var subscription = LanguageManager.Instance.HubbleNavigationSectionProvider_SectionTitle.Subscribe(seen.Add);
+        using var subscription = CiliumLanguageManager.Instance.HubbleNavigationSectionProvider_SectionTitle.Subscribe(seen.Add);
 
-        LanguageManager.Instance.HubbleNavigationSectionProvider_SectionTitle.CurrentValue().ShouldBe("Cilium");
+        CiliumLanguageManager.Instance.HubbleNavigationSectionProvider_SectionTitle.CurrentValue().ShouldBe("Cilium");
         seen.ShouldNotBeEmpty();
         seen[^1].ShouldBe("Cilium");
     }

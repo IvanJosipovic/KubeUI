@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Shouldly;
 
@@ -149,6 +150,24 @@ public sealed class ProjectBoundaryTests
         var isAcyclic = projects.Keys.Order(StringComparer.Ordinal).All(Visit);
 
         isAcyclic.ShouldBeTrue(cycle is null ? "Project graph must be acyclic." : $"Project dependency cycle: {cycle}");
+    }
+
+    [Fact]
+    public void External_markup_extension_assemblies_have_one_generator_owner()
+    {
+        var sourceRoot = Path.Combine(FindRepositoryRoot(), "src");
+        var declarations = Directory.EnumerateFiles(sourceRoot, "*.cs", SearchOption.AllDirectories)
+            .SelectMany(path => Regex.Matches(File.ReadAllText(path),
+                    @"GenerateMarkupExtensionsForAssembly\(typeof\((?<type>[^)]+)\)")
+                .Select(match => (Path: path, Type: match.Groups["type"].Value.Trim())));
+
+        var duplicates = declarations
+            .GroupBy(static item => item.Type, StringComparer.Ordinal)
+            .Where(static group => group.Count() > 1)
+            .Select(static group => $"{group.Key}: {string.Join(", ", group.Select(item => Path.GetRelativePath(FindRepositoryRoot(), item.Path)))}")
+            .ToArray();
+
+        duplicates.ShouldBeEmpty("Each external markup-extension assembly must have one source generator owner.");
     }
 
     private static Dictionary<string, ProjectReferences> LoadProjectGraph()

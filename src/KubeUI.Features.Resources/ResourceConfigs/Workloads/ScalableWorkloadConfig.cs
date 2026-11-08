@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Avalonia.Controls;
@@ -38,7 +38,7 @@ public abstract partial class ScalableWorkloadConfig<[DynamicallyAccessedMembers
         var selected = selectedItems?.ToList();
         return new MenuItemViewModel
         {
-            Title = L10n.Instance.ScalableWorkloadConfig_Scale.CurrentValue()!,
+            Title = ResourcesLanguageManager.Instance.ScalableWorkloadConfig_Scale.CurrentValue()!,
             FluentIcon = Icon.Resize,
             Command = ScaleCommand,
             CommandParameter = selected,
@@ -73,18 +73,18 @@ public abstract partial class ScalableWorkloadConfig<[DynamicallyAccessedMembers
         {
             content.Children.Add(new TextBlock
             {
-                Text = string.Format(CultureInfo.CurrentCulture, L10n.Instance.ScalableWorkloadConfig_BulkPrompt.CurrentValue()!, selected.Count),
-                TextWrapping = global::Avalonia.Media.TextWrapping.Wrap,
+                Text = string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.ScalableWorkloadConfig_BulkPrompt.CurrentValue()!, selected.Count),
+                TextWrapping = TextWrapping.Wrap,
             });
         }
-        content.Children.Add(new TextBlock { Text = L10n.Instance.ScalableWorkloadConfig_ReplicaCount.CurrentValue()! });
+        content.Children.Add(new TextBlock { Text = ResourcesLanguageManager.Instance.ScalableWorkloadConfig_ReplicaCount.CurrentValue()! });
         content.Children.Add(replicasInput);
 
         var settings = new ContentDialogSettings(content)
         {
-            Title = L10n.Instance.ScalableWorkloadConfig_ScaleTitle.CurrentValue()!,
-            PrimaryButtonText = L10n.Instance.ScalableWorkloadConfig_Apply.CurrentValue()!,
-            SecondaryButtonText = SharedL10n.Instance.Shared_Cancel.CurrentValue()!,
+            Title = ResourcesLanguageManager.Instance.ScalableWorkloadConfig_ScaleTitle.CurrentValue()!,
+            PrimaryButtonText = ResourcesLanguageManager.Instance.ScalableWorkloadConfig_Apply.CurrentValue()!,
+            SecondaryButtonText = FoundationLanguageManager.Instance.Shared_Cancel.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary,
         };
         var result = await _dialogService.ShowContentDialogAsync(this, settings);
@@ -104,7 +104,7 @@ public abstract partial class ScalableWorkloadConfig<[DynamicallyAccessedMembers
             catch (Exception ex)
             {
                 exceptions.Add(ex);
-                ResourceUtilities.HandleException(_logger, _notificationManager, ex, string.Format(CultureInfo.CurrentCulture, L10n.Instance.ScalableWorkloadConfig_ScaleError.CurrentValue()!, workload.Namespace(), workload.Name()), sendNotification: true);
+                ResourceUtilities.HandleException(_logger, _notificationManager, ex, string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.ScalableWorkloadConfig_ScaleError.CurrentValue()!, workload.Namespace(), workload.Name()), sendNotification: true);
             }
         }
 

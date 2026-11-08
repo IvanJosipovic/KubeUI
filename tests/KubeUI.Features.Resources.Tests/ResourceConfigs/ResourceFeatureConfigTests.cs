@@ -102,7 +102,7 @@ public sealed class ResourceFeatureConfigTests
     {
         var config = ResolveConfig<V1EventConfig>();
 
-        var lastSeenColumn = config.Columns().Single(x => x.Name == ResourceL10n.Instance.V1EventConfig_Last_Seen.CurrentValue()!);
+        var lastSeenColumn = config.Columns().Single(x => x.Name == ResourcesLanguageManager.Instance.V1EventConfig_Last_Seen.CurrentValue()!);
 
         lastSeenColumn.CustomControl.ShouldNotBeNull();
         lastSeenColumn.CustomControl!.Name.ShouldBe("EventLastSeenCell");
@@ -132,9 +132,9 @@ public sealed class ResourceFeatureConfigTests
         var statefulSet = ResolveConfig<V1StatefulSetConfig>();
         var replicaSet = ResolveConfig<V1ReplicaSetConfig>();
 
-        deployment.GetCustomMenuItems(new[] { new V1Deployment() }).ShouldContain(item => item.Title == ResourceL10n.Instance.ScalableWorkloadConfig_Scale.CurrentValue()!);
-        statefulSet.GetCustomMenuItems(new[] { new V1StatefulSet() }).ShouldContain(item => item.Title == ResourceL10n.Instance.ScalableWorkloadConfig_Scale.CurrentValue()!);
-        replicaSet.GetCustomMenuItems(new[] { new V1ReplicaSet() }).ShouldContain(item => item.Title == ResourceL10n.Instance.ScalableWorkloadConfig_Scale.CurrentValue()!);
+        deployment.GetCustomMenuItems(new[] { new V1Deployment() }).ShouldContain(item => item.Title == ResourcesLanguageManager.Instance.ScalableWorkloadConfig_Scale.CurrentValue()!);
+        statefulSet.GetCustomMenuItems(new[] { new V1StatefulSet() }).ShouldContain(item => item.Title == ResourcesLanguageManager.Instance.ScalableWorkloadConfig_Scale.CurrentValue()!);
+        replicaSet.GetCustomMenuItems(new[] { new V1ReplicaSet() }).ShouldContain(item => item.Title == ResourcesLanguageManager.Instance.ScalableWorkloadConfig_Scale.CurrentValue()!);
     }
 
     [AvaloniaFact]
@@ -143,8 +143,8 @@ public sealed class ResourceFeatureConfigTests
         var config = ResolveConfig<V1ReplicaSetConfig>();
         var actions = config.GetCustomMenuItems(new[] { new V1ReplicaSet() }).ToArray();
 
-        actions.ShouldContain(item => item.Title == ResourceL10n.Instance.ScalableWorkloadConfig_Scale.CurrentValue()!);
-        actions.ShouldNotContain(item => item.Title == ResourceL10n.Instance.V1DeploymentConfig_MenuItem_Restart.CurrentValue()!);
+        actions.ShouldContain(item => item.Title == ResourcesLanguageManager.Instance.ScalableWorkloadConfig_Scale.CurrentValue()!);
+        actions.ShouldNotContain(item => item.Title == ResourcesLanguageManager.Instance.V1DeploymentConfig_MenuItem_Restart.CurrentValue()!);
     }
 
     [AvaloniaFact]
@@ -152,8 +152,8 @@ public sealed class ResourceFeatureConfigTests
     {
         var config = ResolveConfig<V1DeploymentConfig>();
         var actions = config.GetCustomMenuItems(new[] { new V1Deployment() });
-        var scale = actions.Single(item => item.Title == ResourceL10n.Instance.ScalableWorkloadConfig_Scale.CurrentValue()!);
-        var restart = actions.Single(item => item.Title == ResourceL10n.Instance.V1DeploymentConfig_MenuItem_Restart.CurrentValue()!);
+        var scale = actions.Single(item => item.Title == ResourcesLanguageManager.Instance.ScalableWorkloadConfig_Scale.CurrentValue()!);
+        var restart = actions.Single(item => item.Title == ResourcesLanguageManager.Instance.V1DeploymentConfig_MenuItem_Restart.CurrentValue()!);
 
         scale.FluentIcon.ShouldNotBe(restart.FluentIcon);
     }
@@ -172,7 +172,7 @@ public sealed class ResourceFeatureConfigTests
 
         await AssertOnDeleteRestartDisabledAsync<V1StatefulSetConfig, V1StatefulSet>(
             statefulSet,
-            ResourceL10n.Instance.V1StatefulSetConfig_MenuItem_Restart.CurrentValue()!);
+            ResourcesLanguageManager.Instance.V1StatefulSetConfig_MenuItem_Restart.CurrentValue()!);
     }
 
     [AvaloniaFact]
@@ -189,7 +189,7 @@ public sealed class ResourceFeatureConfigTests
 
         await AssertOnDeleteRestartDisabledAsync<V1DaemonSetConfig, V1DaemonSet>(
             daemonSet,
-            ResourceL10n.Instance.V1DaemonSetConfig_MenuItem_Restart.CurrentValue()!);
+            ResourcesLanguageManager.Instance.V1DaemonSetConfig_MenuItem_Restart.CurrentValue()!);
     }
 
     [AvaloniaFact]
@@ -205,7 +205,7 @@ public sealed class ResourceFeatureConfigTests
         await workspace.Runtime.Permissions.UpdateCanI<V1StatefulSet>(Verb.Patch, "default");
         var config = (V1StatefulSetConfig)workspace.GetResourceConfig(GroupApiVersionKind.From<V1StatefulSet>());
         var action = config.GetCustomMenuItems(new[] { manual, rolling })
-            .Single(item => item.Title == ResourceL10n.Instance.V1StatefulSetConfig_MenuItem_Restart.CurrentValue()!);
+            .Single(item => item.Title == ResourcesLanguageManager.Instance.V1StatefulSetConfig_MenuItem_Restart.CurrentValue()!);
         var command = action.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
         command.CanExecute(action.CommandParameter).ShouldBeTrue();
 
@@ -276,7 +276,7 @@ public sealed class ResourceFeatureConfigTests
         var config = (V1PodConfig)workspace.GetResourceConfig(GroupApiVersionKind.From<V1Pod>());
         var pod = new V1Pod { Metadata = new V1ObjectMeta { Name = "edit-test", NamespaceProperty = "default" } };
         var action = config.GetDefaultMenuItems(new[] { pod })
-            .Single(item => item.Title == ResourceL10n.Instance.ResourceConfigBase_MenuItem_Edit.CurrentValue()!);
+            .Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_Edit.CurrentValue()!);
         var command = action.Command.ShouldBeAssignableTo<IRelayCommand>();
         command.CanExecute(action.CommandParameter).ShouldBeTrue();
         command.CanExecute(new List<V1Pod> { pod, pod }).ShouldBeFalse();
@@ -305,8 +305,8 @@ public sealed class ResourceFeatureConfigTests
         var config = (V1PodConfig)workspace.GetResourceConfig(GroupApiVersionKind.From<V1Pod>());
         var pod = new V1Pod { Metadata = new V1ObjectMeta { Name = "edit-existing", NamespaceProperty = "default" } };
         var defaultActions = config.GetDefaultMenuItems(new[] { pod }).ToArray();
-        defaultActions.Single(item => item.Title == ResourceL10n.Instance.ResourceConfigBase_MenuItem_ViewYaml.CurrentValue()!)
-            .Command.ShouldBeAssignableTo<IRelayCommand>().Execute(defaultActions.Single(item => item.Title == ResourceL10n.Instance.ResourceConfigBase_MenuItem_ViewYaml.CurrentValue()!).CommandParameter);
+        defaultActions.Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_ViewYaml.CurrentValue()!)
+            .Command.ShouldBeAssignableTo<IRelayCommand>().Execute(defaultActions.Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_ViewYaml.CurrentValue()!).CommandParameter);
 
         var factory = Application.Current.GetRequiredTestService<IFactory>();
         var bottomDock = factory.GetDockable<IToolDock>("BottomDock").ShouldNotBeNull();
@@ -314,9 +314,9 @@ public sealed class ResourceFeatureConfigTests
             .Single(viewModel => viewModel.Object?.Metadata?.Name == pod.Metadata.Name);
         try
         {
-            defaultActions.Single(item => item.Title == ResourceL10n.Instance.ResourceConfigBase_MenuItem_Edit.CurrentValue()!)
+            defaultActions.Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_Edit.CurrentValue()!)
                 .Command.ShouldBeAssignableTo<IRelayCommand>().Execute(
-                    defaultActions.Single(item => item.Title == ResourceL10n.Instance.ResourceConfigBase_MenuItem_Edit.CurrentValue()!).CommandParameter);
+                    defaultActions.Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_Edit.CurrentValue()!).CommandParameter);
 
             bottomDock.VisibleDockables!.OfType<ResourceYamlViewModel>()
                 .Count(viewModel => viewModel.Object?.Metadata?.Name == pod.Metadata.Name).ShouldBe(1);
@@ -336,7 +336,7 @@ public sealed class ResourceFeatureConfigTests
         config.Initialize(workspace);
         var pod = new V1Pod { Metadata = new V1ObjectMeta { Name = "edit-denied", NamespaceProperty = "default" } };
         var action = config.GetDefaultMenuItems(new[] { pod })
-            .Single(item => item.Title == ResourceL10n.Instance.ResourceConfigBase_MenuItem_Edit.CurrentValue()!);
+            .Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_Edit.CurrentValue()!);
 
         action.Command.ShouldBeAssignableTo<IRelayCommand>().CanExecute(action.CommandParameter).ShouldBeFalse();
     }
@@ -348,11 +348,11 @@ public sealed class ResourceFeatureConfigTests
         var pod = ResolveConfig<V1PodConfig>();
 
         var cronJobActions = cronJob.GetCustomMenuItems(new[] { new V1CronJob() }).Select(item => item.Title).ToArray();
-        cronJobActions.ShouldContain(ResourceL10n.Instance.V1CronJobConfig_Suspend.CurrentValue()!);
-        cronJobActions.ShouldContain(ResourceL10n.Instance.V1CronJobConfig_Resume.CurrentValue()!);
+        cronJobActions.ShouldContain(ResourcesLanguageManager.Instance.V1CronJobConfig_Suspend.CurrentValue()!);
+        cronJobActions.ShouldContain(ResourcesLanguageManager.Instance.V1CronJobConfig_Resume.CurrentValue()!);
 
         var podActions = pod.GetCustomMenuItems(new[] { new V1Pod() }).Select(item => item.Title).ToArray();
-        podActions.ShouldContain(ResourceL10n.Instance.V1PodConfig_Evict.CurrentValue()!);
+        podActions.ShouldContain(ResourcesLanguageManager.Instance.V1PodConfig_Evict.CurrentValue()!);
     }
 
     [AvaloniaFact]
@@ -384,7 +384,7 @@ public sealed class ResourceFeatureConfigTests
         {
             deployment,
             new V1Deployment { Metadata = new V1ObjectMeta { Name = "missing-namespace" } },
-        }).Single(item => item.Title == ResourceL10n.Instance.ScalableWorkloadConfig_Scale.CurrentValue()!);
+        }).Single(item => item.Title == ResourcesLanguageManager.Instance.ScalableWorkloadConfig_Scale.CurrentValue()!);
         var command = action.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
         var parameters = action.CommandParameter.ShouldBeAssignableTo<IList>();
         command.CanExecute(parameters).ShouldBeTrue();
@@ -430,7 +430,7 @@ public sealed class ResourceFeatureConfigTests
         {
             deployment,
             new V1Deployment { Metadata = new V1ObjectMeta { Name = "missing-namespace" } },
-        }).Single(item => item.Title == ResourceL10n.Instance.V1DeploymentConfig_Pause.CurrentValue()!);
+        }).Single(item => item.Title == ResourcesLanguageManager.Instance.V1DeploymentConfig_Pause.CurrentValue()!);
         var pauseCommand = pause.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
         pauseCommand.CanExecute(pause.CommandParameter).ShouldBeTrue();
 
@@ -441,7 +441,7 @@ public sealed class ResourceFeatureConfigTests
         paused.Spec.Paused.ShouldBe(true);
         paused.Spec.Replicas.ShouldBe(2);
 
-        var resume = config.GetCustomMenuItems(new[] { paused }).Single(item => item.Title == ResourceL10n.Instance.V1DeploymentConfig_Resume.CurrentValue()!);
+        var resume = config.GetCustomMenuItems(new[] { paused }).Single(item => item.Title == ResourcesLanguageManager.Instance.V1DeploymentConfig_Resume.CurrentValue()!);
         var resumeCommand = resume.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
         resumeCommand.CanExecute(resume.CommandParameter).ShouldBeTrue();
         await resumeCommand.ExecuteAsync(resume.CommandParameter).WaitAsync(TestContext.Current.CancellationToken);
@@ -463,7 +463,7 @@ public sealed class ResourceFeatureConfigTests
         {
             cronJob,
             new V1CronJob { Metadata = new V1ObjectMeta { Name = "missing-namespace" } },
-        }).Single(item => item.Title == ResourceL10n.Instance.V1CronJobConfig_Suspend.CurrentValue()!);
+        }).Single(item => item.Title == ResourcesLanguageManager.Instance.V1CronJobConfig_Suspend.CurrentValue()!);
         var command = action.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
         var parameters = action.CommandParameter.ShouldBeAssignableTo<IList>();
         command.CanExecute(parameters).ShouldBeTrue();
@@ -492,7 +492,7 @@ public sealed class ResourceFeatureConfigTests
         {
             pod,
             new V1Pod { Metadata = new V1ObjectMeta { Name = "missing-namespace" } },
-        }).Single(item => item.Title == ResourceL10n.Instance.V1PodConfig_Evict.CurrentValue()!);
+        }).Single(item => item.Title == ResourcesLanguageManager.Instance.V1PodConfig_Evict.CurrentValue()!);
         var command = action.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
         var parameters = action.CommandParameter.ShouldBeAssignableTo<IList>();
         command.CanExecute(parameters).ShouldBeTrue();
@@ -590,7 +590,7 @@ public sealed class ResourceFeatureConfigTests
         };
 
         var action = config.GetDefaultMenuItems(new[] { deployment })
-            .Single(item => item.Title == ResourceL10n.Instance.ResourceConfigBase_MenuItem_Visualize.CurrentValue()!);
+            .Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_Visualize.CurrentValue()!);
 
         action.Command.ShouldNotBeNull();
         action.CommandParameter.ShouldBeAssignableTo<IList>();
@@ -608,7 +608,7 @@ public sealed class ResourceFeatureConfigTests
         };
 
         var action = config.GetDefaultMenuItems(deployments)
-            .Single(item => item.Title == ResourceL10n.Instance.ResourceConfigBase_MenuItem_Visualize.CurrentValue()!);
+            .Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_Visualize.CurrentValue()!);
 
         action.Command!.CanExecute(action.CommandParameter).ShouldBeFalse();
     }
@@ -633,14 +633,14 @@ public sealed class ResourceFeatureConfigTests
         };
 
         var action = config.GetCustomMenuItems(new[] { pod })
-            .Single(item => item.Title == SharedL10n.Instance.Shared_ViewLogs.CurrentValue()!);
+            .Single(item => item.Title == FoundationLanguageManager.Instance.Shared_ViewLogs.CurrentValue()!);
 
         action.Command.ShouldBeNull();
         action.Items.ShouldNotBeNull();
-        action.Items[0].Title.ShouldBe(SharedL10n.Instance.Shared_OpenNewLogsView.CurrentValue()!);
+        action.Items[0].Title.ShouldBe(FoundationLanguageManager.Instance.Shared_OpenNewLogsView.CurrentValue()!);
         action.Items.Select(static item => item.Title).ShouldAllBe(title =>
-            title == SharedL10n.Instance.Shared_OpenNewLogsView.CurrentValue()!
-            || title == SharedL10n.Instance.Shared_AddToCurrentLogsView.CurrentValue()!);
+            title == FoundationLanguageManager.Instance.Shared_OpenNewLogsView.CurrentValue()!
+            || title == FoundationLanguageManager.Instance.Shared_AddToCurrentLogsView.CurrentValue()!);
     }
 
     [AvaloniaFact]

@@ -6,13 +6,13 @@ using Avalonia.Markup.Declarative;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
-using k8s.Models;
+using KubeUI.Controls.Layout;
 using KubeUI.Controls.Presentation;
 using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Features.Cilium.Hubble.Controls;
+using KubeUI.Features.Clusters.Presentation;
 using SvcSystems.Avalonia.DynamicTableView;
 using Westermo.GraphX.Common.Enums;
-using UrsaControls = Ursa.Controls;
 
 namespace KubeUI.Features.Cilium.Hubble;
 
@@ -37,69 +37,43 @@ public sealed partial class ServiceMapView : KubeUIView<ServiceMapViewModel>
                     .Row(2));
     }
 
-    private static Grid CreateTopBar(ServiceMapViewModel vm)
+    private static CompactToolbar CreateTopBar(ServiceMapViewModel vm)
     {
-        return new Grid()
-            .Row(0)
-            .MinHeight(32)
-            .Margin(0, 2, 0, 2)
-            .Cols("Auto,Auto,*,Auto")
-            .Children(
-                new StackPanel()
-                    .Col(0)
-                    .Orientation(Orientation.Horizontal)
-                    .Spacing(6)
-                    .VerticalAlignment(VerticalAlignment.Center)
-                    .Children(
+        return new CompactToolbar
+        {
+            Leading = CompactToolbar.Group(
                         new ComboBox()
                             .Width(140)
-                            .Height(32)
-                            .VerticalAlignment(VerticalAlignment.Center)
                             .ItemsSource(new[] { TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(60) })
                             .SelectedItem(CompiledBinding.Create<ServiceMapViewModel, TimeSpan>(x => x.TimeWindow, mode: BindingMode.TwoWay))
                             .ItemTemplate(new FuncDataTemplate<TimeSpan>((timeWindow, _) => new TextBlock()
-                                .Text($"{timeWindow.TotalMinutes} {L10n.Instance.ServiceMapView_TimeWindowMinutes.CurrentValue()!}"))),
+                                .Text($"{timeWindow.TotalMinutes} {CiliumLanguageManager.Instance.ServiceMapView_TimeWindowMinutes.CurrentValue()!}"))),
                         new ToggleButton()
                             .Width(32)
-                            .Height(32)
-                            .VerticalAlignment(VerticalAlignment.Center)
                             .IsChecked(CompiledBinding.Create<ServiceMapViewModel, bool>(x => x.AggregateByNamespace, mode: BindingMode.TwoWay))
-                            .ToolTip_Tip(L10n.Instance.ServiceMapView_TooltipAggregate.ToBinding())
+                            .ToolTip_Tip(CiliumLanguageManager.Instance.ServiceMapView_TooltipAggregate.ToBinding())
                             .Content(new FluentIcon().Icon(Icon.DataUsage)),
                         new ToggleButton()
                             .Width(32)
-                            .Height(32)
-                            .VerticalAlignment(VerticalAlignment.Center)
                             .IsChecked(CompiledBinding.Create<ServiceMapViewModel, bool>(x => x.ShowOnlyErrors, mode: BindingMode.TwoWay))
-                            .ToolTip_Tip(L10n.Instance.ServiceMapView_TooltipErrorsOnly.ToBinding())
+                            .ToolTip_Tip(CiliumLanguageManager.Instance.ServiceMapView_TooltipErrorsOnly.ToBinding())
                             .Content(new FluentIcon().Icon(Icon.Warning))),
-                new StackPanel()
-                    .Col(1)
-                    .Orientation(Orientation.Horizontal)
-                    .Spacing(12)
-                    .VerticalAlignment(VerticalAlignment.Center)
-                    .Margin(8, 0, 0, 0)
-                    .Children(
+            Middle = CompactToolbar.Group(
                         new TextBlock()
-                            .VerticalAlignment(VerticalAlignment.Center)
                             .Text(CompiledBinding.Create<ServiceMapViewModel, string>(x => x.ConnectionStatus)),
                         new TextBlock()
-                            .VerticalAlignment(VerticalAlignment.Center)
                             .Text(CompiledBinding.Create<ServiceMapViewModel, string>(x => x.GraphSummary))),
-                new StackPanel()
-                    .Col(3)
-                    .MaxWidth(620)
-                    .HorizontalAlignment(HorizontalAlignment.Right)
-                    .Orientation(Orientation.Horizontal)
-                    .VerticalAlignment(VerticalAlignment.Center)
-                    .Children(
-                        CreateLayoutSelector(vm),
-                        CreateNamespaceSelector(vm),
-                        new ToggleButton()
-                            .Margin(0, 0, 2, 0)
-                            .IsChecked(CompiledBinding.Create<ServiceMapViewModel, bool>(x => x.IsNamespaceSelectionLinked, source: vm, mode: BindingMode.TwoWay))
-                            .ToolTip_Tip(ResourceL10n.Instance.ResourceListView_NamespaceLink.ToBinding())
-                            .Content(new FluentIcon().Icon(Icon.Link))));
+            Trailing = CompactToolbar.Group(
+                    CreateLayoutSelector(vm),
+                    new NamespaceScopePicker()
+                        .BindValue(NamespaceScopePicker.NamespacesProperty,
+                            CompiledBinding.Create<ServiceMapViewModel, IEnumerable>(x => x.Cluster!.Runtime.Namespaces, source: vm))
+                        .BindValue(NamespaceScopePicker.SelectedNamespacesProperty,
+                            CompiledBinding.Create<ServiceMapViewModel, IList>(x => x.SelectedNamespaces, source: vm, mode: BindingMode.OneWay))
+                        .BindValue(NamespaceScopePicker.IsSelectionLinkedProperty,
+                            CompiledBinding.Create<ServiceMapViewModel, bool>(x => x.IsNamespaceSelectionLinked, source: vm, mode: BindingMode.TwoWay)))
+                .MaxWidth(620)
+        };
     }
 
     private static ComboBox CreateLayoutSelector(ServiceMapViewModel viewModel)
@@ -109,7 +83,6 @@ public sealed partial class ServiceMapView : KubeUIView<ServiceMapViewModel>
             .ToArray();
         return new ComboBox()
             .Width(148)
-            .Height(32)
             .ItemsSource(algorithms)
             .SelectedItem(CompiledBinding.Create<ServiceMapViewModel, LayoutAlgorithmTypeEnum>(
                 x => x.LayoutAlgorithm,
@@ -117,45 +90,26 @@ public sealed partial class ServiceMapView : KubeUIView<ServiceMapViewModel>
                 mode: BindingMode.TwoWay))
             .ItemTemplate(new FuncDataTemplate<LayoutAlgorithmTypeEnum>((algorithm, _) =>
                 new TextBlock().Text(GetLayoutAlgorithmName(algorithm))))
-            .ToolTip_Tip(L10n.Instance.ServiceMapView_LayoutAlgorithm.CurrentValue()!);
+            .ToolTip_Tip(CiliumLanguageManager.Instance.ServiceMapView_LayoutAlgorithm.CurrentValue()!);
     }
 
     private static string GetLayoutAlgorithmName(LayoutAlgorithmTypeEnum algorithm)
     {
         return algorithm switch
         {
-            LayoutAlgorithmTypeEnum.BoundedFR => L10n.Instance.ServiceMapView_Layout_BoundedFR.CurrentValue()!,
-            LayoutAlgorithmTypeEnum.Circular => L10n.Instance.ServiceMapView_Layout_Circular.CurrentValue()!,
-            LayoutAlgorithmTypeEnum.CompoundFDP => L10n.Instance.ServiceMapView_Layout_CompoundFDP.CurrentValue()!,
-            LayoutAlgorithmTypeEnum.EfficientSugiyama => L10n.Instance.ServiceMapView_Layout_EfficientSugiyama.CurrentValue()!,
-            LayoutAlgorithmTypeEnum.FR => L10n.Instance.ServiceMapView_Layout_FR.CurrentValue()!,
-            LayoutAlgorithmTypeEnum.ISOM => L10n.Instance.ServiceMapView_Layout_ISOM.CurrentValue()!,
-            LayoutAlgorithmTypeEnum.KK => L10n.Instance.ServiceMapView_Layout_KK.CurrentValue()!,
-            LayoutAlgorithmTypeEnum.LinLog => L10n.Instance.ServiceMapView_Layout_LinLog.CurrentValue()!,
-            LayoutAlgorithmTypeEnum.SimpleRandom => L10n.Instance.ServiceMapView_Layout_Random.CurrentValue()!,
-            LayoutAlgorithmTypeEnum.Sugiyama => L10n.Instance.ServiceMapView_Layout_Sugiyama.CurrentValue()!,
-            LayoutAlgorithmTypeEnum.Tree => L10n.Instance.ServiceMapView_Layout_Tree.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.BoundedFR => CiliumLanguageManager.Instance.ServiceMapView_Layout_BoundedFR.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.Circular => CiliumLanguageManager.Instance.ServiceMapView_Layout_Circular.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.CompoundFDP => CiliumLanguageManager.Instance.ServiceMapView_Layout_CompoundFDP.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.EfficientSugiyama => CiliumLanguageManager.Instance.ServiceMapView_Layout_EfficientSugiyama.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.FR => CiliumLanguageManager.Instance.ServiceMapView_Layout_FR.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.ISOM => CiliumLanguageManager.Instance.ServiceMapView_Layout_ISOM.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.KK => CiliumLanguageManager.Instance.ServiceMapView_Layout_KK.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.LinLog => CiliumLanguageManager.Instance.ServiceMapView_Layout_LinLog.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.SimpleRandom => CiliumLanguageManager.Instance.ServiceMapView_Layout_Random.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.Sugiyama => CiliumLanguageManager.Instance.ServiceMapView_Layout_Sugiyama.CurrentValue()!,
+            LayoutAlgorithmTypeEnum.Tree => CiliumLanguageManager.Instance.ServiceMapView_Layout_Tree.CurrentValue()!,
             _ => algorithm.ToString()
         };
-    }
-
-    private static UrsaControls.MultiComboBox CreateNamespaceSelector(ServiceMapViewModel viewModel)
-    {
-        var template = new FuncDataTemplate<V1Namespace>((ns, _) =>
-            new TextBlock().Text(ns?.Metadata?.Name ?? string.Empty));
-
-        return new UrsaControls.MultiComboBox()
-            .Width(200)
-            .MinWidth(140)
-            .MaxHeight(20)
-            .Margin(0, 0, 2, 0)
-            .HorizontalAlignment(HorizontalAlignment.Stretch)
-            .Classes("ClearButton")
-            .ItemsSource(CompiledBinding.Create<ServiceMapViewModel, IEnumerable>(x => x.Cluster!.Runtime.Namespaces, source: viewModel))
-            .PlaceholderText(ResourceL10n.Instance.ResourceListView_SelectNamespace.ToBinding())
-            .SelectedItems(CompiledBinding.Create<ServiceMapViewModel, IList>(x => x.SelectedNamespaces, source: viewModel))
-            .ItemTemplate(template)
-            .SelectedItemTemplate(template);
     }
 
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Graph control ownership is transferred to the visual tree via the fluent builder.")]

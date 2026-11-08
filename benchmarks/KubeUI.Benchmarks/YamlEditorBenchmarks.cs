@@ -1,6 +1,6 @@
 using AvaloniaEdit.Document;
 using BenchmarkDotNet.Attributes;
-using KubeUI.Features.Resources.Yaml;
+using KubeUI.Controls.Editors;
 
 namespace KubeUI.Benchmarks;
 
@@ -23,13 +23,13 @@ public class YamlEditorBenchmarks
     [Benchmark(Baseline = true)]
     public int CreateFoldings_SimpleYaml()
     {
-        return YamlFoldingStrategy.CreateNewFoldings(_simpleDocument, out _).Count();
+        return YamlIndentationFoldingStrategy.CreateNewFoldings(_simpleDocument, out _).Count();
     }
 
     [Benchmark]
     public int CreateFoldings_MixedYaml()
     {
-        return YamlFoldingStrategy.CreateNewFoldings(_mixedDocument, out _).Count();
+        return YamlIndentationFoldingStrategy.CreateNewFoldings(_mixedDocument, out _).Count();
     }
 
     private static string BuildSimpleYaml(int resourceCount)

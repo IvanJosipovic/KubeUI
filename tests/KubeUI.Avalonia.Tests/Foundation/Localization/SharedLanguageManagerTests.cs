@@ -13,10 +13,10 @@ public sealed class SharedLanguageManagerTests
     {
         var seen = new List<string?>();
 
-        using var subscription = LanguageManager.Instance.Shared_Cancel.Subscribe(seen.Add);
+        using var subscription = FoundationLanguageManager.Instance.Shared_Cancel.Subscribe(seen.Add);
 
-        LanguageManager.Keys.Shared_Cancel.Key.ShouldBe("Shared_Cancel");
-        LanguageManager.Instance.Shared_Cancel.CurrentValue().ShouldBe(seen[^1]);
+        FoundationLanguageManager.Keys.Shared_Cancel.Key.ShouldBe("Shared_Cancel");
+        FoundationLanguageManager.Instance.Shared_Cancel.CurrentValue().ShouldBe(seen[^1]);
         seen.ShouldNotBeEmpty();
     }
 }

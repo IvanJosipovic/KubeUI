@@ -9,14 +9,14 @@ internal static class ResourceEventsSelector
     {
         ArgumentNullException.ThrowIfNull(@event);
 
-        var timestamp = RelativeTimeFormatter.ResolveTimestamp(@event);
+        var timestamp = KubernetesEventTimestampResolver.Resolve(@event);
 
         return new ResourceEventItem(
             string.IsNullOrWhiteSpace(@event.Message) ? (@event.Reason ?? string.Empty) : @event.Message.Trim(),
             FormatSource(@event),
             @event.Count ?? 0,
             @event.InvolvedObject?.FieldPath ?? string.Empty,
-            RelativeTimeFormatter.FormatPrettyLastSeen(timestamp, utcNow),
+            RelativeAgeFormatter.FormatPrettyLastSeen(timestamp, utcNow),
             string.Equals(@event.Type, "Warning", StringComparison.Ordinal));
     }
 
@@ -24,7 +24,7 @@ internal static class ResourceEventsSelector
     {
         ArgumentNullException.ThrowIfNull(@event);
 
-        var timestamp = RelativeTimeFormatter.ResolveTimestamp(@event);
+        var timestamp = KubernetesEventTimestampResolver.Resolve(@event);
         return timestamp.HasValue ? NormalizeUtc(timestamp.Value) : DateTime.MinValue;
     }
 

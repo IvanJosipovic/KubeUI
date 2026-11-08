@@ -51,7 +51,7 @@ public sealed class HelmReleasePreviewService : IHelmReleasePreviewService
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseNamespace);
         _visualizationService.OpenScope(cluster, new VisualizationScope(
             releaseNamespace,
-            string.Format(L10n.Instance.HelmReleasePreviewService_ReleaseTitle.CurrentValue()!, releaseName, releaseNamespace),
+            string.Format(HelmLanguageManager.Instance.HelmReleasePreviewService_ReleaseTitle.CurrentValue()!, releaseName, releaseNamespace),
             new ResourceAnnotationSelector(new Dictionary<string, string>
             {
                 ["meta.helm.sh/release-name"] = releaseName,
@@ -78,7 +78,7 @@ public sealed class HelmReleasePreviewService : IHelmReleasePreviewService
     {
         if (string.IsNullOrWhiteSpace(manifest))
         {
-            throw new InvalidOperationException(L10n.Instance.HelmReleasePreviewService_NoResources.CurrentValue()!);
+            throw new InvalidOperationException(HelmLanguageManager.Instance.HelmReleasePreviewService_NoResources.CurrentValue()!);
         }
 
         var parsed = _yamlSerializer.LoadAllFromString(
@@ -98,7 +98,7 @@ public sealed class HelmReleasePreviewService : IHelmReleasePreviewService
             .ToArray();
         if (resources.Length == 0)
         {
-            throw new InvalidOperationException(L10n.Instance.HelmReleasePreviewService_NoResources.CurrentValue()!);
+            throw new InvalidOperationException(HelmLanguageManager.Instance.HelmReleasePreviewService_NoResources.CurrentValue()!);
         }
 
         _visualizationService.OpenPreview(cluster, releaseName, resources);

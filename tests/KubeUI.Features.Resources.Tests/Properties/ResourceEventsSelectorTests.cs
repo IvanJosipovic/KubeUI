@@ -1,6 +1,8 @@
 using Avalonia.Headless.XUnit;
+using Avalonia.Threading;
 using k8s.Models;
 using KubeUI.Features.Resources.Properties.Controls;
+using KubeUI.Testing.Utilities;
 using Shouldly;
 
 namespace KubeUI.Features.Resources.Tests.Properties;
@@ -8,14 +10,74 @@ namespace KubeUI.Features.Resources.Tests.Properties;
 public sealed class ResourceEventsSelectorTests
 {
     [Fact]
-    public void FormatPrettyAge_UsesExpectedUnits()
+    public void Event_timestamp_resolution_prefers_legacy_timestamp_then_event_time_then_creation()
     {
-        var now = new DateTime(2026, 3, 29, 0, 34, 52, DateTimeKind.Utc);
+        var lastTimestamp = DateTime.UtcNow.AddMinutes(-3);
+        var eventTime = DateTime.UtcNow.AddMinutes(-2);
+        var creationTime = DateTime.UtcNow.AddMinutes(-1);
+        var @event = new Corev1Event
+        {
+            Metadata = new() { CreationTimestamp = creationTime },
+            EventTime = eventTime,
+            LastTimestamp = lastTimestamp
+        };
 
-        RelativeTimeFormatter.FormatPrettyAge(now, now).ShouldBe("0ms");
-        RelativeTimeFormatter.FormatPrettyAge(now.AddSeconds(-74), now).ShouldBe("1m14s");
-        RelativeTimeFormatter.FormatPrettyAge(now.AddHours(-2), now).ShouldBe("2h");
+        KubernetesEventTimestampResolver.Resolve(@event).ShouldBe(lastTimestamp);
+        @event.LastTimestamp = null;
+        KubernetesEventTimestampResolver.Resolve(@event).ShouldBe(eventTime);
+        @event.EventTime = null;
+        KubernetesEventTimestampResolver.Resolve(@event).ShouldBe(creationTime);
+        @event.Metadata = null;
+        KubernetesEventTimestampResolver.Resolve(@event).ShouldBeNull();
     }
+
+    [AvaloniaFact]
+    public async Task Resource_events_resume_cache_updates_after_detach_and_reattach_without_data_context_change()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        await workspace.Runtime.Permissions.UpdatePermissionsAllNamespaceAsync<Corev1Event>(Verb.List);
+        await workspace.Runtime.Permissions.UpdatePermissionsAllNamespaceAsync<Corev1Event>(Verb.Watch);
+        await workspace.Runtime.SeedResource<Corev1Event>(true);
+        var resource = new V1Deployment
+        {
+            Metadata = new() { Name = "web", NamespaceProperty = "default", Uid = "resource-uid" }
+        };
+        var view = new ResourceEventsView { DataContext = resource };
+        view.Initialize(workspace);
+        using var window = Application.Current.CreateTestWindow(content: view);
+        window.Show();
+
+        await workspace.Runtime.AddOrUpdateResource(Event("before-detach", "before", "resource-uid"));
+        await TestWait.UntilAsync(
+            () => view.Items.Any(item => item.Message == "before"),
+            timeoutMs: 5_000,
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+
+        window.Content = null;
+        await workspace.Runtime.AddOrUpdateResource(Event("while-detached", "after", "resource-uid"));
+        await TestWait.UntilAsync(
+            () => workspace.Runtime.GetResourceSourceCache<Corev1Event>().Items.Any(item => item.Metadata?.Name == "while-detached"),
+            timeoutMs: 5_000,
+            cancellationToken: TestContext.Current.CancellationToken);
+        window.Content = view;
+
+        await TestWait.UntilAsync(
+            () => view.Items.Any(item => item.Message == "after"),
+            timeoutMs: 5_000,
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+        view.DataContext.ShouldBeSameAs(resource);
+    }
+
+    private static Corev1Event Event(string name, string message, string resourceUid)
+        => new()
+        {
+            Metadata = new() { Name = name, NamespaceProperty = "default", CreationTimestamp = DateTime.UtcNow },
+            Message = message,
+            LastTimestamp = DateTime.UtcNow,
+            InvolvedObject = new() { Uid = resourceUid }
+        };
 
     [AvaloniaFact]
     public async Task SelectRecentEvents_sorts_and_limits_to_five()

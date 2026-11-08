@@ -1,4 +1,4 @@
-﻿namespace KubeUI.Features.Resources;
+namespace KubeUI.Features.Resources;
 
 /// <summary>Built-in navigation sections shared by statically registered resource kinds.</summary>
 public static class NavigationSections
@@ -20,27 +20,27 @@ public static class NavigationSections
 
     /// <summary>Gets the Workloads section.</summary>
     public static NavigationSection Workloads { get; } = new(
-        WorkloadsId, L10n.Instance.ResourceConfig_Category_Workloads.CurrentValue()!, 8, null);
+        WorkloadsId, ResourcesLanguageManager.Instance.ResourceConfig_Category_Workloads.CurrentValue()!, 8, null);
 
     /// <summary>Gets the Configuration section.</summary>
     public static NavigationSection Configuration { get; } = new(
-        ConfigurationId, L10n.Instance.ResourceConfig_Category_Configuration.CurrentValue()!, 9, null);
+        ConfigurationId, ResourcesLanguageManager.Instance.ResourceConfig_Category_Configuration.CurrentValue()!, 9, null);
 
     /// <summary>Gets the Network section.</summary>
     public static NavigationSection Network { get; } = new(
-        NetworkId, L10n.Instance.ResourceConfig_Category_Network.CurrentValue()!, 10, null);
+        NetworkId, ResourcesLanguageManager.Instance.ResourceConfig_Category_Network.CurrentValue()!, 10, null);
 
     /// <summary>Gets the Storage section.</summary>
     public static NavigationSection Storage { get; } = new(
-        StorageId, L10n.Instance.ResourceConfig_Category_Storage.CurrentValue()!, 12, null);
+        StorageId, ResourcesLanguageManager.Instance.ResourceConfig_Category_Storage.CurrentValue()!, 12, null);
 
     /// <summary>Gets the Access Control section.</summary>
     public static NavigationSection AccessControl { get; } = new(
-        AccessControlId, L10n.Instance.ResourceConfig_Category_AccessControl.CurrentValue()!, 13, null);
+        AccessControlId, ResourcesLanguageManager.Instance.ResourceConfig_Category_AccessControl.CurrentValue()!, 13, null);
 
     /// <summary>Gets the Custom Resources section.</summary>
     public static NavigationSection CustomResources { get; } = new(
-        CustomResourcesId, L10n.Instance.ResourceConfig_Category_CustomResourceDefinitions.CurrentValue()!, 14, null);
+        CustomResourcesId, ResourcesLanguageManager.Instance.ResourceConfig_Category_CustomResourceDefinitions.CurrentValue()!, 14, null);
 
     /// <summary>Order used by navigation sections that follow the custom resources section.</summary>
     public static int AfterCustomResourcesOrder => CustomResources.Order + 1;
