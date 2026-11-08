@@ -28,7 +28,6 @@ public sealed partial class FlowViewModel : ObservableObject
 
     public FlowViewModel() { }
 
-    [Obsolete]
     public FlowViewModel(Pb.Flow flow)
     {
         UpdateFrom(flow);
@@ -118,7 +117,6 @@ public sealed partial class FlowViewModel : ObservableObject
 
     public FlowCacheKey CacheKey => new(string.IsNullOrWhiteSpace(Uuid) ? _fallbackCacheIdentity : Uuid);
 
-    [Obsolete]
     public void UpdateFrom(Pb.Flow flow)
     {
         if (flow.Time != null)
@@ -255,10 +253,6 @@ public sealed partial class FlowViewModel : ObservableObject
                 HttpMethod = flow.L7.Http.Method;
                 HttpPath = flow.L7.Http.Url;
                 HttpStatusCode = flow.L7.Http.Code > 0 ? (int?)flow.L7.Http.Code : null;
-            }
-            if (flow.L7.Kafka != null)
-            {
-                ApplicationProtocol = "Kafka";
             }
         }
         else

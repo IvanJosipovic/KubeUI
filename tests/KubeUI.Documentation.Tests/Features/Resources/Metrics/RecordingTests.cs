@@ -23,7 +23,6 @@ namespace KubeUI.Documentation.Tests.Features.Resources.Metrics;
 public sealed class RecordingTests
 {
     [DocumentationVideoTheory]
-    [Obsolete]
     public Task Monitor_pod_metrics_video(string theme)
     {
         ClusterWorkspace? workspace = null;
