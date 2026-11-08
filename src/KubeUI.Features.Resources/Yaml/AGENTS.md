@@ -16,4 +16,5 @@
 - Keep the hover documentation popup closed while YAML completion and its documentation popup are open.
 - Show hover documentation only when the pointer is over rendered YAML key text, never over blank space on a highlighted line.
 - Use the editor code font family and size for completion entries, completion documentation, hover and diagnostic text, and YAML toolbar tooltips.
+- Compose read-only and edit action rows with Controls' `CompactToolbar`; keep mode visibility, labels, and commands in Resources.
 - Mark schema-required property suggestions and hover documentation labels with `*`; never include marker in inserted YAML.

@@ -1,8 +1,8 @@
 using Avalonia.Controls;
 using Avalonia.LogicalTree;
 using AvaloniaEdit.Folding;
-using KubeUI.Controls.Editors.Behaviors;
 using BenchmarkDotNet.Attributes;
+using KubeUI.Controls.Editors.Behaviors;
 using KubeUI.Features.Resources.Yaml.Behaviors;
 
 namespace KubeUI.Benchmarks;

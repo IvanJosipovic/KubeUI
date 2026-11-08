@@ -32,39 +32,28 @@ public sealed class HelmChartsView : KubeUIView<HelmChartsViewModel>
             .Rows("Auto,*").Children(
             new CompactToolbar
             {
-                Count = new Label()
-                    .VerticalContentAlignment(VerticalAlignment.Center)
+                Middle = new Label()
                     .Content(CompiledBinding.Create<HelmChartsViewModel, int>(x => x.ItemCount,
                         source: vm, stringFormat: HelmLanguageManager.Instance.HelmChartsView_ItemsFormat.CurrentValue()!)),
-                Trailing = new StackPanel().MaxWidth(760)
-                    .HorizontalAlignment(HorizontalAlignment.Right)
-                    .Orientation(Orientation.Horizontal)
-                    .Children(
+                Trailing = CompactToolbar.Group(
                         new TextBox()
                             .Width(180)
                             .MinWidth(120)
-                            .Height(32)
-                            .Margin(0, 0, 2, 0)
-                            .VerticalContentAlignment(VerticalAlignment.Center)
                             .PlaceholderText(HelmLanguageManager.Instance.HelmChartsView_SearchPlaceholder.ToBinding())
                             .Text(vm, x => x.SearchText, BindingMode.TwoWay),
                         new ComboBox().Name("Repository", Scope)
                             .Width(200)
                             .MinWidth(140)
-                            .Height(32)
-                            .Margin(0, 0, 2, 0)
-                            .HorizontalAlignment(HorizontalAlignment.Stretch)
-                            .VerticalContentAlignment(VerticalAlignment.Center)
                             .Classes("ClearButton")
                             .PlaceholderText(HelmLanguageManager.Instance.HelmReleaseEditorView_Repository.ToBinding())
                             .IsEnabled(vm, x => !x.IsLoading)
                             .ItemsSource(vm, x => x.Repositories)
                             .SelectedItem(vm, x => x.SelectedRepository, BindingMode.TwoWay),
                         new Button()
-                            .Margin(0, 0, 2, 0)
                             .Command(vm, x => x.RefreshCommand)
                             .Content(new FluentIcon().Icon(Icon.ArrowSync))
                             .ToolTip_Tip(FoundationLanguageManager.Instance.Shared_Refresh.ToBinding()))
+                    .MaxWidth(760)
             },
             table.Row(1));
         Interaction.GetBehaviors(root).Add(new EventTriggerBehavior

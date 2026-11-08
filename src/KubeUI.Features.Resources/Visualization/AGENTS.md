@@ -1,5 +1,6 @@
 # Resource Visualization
 ## Presentation
+- Compose the visualization header with Controls' `CompactToolbar`; keep graph filters, counts, selectors, and namespace scope bindings in Resources.
 - Use Clusters' `NamespaceScopePicker` for namespace/link presentation; bind readonly scope state to both selection and link enabled flags and keep whole-picker visibility tied to visualization scope.
 - Resource action flyouts use Controls' `MenuPresenter` snapshot rendering; resource action selection/permissions remain in Resources.
 - Resource Visualization and Hubble service-map nodes share `KubeUI.Controls.Presentation.ResourceGraphNodeContent`: centered 128×128 icon/kind/name stack with 64px icons. Keep feature-specific details outside shared node content; preserve them in each feature's tooltips and properties views.

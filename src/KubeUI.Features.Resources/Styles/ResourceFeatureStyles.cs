@@ -5,7 +5,7 @@ using Avalonia.Styling;
 namespace KubeUI.Features.Resources.Styles;
 
 /// <summary>Provides Kubernetes status and relationship brushes used by Resources presentation.</summary>
-public sealed class ResourceFeatureStyles : global::Avalonia.Styling.Styles
+public sealed class ResourceFeatureStyles : Avalonia.Styling.Styles
 {
     /// <summary>Creates dynamic Resource-owned brushes for light and dark themes.</summary>
     public ResourceFeatureStyles()

@@ -12,13 +12,14 @@ using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using k8s.Models;
 using KubeUI.Controls.DependencyInjection;
+using KubeUI.Controls.Editors.Behaviors;
+using KubeUI.Controls.Layout;
 using KubeUI.Controls.Presentation;
 using KubeUI.Controls.Styles;
 using KubeUI.Features.Clusters.Presentation;
 using KubeUI.Features.Resources.Infrastructure;
 using KubeUI.Features.Resources.Settings;
 using KubeUI.Features.Resources.Yaml.Behaviors;
-using KubeUI.Controls.Editors.Behaviors;
 using SharedConverters = KubeUI.Controls.Converters.Converters;
 
 
@@ -68,13 +69,11 @@ public sealed partial class ResourceYamlView : KubeUIView<ResourceYamlViewModel>
                 hoverPopup);
     }
 
-    private StackPanel CreateReadOnlyToolbar(ResourceYamlViewModel vm)
+    private CompactToolbar CreateReadOnlyToolbar(ResourceYamlViewModel vm)
     {
-        return new StackPanel()
-            .Row(0)
-            .IsVisible(vm, x => x.EditMode, BindingMode.OneWay, SharedConverters.Not)
-            .Orientation(Orientation.Horizontal)
-            .Children(
+        return new CompactToolbar
+        {
+            Leading = CompactToolbar.Group(
                 new Button()
                     .IsVisible(vm, x => x.IsReadOnlyLocked, BindingMode.OneWay, SharedConverters.Not)
                     .Command(vm, x => x.SetEditModeCommand)
@@ -86,16 +85,16 @@ public sealed partial class ResourceYamlView : KubeUIView<ResourceYamlViewModel>
                     .IsChecked(vm, x => x.HideNoisyFields, BindingMode.TwoWay)
                     .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(ResourcesLanguageManager.Instance.ResourceYamlView_HideNoisyFields.CurrentValue()!))
                     .Content(new FluentIcon().Icon(Icon.EyeOff)),
-                CreateWordWrapToggle(vm));
+                CreateWordWrapToggle(vm))
+        }.Row(0)
+            .IsVisible(vm, x => x.EditMode, BindingMode.OneWay, SharedConverters.Not);
     }
 
-    private static StackPanel CreateEditToolbar(ResourceYamlViewModel vm)
+    private static CompactToolbar CreateEditToolbar(ResourceYamlViewModel vm)
     {
-        return new StackPanel()
-            .Row(0)
-            .IsVisible(vm, x => x.EditMode)
-            .Orientation(Orientation.Horizontal)
-            .Children(
+        return new CompactToolbar
+        {
+            Leading = CompactToolbar.Group(
                 new Button()
                     .Command(vm, x => x.SaveCommand)
                     .IsEnabled(vm, x => x.CanSaveAction)
@@ -110,7 +109,9 @@ public sealed partial class ResourceYamlView : KubeUIView<ResourceYamlViewModel>
                     .Command(vm, x => x.SetEditModeCommand)
                     .ToolTip_Tip(YamlDocumentationViewFactory.CreateCodeText(ResourcesLanguageManager.Instance.ResourceYamlView_Cancel.CurrentValue()!))
                     .Content(new FluentIcon().Icon(Icon.Dismiss)),
-                CreateWordWrapToggle(vm));
+                CreateWordWrapToggle(vm))
+        }.Row(0)
+            .IsVisible(vm, x => x.EditMode);
     }
 
     private static ToggleButton CreateWordWrapToggle(ResourceYamlViewModel vm)

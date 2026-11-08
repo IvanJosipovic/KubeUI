@@ -3,8 +3,8 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Markup.Declarative;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
-using Avalonia.Threading;
 using Avalonia.Styling;
+using Avalonia.Threading;
 using Shouldly;
 
 namespace KubeUI.Features.Resources.Tests.Styles;

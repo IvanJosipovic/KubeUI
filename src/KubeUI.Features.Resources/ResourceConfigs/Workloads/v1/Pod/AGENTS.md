@@ -29,6 +29,7 @@
 - Consider the view pinned when the remaining scroll distance is within half a rendered line so fractional line visibility does not disable Follow Logs.
 - Use the down-arrow-to-line icon for Follow Logs so it reads as returning to the bottom of the output.
 - Keep the log action toolbar compact without visual separators between action groups.
+- Compose the pod-log header with Controls' `CompactToolbar`; keep source selection, status, and log actions in Resources.
 - Use a broom icon for Clear Logs so the action does not imply deleting a Kubernetes resource or file.
 - Loading an optional parent controller must not prevent otherwise authorized pod logs from opening.
 - Tests must cover cold-cache workload launches, scope presentation, owner navigation, topology changes, connection failures, and reconnect behavior.

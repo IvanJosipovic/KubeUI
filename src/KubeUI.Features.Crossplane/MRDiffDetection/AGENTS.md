@@ -11,3 +11,4 @@
 - Reset monitor line deduplication when the displayed rows are cleared, so retained logs can repopulate the table.
 - Keep search, selection, sorting, filtering, and YAML context-menu behavior on the DynamicTable contracts. Test filtering/search/sorting and keyed selection through the source, not through obsolete DataGrid adapters.
 - Focused diff-list Enter opens YAML for the selected row; show the same display-only Enter hint in its context menu.
+- Compose the provider/search/status/clear header with Controls' `CompactToolbar`; keep all bindings and actions feature-owned.

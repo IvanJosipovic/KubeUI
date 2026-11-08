@@ -1,5 +1,5 @@
-﻿using Avalonia.Xaml.Interactivity;
-using Avalonia.Threading;
+﻿using Avalonia.Threading;
+using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using AvaloniaEdit.Folding;
 using KubeUI.Controls.Editors;

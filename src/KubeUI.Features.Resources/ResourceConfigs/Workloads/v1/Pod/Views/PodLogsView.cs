@@ -10,6 +10,7 @@ using CommunityToolkit.Mvvm.Input;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using KubeUI.Controls.Converters;
+using KubeUI.Controls.Layout;
 using KubeUI.Controls.Presentation;
 using KubeUI.Controls.Styles;
 using KubeUI.Features.Resources.Infrastructure;
@@ -46,71 +47,42 @@ public sealed partial class PodLogsView : KubeUIView<PodLogsViewModel>
                 CreateEditor(vm));
     }
 
-    private Grid CreateTopBar(PodLogsViewModel vm)
+    private CompactToolbar CreateTopBar(PodLogsViewModel vm)
     {
-        return new Grid()
-            .Row(0)
-            .Rows("Auto")
-            .Children(
-                new ScrollViewer()
-                    .HorizontalScrollBarVisibility(ScrollBarVisibility.Auto)
-                    .VerticalScrollBarVisibility(ScrollBarVisibility.Disabled)
-                    .Content(CreateLogControlsBar(vm)));
-    }
-
-    private Grid CreateLogControlsBar(PodLogsViewModel vm)
-    {
-        return new Grid()
-            .Row(0)
-            .Height(32)
-            .Cols("*,Auto")
-            .Margin(2, 0)
-            .Children(
-                CreateSelectionControls(vm),
-                CreateActionControls(vm));
+        return new CompactToolbar
+        {
+            Leading = CreateSelectionControls(vm),
+            Trailing = CreateActionControls(vm)
+        }.Row(0);
     }
 
     private StackPanel CreateSelectionControls(PodLogsViewModel vm)
     {
-        return new StackPanel()
-            .Col(0)
-            .Orientation(Orientation.Horizontal)
-            .Spacing(4)
-            .Children(
+        return CompactToolbar.Group(
                CreateSourcesSelector(vm),
-               new TextBlock()
-                    .MaxWidth(400)
-                    .VerticalAlignment(VerticalAlignment.Center)
+                new TextBlock()
+                     .MaxWidth(400)
                     .Text(vm, x => x.ConnectionError)
                     .IsVisible(vm, x => x.ConnectionError, converter: HasErrorConverter)
                     .TextTrimming(TextTrimming.CharacterEllipsis),
-                new StackPanel()
-                    .Orientation(Orientation.Horizontal)
-                    .Spacing(4)
-                    .VerticalAlignment(VerticalAlignment.Center)
-                    .IsVisible(vm, x => x.StreamLimitWarning, converter: HasErrorConverter)
-                    .Children(
-                        new FluentIcon().Icon(Icon.Warning),
-                        new TextBlock()
-                            .MaxWidth(320)
-                            .Text(vm, x => x.StreamLimitWarning)
-                            .TextTrimming(TextTrimming.CharacterEllipsis)),
-                new StackPanel()
-                    .Orientation(Orientation.Horizontal)
-                    .Spacing(4)
-                    .VerticalAlignment(VerticalAlignment.Center)
+                CompactToolbar.Group(
+                    new FluentIcon().Icon(Icon.Warning),
+                    new TextBlock()
+                        .MaxWidth(320)
+                        .Text(vm, x => x.StreamLimitWarning)
+                        .TextTrimming(TextTrimming.CharacterEllipsis))
+                    .IsVisible(vm, x => x.StreamLimitWarning, converter: HasErrorConverter),
+                CompactToolbar.Group(
+                    new FluentIcon().Icon(Icon.Warning),
+                    new TextBlock()
+                        .MaxWidth(320)
+                        .Text(vm, x => x.LogUpdateStatus)
+                        .TextTrimming(TextTrimming.CharacterEllipsis),
+                    new Button()
+                        .Command(vm, x => x.FollowLogsCommand)
+                        .Content(ResourcesLanguageManager.Instance.PodLogsView_ResumeFollowing.ToBinding()))
                     .IsVisible(vm, x => x.IsDisplayPaused)
-                    .Children(
-                        new FluentIcon().Icon(Icon.Warning),
-                        new TextBlock()
-                            .MaxWidth(320)
-                            .VerticalAlignment(VerticalAlignment.Center)
-                            .Text(vm, x => x.LogUpdateStatus)
-                            .TextTrimming(TextTrimming.CharacterEllipsis),
-                        new Button()
-                            .VerticalAlignment(VerticalAlignment.Center)
-                            .Command(vm, x => x.FollowLogsCommand)
-                            .Content(ResourcesLanguageManager.Instance.PodLogsView_ResumeFollowing.ToBinding())));
+            );
     }
 
     private static TreeComboBox CreateSourcesSelector(PodLogsViewModel vm)
@@ -134,9 +106,7 @@ public sealed partial class PodLogsView : KubeUIView<PodLogsViewModel>
             ItemContainerTheme = itemTheme,
         }
             .Width(SourcesWidth)
-            .MaxHeight(32)
             .MaxDropDownHeight(500)
-            .VerticalAlignment(VerticalAlignment.Center)
             .PlaceholderText(ResourcesLanguageManager.Instance.PodLogsView_Sources.ToBinding())
             .ItemsSource(vm, x => x.SourceTreeItems)
             .ItemTemplate(template)
@@ -148,11 +118,7 @@ public sealed partial class PodLogsView : KubeUIView<PodLogsViewModel>
 
     private StackPanel CreateActionControls(PodLogsViewModel vm)
     {
-        return new StackPanel()
-            .Col(1)
-            .Orientation(Orientation.Horizontal)
-            .Spacing(2)
-            .Children(
+        return CompactToolbar.Group(
                 new Button()
                     .Command(vm, x => x.ClearCommand)
                     .ToolTip_Tip(ResourcesLanguageManager.Instance.PodLogsView_Clear.ToBinding())

@@ -79,7 +79,7 @@ internal static class Program
     {
         RegisterAvaloniaShutdown(services);
 
-        var builder = AppBuilder.Configure(() => new global::KubeUI.App.App(services));
+        var builder = AppBuilder.Configure(() => new App.App(services));
         builder = (configurePlatform ?? (static builder => builder.UsePlatformDetect()))(builder);
 
         builder = builder

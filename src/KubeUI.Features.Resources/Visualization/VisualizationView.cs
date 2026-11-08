@@ -7,6 +7,7 @@ using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using k8s.Models;
 using KubeUI.Controls.DependencyInjection;
+using KubeUI.Controls.Layout;
 using KubeUI.Controls.Presentation;
 using KubeUI.Features.Clusters.Presentation;
 
@@ -31,19 +32,16 @@ public sealed partial class VisualizationView : KubeUIView<VisualizationViewMode
         return new Grid()
             .Rows("Auto,*")
             .Children(
-                CreateLeftToolbar(vm),
-                CreateRightToolbar(vm),
+                CreateToolbar(vm),
                 CreateGraphViewer(vm),
                 CreateErrorViewer(vm));
     }
 
-    private static StackPanel CreateLeftToolbar(VisualizationViewModel vm)
+    private static CompactToolbar CreateToolbar(VisualizationViewModel vm)
     {
-        return new StackPanel()
-            .Row(0)
-            .HorizontalAlignment(HorizontalAlignment.Left)
-            .Orientation(Orientation.Horizontal)
-            .Children(
+        return new CompactToolbar
+        {
+            Leading = CompactToolbar.Group(
                 new ToggleButton()
                     .IsChecked(vm, x => x.HideNoise, BindingMode.TwoWay)
                     .ToolTip_Tip(ResourcesLanguageManager.Instance.VisualizationView_HideNoiseTooltip.ToBinding())
@@ -53,26 +51,15 @@ public sealed partial class VisualizationView : KubeUIView<VisualizationViewMode
                     .ToolTip_Tip(ResourcesLanguageManager.Instance.VisualizationView_ShowNotReadyOnlyTooltip.ToBinding())
                     .Content(new FluentIcon().Icon(Icon.Warning)),
                 new Label()
-                    .VerticalContentAlignment(VerticalAlignment.Center)
                     .Content(CompiledBinding.Create<VisualizationViewModel, int>(x => x.Graph!.Resources.Count,
                         source: vm,
                         stringFormat: ResourcesLanguageManager.Instance.VisualizationView_ItemsFormat.CurrentValue()!)),
                 new Label()
                     .Content(vm, x => x.RootResourceDisplay)
-                    .VerticalContentAlignment(VerticalAlignment.Center)
-                    .IsVisible(vm, x => x.IsRootResourceDisplayVisible));
-    }
-
-    private static StackPanel CreateRightToolbar(VisualizationViewModel vm)
-    {
-        return new StackPanel()
-            .Row(0)
-            .HorizontalAlignment(HorizontalAlignment.Right)
-            .Orientation(Orientation.Horizontal)
-            .Children(
+                    .IsVisible(vm, x => x.IsRootResourceDisplayVisible)),
+            Trailing = CompactToolbar.Group(
                 new Ursa.Controls.MultiComboBox()
                     .Width(200)
-                    .MaxHeight(20)
                     .Classes("ClearButton")
                     .ToolTip_Tip(ResourcesLanguageManager.Instance.VisualizationView_ResourceTypesTooltip.ToBinding())
                     .ItemsSource(vm, x => x.ResourceTypes)
@@ -84,7 +71,9 @@ public sealed partial class VisualizationView : KubeUIView<VisualizationViewMode
                     .BindValue(NamespaceScopePicker.IsSelectionLinkedProperty, CompiledBinding.Create<VisualizationViewModel, bool>(x => x.IsNamespaceSelectionLinked, source: vm, mode: BindingMode.TwoWay))
                     .BindValue(NamespaceScopePicker.IsSelectionEnabledProperty, CompiledBinding.Create<VisualizationViewModel, bool>(x => x.IsNamespaceSelectionEnabled, source: vm))
                     .BindValue(NamespaceScopePicker.IsLinkEnabledProperty, CompiledBinding.Create<VisualizationViewModel, bool>(x => x.IsNamespaceSelectionEnabled, source: vm))
-                    .IsVisible(vm, x => x.IsNamespaceSelectorVisible));
+                    .IsVisible(vm, x => x.IsNamespaceSelectorVisible))
+                .MaxWidth(420)
+        };
     }
 
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "ResourceGraphControl ownership is transferred to the visual tree via fluent builder.")]

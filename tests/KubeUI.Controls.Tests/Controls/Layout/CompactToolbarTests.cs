@@ -17,16 +17,20 @@ public sealed class CompactToolbarTests
     [AvaloniaFact]
     public void Slots_keep_compact_spacing_and_right_align_trailing_content()
     {
-        var leading = new Button { Width = 24, Height = 24, Content = "+" };
-        var count = new TextBlock { Width = 60, Height = 20, Text = "3 items" };
-        var trailing = new Button { Width = 80, Height = 24, Content = "Refresh" };
-        var toolbar = new CompactToolbar { Leading = leading, Count = count, Trailing = trailing };
+        var leading = new Button { Width = 24, Content = "+" };
+        var middle = new TextBlock { Width = 60, Height = 20, Text = "3 items" };
+        var trailing = new Button { Width = 80, Content = "Refresh" };
+        var toolbar = new CompactToolbar { Leading = leading, Middle = middle, Trailing = trailing };
         using var host = new ToolbarHost(toolbar, 600);
 
         toolbar.MinHeight.ShouldBe(32);
         toolbar.Margin.ShouldBe(new Thickness(0, 2));
+        leading.MinHeight.ShouldBe(32d);
+        trailing.MinHeight.ShouldBe(32d);
+        leading.Bounds.Height.ShouldBe(32d);
+        trailing.Bounds.Height.ShouldBe(32d);
         leading.TranslatePoint(default, toolbar)!.Value.X.ShouldBe(2);
-        count.TranslatePoint(default, toolbar)!.Value.X.ShouldBe(28);
+        middle.TranslatePoint(default, toolbar)!.Value.X.ShouldBe(36);
         trailing.TranslatePoint(new Point(trailing.Bounds.Width, 0), toolbar)!.Value.X.ShouldBe(600);
 
         var screenshotPath = TestScreenshot.CaptureIfEnabled(host.Window, "CompactToolbar_600px");
@@ -46,6 +50,38 @@ public sealed class CompactToolbarTests
         trailing.TranslatePoint(new Point(trailing.Bounds.Width, 0), toolbar)!.Value.X.ShouldBe(600);
     }
 
+    [AvaloniaFact]
+    public void Group_supplies_horizontal_layout_defaults_without_repeating_panel_setup()
+    {
+        var first = new Button { Content = "First" };
+        var second = new TextBox();
+        var third = new ComboBox();
+        var group = CompactToolbar.Group(first, second, third);
+        var toolbar = new CompactToolbar { Leading = group };
+        using var host = new ToolbarHost(toolbar, 300);
+
+        group.Orientation.ShouldBe(Orientation.Horizontal);
+        group.Spacing.ShouldBe(4d);
+        group.VerticalAlignment.ShouldBe(VerticalAlignment.Center);
+        group.Children.Count.ShouldBe(3);
+        group.Children[0].ShouldBeSameAs(first);
+        group.Children[1].ShouldBeSameAs(second);
+        group.Children[2].ShouldBeSameAs(third);
+        first.MinHeight.ShouldBe(32d);
+        second.MinHeight.ShouldBe(32d);
+        first.MinWidth.ShouldBe(32d);
+        first.Margin.ShouldBe(new Thickness(0));
+        first.VerticalAlignment.ShouldBe(VerticalAlignment.Center);
+        first.VerticalContentAlignment.ShouldBe(VerticalAlignment.Center);
+        second.VerticalContentAlignment.ShouldBe(VerticalAlignment.Center);
+        second.Bounds.Height.ShouldBe(32d);
+        third.VerticalContentAlignment.ShouldBe(VerticalAlignment.Center);
+        third.Bounds.Height.ShouldBe(32d);
+
+        var spacedGroup = CompactToolbar.Group(6, new Button(), new Button());
+        spacedGroup.Spacing.ShouldBe(6d);
+    }
+
     private static bool IsScreenshotCaptureEnabled()
     {
         var value = Environment.GetEnvironmentVariable(TestScreenshot.EnableEnvironmentVariable);
@@ -58,32 +94,32 @@ public sealed class CompactToolbarTests
     public void Slots_can_be_replaced_and_cleared_without_retaining_old_controls()
     {
         var oldLeading = new Border();
-        var oldCount = new Border();
+        var oldMiddle = new Border();
         var oldTrailing = new Border();
-        var toolbar = new CompactToolbar { Leading = oldLeading, Count = oldCount, Trailing = oldTrailing };
+        var toolbar = new CompactToolbar { Leading = oldLeading, Middle = oldMiddle, Trailing = oldTrailing };
         using var host = new ToolbarHost(toolbar, 400);
         var leading = new Border();
-        var count = new Border();
+        var middle = new Border();
         var trailing = new Border();
 
         toolbar.Leading = leading;
-        toolbar.Count = count;
+        toolbar.Middle = middle;
         toolbar.Trailing = trailing;
         host.Layout();
 
         oldLeading.Parent.ShouldBeNull();
-        oldCount.Parent.ShouldBeNull();
+        oldMiddle.Parent.ShouldBeNull();
         oldTrailing.Parent.ShouldBeNull();
         toolbar.GetVisualDescendants().ShouldContain(leading);
-        toolbar.GetVisualDescendants().ShouldContain(count);
+        toolbar.GetVisualDescendants().ShouldContain(middle);
         toolbar.GetVisualDescendants().ShouldContain(trailing);
 
         toolbar.Leading = null;
-        toolbar.Count = null;
+        toolbar.Middle = null;
         toolbar.Trailing = null;
         host.Layout();
         leading.Parent.ShouldBeNull();
-        count.Parent.ShouldBeNull();
+        middle.Parent.ShouldBeNull();
         trailing.Parent.ShouldBeNull();
     }
 
@@ -91,20 +127,20 @@ public sealed class CompactToolbarTests
     public void Detached_toolbar_accepts_slot_updates_and_lays_out_again_on_reattachment()
     {
         var leading = new Border { Width = 24, Height = 24 };
-        var oldCount = new Border { Width = 60, Height = 20 };
+        var oldMiddle = new Border { Width = 60, Height = 20 };
         var trailing = new Border { Width = 200, Height = 24 };
-        var toolbar = new CompactToolbar { Leading = leading, Count = oldCount, Trailing = trailing };
+        var toolbar = new CompactToolbar { Leading = leading, Middle = oldMiddle, Trailing = trailing };
         using var host = new ToolbarHost(toolbar, 180);
 
         host.Detach();
         TopLevel.GetTopLevel(toolbar).ShouldBeNull();
-        var count = new Border { Width = 40, Height = 20 };
-        toolbar.Count = count;
+        var middle = new Border { Width = 40, Height = 20 };
+        toolbar.Middle = middle;
         host.Attach(toolbar);
 
         TopLevel.GetTopLevel(toolbar).ShouldNotBeNull();
-        oldCount.Parent.ShouldBeNull();
-        count.TranslatePoint(default, toolbar)!.Value.X.ShouldBe(28);
+        oldMiddle.Parent.ShouldBeNull();
+        middle.TranslatePoint(default, toolbar)!.Value.X.ShouldBe(28);
         toolbar.GetVisualDescendants().ShouldContain(leading);
         toolbar.GetVisualDescendants().ShouldContain(trailing);
         var scroll = toolbar.GetVisualDescendants().OfType<ScrollViewer>().Single();
@@ -116,17 +152,17 @@ public sealed class CompactToolbarTests
     public void Hidden_leading_action_releases_its_space()
     {
         var leading = new Border { Width = 24, Height = 24 };
-        var count = new Border { Width = 60, Height = 20 };
-        var toolbar = new CompactToolbar { Leading = leading, Count = count };
+        var middle = new Border { Width = 60, Height = 20 };
+        var toolbar = new CompactToolbar { Leading = leading, Middle = middle };
         using var host = new ToolbarHost(toolbar, 300);
 
         leading.IsVisible = false;
         host.Layout();
 
-        count.TranslatePoint(default, toolbar)!.Value.X.ShouldBe(2);
+        middle.TranslatePoint(default, toolbar)!.Value.X.ShouldBe(2);
         leading.IsVisible = true;
         host.Layout();
-        count.TranslatePoint(default, toolbar)!.Value.X.ShouldBe(28);
+        middle.TranslatePoint(default, toolbar)!.Value.X.ShouldBe(28);
     }
 
     [AvaloniaFact]
@@ -138,7 +174,7 @@ public sealed class CompactToolbarTests
         var toolbar = new CompactToolbar
         {
             Leading = new Border { Width = 24, Height = 24 },
-            Count = new Border { Width = 60, Height = 20 },
+            Middle = new Border { Width = 60, Height = 20 },
             Trailing = new StackPanel { Orientation = Orientation.Horizontal, Children = { first, last } }
         };
         using var host = new ToolbarHost(toolbar, 180);
@@ -159,19 +195,21 @@ public sealed class CompactToolbarTests
     }
 
     [AvaloniaFact]
-    public void Very_narrow_toolbar_places_actions_on_another_row_and_wraps_count_text()
+    public void Very_narrow_toolbar_places_trailing_content_on_another_row_and_wraps_middle_content()
     {
-        var count = new TextBlock { Text = "Many matching items", TextWrapping = TextWrapping.Wrap };
+        var middle = new TextBlock { Text = "Many matching items", TextWrapping = TextWrapping.Wrap };
         var trailing = new Border { Width = 200, Height = 24 };
         var toolbar = new CompactToolbar
         {
-            Leading = new Border { Width = 24, Height = 24 }, Count = count, Trailing = trailing
+            Leading = new Border { Width = 24, Height = 24 },
+            Middle = middle,
+            Trailing = trailing
         };
         using var host = new ToolbarHost(toolbar, 90);
         var scroll = toolbar.GetVisualDescendants().OfType<ScrollViewer>().Single();
 
-        count.Bounds.Height.ShouldBeGreaterThan(20);
-        scroll.Bounds.Y.ShouldBeGreaterThanOrEqualTo(count.Bounds.Bottom);
+        middle.Bounds.Height.ShouldBeGreaterThan(20);
+        scroll.Bounds.Y.ShouldBeGreaterThanOrEqualTo(middle.Bounds.Bottom);
         scroll.Viewport.Width.ShouldBe(90);
         scroll.Extent.Width.ShouldBeGreaterThan(scroll.Viewport.Width);
     }

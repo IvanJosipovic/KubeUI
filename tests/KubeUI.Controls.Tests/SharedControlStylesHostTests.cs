@@ -1,17 +1,17 @@
-using Avalonia.Controls;
 using Avalonia;
 using Avalonia.Collections;
+using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Media;
+using Avalonia.Media.Immutable;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Avalonia.Media;
-using Avalonia.Media.Immutable;
+using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using KubeUI.Controls.Styles;
 using Shouldly;
 using Ursa.Controls;
-using Avalonia.Xaml.Interactivity;
 
 namespace KubeUI.Controls.Tests;
 

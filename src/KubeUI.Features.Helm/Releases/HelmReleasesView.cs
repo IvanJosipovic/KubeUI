@@ -34,20 +34,14 @@ public sealed class HelmReleasesView : KubeUIView<HelmReleasesViewModel>
                         .Command(vm, x => x.NewReleaseCommand)
                         .Content(new FluentIcon().Icon(Icon.AddSquare))
                         .ToolTip_Tip(HelmLanguageManager.Instance.HelmReleasesView_Install.ToBinding()),
-                    Count = new Label()
-                        .VerticalContentAlignment(VerticalAlignment.Center)
+                    Middle = new Label()
                         .Content(CompiledBinding.Create<HelmReleasesViewModel, int>(
                             x => x.ItemCount,
                             source: vm,
                             stringFormat: HelmLanguageManager.Instance.HelmReleasesView_ItemsFormat.CurrentValue()!)),
-                    Trailing = new StackPanel()
-                        .MaxWidth(700)
-                        .HorizontalAlignment(HorizontalAlignment.Right)
-                        .Orientation(Orientation.Horizontal)
-                        .Children(
+                    Trailing = CompactToolbar.Group(
                             new TextBlock()
                                 .MaxWidth(300)
-                                .VerticalAlignment(VerticalAlignment.Center)
                                 .TextWrapping(TextWrapping.Wrap)
                                 .Text(vm, x => x.Status),
                             CreateNamespaceSelector(vm),
@@ -55,6 +49,7 @@ public sealed class HelmReleasesView : KubeUIView<HelmReleasesViewModel>
                                 .Command(vm, x => x.RefreshCommand)
                                 .Content(new FluentIcon().Icon(Icon.ArrowSync))
                                 .ToolTip_Tip(FoundationLanguageManager.Instance.Shared_Refresh.ToBinding()))
+                        .MaxWidth(700)
                 },
                 table.Row(1));
         Interaction.GetBehaviors(root).Add(new EventTriggerBehavior
@@ -68,7 +63,6 @@ public sealed class HelmReleasesView : KubeUIView<HelmReleasesViewModel>
     private static NamespaceScopePicker CreateNamespaceSelector(HelmReleasesViewModel viewModel)
     {
         return new NamespaceScopePicker()
-            .HorizontalAlignment(HorizontalAlignment.Stretch)
             .BindValue(NamespaceScopePicker.NamespacesProperty, CompiledBinding.Create<HelmReleasesViewModel, IEnumerable>(x => x.Cluster!.Runtime.Namespaces, source: viewModel, mode: BindingMode.OneWay))
             .BindValue(NamespaceScopePicker.SelectedNamespacesProperty, CompiledBinding.Create<HelmReleasesViewModel, IList>(x => x.SelectedNamespaces, source: viewModel, mode: BindingMode.OneWay))
             .BindValue(NamespaceScopePicker.IsSelectionLinkedProperty, CompiledBinding.Create<HelmReleasesViewModel, bool>(x => x.IsNamespaceSelectionLinked, source: viewModel, mode: BindingMode.TwoWay));

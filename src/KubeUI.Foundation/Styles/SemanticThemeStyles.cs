@@ -5,7 +5,7 @@ using Avalonia.Styling;
 namespace KubeUI.Foundation.Styles;
 
 /// <summary>Provides dynamic, domain-neutral success, error, and muted brushes for light and dark themes.</summary>
-public sealed class SemanticThemeStyles : global::Avalonia.Styling.Styles
+public sealed class SemanticThemeStyles : Avalonia.Styling.Styles
 {
     /// <summary>Creates shared semantic brushes without requiring App or feature resources.</summary>
     public SemanticThemeStyles()

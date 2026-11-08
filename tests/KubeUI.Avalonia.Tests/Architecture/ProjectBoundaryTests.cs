@@ -1,5 +1,5 @@
-using System.Xml.Linq;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using Shouldly;
 
 namespace KubeUI.Avalonia.Tests.Architecture;

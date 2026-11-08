@@ -1991,7 +1991,7 @@ public class NavigationViewModelTests
             .OfType<IResourceListViewModel>()
             .Single(x => ReferenceEquals(x.Cluster, workspace) && x.Kind == updatedKind);
 
-        openedDocument.ShouldBeOfType<ResourceListViewModel<global::KubeUI.Kubernetes.GenericKubernetesObject>>();
+        openedDocument.ShouldBeOfType<ResourceListViewModel<GenericKubernetesObject>>();
         openedDocument.ResourceConfig.IsCustomResource.ShouldBeTrue();
     }
 

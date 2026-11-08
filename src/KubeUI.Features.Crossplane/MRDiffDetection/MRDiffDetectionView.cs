@@ -2,6 +2,7 @@ using Avalonia.Controls.Templates;
 using Avalonia.Input;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
+using KubeUI.Controls.Layout;
 using KubeUI.Controls.Presentation;
 using KubeUI.Kubernetes;
 
@@ -16,44 +17,30 @@ public sealed class MRDiffDetectionView : KubeUIView<MRDiffDetectionViewModel>
         return new Grid()
             .Rows("Auto,*")
             .Children(
-                new Grid()
-                    .Row(0)
-                    .MinHeight(32)
-                    .Margin(0, 2, 0, 2)
-                    .Cols("Auto,Auto,*,Auto")
-                    .Children(
+                new CompactToolbar
+                {
+                    Leading = CompactToolbar.Group(
                         new ComboBox()
-                            .Col(0)
                             .Width(260)
-                            .Margin(0, 0, 6, 0)
-                            .VerticalAlignment(VerticalAlignment.Stretch)
-                            .VerticalContentAlignment(VerticalAlignment.Center)
                             .PlaceholderText(CrossplaneLanguageManager.Instance.MRDiffDetectionView_SelectProvider.ToBinding())
                             .ItemsSource(vm, x => x.Providers)
                             .SelectedItem(vm, x => x.SelectedProvider, BindingMode.TwoWay)
                             .ItemTemplate(new FuncDataTemplate<CrossplaneProviderOption>(
                                 (provider, _) => new TextBlock().Text(provider?.Name ?? string.Empty))),
                         new TextBox()
-                            .Col(1)
                             .Width(240)
-                            .Margin(0, 0, 6, 0)
-                            .HorizontalAlignment(HorizontalAlignment.Stretch)
-                            .VerticalAlignment(VerticalAlignment.Stretch)
-                            .VerticalContentAlignment(VerticalAlignment.Center)
                             .Background(Brushes.Transparent)
                             .PlaceholderText(CrossplaneLanguageManager.Instance.MRDiffDetectionView_Search.ToBinding())
-                            .Text(vm, x => x.SearchQuery, BindingMode.TwoWay),
-                        new TextBlock()
-                            .Col(2)
-                            .Margin(0, 0, 6, 0)
-                            .VerticalAlignment(VerticalAlignment.Center)
-                            .Text(vm, x => x.Status),
-                        new Button()
-                            .Col(3)
-                            .VerticalAlignment(VerticalAlignment.Stretch)
-                            .Command(vm, x => x.ClearCommand)
-                            .ToolTip_Tip(CrossplaneLanguageManager.Instance.MRDiffDetectionView_Clear.ToBinding())
-                            .Content(new FluentIcon().Icon(Icon.Broom))),
+                            .Text(vm, x => x.SearchQuery, BindingMode.TwoWay)),
+                    Middle = new TextBlock()
+                        .MaxWidth(400)
+                        .TextWrapping(TextWrapping.Wrap)
+                        .Text(vm, x => x.Status),
+                    Trailing = new Button()
+                        .Command(vm, x => x.ClearCommand)
+                        .ToolTip_Tip(CrossplaneLanguageManager.Instance.MRDiffDetectionView_Clear.ToBinding())
+                        .Content(new FluentIcon().Icon(Icon.Broom))
+                },
                 new DynamicTableView
                 {
                     ContextMenuItemsFactory = targets => CreateContextMenuItems(vm, targets),

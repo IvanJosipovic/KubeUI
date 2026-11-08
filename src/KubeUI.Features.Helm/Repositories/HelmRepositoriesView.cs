@@ -29,22 +29,16 @@ public sealed class HelmRepositoriesView : KubeUIView<HelmRepositoriesViewModel>
                         .Command(vm, x => x.NewRepositoryCommand)
                         .Content(new FluentIcon().Icon(Icon.AddSquare))
                         .ToolTip_Tip(HelmLanguageManager.Instance.HelmRepositoriesView_New.ToBinding()),
-                    Count = new Label()
-                        .VerticalContentAlignment(VerticalAlignment.Center)
+                    Middle = new Label()
                         .Content(CompiledBinding.Create<HelmRepositoriesViewModel, int>(
                             x => x.ItemCount, source: vm,
                             stringFormat: HelmLanguageManager.Instance.HelmRepositoriesView_ItemsFormat.CurrentValue()!)),
-                    Trailing = new StackPanel()
-                        .MaxWidth(700)
-                        .Orientation(Orientation.Horizontal)
-                        .Children(
+                    Trailing = CompactToolbar.Group(
                             new TextBlock()
                                 .MaxWidth(300)
-                                .VerticalAlignment(VerticalAlignment.Center)
                                 .TextWrapping(TextWrapping.Wrap)
                                 .Text(vm, x => x.Status),
                             new Button()
-                                .Margin(0, 0, 2, 0)
                                 .Command(vm, x => x.UpdateIndexesCommand)
                                 .Content(new FluentIcon().Icon(Icon.ArrowDownload))
                                 .ToolTip_Tip(HelmLanguageManager.Instance.HelmRepositoriesView_UpdateIndexes.ToBinding()),
@@ -52,6 +46,7 @@ public sealed class HelmRepositoriesView : KubeUIView<HelmRepositoriesViewModel>
                                 .Command(vm, x => x.RefreshCommand)
                                 .Content(new FluentIcon().Icon(Icon.ArrowSync))
                                 .ToolTip_Tip(FoundationLanguageManager.Instance.Shared_Refresh.ToBinding()))
+                        .MaxWidth(700)
                 }.Row(0),
                 table.Row(1));
     }

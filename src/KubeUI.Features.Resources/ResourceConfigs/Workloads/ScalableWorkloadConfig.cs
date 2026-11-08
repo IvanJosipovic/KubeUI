@@ -74,7 +74,7 @@ public abstract partial class ScalableWorkloadConfig<[DynamicallyAccessedMembers
             content.Children.Add(new TextBlock
             {
                 Text = string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.ScalableWorkloadConfig_BulkPrompt.CurrentValue()!, selected.Count),
-                TextWrapping = global::Avalonia.Media.TextWrapping.Wrap,
+                TextWrapping = TextWrapping.Wrap,
             });
         }
         content.Children.Add(new TextBlock { Text = ResourcesLanguageManager.Instance.ScalableWorkloadConfig_ReplicaCount.CurrentValue()! });

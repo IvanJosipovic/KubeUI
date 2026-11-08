@@ -1,5 +1,5 @@
-using AvaloniaEdit;
 using Avalonia.Controls.Primitives;
+using AvaloniaEdit;
 
 namespace KubeUI.Controls.Editors;
 

@@ -25,7 +25,7 @@
 ## UI and tests
 
 - Flow-list context menus use Controls' `MenuPresenter` for live model-backed rendering; DynamicTableView retains context targeting and Cilium retains flow actions.
-- Flow List composes Controls' `CompactToolbar`; Cilium owns the clear action, count/status text, search, and namespace scope bindings.
+- Flow List and Service Map compose Controls' `CompactToolbar`; Cilium owns their actions, status text, search, filters, and namespace scope bindings.
 - Use foundation semantic success/error/muted brushes for Hubble state; do not borrow Pod or container status resource keys for connection/verdict presentation.
 
 - Use compiled bindings and resource strings for visible UI text. Keep pointer and keyboard interactions out of view code-behind.

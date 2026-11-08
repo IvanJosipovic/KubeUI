@@ -1,5 +1,5 @@
-using AvaloniaEdit;
 using Avalonia.VisualTree;
+using AvaloniaEdit;
 
 namespace KubeUI.Features.Resources.Infrastructure;
 

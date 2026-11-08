@@ -7,9 +7,9 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Controls.Layout;
+using KubeUI.Features.Cilium.Hubble;
+using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Features.Clusters.Presentation;
-using KubeUI.Features.Cilium.Hubble;
-using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Testing.Utilities;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
@@ -76,7 +76,7 @@ public sealed class FlowListViewTests
         filterControls.Children.IndexOf(searchBox).ShouldBeLessThan(filterControls.Children.IndexOf(picker));
         picker.PickerWidth.ShouldBe(190);
 
-        toolbar.Count!.GetVisualDescendants().OfType<TextBlock>()
+        toolbar.Middle!.GetVisualDescendants().OfType<TextBlock>()
             .ShouldContain(textBlock => textBlock.Text == viewModel.ConnectionStatus);
 
         var linkToggle = toolbar.GetVisualDescendants()

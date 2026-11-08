@@ -153,32 +153,24 @@ public partial class ResourceListView : KubeUIView<IResourceListViewModel>
                 .IsVisible(CompiledBinding.Create<IResourceListViewModel, bool>(x => x.ResourceConfig.ShowNewResource))
                 .ToolTip_Tip(ResourcesLanguageManager.Instance.ResourceListView_NewResource.ToBinding())
                 .Content(new FluentIcon().Icon(Icon.AddSquare)),
-            Count = new Label()
-                .VerticalContentAlignment(VerticalAlignment.Center)
+            Middle = new Label()
                 .Content(CompiledBinding.Create<IResourceListViewModel, int>(x => x.ItemCount,
                     stringFormat: ResourcesLanguageManager.Instance.ResourceListView_ItemsFormat.CurrentValue()!)),
-            Trailing = new StackPanel()
-                .MaxWidth(456)
-                .Orientation(Orientation.Horizontal)
-                .Children(
+            Trailing = CompactToolbar.Group(
                     new TextBox()
                         .Width(200)
                         .MinWidth(120)
-                        .Margin(0, 0, 2, 0)
-                        .HorizontalAlignment(HorizontalAlignment.Stretch)
-                        .VerticalAlignment(VerticalAlignment.Stretch)
-                        .VerticalContentAlignment(VerticalAlignment.Center)
                         .Background(Brushes.Transparent)
                         .PlaceholderText(ResourcesLanguageManager.Instance.ResourceListView_SearchWatermark.ToBinding())
                         .Text(CompiledBinding.Create<IResourceListViewModel, string>(x => x.SearchQuery, mode: BindingMode.TwoWay)),
                     CreateNamespaceSelector())
+                .MaxWidth(456)
         }.Row(0);
     }
 
     private static NamespaceScopePicker CreateNamespaceSelector()
     {
         return new NamespaceScopePicker()
-            .HorizontalAlignment(HorizontalAlignment.Stretch)
             .IsVisible(CompiledBinding.Create<IResourceListViewModel, bool>(x => x.ResourceConfig.IsNamespaced))
             .BindValue(NamespaceScopePicker.NamespacesProperty, CompiledBinding.Create<IResourceListViewModel, IEnumerable>(x => x.Cluster.Runtime.Namespaces, mode: BindingMode.OneWay))
             .BindValue(NamespaceScopePicker.SelectedNamespacesProperty, CompiledBinding.Create<IResourceListViewModel, IList>(x => x.SelectedNamespaces, mode: BindingMode.OneWay))

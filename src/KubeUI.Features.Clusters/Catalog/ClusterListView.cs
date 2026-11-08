@@ -3,6 +3,7 @@ using Avalonia.Input;
 using Avalonia.Styling;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
+using KubeUI.Controls.Layout;
 using KubeUI.Controls.Presentation;
 using KubeUI.Features.Clusters.Workspace;
 
@@ -17,13 +18,9 @@ public sealed partial class ClusterListView : KubeUIView<ClusterListViewModel>
         return new Grid()
             .Rows("Auto,*")
             .Children(
-                new StackPanel()
-                    .Row(0)
-                    .MinHeight(32)
-                    .Orientation(Orientation.Horizontal)
-                    .Spacing(2)
-                    .Margin(2, 2, 0, 2)
-                    .Children(
+                new CompactToolbar
+                {
+                    Leading = CompactToolbar.Group(
                         new Button()
                             .Content(new FluentIcon().Icon(Icon.AddSquare))
                             .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterListView_AddKubeConfig.ToBinding())
@@ -39,11 +36,12 @@ public sealed partial class ClusterListView : KubeUIView<ClusterListViewModel>
                                     BasedOn = Application.Current?.FindResource(typeof(MenuItem)) as ControlTheme,
                                     Setters =
                                     {
-                                        new Setter(global::Avalonia.Controls.Primitives.HeaderedSelectingItemsControl.HeaderProperty, CompiledBinding.Create<string, string>(x => x)),
+                                        new Setter(Avalonia.Controls.Primitives.HeaderedSelectingItemsControl.HeaderProperty, CompiledBinding.Create<string, string>(x => x)),
                                         new Setter(MenuItem.CommandProperty, vm.RemoveKubeConfigCommand),
                                         new Setter(MenuItem.CommandParameterProperty, CompiledBinding.Create<string, string>(x => x)),
                                     }
-                                }))),
+                                })))
+                }.Row(0),
                 new DynamicTableView
                 {
                     ContextMenuItemsFactory = targets => CreateContextMenuItems(vm, targets),

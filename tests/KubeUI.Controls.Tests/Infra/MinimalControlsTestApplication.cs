@@ -1,7 +1,7 @@
-using Avalonia.Headless;
 using Avalonia;
-using Avalonia.Themes.Fluent;
+using Avalonia.Headless;
 using Avalonia.Markup.Xaml.Styling;
+using Avalonia.Themes.Fluent;
 using KubeUI.Controls.Styles;
 using Semi.Avalonia;
 using Ursa.Themes.Semi;

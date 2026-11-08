@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Dock.Model.Core;
+using KubeUI.Controls.Layout;
 using KubeUI.Features.Crossplane.MRDiffDetection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -32,15 +33,16 @@ public sealed class MRDiffDetectionViewTests
         };
 
         var root = view.Child.ShouldBeOfType<Grid>();
-        var toolbar = root.Children.OfType<Grid>().ShouldHaveSingleItem();
+        var toolbar = root.Children.OfType<CompactToolbar>().ShouldHaveSingleItem();
         toolbar.MinHeight.ShouldBe(32d);
         toolbar.Margin.Top.ShouldBe(2d);
         toolbar.Margin.Bottom.ShouldBe(2d);
 
-        var providerSelector = toolbar.Children.OfType<ComboBox>().ShouldHaveSingleItem();
+        var leading = toolbar.Leading.ShouldBeOfType<StackPanel>();
+        var providerSelector = leading.Children.OfType<ComboBox>().ShouldHaveSingleItem();
         providerSelector.VerticalAlignment.ShouldBe(global::Avalonia.Layout.VerticalAlignment.Stretch);
 
-        var searchBox = toolbar.Children.OfType<TextBox>().ShouldHaveSingleItem();
+        var searchBox = leading.Children.OfType<TextBox>().ShouldHaveSingleItem();
         searchBox.VerticalAlignment.ShouldBe(global::Avalonia.Layout.VerticalAlignment.Stretch);
         searchBox.VerticalContentAlignment.ShouldBe(global::Avalonia.Layout.VerticalAlignment.Center);
         searchBox.Background.ShouldBe(global::Avalonia.Media.Brushes.Transparent);
@@ -49,9 +51,8 @@ public sealed class MRDiffDetectionViewTests
         toolbar.Arrange(new Rect(0, 0, 1000, 40));
         providerSelector.Bounds.Height.ShouldBe(searchBox.Bounds.Height);
 
-        toolbar.Children.OfType<TextBlock>().ShouldHaveSingleItem();
-        toolbar.Children.OfType<Button>()
-            .ShouldHaveSingleItem()
+        toolbar.Middle.ShouldBeOfType<TextBlock>();
+        toolbar.Trailing.ShouldBeOfType<Button>()
             .Command
             .ShouldBe(viewModel.ClearCommand);
 

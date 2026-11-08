@@ -104,34 +104,22 @@ public sealed partial class FlowListView : KubeUIView<FlowListViewModel>
                 .Command(vm.ClearCommand)
                 .ToolTip_Tip(CiliumLanguageManager.Instance.FlowListView_TooltipClear.ToBinding())
                 .Content(new FluentIcon().Icon(Icon.Delete)),
-            Count = new StackPanel()
-                .Orientation(Orientation.Horizontal)
-                .Children(
+            Middle = CompactToolbar.Group(
                     new Label()
-                        .VerticalContentAlignment(VerticalAlignment.Center)
                         .Content(CompiledBinding.Create<FlowListViewModel, int>(x => x.FlowCount,
                              stringFormat: CiliumLanguageManager.Instance.FlowListView_ItemsFormat.CurrentValue()!)),
                     new TextBlock()
                         .MaxWidth(260)
-                        .Margin(8, 0, 0, 0)
-                        .VerticalAlignment(VerticalAlignment.Center)
                         .TextWrapping(TextWrapping.Wrap)
                         .Text(CompiledBinding.Create<FlowListViewModel, string>(x => x.ConnectionStatus))
                         .Foreground(CompiledBinding.Create<FlowListViewModel, bool>(x => x.IsConnected,
                             converter: new BoolToBrushConverter(
                             new DynamicResourceExtension("SemanticSuccessBrush"),
                             new DynamicResourceExtension("SemanticErrorBrush"))))),
-            Trailing = new StackPanel()
-                .MaxWidth(940)
-                .HorizontalAlignment(HorizontalAlignment.Right)
-                    .Orientation(Orientation.Horizontal)
-                    .Children(
+            Trailing = CompactToolbar.Group(
                         new TextBox()
                             .Width(200)
                             .MinWidth(120)
-                            .Margin(0, 0, 2, 0)
-                            .VerticalAlignment(VerticalAlignment.Stretch)
-                            .VerticalContentAlignment(VerticalAlignment.Center)
                             .Background(Brushes.Transparent)
                             .PlaceholderText(CiliumLanguageManager.Instance.FlowListView_SearchWatermark.ToBinding())
                             .Text(CompiledBinding.Create<FlowListViewModel, string>(x => x.SearchQuery, mode: BindingMode.TwoWay)),
@@ -142,6 +130,7 @@ public sealed partial class FlowListView : KubeUIView<FlowListViewModel>
                                 CompiledBinding.Create<FlowListViewModel, IList>(x => x.SelectedNamespaces, source: vm, mode: BindingMode.OneWay))
                             .BindValue(NamespaceScopePicker.IsSelectionLinkedProperty,
                                 CompiledBinding.Create<FlowListViewModel, bool>(x => x.IsNamespaceSelectionLinked, source: vm, mode: BindingMode.TwoWay)))
+                .MaxWidth(940)
         }.Row(0);
     }
 }
