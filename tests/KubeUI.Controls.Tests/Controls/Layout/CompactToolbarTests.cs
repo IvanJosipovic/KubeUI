@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
@@ -5,19 +6,20 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using KubeUI.Avalonia.Tests.Infra;
 using KubeUI.Controls.Layout;
 using Shouldly;
 
-namespace KubeUI.Avalonia.Tests.Controls.Layout;
+namespace KubeUI.Controls.Tests.Controls.Layout;
 
 public sealed class CompactToolbarTests
 {
     [AvaloniaFact]
     public void Slots_keep_compact_spacing_and_right_align_trailing_content()
     {
-        var leading = new Border { Width = 24, Height = 24 };
-        var count = new Border { Width = 60, Height = 20 };
-        var trailing = new Border { Width = 80, Height = 24 };
+        var leading = new Button { Width = 24, Height = 24, Content = "+" };
+        var count = new TextBlock { Width = 60, Height = 20, Text = "3 items" };
+        var trailing = new Button { Width = 80, Height = 24, Content = "Refresh" };
         var toolbar = new CompactToolbar { Leading = leading, Count = count, Trailing = trailing };
         using var host = new ToolbarHost(toolbar, 600);
 
@@ -27,10 +29,29 @@ public sealed class CompactToolbarTests
         count.TranslatePoint(default, toolbar)!.Value.X.ShouldBe(28);
         trailing.TranslatePoint(new Point(trailing.Bounds.Width, 0), toolbar)!.Value.X.ShouldBe(600);
 
+        var screenshotPath = TestScreenshot.CaptureIfEnabled(host.Window, "CompactToolbar_600px");
+        if (IsScreenshotCaptureEnabled())
+        {
+            screenshotPath.ShouldNotBeNull();
+            File.Exists(screenshotPath).ShouldBeTrue();
+        }
+        else
+        {
+            screenshotPath.ShouldBeNull();
+        }
+
         trailing.Width = 40;
         host.Layout();
 
         trailing.TranslatePoint(new Point(trailing.Bounds.Width, 0), toolbar)!.Value.X.ShouldBe(600);
+    }
+
+    private static bool IsScreenshotCaptureEnabled()
+    {
+        var value = Environment.GetEnvironmentVariable(TestScreenshot.EnableEnvironmentVariable);
+        return value is not null && (value.Equals("1", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("true", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("yes", StringComparison.OrdinalIgnoreCase));
     }
 
     [AvaloniaFact]
@@ -158,6 +179,8 @@ public sealed class CompactToolbarTests
     private sealed class ToolbarHost : IDisposable
     {
         private readonly Window _window;
+
+        public Window Window => _window;
 
         public ToolbarHost(CompactToolbar toolbar, double width)
         {

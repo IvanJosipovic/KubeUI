@@ -5,6 +5,7 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Headless.XUnit" />
+    <PackageReference Include="Avalonia.Skia" />
     <PackageReference Include="Avalonia.AvaloniaEdit" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Irihi.Ursa.Themes.Semi" />
@@ -17,6 +18,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\KubeUI.Controls\KubeUI.Controls.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\KubeUI.Avalonia.Tests\Infra\TestScreenshot.cs" Link="Infra\TestScreenshot.cs" />
   </ItemGroup>
 
   <ItemGroup>

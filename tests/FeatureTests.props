@@ -14,6 +14,7 @@
   <ItemGroup>
     <Compile Include="..\KubeUI.Avalonia.Tests\Infra\TestApp.cs" Link="Infra\TestApp.cs" />
     <Compile Include="..\KubeUI.Avalonia.Tests\Infra\TestApplicationExtensions.cs" Link="Infra\TestApplicationExtensions.cs" />
+    <Compile Include="..\KubeUI.Avalonia.Tests\Infra\TestScreenshot.cs" Link="Infra\TestScreenshot.cs" />
     <Compile Include="..\KubeUI.Avalonia.Tests\Infra\TestSettingsService.cs" Link="Infra\TestSettingsService.cs" />
     <Compile Include="..\KubeUI.Avalonia.Tests\Infra\TestFeatureClient.cs" Link="Infra\TestFeatureClient.cs" />
     <Compile Include="..\KubeUI.Avalonia.Tests\Infra\Initializer.cs" Link="Infra\Initializer.cs" />
