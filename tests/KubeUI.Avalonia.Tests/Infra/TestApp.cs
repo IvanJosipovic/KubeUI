@@ -24,15 +24,7 @@ using Moq;
 
 namespace KubeUI.Avalonia.Tests.Infra;
 
-
-
-
-<<<<<<< TODO: Unmerged change from project 'KubeUI.Avalonia.Tests', Before:
 public class TestApp : global::KubeUI.App.App, IDisposable
-=======
-public class TestApp : KubeUI.App.App, IDisposable
->>>>>>> After
-public class TestApp : App.App, IDisposable
 {
     public Mock<IDialogManager>? DialogManager { get; private set; }
     public INotification? Notification { get; private set; }
