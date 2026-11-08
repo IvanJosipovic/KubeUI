@@ -34,7 +34,7 @@ public sealed class ClusterSettingsViewModelTests
     }
 
     [AvaloniaFact]
-    public async Task settings_changes_are_debounced_before_persistence()
+    public async Task metrics_settings_changes_are_debounced_before_persistence()
     {
         var settings = new Moq.Mock<IClusterPreferenceStore>();
         var azureMonitor = new Moq.Mock<IAzureMonitorWorkspaceService>();
@@ -43,8 +43,8 @@ public sealed class ClusterSettingsViewModelTests
             ClusterSettings = new ClusterSettings(),
         };
 
-        viewModel.DebugContainerImage = "example.com/debug:1";
-        viewModel.DebugContainerImage = "example.com/debug:2";
+        viewModel.ClusterSettings.MetricsSettings.PrometheusDirectUrl = "http://prometheus.example";
+        viewModel.ClusterSettings.MetricsSettings.PrometheusDirectUrl = "https://prometheus.example";
 
         settings.Verify(store => store.SaveSettings(), Moq.Times.Never);
         await TestWait.UntilAsync(

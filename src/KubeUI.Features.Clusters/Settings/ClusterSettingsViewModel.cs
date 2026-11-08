@@ -370,7 +370,14 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
     }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanRefreshPermissions))]
     public partial bool IsRefreshingPermissions { get; set; }
+
+    public bool CanRefreshPermissions => !IsRefreshingPermissions;
+
+    public string ClusterTitle => string.Format(
+        ClustersLanguageManager.Instance.ClusterSettingsView_TitleFormat.CurrentValue()!,
+        Cluster?.Runtime.Name);
 
     [RelayCommand]
     private async Task RefreshPermissionsAsync()
@@ -398,7 +405,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         {
             ClusterSettings.Namespaces.Add(Namespace);
 
-            QueueSettingsSave();
+            SettingsService.SaveSettings();
 
             Namespace = "";
         }
@@ -411,7 +418,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         {
             ClusterSettings.Namespaces.Remove(ns);
 
-            QueueSettingsSave();
+            SettingsService.SaveSettings();
         }
     }
 
@@ -423,7 +430,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         }
 
         ClusterSettings.DebugContainerImage = value;
-        QueueSettingsSave();
+        SettingsService.SaveSettings();
     }
 
     partial void OnClusterSettingsChanged(ClusterSettings value)
@@ -441,11 +448,10 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
 
     private void OnClusterSettingsPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        QueueSettingsSave(reinitializeMetrics: e.PropertyName == nameof(ClusterSettings.MetricsSettings));
-
         if (e.PropertyName == nameof(ClusterSettings.MetricsSettings))
         {
             SubscribeMetricsSettings(ClusterSettings.MetricsSettings);
+            QueueSettingsSave(reinitializeMetrics: true);
             RaiseMetricsPropertiesChanged();
         }
     }

@@ -2,9 +2,7 @@ using System.Linq.Expressions;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Markup.Xaml.MarkupExtensions;
-using KubeUI.Controls.Converters;
 using KubeUI.Controls.Presentation;
-using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Foundation.Styles;
 using KubeUI.Kubernetes;
 
@@ -29,21 +27,15 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
             .HorizontalScrollBarVisibility(ScrollBarVisibility.Disabled)
             .Content(
                 new StackPanel()
+                    .Margin(10, 0, 0, 0)
                     .Children(
-                        CreateClusterHeading(vm),
+                        new TextBlock()
+                            .FontSize(new DynamicResourceExtension(Typography.TitleFontSizeResourceKey))
+                            .Text(vm, x => x.ClusterTitle, BindingMode.OneWay),
                         CreateNamespacesRow(vm),
                         CreatePermissionsRow(vm),
                         CreateDebugContainerImageRow(vm),
                         CreateMetricsSettings(vm)));
-    }
-
-    private static TextBlock CreateClusterHeading(ClusterSettingsViewModel vm)
-    {
-        return new TextBlock()
-            .Margin(0, 0, 0, 12)
-            .FontSize(new DynamicResourceExtension(Typography.TitleFontSizeResourceKey))
-            .Text(vm, x => x.Cluster.Runtime.Name, BindingMode.OneWay, Converters.StringFormat(ClustersLanguageManager.Instance.ClusterSettingsView_TitleFormat.CurrentValue()))
-            .TextWrapping(TextWrapping.Wrap);
     }
 
     private static Grid CreateNamespacesRow(ClusterSettingsViewModel vm)
@@ -51,10 +43,10 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
         return new Grid()
             .Cols("*,2*")
             .IsVisible(vm, x => !x.Cluster.Runtime.ListNamespaces)
-            .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_ManualNamespacesTooltip.CurrentValue())
+            .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_ManualNamespacesTooltip.ToBinding())
             .Children(
                 new Label()
-                    .Content(ClustersLanguageManager.Instance.ClusterSettingsView_NamespacesLabel.CurrentValue())
+                    .Content(ClustersLanguageManager.Instance.ClusterSettingsView_NamespacesLabel.ToBinding())
                     .Col(0),
                 new StackPanel()
                     .Col(1)
@@ -73,7 +65,7 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
                     .Text(vm, x => x.Namespace, BindingMode.TwoWay),
                 new Button()
                     .Col(1)
-                    .Content(ClustersLanguageManager.Instance.ClusterSettingsView_Add.CurrentValue())
+                    .Content(ClustersLanguageManager.Instance.ClusterSettingsView_Add.ToBinding())
                     .Command(vm, x => x.AddNamespaceCommand));
     }
 
@@ -91,7 +83,7 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
                             .Text(ns),
                         new Button()
                             .Col(1)
-                            .Content(ClustersLanguageManager.Instance.ClusterSettingsView_Remove.CurrentValue())
+                            .Content(ClustersLanguageManager.Instance.ClusterSettingsView_Remove.ToBinding())
                             .Command(vm, x => x.RemoveNamespaceCommand)
                             .CommandParameter(ns)));
     }
@@ -100,16 +92,16 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
     {
         return new Grid()
             .Cols("*,2*")
-            .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_RefreshPermissionsTooltip.CurrentValue())
+            .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_RefreshPermissionsTooltip.ToBinding())
             .Children(
                 new Label()
-                    .Content(ClustersLanguageManager.Instance.ClusterSettingsView_PermissionsLabel.CurrentValue())
+                    .Content(ClustersLanguageManager.Instance.ClusterSettingsView_PermissionsLabel.ToBinding())
                     .Col(0),
                 new Button()
                     .Col(1)
                     .HorizontalAlignment(HorizontalAlignment.Left)
-                    .Content(ClustersLanguageManager.Instance.ClusterSettingsView_RefreshPermissions.CurrentValue())
-                    .IsEnabled(vm, x => !x.IsRefreshingPermissions, BindingMode.OneWay)
+                    .Content(ClustersLanguageManager.Instance.ClusterSettingsView_RefreshPermissions.ToBinding())
+                    .IsEnabled(vm, x => x.CanRefreshPermissions, BindingMode.OneWay)
                     .Command(vm, x => x.RefreshPermissionsCommand));
     }
 
@@ -117,10 +109,10 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
     {
         return new Grid()
             .Cols("*,2*")
-            .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_DebugContainerImageTooltip.CurrentValue())
+            .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_DebugContainerImageTooltip.ToBinding())
             .Children(
                 new Label()
-                    .Content(ClustersLanguageManager.Instance.ClusterSettingsView_DebugContainerImageLabel.CurrentValue())
+                    .Content(ClustersLanguageManager.Instance.ClusterSettingsView_DebugContainerImageLabel.ToBinding())
                     .Col(0),
                 new TextBox()
                     .Col(1)
