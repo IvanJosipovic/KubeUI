@@ -17,6 +17,7 @@ public class YamlResourceFoldingBenchmarks
     [Params(10, 100, 1000)]
     public int YamlLineCount { get; set; }
 
+    /// <summary>Creates and verifies a Pod YAML document for folding measurements.</summary>
     [GlobalSetup]
     public void Setup()
     {
@@ -28,6 +29,7 @@ public class YamlResourceFoldingBenchmarks
         _document = YamlBenchmarkUiThread.Instance.Invoke(() => new TextDocument(_yaml));
     }
 
+    /// <summary>Measures repeated folding generation for a Kubernetes Pod.</summary>
     [Benchmark(OperationsPerInvoke = OperationsPerInvocation)]
     public int CreateFoldingsForPod() => YamlBenchmarkUiThread.Instance.Invoke(() =>
     {

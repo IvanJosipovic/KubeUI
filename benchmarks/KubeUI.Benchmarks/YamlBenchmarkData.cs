@@ -4,6 +4,7 @@ namespace KubeUI.Benchmarks;
 
 internal static class YamlBenchmarkData
 {
+    /// <summary>Builds nested YAML containing exactly the requested number of lines.</summary>
     public static string BuildNestedYaml(int lineCount)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(lineCount, 10);
@@ -46,6 +47,7 @@ internal static class YamlBenchmarkData
         return string.Join('\n', lines);
     }
 
+    /// <summary>Builds a Kubernetes Pod YAML fixture containing exactly the requested number of lines.</summary>
     public static string BuildPodYaml(int lineCount)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(lineCount, 10);

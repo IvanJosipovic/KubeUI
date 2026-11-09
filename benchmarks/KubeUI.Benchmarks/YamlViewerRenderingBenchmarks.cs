@@ -5,7 +5,7 @@ using Avalonia.Threading;
 using AvaloniaEdit;
 using AvaloniaEdit.Folding;
 using BenchmarkDotNet.Attributes;
-using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.App.Tests.Infra;
 using KubeUI.Features.Resources.Yaml;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -24,6 +24,7 @@ public class YamlViewerRenderingBenchmarks
     [Params(10, 100, 1000)]
     public int YamlLineCount { get; set; }
 
+    /// <summary>Creates and renders a read-only YAML view for the configured fixture size.</summary>
     [GlobalSetup]
     public void Setup()
     {
@@ -47,6 +48,7 @@ public class YamlViewerRenderingBenchmarks
         });
     }
 
+    /// <summary>Closes the benchmark window and disposes its view model.</summary>
     [GlobalCleanup]
     public void Cleanup()
     {
@@ -63,9 +65,11 @@ public class YamlViewerRenderingBenchmarks
         });
     }
 
+    /// <summary>Measures rendering and inspection of the YAML view.</summary>
     [Benchmark]
     public int RenderYamlView() => _uiThread.Invoke(RenderFrameAndInspect);
 
+    /// <summary>Renders one frame and verifies that the editor contains foldings and visual lines.</summary>
     private int RenderFrameAndInspect()
     {
         _window.Measure(new Size(_window.Width, _window.Height));

@@ -8,7 +8,7 @@ using AvaloniaEdit.Folding;
 using BenchmarkDotNet.Attributes;
 using k8s;
 using k8s.Models;
-using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.App.Tests.Infra;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources.Yaml;
 using KubeUI.Kubernetes;
@@ -54,6 +54,7 @@ public class YamlViewerResourceRefreshBenchmarks : IDisposable
     [Params(10, 100, 1000)]
     public int YamlLineCount { get; set; }
 
+    /// <summary>Creates a fake cluster, initializes the YAML view, and calibrates its fixture size.</summary>
     [GlobalSetup]
     public async Task Setup()
     {
@@ -125,6 +126,7 @@ public class YamlViewerResourceRefreshBenchmarks : IDisposable
         await CalibrateYamlLineCountAsync().ConfigureAwait(false);
     }
 
+    /// <summary>Measures repeated fake-watch updates and layout of the YAML resource view.</summary>
     [Benchmark]
     public async Task<int> UpdatePodAndLayoutYamlView()
     {
@@ -136,6 +138,7 @@ public class YamlViewerResourceRefreshBenchmarks : IDisposable
         return _lastFoldingCount;
     }
 
+    /// <summary>Reports the final YAML and rendered layout dimensions for the benchmark iteration.</summary>
     [IterationCleanup]
     public void ReportRefreshedYamlShape()
     {
@@ -144,6 +147,7 @@ public class YamlViewerResourceRefreshBenchmarks : IDisposable
             $"visualLines={_lastVisualLineCount}, yamlLines={_lastYamlLineCount}");
     }
 
+    /// <summary>Disposes cluster resources and closes any UI objects created during setup.</summary>
     [GlobalCleanup]
     public async Task Cleanup()
     {
@@ -161,9 +165,13 @@ public class YamlViewerResourceRefreshBenchmarks : IDisposable
         {
             InvokeOnUi(() =>
             {
-                _viewModel.PropertyChanged -= ViewModelOnPropertyChanged;
-                _window.Close();
-                _viewModel.Dispose();
+                if (_viewModel is not null)
+                {
+                    _viewModel.PropertyChanged -= ViewModelOnPropertyChanged;
+                    _viewModel.Dispose();
+                }
+
+                _window?.Close();
                 return 0;
             });
         }
@@ -181,6 +189,7 @@ public class YamlViewerResourceRefreshBenchmarks : IDisposable
         _uiThread = YamlBenchmarkUiThread.Instance;
     }
 
+    /// <summary>Adjusts resource data until refreshed YAML has the requested line count.</summary>
     private async Task CalibrateYamlLineCountAsync()
     {
         try
@@ -220,6 +229,7 @@ public class YamlViewerResourceRefreshBenchmarks : IDisposable
         }
     }
 
+    /// <summary>Writes one resource revision and waits for its rendered YAML update.</summary>
     private async Task UpdatePodAndLayoutAsync(int revision)
     {
         var update = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -266,6 +276,7 @@ public class YamlViewerResourceRefreshBenchmarks : IDisposable
         return _uiThread.InvokeAsync(action);
     }
 
+    /// <summary>Runs layout and captures a frame to verify headless rendering succeeds.</summary>
     private void RenderCurrentFrame()
     {
         LayoutCurrentYamlView();
@@ -273,6 +284,7 @@ public class YamlViewerResourceRefreshBenchmarks : IDisposable
             ?? throw new InvalidOperationException("Headless YAML view rendered no frame.");
     }
 
+    /// <summary>Lays out the view and verifies revision, line, folding, and visual-line state.</summary>
     private void LayoutCurrentYamlView()
     {
         _window.Measure(new Size(_window.Width, _window.Height));
@@ -304,6 +316,7 @@ public class YamlViewerResourceRefreshBenchmarks : IDisposable
         }
     }
 
+    /// <summary>Collapses every folding region in the current YAML editor.</summary>
     private void CollapseAllFoldings()
     {
         var editor = _view.FindControl<TextEditor>("Editor")
@@ -317,6 +330,7 @@ public class YamlViewerResourceRefreshBenchmarks : IDisposable
         Dispatcher.UIThread.RunJobs();
     }
 
+    /// <summary>Signals completion when the view model observes the expected resource revision.</summary>
     private void ViewModelOnPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs eventArgs)
     {
         if (eventArgs.PropertyName != nameof(ResourceYamlViewModel.Object)
@@ -329,6 +343,7 @@ public class YamlViewerResourceRefreshBenchmarks : IDisposable
         Interlocked.Exchange(ref _pendingObjectUpdate, null)?.TrySetResult(revision);
     }
 
+    /// <summary>Reads the current benchmark resource from the workspace cache.</summary>
     private IKubernetesObject<V1ObjectMeta>? GetCurrentResource()
     {
         return _useConfigMap
@@ -336,6 +351,7 @@ public class YamlViewerResourceRefreshBenchmarks : IDisposable
             : _workspace.Runtime.GetResource<V1Pod>("default", _podName);
     }
 
+    /// <summary>Reads the benchmark revision from a ConfigMap or Pod.</summary>
     private static bool TryGetRevision(IKubernetesObject<V1ObjectMeta>? resource, out int revision)
     {
         var revisionText = resource switch
@@ -348,6 +364,7 @@ public class YamlViewerResourceRefreshBenchmarks : IDisposable
         return int.TryParse(revisionText, NumberStyles.None, CultureInfo.InvariantCulture, out revision);
     }
 
+    /// <summary>Creates a ConfigMap with the requested revision and filler entries.</summary>
     private static V1ConfigMap CreateConfigMap(int revision, int additionalEntryCount)
     {
         var data = new Dictionary<string, string>
@@ -372,6 +389,7 @@ public class YamlViewerResourceRefreshBenchmarks : IDisposable
         };
     }
 
+    /// <summary>Creates a Pod with the requested revision and filler annotations.</summary>
     private static V1Pod CreatePod(int revision, int additionalAnnotationCount, int containerCount)
     {
         var annotations = new Dictionary<string, string>

@@ -15,6 +15,7 @@ public class YamlMultiResourceFoldingBenchmarks
     [Params(50, 250, 1000)]
     public int ResourceCount { get; set; }
 
+    /// <summary>Creates simple and mixed multi-resource YAML documents.</summary>
     [GlobalSetup]
     public void Setup()
     {
@@ -22,18 +23,21 @@ public class YamlMultiResourceFoldingBenchmarks
         _mixedDocument = new TextDocument(BuildMixedYaml(ResourceCount));
     }
 
+    /// <summary>Measures folding generation for repeated ConfigMap resources.</summary>
     [Benchmark(Baseline = true)]
     public int CreateFoldings_SimpleYaml()
     {
         return YamlIndentationFoldingStrategy.CreateNewFoldings(_simpleDocument, out _).Count();
     }
 
+    /// <summary>Measures folding generation for repeated Deployment resources.</summary>
     [Benchmark]
     public int CreateFoldings_MixedYaml()
     {
         return YamlIndentationFoldingStrategy.CreateNewFoldings(_mixedDocument, out _).Count();
     }
 
+    /// <summary>Builds repeated ConfigMap YAML documents.</summary>
     private static string BuildSimpleYaml(int resourceCount)
     {
         return string.Concat(Enumerable.Range(0, resourceCount).Select(static index => $$"""
@@ -49,9 +53,10 @@ public class YamlMultiResourceFoldingBenchmarks
                                     "index": {{index}}
                                 }
                         ---
-                        """));
+                        """ + "\n"));
     }
 
+    /// <summary>Builds repeated Deployment YAML documents with nested fields and comments.</summary>
     private static string BuildMixedYaml(int resourceCount)
     {
         return string.Concat(Enumerable.Range(0, resourceCount).Select(static index => $$"""
@@ -83,6 +88,6 @@ public class YamlMultiResourceFoldingBenchmarks
                                             value: "{{index}}"
                         # trailing comment to exercise comment skipping
                         ---
-                        """));
+                        """ + "\n"));
     }
 }

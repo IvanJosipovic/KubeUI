@@ -25,6 +25,7 @@ public class YamlSerializerPolicyBenchmarks : IDisposable
     [Params(true, false)]
     public bool YamlAllowReflection { get; set; }
 
+    /// <summary>Creates a Pod fixture and serializer using the selected reflection policy.</summary>
     [GlobalSetup]
     public void Setup()
     {
@@ -55,12 +56,15 @@ public class YamlSerializerPolicyBenchmarks : IDisposable
         GC.SuppressFinalize(this);
     }
 
+    /// <summary>Serializes the Pod fixture with the selected YAML metadata policy.</summary>
     [Benchmark]
     public string SerializeResource() => _serializer.Serialize(_resource);
 
+    /// <summary>Deserializes the Pod fixture with the selected YAML metadata policy.</summary>
     [Benchmark]
     public V1Pod DeserializeResource() => _serializer.Deserialize<V1Pod>(_yaml);
 
+    /// <summary>Validates the Pod YAML fixture.</summary>
     [Benchmark]
     public int ValidateValidYaml() => _validationService.Validate(_yaml).Count;
 }

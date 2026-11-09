@@ -24,6 +24,7 @@ public class YamlCodecBenchmarks : IDisposable
     [Params(10, 100, 1000)]
     public int YamlLineCount { get; set; }
 
+    /// <summary>Creates serializer fixtures and verifies valid and invalid YAML inputs.</summary>
     [GlobalSetup]
     public void Setup()
     {
@@ -57,20 +58,25 @@ public class YamlCodecBenchmarks : IDisposable
         GC.SuppressFinalize(this);
     }
 
+    /// <summary>Serializes the configured resource fixture.</summary>
     [Benchmark]
     public string SerializeResource() => _serializer.Serialize(_resource);
 
+    /// <summary>Deserializes the configured resource fixture.</summary>
     [Benchmark]
     public object DeserializeResource() => _useConfigMap
         ? _serializer.Deserialize<V1ConfigMap>(_yaml)
         : _serializer.Deserialize<V1Pod>(_yaml);
 
+    /// <summary>Validates the valid YAML fixture.</summary>
     [Benchmark]
     public int ValidateValidYaml() => _validationService.Validate(_yaml).Count;
 
+    /// <summary>Validates the malformed YAML fixture.</summary>
     [Benchmark]
     public int ValidateInvalidYaml() => _validationService.Validate(_invalidYaml).Count;
 
+    /// <summary>Creates and sizes a ConfigMap fixture to the requested YAML line count.</summary>
     private object CreateConfigMapFixture()
     {
         var configMap = new V1ConfigMap
@@ -98,6 +104,7 @@ public class YamlCodecBenchmarks : IDisposable
         return configMap;
     }
 
+    /// <summary>Creates and sizes a Pod fixture to the requested YAML line count.</summary>
     private object CreatePodFixture()
     {
         var pod = _serializer.Deserialize<V1Pod>(YamlBenchmarkData.BuildPodYaml(10));
@@ -157,6 +164,7 @@ public class YamlCodecBenchmarks : IDisposable
         };
     }
 
+    /// <summary>Throws when serialized fixture line count differs from the benchmark parameter.</summary>
     private void EnsureExactLineCount(string yaml)
     {
         var actualLineCount = CountLines(yaml);

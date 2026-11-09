@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\KubeUI.Avalonia.Tests\KubeUI.Avalonia.Tests.csproj" />
+    <ProjectReference Include="..\KubeUI.App.Tests\KubeUI.App.Tests.csproj" />
     <ProjectReference Include="..\KubeUI.Testing\KubeUI.Testing.csproj" />
   </ItemGroup>
 

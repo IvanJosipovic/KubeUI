@@ -16,6 +16,7 @@ public class YamlEditorBenchmarks
     [Params(10, 100, 1000)]
     public int YamlLineCount { get; set; }
 
+    /// <summary>Builds the nested YAML document on Avalonia's UI thread.</summary>
     [GlobalSetup]
     public void Setup()
     {
@@ -27,6 +28,7 @@ public class YamlEditorBenchmarks
         });
     }
 
+    /// <summary>Measures repeated folding generation for the nested YAML fixture.</summary>
     [Benchmark(OperationsPerInvoke = OperationsPerInvocation)]
     public int CreateFoldings_DeepYaml()
     {

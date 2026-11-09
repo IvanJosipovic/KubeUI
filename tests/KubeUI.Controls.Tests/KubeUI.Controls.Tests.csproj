@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\KubeUI.Avalonia.Tests\Infra\TestScreenshot.cs" Link="Infra\TestScreenshot.cs" />
+    <Compile Include="..\KubeUI.App.Tests\Infra\TestScreenshot.cs" Link="Infra\TestScreenshot.cs" />
   </ItemGroup>
 
   <ItemGroup>

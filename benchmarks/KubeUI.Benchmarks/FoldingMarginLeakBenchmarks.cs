@@ -32,6 +32,7 @@ public class FoldingMarginLeakBenchmarks
         return CountLogicalChildren(margin);
     }
 
+    /// <summary>Simulates repeated folding-marker replacement, optionally clearing old children first.</summary>
     private static void AddMarkers(
         FoldingMargin margin,
         int refreshCount,

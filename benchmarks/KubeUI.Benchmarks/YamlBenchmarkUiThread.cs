@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using Avalonia;
 using Avalonia.Headless;
 using Avalonia.Threading;
-using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.App.Tests.Infra;
 
 namespace KubeUI.Benchmarks;
 
@@ -20,6 +20,7 @@ internal sealed class YamlBenchmarkUiThread : IDisposable
 
     public TestApp App { get; }
 
+    /// <summary>Starts the dedicated Avalonia thread and waits for application startup.</summary>
     private YamlBenchmarkUiThread()
     {
         _thread = new Thread(Run)
@@ -34,6 +35,7 @@ internal sealed class YamlBenchmarkUiThread : IDisposable
         AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
     }
 
+    /// <summary>Runs an action on the benchmark UI thread and returns its result.</summary>
     public T Invoke<T>(Func<T> action)
     {
         if (Environment.CurrentManagedThreadId == _thread.ManagedThreadId)
@@ -57,6 +59,7 @@ internal sealed class YamlBenchmarkUiThread : IDisposable
         return completion.Task.GetAwaiter().GetResult();
     }
 
+    /// <summary>Queues an action on the benchmark UI thread and returns its completion task.</summary>
     public Task<T> InvokeAsync<T>(Func<T> action)
     {
         var completion = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -74,6 +77,7 @@ internal sealed class YamlBenchmarkUiThread : IDisposable
         return completion.Task;
     }
 
+    /// <summary>Stops the UI loop and releases its application and work queue.</summary>
     public void Dispose()
     {
         if (Interlocked.Exchange(ref _disposed, 1) != 0)
@@ -94,6 +98,7 @@ internal sealed class YamlBenchmarkUiThread : IDisposable
 
     private void OnProcessExit(object? sender, EventArgs eventArgs) => Dispose();
 
+    /// <summary>Starts Avalonia and processes queued work until shutdown.</summary>
     private void Run()
     {
         try

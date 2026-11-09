@@ -186,6 +186,7 @@ public class ResourceYamlViewModelTests
         foldings[1].Name.TrimEnd().ShouldBe($"  prop2Nested:");
     }
 
+    /// <summary>Verifies comments before a sibling remain inside their parent fold.</summary>
     [AvaloniaFact]
     public void YamlFoldingStrategy_IncludesCommentsBeforeSiblingBoundary()
     {

@@ -6,7 +6,7 @@ This project owns reusable Avalonia controls and UI contracts shared across feat
 - Keep feature-specific controls in their owning `KubeUI.Features.*` project.
 - Reference `KubeUI.Foundation` for the shared foundation. Do not reference feature projects or Kubernetes runtime projects.
 - Keep external markup-extension generation declarations public and assign each external assembly one owner.
-- Document and test public control APIs. Keep control tests under `tests/KubeUI.Avalonia.Tests/Controls/`.
+- Document and test public control APIs. Keep control tests under `tests/KubeUI.App.Tests/Controls/`.
 
 ## Shared presentation components
 

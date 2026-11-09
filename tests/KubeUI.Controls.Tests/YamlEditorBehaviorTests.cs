@@ -15,6 +15,7 @@ namespace KubeUI.Controls.Tests;
 
 public sealed class YamlEditorBehaviorTests
 {
+    /// <summary>Verifies detaching the behavior releases its folding markers.</summary>
     [AvaloniaFact]
     public void Detaching_folding_behavior_releases_retained_marker_children()
     {

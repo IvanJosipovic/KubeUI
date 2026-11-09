@@ -5,7 +5,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.App.Tests.Infra;
 using KubeUI.Controls.Layout;
 using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Features.Cilium.Hubble;
@@ -86,7 +86,7 @@ public sealed class FlowListViewTests
 
         toolbar.GetVisualDescendants().OfType<ComboBox>().ShouldBeEmpty();
 
-        toolbar.GetVisualDescendants().OfType<global::Avalonia.Controls.NumericUpDown>().ShouldBeEmpty();
+        toolbar.GetVisualDescendants().OfType<Avalonia.Controls.NumericUpDown>().ShouldBeEmpty();
         toolbar.GetVisualDescendants().OfType<ToggleButton>().ShouldHaveSingleItem();
         toolbar.GetVisualDescendants()
             .OfType<Button>()

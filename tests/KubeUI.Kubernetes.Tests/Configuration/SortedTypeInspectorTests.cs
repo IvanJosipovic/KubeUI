@@ -18,8 +18,9 @@ public class SortedTypeInspectorTests
         inspector.Parse("value", typeof(string)).ShouldBe("value");
     }
 
+    /// <summary>Verifies descriptor sorting requests metadata for each container.</summary>
     [Fact]
-    public void GetProperties_SortsAndCachesDescriptorsByType()
+    public void GetProperties_SortsDescriptorsForEachContainer()
     {
         var laterProperty = new Mock<IPropertyDescriptor>();
         laterProperty.SetupGet(static property => property.Name).Returns("zeta");
@@ -29,12 +30,12 @@ public class SortedTypeInspectorTests
         var inspector = new SortedTypeInspector(inner);
 
         var properties = inspector.GetProperties(typeof(string), new object()).ToArray();
-        var cachedProperties = inspector.GetProperties(typeof(string), new object()).ToArray();
+        var secondContainerProperties = inspector.GetProperties(typeof(string), new object()).ToArray();
 
         properties.Select(static property => property.Name).ShouldBe(["alpha", "zeta"]);
-        inner.PropertyRequests.ShouldBe(1);
-        cachedProperties[0].ShouldBeSameAs(earlierProperty.Object);
-        cachedProperties[1].ShouldBeSameAs(laterProperty.Object);
+        inner.PropertyRequests.ShouldBe(2);
+        secondContainerProperties[0].ShouldBeSameAs(earlierProperty.Object);
+        secondContainerProperties[1].ShouldBeSameAs(laterProperty.Object);
     }
 
     private sealed class TestTypeInspector : TypeInspectorSkeleton

@@ -1,6 +1,6 @@
 # Test Suite Review — Plan
 
-Date: 2026-11-04. Scope: all projects under `tests\` against rules in `tests\KubeUI.Testing\AGENTS.md`, `tests\KubeUI.Kubernetes.Tests\AGENTS.md`, `tests\KubeUI.Avalonia.Tests\AGENTS.md`, root AGENTS.md §6.
+Date: 2026-11-04. Scope: all projects under `tests\` against rules in `tests\KubeUI.Testing\AGENTS.md`, `tests\KubeUI.Kubernetes.Tests\AGENTS.md`, `tests\KubeUI.App.Tests\AGENTS.md`, root AGENTS.md §6.
 
 ## Status: ALL ACTION ITEMS COMPLETE (2026-11-04)
 
