@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using AvaloniaEdit;
@@ -22,9 +23,12 @@ namespace KubeUI.Features.Helm.Tests;
 
 public sealed class HelmReleasePreviewServiceTests : IDisposable
 {
-    private readonly KubernetesYamlSerializer _yamlSerializer = new(allowReflection: true);
+    private readonly ServiceProvider _serializationServices = new ServiceCollection()
+        .AddKubeUIKubernetesServices(jsonAllowReflection: false)
+        .BuildServiceProvider();
+    private IKubernetesYamlSerializer _yamlSerializer => _serializationServices.GetRequiredService<IKubernetesYamlSerializer>();
 
-    public void Dispose() => _yamlSerializer.Dispose();
+    public void Dispose() => _serializationServices.Dispose();
 
     [AvaloniaFact]
     public async Task Versioned_preview_renders_selected_version_with_edited_values()
@@ -33,7 +37,7 @@ public sealed class HelmReleasePreviewServiceTests : IDisposable
         using var viewModel = new VisualizationViewModel();
         var helm = new Mock<IHelmService>();
         var connection = new HelmConnection("config", "context", "apps");
-        Dictionary<string, object?> values = new() { ["replicas"] = 2 };
+        var values = JsonSerializer.SerializeToElement(new { replicas = 2 });
         helm.Setup(service => service.TemplateVersionAsync(connection, "web", "repo/web", "2.0", values,
             It.IsAny<CancellationToken>())).ReturnsAsync("apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: preview\n");
         var factory = CreateFactory();
@@ -133,7 +137,7 @@ public sealed class HelmReleasePreviewServiceTests : IDisposable
                 It.IsAny<HelmConnection>(),
                 "web",
                 "bitnami/nginx",
-                It.IsAny<IReadOnlyDictionary<string, object?>>(),
+                It.IsAny<JsonElement?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(manifest);
         var factory = CreateFactory(dockable => openedViewModel = dockable as VisualizationViewModel);
@@ -144,7 +148,7 @@ public sealed class HelmReleasePreviewServiceTests : IDisposable
             new HelmConnection("config", "context", "apps"),
             "web",
             "bitnami/nginx",
-            new Dictionary<string, object?> { ["replicas"] = 2 },
+            JsonSerializer.SerializeToElement(new { replicas = 2 }),
             TestContext.Current.CancellationToken);
 
         var viewModel = openedViewModel.ShouldNotBeNull();
@@ -166,7 +170,7 @@ public sealed class HelmReleasePreviewServiceTests : IDisposable
             It.IsAny<HelmConnection>(),
             "web",
             "bitnami/nginx",
-            It.IsAny<IReadOnlyDictionary<string, object?>>(),
+            It.IsAny<JsonElement?>(),
             It.IsAny<CancellationToken>()), Times.Once);
         factory.Verify(item => item.InsertDockable(
             It.IsAny<IDocumentDock>(), It.IsAny<VisualizationViewModel>(), It.IsAny<int>()), Times.Once);
@@ -197,7 +201,7 @@ public sealed class HelmReleasePreviewServiceTests : IDisposable
             .ReturnsAsync("replicas: 2\n");
         helm.Setup(service => service.TemplateAsync(
                 It.IsAny<HelmConnection>(), "gateway", chart,
-                It.IsAny<IReadOnlyDictionary<string, object?>>(), It.IsAny<CancellationToken>()))
+                 It.IsAny<JsonElement?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(manifest);
         var factory = CreateFactory(dockable => openedVisualization = dockable as VisualizationViewModel);
         var previewService = new HelmReleasePreviewService(helm.Object, _yamlSerializer, new ResourceVisualizationService(static () => new VisualizationViewModel(), factory.Object));
@@ -251,7 +255,7 @@ public sealed class HelmReleasePreviewServiceTests : IDisposable
 
         helm.Verify(service => service.TemplateAsync(
             It.IsAny<HelmConnection>(), "gateway", chart,
-            It.IsAny<IReadOnlyDictionary<string, object?>>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+             It.IsAny<JsonElement?>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 
     [AvaloniaFact]
@@ -270,10 +274,10 @@ public sealed class HelmReleasePreviewServiceTests : IDisposable
             .ReturnsAsync("replicas: 2\nserver:\n  enabled: true\n");
         helm.Setup(service => service.TemplateVersionAsync(
                 It.IsAny<HelmConnection>(), "web", "stable/web", "1.0",
-                It.Is<IReadOnlyDictionary<string, object?>>(values => Convert.ToInt64(values["replicas"]) == 4),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync((HelmConnection _, string _, string _, string _, IReadOnlyDictionary<string, object?> values, CancellationToken _) =>
-                $"apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: preview\ndata:\n  replicas: \"{values["replicas"]}\"\n");
+                 It.Is<JsonElement?>(values => values.HasValue && values.Value.GetProperty("replicas").GetInt32() == 4),
+                 It.IsAny<CancellationToken>()))
+            .ReturnsAsync((HelmConnection _, string _, string _, string _, JsonElement? values, CancellationToken _) =>
+                $"apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: preview\ndata:\n  replicas: \"{values!.Value.GetProperty("replicas").GetInt32()}\"\n");
         var factory = CreateFactory(dockable => openedVisualization = dockable as VisualizationViewModel);
         var previewService = new HelmReleasePreviewService(helm.Object, _yamlSerializer, new ResourceVisualizationService(static () => new VisualizationViewModel(), factory.Object));
         var editor = new HelmReleaseEditorViewModel(
@@ -339,7 +343,7 @@ public sealed class HelmReleasePreviewServiceTests : IDisposable
                 It.IsAny<HelmConnection>(),
                 It.IsAny<string>(),
                 It.IsAny<string>(),
-                It.IsAny<IReadOnlyDictionary<string, object?>>(),
+                 It.IsAny<JsonElement?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(string.Empty);
         var factory = CreateFactory();

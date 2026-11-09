@@ -1,3 +1,4 @@
+using System.Text.Json;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Helm.Helm;
 using KubeUI.Kubernetes;
@@ -9,7 +10,7 @@ public interface IHelmReleasePreviewService
 {
     /// <summary>Renders the selected chart version with edited values in an isolated visualization.</summary>
     Task PreviewVersionAsync(ClusterWorkspace cluster, HelmConnection connection, string releaseName,
-        string chart, string version, IReadOnlyDictionary<string, object?>? values = null,
+        string chart, string version, JsonElement? values = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>Opens live cluster visualization scoped to the release ownership annotations.</summary>
@@ -31,6 +32,6 @@ public interface IHelmReleasePreviewService
         HelmConnection connection,
         string releaseName,
         string chart,
-        IReadOnlyDictionary<string, object?>? values = null,
+        JsonElement? values = null,
         CancellationToken cancellationToken = default);
 }

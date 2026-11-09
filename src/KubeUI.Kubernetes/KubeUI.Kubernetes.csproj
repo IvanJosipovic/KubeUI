@@ -34,8 +34,8 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
     <PackageReference Include="Microsoft.OpenApi" />
+    <PackageReference Include="SVCSystems.Text.Json.Yaml" />
     <PackageReference Include="Swordfish.NET.CollectionsV3" />
-    <PackageReference Include="YamlDotNet.System.Text.Json" />
-    <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator" PrivateAssets="all" />
+    <PackageReference Include="YamlDotNet" />
   </ItemGroup>
 </Project>

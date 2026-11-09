@@ -5,6 +5,8 @@ using System.Text.Json;
 using k8s;
 using k8s.Autorest;
 using k8s.Models;
+using KubeUI.Kubernetes.Serialization;
+using Microsoft.Extensions.DependencyInjection;
 using KubernetesClient.Informer.Client;
 using Shouldly;
 
@@ -408,13 +410,13 @@ public abstract class ClusterRuntimeAssertions
             await SeedResourceAsync<V1Pod>(harness.Cluster);
             await SeedResourceAsync<V1CustomResourceDefinition>(harness.Cluster);
 
-            var namespaceYaml = Serialization.KubernetesYaml.Serialize(new V1Namespace
+            var namespaceYaml = SerializeYaml(new V1Namespace
             {
                 ApiVersion = V1Namespace.KubeApiVersion,
                 Kind = V1Namespace.KubeKind,
                 Metadata = new V1ObjectMeta { Name = "test" }
             });
-            var podYaml = Serialization.KubernetesYaml.Serialize(new V1Pod
+            var podYaml = SerializeYaml(new V1Pod
             {
                 ApiVersion = V1Pod.KubeApiVersion,
                 Kind = V1Pod.KubeKind,
@@ -474,7 +476,7 @@ public abstract class ClusterRuntimeAssertions
         {
             await SeedResourceAsync<V1CustomResourceDefinition>(harness.Cluster);
 
-            var crd = Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
+            var crd = DeserializeYaml<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
             await harness.CreateAsync(crd, TestContext.Current.CancellationToken);
 
             await WaitForResourceAsync<V1CustomResourceDefinition>(harness.Cluster, null, "tests.kubeui.com");
@@ -561,7 +563,7 @@ public abstract class ClusterRuntimeAssertions
         {
             await SeedResourceAsync<V1CustomResourceDefinition>(harness.Cluster);
 
-            var crd = Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
+        var crd = DeserializeYaml<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
             await harness.CreateAsync(crd, TestContext.Current.CancellationToken);
             var kind = new GroupApiVersionKind("kubeui.com", "v1beta1", "Test", "tests");
             await TestWait.UntilAsync(
@@ -590,6 +592,22 @@ public abstract class ClusterRuntimeAssertions
         {
             await harness.Cluster.Disconnect();
         }
+    }
+
+    private static string SerializeYaml(object value)
+    {
+        using var services = new ServiceCollection()
+            .AddKubeUIKubernetesServices(jsonAllowReflection: false)
+            .BuildServiceProvider();
+        return services.GetRequiredService<IKubernetesYamlSerializer>().Serialize(value);
+    }
+
+    private static T DeserializeYaml<T>(string yaml)
+    {
+        using var services = new ServiceCollection()
+            .AddKubeUIKubernetesServices(jsonAllowReflection: false)
+            .BuildServiceProvider();
+        return services.GetRequiredService<IKubernetesYamlSerializer>().Deserialize<T>(yaml);
     }
 
     protected async Task RootAccessCanICore(KubernetesBackend backend)

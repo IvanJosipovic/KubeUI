@@ -1,6 +1,5 @@
 using System.Text.Json;
 using KubeUI.Kubernetes.Serialization;
-using YamlDotNet.RepresentationModel;
 
 namespace KubeUI.Features.Helm;
 
@@ -16,24 +15,26 @@ internal static class HelmValuesYaml
         return serializer.Serialize(values);
     }
 
-    public static IReadOnlyDictionary<string, object?> Parse(string yaml, IKubernetesYamlSerializer serializer)
+    public static JsonElement Parse(string yaml, IKubernetesYamlSerializer serializer)
     {
         ArgumentNullException.ThrowIfNull(yaml);
         if (string.IsNullOrWhiteSpace(yaml))
         {
-            return new Dictionary<string, object?>();
+            using var emptyObject = JsonDocument.Parse("{}");
+            return emptyObject.RootElement.Clone();
         }
 
-        // Load the document tree first so duplicate explicit keys are rejected on the raw structure. The
-        // merging parser resolves `<<` keys before the deserializer's duplicate check runs, which would
-        // report legitimate explicit overrides of merged keys as duplicates.
-        var stream = new YamlStream();
-        using (var reader = new StringReader(yaml))
+        var values = serializer.Deserialize<JsonElement>(yaml, strict: true);
+        if (values.ValueKind == JsonValueKind.Null)
         {
-            stream.Load(reader);
+            throw new InvalidOperationException(HelmLanguageManager.Instance.HelmReleaseEditorView_ValuesMustBeObject.CurrentValue()!);
         }
 
-        var values = serializer.Deserialize<Dictionary<string, object?>>(yaml);
-        return values ?? throw new InvalidOperationException(HelmLanguageManager.Instance.HelmReleaseEditorView_ValuesMustBeObject.CurrentValue()!);
+        if (values.ValueKind != JsonValueKind.Object)
+        {
+            throw new JsonException("The YAML value must be a mapping.");
+        }
+
+        return values.Clone();
     }
 }

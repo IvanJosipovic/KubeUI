@@ -74,7 +74,10 @@ public sealed class TestCluster : IDisposable, IAsyncDisposable
     {
         if (_fakeApi is not null)
         {
-            _fakeApi.AddYaml(yaml, _services.GetRequiredService<KubernetesModelCatalog>().GetYamlTypeMap());
+            _fakeApi.AddYaml(
+                yaml,
+                _services.GetRequiredService<KubernetesModelCatalog>().GetYamlTypeMap(),
+                _services.GetRequiredService<IKubernetesYamlSerializer>());
 
             const string name = "http-limited";
             var kubeConfig = CloneKubeConfig(name);

@@ -1,5 +1,6 @@
 using k8s.KubeConfigModels;
-using Microsoft.Extensions.Logging.Abstractions;
+using KubeUI.Kubernetes;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests.Clusters.Discovery;
@@ -37,7 +38,8 @@ public class KubeConfigDiscoveryTests
         var cache = Directory.CreateDirectory(Path.Combine(directory.Path, "cache"));
         Write(cache.FullName, "nested", ValidKubeConfig);
 
-        var discovery = new KubeConfigDiscovery(NullLogger<KubeConfigDiscovery>.Instance);
+        using var services = CreateServices();
+        var discovery = services.GetRequiredService<IKubeConfigDiscovery>();
 
         discovery.DiscoverFiles(directory.Path).ShouldBe([extra, config]);
     }
@@ -45,7 +47,8 @@ public class KubeConfigDiscoveryTests
     [Fact]
     public void DiscoverFiles_returns_empty_for_missing_directory()
     {
-        var discovery = new KubeConfigDiscovery(NullLogger<KubeConfigDiscovery>.Instance);
+        using var services = CreateServices();
+        var discovery = services.GetRequiredService<IKubeConfigDiscovery>();
 
         discovery.DiscoverFiles(Path.Combine(Path.GetTempPath(), $"kubeui-missing-{Guid.NewGuid():N}")).ShouldBeEmpty();
     }
@@ -55,7 +58,8 @@ public class KubeConfigDiscoveryTests
     {
         using var directory = new TemporaryDirectory();
         var path = Write(directory.Path, ".kubeconfig", ValidKubeConfig);
-        var discovery = new KubeConfigDiscovery(NullLogger<KubeConfigDiscovery>.Instance);
+        using var services = CreateServices();
+        var discovery = services.GetRequiredService<IKubeConfigDiscovery>();
 
         discovery.IsKubeConfig(path).ShouldBeTrue();
         discovery.DiscoverFiles(directory.Path).ShouldBeEmpty();
@@ -64,7 +68,8 @@ public class KubeConfigDiscoveryTests
     [Fact]
     public void IsKubeConfig_returns_false_for_missing_file()
     {
-        var discovery = new KubeConfigDiscovery(NullLogger<KubeConfigDiscovery>.Instance);
+        using var services = CreateServices();
+        var discovery = services.GetRequiredService<IKubeConfigDiscovery>();
 
         discovery.IsKubeConfig(Path.Combine(Path.GetTempPath(), $"kubeui-missing-{Guid.NewGuid():N}")).ShouldBeFalse();
     }
@@ -75,4 +80,9 @@ public class KubeConfigDiscoveryTests
         File.WriteAllText(path, content);
         return path;
     }
+
+    private static ServiceProvider CreateServices() => new ServiceCollection()
+        .AddLogging()
+        .AddKubeUIKubernetesServices(jsonAllowReflection: false)
+        .BuildServiceProvider();
 }

@@ -319,9 +319,8 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         return false;
     }
 
-    public void AddYaml(string yaml, IDictionary<string, Type> typeMap)
+    public void AddYaml(string yaml, IDictionary<string, Type> typeMap, IKubernetesYamlSerializer serializer)
     {
-        using var serializer = new KubernetesYamlSerializer(allowReflection: false);
         foreach (var resource in serializer.LoadAllFromString(yaml, key => typeMap[key]))
         {
             var add = GetType()

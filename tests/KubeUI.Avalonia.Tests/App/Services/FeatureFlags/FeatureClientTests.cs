@@ -11,13 +11,12 @@ namespace KubeUI.Avalonia.Tests.App.Services;
 public sealed class FeatureClientTests
 {
     [Theory]
-    [InlineData(false, false, false, false)]
-    [InlineData(true, false, false, false)]
-    [InlineData(false, true, false, false)]
-    [InlineData(false, false, true, false)]
-    [InlineData(false, false, false, true)]
-    [InlineData(true, true, true, true)]
-    public void settings_provider_resolves_preview_feature_values(bool helm, bool hubble, bool disableJsonReflection, bool disableYamlReflection)
+    [InlineData(false, false, false)]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(false, false, true)]
+    [InlineData(true, true, true)]
+    public void settings_provider_resolves_preview_feature_values(bool helm, bool hubble, bool disableJsonReflection)
     {
         var settings = new AppSettings
         {
@@ -25,8 +24,7 @@ public sealed class FeatureClientTests
             {
                 Helm = helm,
                 Hubble = hubble,
-                DisableJsonSerializationReflection = disableJsonReflection,
-                DisableYamlSerializationReflection = disableYamlReflection
+                DisableJsonSerializationReflection = disableJsonReflection
             }
         };
         var settingsService = new Mock<ISettingsService>();
@@ -36,7 +34,6 @@ public sealed class FeatureClientTests
         client.GetBooleanValue(FeatureFlagKeys.Helm, !helm).ShouldBe(helm);
         client.GetBooleanValue(FeatureFlagKeys.Hubble, !hubble).ShouldBe(hubble);
         client.GetBooleanValue(FeatureFlagKeys.DisableJsonSerializationReflection, !disableJsonReflection).ShouldBe(disableJsonReflection);
-        client.GetBooleanValue(FeatureFlagKeys.DisableYamlSerializationReflection, !disableYamlReflection).ShouldBe(disableYamlReflection);
 
         var details = client.GetBooleanDetails(FeatureFlagKeys.Helm, false);
         details.FlagKey.ShouldBe(FeatureFlagKeys.Helm);
@@ -55,7 +52,6 @@ public sealed class FeatureClientTests
         client.GetBooleanValue(FeatureFlagKeys.Helm, true).ShouldBeFalse();
         client.GetBooleanValue(FeatureFlagKeys.Hubble, true).ShouldBeFalse();
         client.GetBooleanValue(FeatureFlagKeys.DisableJsonSerializationReflection, true).ShouldBeFalse();
-        client.GetBooleanValue(FeatureFlagKeys.DisableYamlSerializationReflection, true).ShouldBeFalse();
     }
 
     [Fact]

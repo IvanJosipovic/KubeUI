@@ -111,9 +111,11 @@ public static class Kind
         return stdOutBuffer.ToString();
     }
 
-    public static async Task<K8SConfiguration> GetK8SConfiguration(string name, CancellationToken cancellationToken = default)
+    public static async Task<K8SConfiguration> GetK8SConfiguration(
+        string name,
+        IKubernetesYamlSerializer serializer,
+        CancellationToken cancellationToken = default)
     {
-        using var serializer = new KubernetesYamlSerializer(allowReflection: false);
         var kubeConfig = serializer.Deserialize<K8SConfiguration>(await GetKubeConfig(name, cancellationToken).ConfigureAwait(false));
         if (kubeConfig is null)
         {

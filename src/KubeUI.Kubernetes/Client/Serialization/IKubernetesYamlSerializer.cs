@@ -12,9 +12,9 @@ public interface IKubernetesYamlSerializer
     /// <summary>Deserializes a runtime resource type using this application's reflection policy.</summary>
     object? Deserialize(string yaml, Type type, bool strict = false);
 
-    /// <summary>Deserializes one resource from an existing YAML parser.</summary>
-    object? Deserialize(YamlDotNet.Core.IParser parser, Type type, bool strict = false);
-
     /// <summary>Deserializes Kubernetes documents, resolving each API version and kind to its model type.</summary>
     List<object> LoadAllFromString(string yaml, Func<string, Type> resolveType, bool strict = false);
+
+    /// <summary>Serializes Kubernetes resources as a multi-document YAML stream.</summary>
+    string SerializeAll(IEnumerable<object> values);
 }

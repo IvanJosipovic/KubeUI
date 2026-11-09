@@ -1,4 +1,5 @@
-﻿using k8s;
+﻿using System.Text.Json;
+using k8s;
 using KubeUI.Features.Resources.Infrastructure;
 using KubeUI.Kubernetes.Serialization;
 using YamlDotNet.Core;
@@ -18,6 +19,13 @@ internal static class YamlDotNetDiagnosticFactory
         if (meaningfulException is YamlException yamlException)
         {
             return CreateYamlExceptionDiagnostic(yaml, sourceException, yamlException);
+        }
+
+        if (meaningfulException is JsonException jsonException
+            && TryGetJsonValueLocation(yaml, jsonException.Path, out var jsonLocation))
+        {
+            var field = jsonException.Path?.Split('.', StringSplitOptions.RemoveEmptyEntries).LastOrDefault() ?? "value";
+            return [CreateDiagnostic(jsonLocation, $"Value for {field} is not in the correct format.")];
         }
 
         if (TryGetExceptionLocation(sourceException, out var location))
@@ -57,6 +65,11 @@ internal static class YamlDotNetDiagnosticFactory
         YamlException yamlException)
     {
         var message = ResourceUtilities.GetMeaningfulExceptionMessage(sourceException);
+        if (TryGetDuplicateKey(yamlException.Message, out var duplicateKey))
+        {
+            message = $"duplicate key {duplicateKey}";
+        }
+
         if (message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase)
             && TryGetDuplicateKeyLocation(yaml, yamlException.Start.Line, out var duplicateLocation))
         {
@@ -73,6 +86,72 @@ internal static class YamlDotNetDiagnosticFactory
                 message,
                 YamlDiagnosticSeverity.Error),
         ];
+    }
+
+    private static bool TryGetDuplicateKey(string message, out string key)
+    {
+        const string marker = "duplicate mapping key '";
+        var start = message.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+        if (start >= 0)
+        {
+            start += marker.Length;
+            var end = message.IndexOf('\'', start);
+            if (end >= start)
+            {
+                key = message[start..end];
+                return true;
+            }
+        }
+
+        key = string.Empty;
+        return false;
+    }
+
+    private static bool TryGetJsonValueLocation(string yaml, string? jsonPath, out YamlDiagnosticLocation location)
+    {
+        var field = jsonPath?.Split('.', StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
+        if (string.IsNullOrWhiteSpace(field))
+        {
+            location = default!;
+            return false;
+        }
+
+        var lines = yaml.ReplaceLineEndings("\n").Split('\n');
+        for (var index = 0; index < lines.Length; index++)
+        {
+            if (!TryGetMappingKey(lines[index], out var key, out _, out var keyColumn)
+                || !string.Equals(key.Trim('"', '\''), field, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var separator = lines[index].IndexOf(':', keyColumn - 1);
+            var valueStart = separator + 1;
+            while (valueStart < lines[index].Length && char.IsWhiteSpace(lines[index][valueStart]))
+            {
+                valueStart++;
+            }
+
+            if (valueStart >= lines[index].Length || lines[index][valueStart] == '#')
+            {
+                location = new YamlDiagnosticLocation(index + 1, keyColumn, index + 1, keyColumn + key.Length);
+            }
+            else
+            {
+                var end = lines[index].Length;
+                while (end > valueStart && char.IsWhiteSpace(lines[index][end - 1]))
+                {
+                    end--;
+                }
+
+                location = new YamlDiagnosticLocation(index + 1, valueStart + 1, index + 1, Math.Max(valueStart + 1, end));
+            }
+
+            return true;
+        }
+
+        location = default!;
+        return false;
     }
 
     private static bool TryGetDuplicateKeyLocation(string yaml, long firstKeyLine, out YamlDiagnosticLocation location)

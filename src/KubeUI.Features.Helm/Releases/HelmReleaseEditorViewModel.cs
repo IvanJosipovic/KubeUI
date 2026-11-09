@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Text.Json;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
@@ -541,7 +542,7 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase, INotifyD
             && (TimeoutSeconds is null or >= 0)
             && TryParseValues(out _, out _);
 
-    private bool TryParseValues(out IReadOnlyDictionary<string, object?>? values, out string error)
+    private bool TryParseValues(out JsonElement values, out string error)
     {
         try
         {
@@ -549,9 +550,9 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase, INotifyD
             error = string.Empty;
             return true;
         }
-        catch (Exception exception) when (exception is YamlException or InvalidOperationException)
+        catch (Exception exception) when (exception is JsonException or YamlException or InvalidOperationException)
         {
-            values = null;
+            values = default;
             error = exception.Message;
             return false;
         }

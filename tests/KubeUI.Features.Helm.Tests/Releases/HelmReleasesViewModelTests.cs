@@ -23,9 +23,12 @@ namespace KubeUI.Features.Helm.Tests.Releases;
 
 public sealed class HelmReleasesViewModelTests : IDisposable
 {
-    private readonly KubernetesYamlSerializer _yamlSerializer = new(allowReflection: true);
+    private readonly ServiceProvider _serializationServices = new ServiceCollection()
+        .AddKubeUIKubernetesServices(jsonAllowReflection: false)
+        .BuildServiceProvider();
+    private IKubernetesYamlSerializer _yamlSerializer => _serializationServices.GetRequiredService<IKubernetesYamlSerializer>();
 
-    public void Dispose() => _yamlSerializer.Dispose();
+    public void Dispose() => _serializationServices.Dispose();
 
     [Theory]
     [InlineData("2026-10-21T12:58:46Z", "1m14s")]
@@ -112,7 +115,8 @@ public sealed class HelmReleasesViewModelTests : IDisposable
         yaml.YamlDocument.Text.ShouldContain("enabled: true");
         yaml.YamlDocument.Text.ShouldContain("replicas: 2");
         yaml.YamlDocument.Text.TrimStart().ShouldNotStartWith("{");
-        var parsed = KubernetesYaml.Deserialize<Dictionary<string, object>>(yaml.YamlDocument.Text);
+        var parsed = Application.Current.GetTestServices().GetRequiredService<IKubernetesYamlSerializer>()
+            .Deserialize<Dictionary<string, object>>(yaml.YamlDocument.Text);
         parsed.ShouldContainKey("server");
         parsed.ShouldContainKey("unset");
         parsed["enabled"].ShouldBe(true);
@@ -230,7 +234,7 @@ public sealed class HelmReleasesViewModelTests : IDisposable
         helm.Setup(service => service.ListReleasesAsync(It.IsAny<HelmConnection>(), It.IsAny<bool>(),
             It.IsAny<string?>(), It.IsAny<CancellationToken>())).ReturnsAsync([]);
         helm.Setup(service => service.GetValuesAsync(It.IsAny<HelmConnection>(), It.IsAny<string>(),
-            It.IsAny<CancellationToken>())).ReturnsAsync(JsonSerializer.SerializeToElement(new Dictionary<string, object?>()));
+            It.IsAny<CancellationToken>())).ReturnsAsync(JsonSerializer.SerializeToElement(new { }));
         var preview = new Mock<IHelmReleasePreviewService>();
         using var viewModel = new HelmReleasesViewModel(helm.Object, _yamlSerializer, Mock.Of<IFactory>(), Mock.Of<IDialogService>(), preview.Object,
             () => Application.Current.GetRequiredTestService<ResourceYamlViewModel>(),
@@ -243,7 +247,7 @@ public sealed class HelmReleasesViewModelTests : IDisposable
         helm.Verify(service => service.GetValuesAsync(It.IsAny<HelmConnection>(), It.IsAny<string>(),
             It.IsAny<CancellationToken>()), Times.Never);
         preview.Verify(service => service.PreviewAsync(It.IsAny<ClusterWorkspace>(), It.IsAny<HelmConnection>(),
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IReadOnlyDictionary<string, object?>>(),
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<JsonElement?>(),
             It.IsAny<CancellationToken>()), Times.Never);
         preview.Verify(service => service.VisualizeRelease(workspace, "cilium", "kube-system"), Times.Once);
     }
@@ -314,7 +318,7 @@ public sealed class HelmReleasesViewModelTests : IDisposable
             .ReturnsAsync(release);
         helmService
             .Setup(service => service.GetValuesAsync(It.IsAny<HelmConnection>(), release.Name, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(JsonSerializer.SerializeToElement(new Dictionary<string, object?>()));
+            .ReturnsAsync(JsonSerializer.SerializeToElement(new { }));
         helmService
             .Setup(service => service.HistoryAsync(It.IsAny<HelmConnection>(), release.Name, It.IsAny<CancellationToken>()))
             .ReturnsAsync([release]);

@@ -94,6 +94,7 @@
     <PackageReference Include="Westermo.GraphX.Controls.Avalonia" />
     <PackageReference Include="Westermo.GraphX.Controls.Avalonia.Themes.Fluent" />
     <PackageReference Include="Westermo.GraphX.Logic" />
+    <PackageReference Include="YamlDotNet" />
     <PackageReference Include="Xaml.Behaviors.Avalonia" />
   </ItemGroup>
 </Project>

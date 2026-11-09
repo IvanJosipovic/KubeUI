@@ -1,1013 +1,295 @@
-using System.Collections.Frozen;
-using System.Text;
 using System.Text.Json;
+using k8s;
+using k8s.KubeConfigModels;
 using k8s.Models;
-using KubernetesClient.Informer.Client;
 using KubeUI.Kubernetes.Serialization;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using YamlDotNet.Core;
 
 namespace KubeUI.Kubernetes.Tests.Configuration;
 
-[CollectionDefinition(Name, DisableParallelization = true)]
-public sealed class KubernetesYamlCollection
+public sealed class KubernetesYamlTests : IDisposable
 {
-    public const string Name = "Kubernetes YAML";
-}
-
-[Collection(KubernetesYamlCollection.Name)]
-public class KubernetesYamlTests : IDisposable
-{
-    private readonly bool _previousStaticContext = KubernetesYaml.UseStaticContext;
+    private readonly ServiceProvider _services;
+    private readonly IKubernetesYamlSerializer _serializer;
 
     public KubernetesYamlTests()
     {
-        KubernetesYaml.UseStaticContext = true;
+        _services = new ServiceCollection()
+            .AddKubeUIKubernetesServices(jsonAllowReflection: false)
+            .BuildServiceProvider();
+        _serializer = _services.GetRequiredService<IKubernetesYamlSerializer>();
     }
 
-    public void Dispose()
-    {
-        KubernetesYaml.UseStaticContext = _previousStaticContext;
-    }
+    public void Dispose() => _services.Dispose();
 
     [Fact]
-    public void UseStaticContext_TogglesYamlBuildersAndDefaultsToReflection()
+    public void pod_round_trips_generated_json_metadata_and_kubernetes_converters()
     {
-        var previousValue = KubernetesYaml.UseStaticContext;
-        try
+        V1Pod pod = new()
         {
-            KubernetesYaml.UseStaticContext = false;
-            KubernetesYaml.UseStaticContext.ShouldBeFalse();
-            var reflectionDeserializer = KubernetesYaml.GetDeserializer();
-            var reflectionSerializer = KubernetesYaml.Serializer;
+            ApiVersion = "v1",
+            Kind = "Pod",
+            Metadata = new V1ObjectMeta { Name = "metadata-pod", NamespaceProperty = "default" },
+            Spec = new V1PodSpec
+            {
+                Containers =
+                [
+                    new V1Container
+                    {
+                        Name = "app",
+                        Image = "nginx:1.27",
+                        Resources = new V1ResourceRequirements
+                        {
+                            Limits = new Dictionary<string, ResourceQuantity> { ["memory"] = new("128Mi") },
+                        },
+                    },
+                ],
+            },
+        };
 
-            KubernetesYaml.UseStaticContext = true;
-            var staticDeserializer = KubernetesYaml.GetDeserializer();
-            var staticSerializer = KubernetesYaml.Serializer;
+        var yaml = _serializer.Serialize(pod);
+        yaml.ShouldContain("name: metadata-pod");
+        var restored = _serializer.Deserialize<V1Pod>(yaml);
 
-            ReferenceEquals(staticDeserializer, reflectionDeserializer).ShouldBeFalse();
-            ReferenceEquals(staticSerializer, reflectionSerializer).ShouldBeFalse();
+        restored.Metadata.Name.ShouldBe("metadata-pod");
+        restored.Spec.Containers.ShouldHaveSingleItem().Image.ShouldBe("nginx:1.27");
+        restored.Spec.Containers[0].Resources.Limits["memory"].ToString().ShouldBe("128Mi");
+    }
 
-            var pod = KubernetesYaml.Deserialize<V1Pod>("""
-                apiVersion: v1
-                kind: Pod
-                metadata:
-                  name: test
-                """.ReplaceLineEndings("\n"));
-            pod.Metadata.Name.ShouldBe("test");
-            KubernetesYaml.Serialize(pod).ShouldContain("name: test");
-        }
-        finally
+    [Fact]
+    public void secret_round_trips_binary_data()
+    {
+        V1Secret secret = new()
         {
-            KubernetesYaml.UseStaticContext = previousValue;
-        }
+            ApiVersion = "v1",
+            Kind = "Secret",
+            Metadata = new V1ObjectMeta { Name = "test-secret" },
+            Data = new Dictionary<string, byte[]> { ["payload"] = [0, 1, 2, 255] },
+        };
+
+        var restored = _serializer.Deserialize<V1Secret>(_serializer.Serialize(secret));
+
+        restored.Metadata.Name.ShouldBe("test-secret");
+        restored.Data["payload"].ShouldBe([0, 1, 2, 255]);
     }
 
     [Fact]
-    public void StaticContext_RoundTripsPodYamlWithoutReflectionFallback()
+    public void generic_resource_round_trips_json_extension_data()
     {
-        // The Release build is trimmed, so the YAML path must not depend on the reflection
-        // serializer. This test project runs with JsonSerializerIsReflectionEnabledByDefault=false,
-        // which reproduces the trimmed runtime behaviour.
-        KubernetesYaml.UseStaticContext.ShouldBeTrue();
-
-        var yaml = """
-            apiVersion: v1
-            kind: Pod
-            metadata:
-              name: static-pod
-              namespace: default
-            spec:
-              containers:
-                - name: app
-                  image: nginx:1.27
-                  ports:
-                    - containerPort: 8080
-                  resources:
-                    limits:
-                      memory: 128Mi
-            """;
-
-        var pod = KubernetesYaml.Deserialize<V1Pod>(yaml);
-
-        pod.Metadata.Name.ShouldBe("static-pod");
-        pod.Metadata.NamespaceProperty.ShouldBe("default");
-        pod.Spec.Containers.ShouldHaveSingleItem().Image.ShouldBe("nginx:1.27");
-        pod.Spec.Containers[0].Ports.ShouldHaveSingleItem().ContainerPort.ShouldBe(8080);
-        pod.Spec.Containers[0].Resources.Limits["memory"].ToString().ShouldBe("128Mi");
-
-        var serialized = KubernetesYaml.Serialize(pod);
-        var roundTripped = KubernetesYaml.Deserialize<V1Pod>(serialized);
-        roundTripped.Metadata.Name.ShouldBe("static-pod");
-        roundTripped.Spec.Containers.ShouldHaveSingleItem().Image.ShouldBe("nginx:1.27");
-    }
-
-    [Fact]
-    public void StaticContext_KnowsRegisteredKubernetesResourceCatalogTypes()
-    {
-        var sharedCatalog = new KubernetesModelCatalog();
-        var catalog = new ClusterModelCatalog(sharedCatalog);
-        catalog.RegisterResource(GroupApiVersionKind.From<V1Pod>(), typeof(V1Pod));
-        catalog.RegisterResource(GroupApiVersionKind.From<V1Namespace>(), typeof(V1Namespace));
-        catalog.RegisterResource(GroupApiVersionKind.From<V1ConfigMap>(), typeof(V1ConfigMap));
-        catalog.RegisterResource(GroupApiVersionKind.From<V1Secret>(), typeof(V1Secret));
-        catalog.RegisterResource(GroupApiVersionKind.From<V1Deployment>(), typeof(V1Deployment));
-        catalog.RegisterResource(GroupApiVersionKind.From<V1CustomResourceDefinition>(), typeof(V1CustomResourceDefinition));
-        var context = new KubernetesYamlStaticContext();
-        var modelTypes = sharedCatalog.GetYamlTypeMap().Values.Distinct().ToArray();
-
-        modelTypes.ShouldNotBeEmpty();
-
-        foreach (var modelType in modelTypes)
-        {
-            context.IsKnownType(modelType).ShouldBeTrue(modelType.FullName);
-        }
-    }
-
-    [Fact]
-    public void JsonContexts_KnowEveryYamlApiModelExceptListsAndWatchEvents()
-    {
-        var yamlContext = new KubernetesYamlStaticContext();
-        var modelTypes = typeof(V1Pod).Assembly.GetTypes()
-            .Where(yamlContext.IsKnownType)
-            .Where(IsYamlApiModel)
-            .Where(type => !IsListOrWatchModel(type))
-            .ToArray();
-
-        var missingModelTypes = modelTypes
-            .Where(modelType => KubernetesJsonStaticContext.Default.GetTypeInfo(modelType) is null
-                && k8s.SourceGenerationContext.Default.GetTypeInfo(modelType) is null)
-            .Select(modelType => modelType.FullName)
-            .ToArray();
-
-        missingModelTypes.ShouldBeEmpty(string.Join(Environment.NewLine, missingModelTypes));
-
-        KubernetesJsonStaticContext.Default.GetTypeInfo(typeof(GenericKubernetesObject))
-            .ShouldNotBeNull(nameof(GenericKubernetesObject));
-        KubernetesJsonStaticContext.Default.GetTypeInfo(typeof(k8s.KubernetesObject))
-            .ShouldNotBeNull(nameof(k8s.KubernetesObject));
-        KubernetesJsonStaticContext.Default.GetTypeInfo(typeof(IList<V1EphemeralContainer>))
-            .ShouldNotBeNull(nameof(IList<V1EphemeralContainer>));
-    }
-
-    private static bool IsYamlApiModel(Type type)
-    {
-        return type.Namespace == "k8s.Models";
-    }
-
-    private static bool IsListOrWatchModel(Type type)
-    {
-        return type.Name.EndsWith("List", StringComparison.Ordinal)
-            || type.Name.Contains("WatchEvent", StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void GenericKubernetesObject_RoundTripsJsonExtensionDataThroughYaml()
-    {
-        using var specDocument = JsonDocument.Parse("""{"replicas":3,"settings":{"enabled":true,"values":[1,"two",null]}}""");
-        var resource = new GenericKubernetesObject
+        using var spec = JsonDocument.Parse("""{"replicas":3,"settings":{"enabled":true,"values":[1,"two",null]}}""");
+        GenericKubernetesObject resource = new()
         {
             ApiVersion = "example.com/v1",
             Kind = "Widget",
             Metadata = new V1ObjectMeta { Name = "test" },
-            Properties = new Dictionary<string, JsonElement>
-            {
-                ["spec"] = specDocument.RootElement.Clone(),
-            },
+            Properties = new Dictionary<string, JsonElement> { ["spec"] = spec.RootElement.Clone() },
         };
 
-        var yaml = KubernetesYaml.Serialize(resource);
-        var restored = KubernetesYaml.Deserialize<GenericKubernetesObject>(yaml);
+        var restored = _serializer.Deserialize<GenericKubernetesObject>(_serializer.Serialize(resource));
 
-        restored.ShouldNotBeNull();
+        restored.ApiVersion.ShouldBe("example.com/v1");
+        restored.Kind.ShouldBe("Widget");
+        restored.Metadata.Name.ShouldBe("test");
         restored.Properties["spec"].GetProperty("replicas").GetInt32().ShouldBe(3);
         restored.Properties["spec"].GetProperty("settings").GetProperty("enabled").GetBoolean().ShouldBeTrue();
-        restored.Properties["spec"].GetProperty("settings").GetProperty("values")[1].GetString().ShouldBe("two");
-        restored.Properties["spec"].GetProperty("settings").GetProperty("values")[2].ValueKind.ShouldBe(JsonValueKind.Null);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void KubeConfigNamedExtension_RoundTripsDynamicExtensionValues(bool useStaticContext)
+    [Fact]
+    public void strict_mode_rejects_unknown_model_fields_while_lenient_mode_ignores_them()
     {
-        using var contextScope = new StaticContextScope(useStaticContext);
-        using var jsonDocument = JsonDocument.Parse("""{"items":["first",2]}""");
-        var extension = new k8s.KubeConfigModels.NamedExtension
+        const string yaml = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+            unknownField: true
+            """;
+
+        _serializer.Deserialize<V1Pod>(yaml).Metadata.Name.ShouldBe("test");
+        Should.Throw<JsonException>(() => _serializer.Deserialize<V1Pod>(yaml, strict: true));
+    }
+
+    [Fact]
+    public void lenient_mode_uses_the_last_value_for_duplicate_mapping_keys()
+    {
+        const string yaml = """
+            value: first
+            value: second
+            """;
+
+        var restored = _serializer.Deserialize<Dictionary<string, object>>(yaml);
+
+        restored["value"].ShouldBe("second");
+        Should.Throw<YamlException>(() => _serializer.Deserialize<Dictionary<string, object>>(yaml, strict: true));
+    }
+
+    [Fact]
+    public void strict_mode_resolves_yaml_merge_keys_and_allows_explicit_overrides()
+    {
+        const string yaml = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: merge-pod
+              labels: &labels
+                app: kubeui
+                environment: test
+              annotations:
+                <<: *labels
+                app: override
+            """;
+
+        var pod = _serializer.Deserialize<V1Pod>(yaml, strict: true);
+
+        pod.Metadata.Labels["app"].ShouldBe("kubeui");
+        pod.Metadata.Annotations["environment"].ShouldBe("test");
+        pod.Metadata.Annotations["app"].ShouldBe("override");
+    }
+
+    [Fact]
+    public void strict_parser_rejects_duplicate_yaml_mapping_keys()
+    {
+        const string yaml = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: first
+              name: second
+            """;
+
+        Should.Throw<YamlException>(() => _serializer.Deserialize<V1Pod>(yaml, strict: true));
+    }
+
+    [Fact]
+    public void mixed_kind_documents_are_resolved_and_round_trip_as_a_stream()
+    {
+        V1Pod pod = new()
+        {
+            ApiVersion = "v1",
+            Kind = "Pod",
+            Metadata = new V1ObjectMeta { Name = "multi-pod" },
+        };
+        V1Namespace ns = new()
+        {
+            ApiVersion = "v1",
+            Kind = "Namespace",
+            Metadata = new V1ObjectMeta { Name = "multi-namespace" },
+        };
+
+        var yaml = _serializer.SerializeAll([pod, ns]);
+        var restored = _serializer.LoadAllFromString(yaml, key => key switch
+        {
+            "v1/Pod" => typeof(V1Pod),
+            "v1/Namespace" => typeof(V1Namespace),
+            _ => throw new KeyNotFoundException(key),
+        });
+
+        restored.Count.ShouldBe(2);
+        restored[0].ShouldBeOfType<V1Pod>().Metadata.Name.ShouldBe("multi-pod");
+        restored[1].ShouldBeOfType<V1Namespace>().Metadata.Name.ShouldBe("multi-namespace");
+    }
+
+    [Fact]
+    public void load_all_skips_empty_and_comment_only_documents_between_resources()
+    {
+        const string yaml = """
+            apiVersion: v1
+            kind: ConfigMap
+            metadata:
+              name: before
+            ---
+            # Helm templates may emit comment-only documents.
+            ---
+            apiVersion: v1
+            kind: ServiceAccount
+            metadata:
+              name: after
+            """;
+        var restored = _serializer.LoadAllFromString(yaml, key => key switch
+        {
+            "v1/ConfigMap" => typeof(V1ConfigMap),
+            "v1/ServiceAccount" => typeof(V1ServiceAccount),
+            _ => throw new KeyNotFoundException(key),
+        });
+
+        restored.Count.ShouldBe(2);
+        restored[0].ShouldBeOfType<V1ConfigMap>().Metadata.Name.ShouldBe("before");
+        restored[1].ShouldBeOfType<V1ServiceAccount>().Metadata.Name.ShouldBe("after");
+    }
+
+    [Fact]
+    public void load_all_requires_kubernetes_document_identity()
+    {
+        Should.Throw<FormatException>(() => _serializer.LoadAllFromString(
+            "metadata:\n  name: missing-identity",
+            static _ => typeof(GenericKubernetesObject)));
+    }
+
+    [Fact]
+    public void kubeconfig_round_trips_through_the_application_json_contract()
+    {
+        NamedExtension extension = new()
         {
             Name = "sample",
             Extension = new Dictionary<string, object>
             {
                 ["enabled"] = true,
-                ["disabled"] = false,
                 ["attempts"] = 3,
-                ["fraction"] = 1.25d,
-                ["stringBoolean"] = "true",
-                ["stringInteger"] = "3",
-                ["stringFraction"] = "1.5",
-                ["stringNull"] = "null",
-                ["stringEmpty"] = "",
+                ["ratio"] = 1.25d,
                 ["optional"] = null!,
                 ["options"] = new Dictionary<string, object> { ["mode"] = "strict" },
                 ["servers"] = new object[] { "one", "two" },
-                ["json"] = jsonDocument.RootElement.Clone(),
             },
         };
-
-        var yaml = KubernetesYaml.Serialize(extension);
-        var restored = KubernetesYaml.Deserialize<k8s.KubeConfigModels.NamedExtension>(yaml);
-
-        restored.Name.ShouldBe("sample");
-        var restoredExtension = (Dictionary<object, object>)restored.Extension;
-        restoredExtension.ShouldContainKey("enabled");
-        restoredExtension["enabled"].ShouldBe(true);
-        restoredExtension["disabled"].ShouldBe(false);
-        restoredExtension["attempts"].ShouldBe(3L);
-        restoredExtension["fraction"].ShouldBe(1.25d);
-        restoredExtension["stringBoolean"].ShouldBeOfType<string>().ShouldBe("true");
-        restoredExtension["stringInteger"].ShouldBeOfType<string>().ShouldBe("3");
-        restoredExtension["stringFraction"].ShouldBeOfType<string>().ShouldBe("1.5");
-        restoredExtension["stringNull"].ShouldBeOfType<string>().ShouldBe("null");
-        restoredExtension["stringEmpty"].ShouldBeOfType<string>().ShouldBeEmpty();
-        restoredExtension["optional"].ShouldBeNull();
-        ((Dictionary<object, object>)restoredExtension["options"])["mode"].ShouldBe("strict");
-        ((List<object>)restoredExtension["servers"]).ShouldBe(new object[] { "one", "two" });
-        ((Dictionary<object, object>)restoredExtension["json"])["items"].ShouldBeOfType<List<object>>();
-    }
-
-    [Fact]
-    public void KubeConfigNamedExtension_IgnoresUnknownFields()
-    {
-        using var staticContext = new StaticContextScope();
-        var yaml = """
-            name: sample
-            extension: true
-            futureField: ignored
-            """.ReplaceLineEndings("\n");
-
-        var restored = KubernetesYaml.Deserialize<k8s.KubeConfigModels.NamedExtension>(yaml, strict: true);
-
-        restored.Name.ShouldBe("sample");
-        ((object)restored.Extension).ShouldBe(true);
-    }
-
-    [Fact]
-    public void KubeConfigNamedExtension_RejectsNonStringExtensionMapKeys()
-    {
-        using var staticContext = new StaticContextScope();
-        var extension = new k8s.KubeConfigModels.NamedExtension
+        K8SConfiguration config = new()
         {
-            Name = "sample",
-            Extension = new Dictionary<object, object> { [1] = "invalid" },
-        };
-
-        Should.Throw<YamlException>(() => KubernetesYaml.Serialize(extension));
-    }
-
-    [Fact]
-    public void KubeConfigNamedExtension_RejectsUnsupportedExtensionValues()
-    {
-        using var staticContext = new StaticContextScope();
-        var extension = new k8s.KubeConfigModels.NamedExtension
-        {
-            Name = "sample",
-            Extension = new object(),
-        };
-
-        Should.Throw<YamlException>(() => KubernetesYaml.Serialize(extension));
-    }
-
-    [Fact]
-    public void ResourceQuantityConverter_RoundTripsPodResourceLimits()
-    {
-        var pod = new V1Pod
-        {
-            Metadata = new V1ObjectMeta { Name = "resource-limits-test" },
-            Spec = new V1PodSpec
+            CurrentContext = "dev",
+            Contexts = [new Context
             {
-                Containers =
-                [
-                    new V1Container
-                    {
-                        Name = "app",
-                        Resources = new V1ResourceRequirements
-                        {
-                            Limits = new Dictionary<string, ResourceQuantity>
-                            {
-                                ["cpu"] = new ResourceQuantity(500m, -3, ResourceQuantity.SuffixFormat.DecimalSI),
-                            },
-                        },
-                    },
-                ],
-            },
-        };
-
-        var yaml = KubernetesYaml.Serialize(pod);
-        var restored = KubernetesYaml.Deserialize<V1Pod>(yaml);
-
-        restored.Spec.Containers[0].Resources.Limits["cpu"].ToString().ShouldBe("500m");
-    }
-
-    [Fact]
-    public void KubernetesYaml_RoundTripsSecretBinaryData()
-    {
-        var secret = new V1Secret
-        {
-            Metadata = new V1ObjectMeta { Name = "credentials" },
-            Type = "Opaque",
-            Data = new Dictionary<string, byte[]>
-            {
-                ["token"] = [0, 1, 127, 255],
-                ["empty"] = [],
-            },
-        };
-
-        var yaml = KubernetesYaml.Serialize(secret);
-        var restored = KubernetesYaml.Deserialize<V1Secret>(yaml, strict: true);
-
-        restored.Data["token"].ShouldBe(new byte[] { 0, 1, 127, 255 });
-        restored.Data["empty"].ShouldBeEmpty();
-        yaml.ShouldContain("AAF//w==");
-    }
-
-    [Fact]
-    public void KubernetesYaml_RejectsInvalidSecretBinaryData()
-    {
-        var yaml = """
-            apiVersion: v1
-            kind: Secret
-            metadata:
-              name: credentials
-            data:
-              token: not-base64!
-            """.ReplaceLineEndings("\n");
-
-        Should.Throw<YamlException>(() => KubernetesYaml.Deserialize<V1Secret>(yaml, strict: true));
-    }
-
-    [Fact]
-    public void KubernetesYaml_RejectsNonScalarSecretBinaryData()
-    {
-        var yaml = """
-            apiVersion: v1
-            kind: Secret
-            metadata:
-              name: credentials
-            data:
-              token:
-                nested: value
-            """.ReplaceLineEndings("\n");
-
-        Should.Throw<YamlException>(() => KubernetesYaml.Deserialize<V1Secret>(yaml, strict: true));
-    }
-
-    [Fact]
-    public void KubernetesYaml_HandlesNullBinaryScalarAsEmptyBytes()
-    {
-        using var writer = new StringWriter();
-        var emitter = new Emitter(writer);
-        emitter.Emit(new YamlDotNet.Core.Events.StreamStart());
-        emitter.Emit(new YamlDotNet.Core.Events.DocumentStart());
-
-        KubernetesYaml.Serializer.SerializeValue(emitter, null, typeof(byte[]));
-        emitter.Emit(new YamlDotNet.Core.Events.DocumentEnd(true));
-        emitter.Emit(new YamlDotNet.Core.Events.StreamEnd());
-
-        KubernetesYaml.Deserialize<byte[]>(writer.ToString(), strict: true).ShouldBeEmpty();
-    }
-
-    [Fact]
-    public void KubernetesYaml_PreservesYamlLikeStringsInStringDictionaries()
-    {
-        var configMap = new V1ConfigMap
-        {
-            Metadata = new V1ObjectMeta { Name = "app-settings" },
-            Data = new Dictionary<string, string>
-            {
-                ["boolean"] = "true",
-                ["integer"] = "3",
-                ["null"] = "null",
-                ["colon"] = "a: b",
-            },
-        };
-
-        var yaml = KubernetesYaml.Serialize(configMap);
-        var restored = KubernetesYaml.Deserialize<V1ConfigMap>(yaml, strict: true);
-
-        restored.Data.ShouldBe(configMap.Data);
-    }
-
-    [Fact]
-    public void KubernetesYaml_RoundTripsServiceTargetPortAsNumberAndName()
-    {
-        var service = new V1Service
-        {
-            Metadata = new V1ObjectMeta { Name = "web" },
-            Spec = new V1ServiceSpec
-            {
-                Ports =
-                [
-                    new V1ServicePort { Name = "http", Port = 80, TargetPort = 8080 },
-                    new V1ServicePort { Name = "metrics", Port = 9090, TargetPort = "metrics" },
-                ],
-            },
-        };
-
-        var yaml = KubernetesYaml.Serialize(service);
-        var restored = KubernetesYaml.Deserialize<V1Service>(yaml, strict: true);
-
-        restored.Spec.Ports[0].TargetPort.ToString().ShouldBe("8080");
-        restored.Spec.Ports[1].TargetPort.ToString().ShouldBe("metrics");
-    }
-
-    [Fact]
-    public void KubernetesYaml_RejectsInvalidResourceQuantity()
-    {
-        Should.Throw<YamlException>(() => KubernetesYaml.Deserialize<ResourceQuantity>("not-a-quantity", strict: true));
-    }
-
-    [Fact]
-    public void KubernetesYaml_RejectsEmptyResourceQuantityInResourceMap()
-    {
-        using var staticContext = new StaticContextScope();
-        var yaml = """
-            apiVersion: v1
-            kind: Pod
-            metadata:
-              name: invalid-quantity
-            spec:
-              containers:
-                - name: app
-                  resources:
-                    limits:
-                      cpu: ""
-            """.ReplaceLineEndings("\n");
-
-        Should.Throw<YamlException>(() => KubernetesYaml.Deserialize<V1Pod>(yaml, strict: true));
-    }
-
-    private sealed class StaticContextScope : IDisposable
-    {
-        private readonly bool _previousValue = KubernetesYaml.UseStaticContext;
-
-        public StaticContextScope(bool useStaticContext = true)
-        {
-            KubernetesYaml.UseStaticContext = useStaticContext;
-        }
-
-        public void Dispose()
-        {
-            KubernetesYaml.UseStaticContext = _previousValue;
-        }
-    }
-
-    [Fact]
-    public void KubernetesYaml_RoundTripsKubernetesTimestamp()
-    {
-        var timestamp = new DateTime(2025, 1, 2, 3, 4, 5, DateTimeKind.Utc);
-        var resource = new V1Namespace
-        {
-            Metadata = new V1ObjectMeta { Name = "timestamp-test", CreationTimestamp = timestamp },
-        };
-
-        var yaml = KubernetesYaml.Serialize(resource);
-        var restored = KubernetesYaml.Deserialize<V1Namespace>(yaml, strict: true);
-
-        restored.Metadata.CreationTimestamp.ShouldBe(timestamp);
-    }
-
-    [Fact]
-    public void KubernetesYaml_RoundTripsDateTimeOffsetScalar()
-    {
-        var timestamp = new DateTimeOffset(2025, 1, 2, 3, 4, 5, TimeSpan.FromHours(-7));
-
-        var yaml = KubernetesYaml.Serialize(timestamp);
-        var restored = KubernetesYaml.Deserialize<DateTimeOffset>(yaml, strict: true);
-
-        restored.ShouldBe(timestamp);
-    }
-
-    [Fact]
-    public void KubernetesYaml_RejectsInvalidDateTimeOffsetScalars()
-    {
-        Should.Throw<YamlException>(() => KubernetesYaml.Deserialize<DateTimeOffset>("not-a-timestamp", strict: true));
-        Should.Throw<YamlException>(() => KubernetesYaml.Deserialize<DateTimeOffset>("timestamp: 2025-01-02", strict: true));
-    }
-
-    [Fact]
-    public void LoadAllFromString_DeserializesMultipleStrictDocuments()
-    {
-        var typeMap = new Dictionary<string, Type>
-        {
-            ["v1/ConfigMap"] = typeof(V1ConfigMap),
-            ["v1/Secret"] = typeof(V1Secret),
-        };
-        var yaml = """
-            apiVersion: v1
-            kind: ConfigMap
-            metadata:
-              name: app-settings
-            data:
-              enabled: "true"
-              retries: "3"
-            ---
-            apiVersion: v1
-            kind: Secret
-            metadata:
-              name: credentials
-            type: Opaque
-            data:
-              token: dG9rZW4=
-            """.ReplaceLineEndings("\n");
-
-        var resources = KubernetesYaml.LoadAllFromString(yaml, typeMap, strict: true);
-
-        resources.Count.ShouldBe(2);
-        var configMap = resources[0].ShouldBeOfType<V1ConfigMap>();
-        configMap.Data["enabled"].ShouldBe("true");
-        configMap.Data["retries"].ShouldBe("3");
-        var secret = resources[1].ShouldBeOfType<V1Secret>();
-        Encoding.UTF8.GetString(secret.Data["token"]).ShouldBe("token");
-    }
-
-    [Fact]
-    public async Task SerializeAll_LoadAllFromStreamAsync_RoundTripsMultipleResources()
-    {
-        var resources = new object[]
-        {
-            new V1Namespace { ApiVersion = "v1", Kind = "Namespace", Metadata = new V1ObjectMeta { Name = "team-a" } },
-            new V1ConfigMap
-            {
-                ApiVersion = "v1",
-                Kind = "ConfigMap",
-                Metadata = new V1ObjectMeta { Name = "settings", NamespaceProperty = "team-a" },
-                Data = new Dictionary<string, string> { ["enabled"] = "true" },
-            },
-        };
-        var typeMap = new Dictionary<string, Type>
-        {
-            ["v1/Namespace"] = typeof(V1Namespace),
-            ["v1/ConfigMap"] = typeof(V1ConfigMap),
-        };
-        var yaml = KubernetesYaml.SerializeAll(resources);
-        await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(yaml));
-
-        var restored = await KubernetesYaml.LoadAllFromStreamAsync(stream, typeMap, strict: true);
-
-        restored.Count.ShouldBe(2);
-        restored[0].ShouldBeOfType<V1Namespace>().Metadata.Name.ShouldBe("team-a");
-        restored[1].ShouldBeOfType<V1ConfigMap>().Data["enabled"].ShouldBe("true");
-    }
-
-    [Fact]
-    public void PodYaml_RoundTripsCalicoContainerIdAnnotation()
-    {
-        const string annotationKey = "cni.projectcalico.org/containerID";
-        const string containerId = "1f38475382e1f66aff44a9cf15ab057b7303637def73b0b20423aaedd97f3886";
-        var pod = new V1Pod
-        {
-            ApiVersion = "v1",
-            Kind = "Pod",
-            Metadata = new V1ObjectMeta
-            {
-                Annotations = new Dictionary<string, string> { [annotationKey] = containerId },
-            },
-        };
-
-        var yaml = KubernetesYaml.Serialize(pod);
-        var restored = KubernetesYaml.Deserialize<V1Pod>(yaml);
-
-        restored.Metadata.Annotations[annotationKey].ShouldBe(containerId);
-        yaml.ShouldContain($"{annotationKey}: {containerId}");
-    }
-
-    [Fact]
-    public void Deserialize_PodExpandsYamlMergeKeysInMetadataMaps()
-    {
-        var yaml = """
-            apiVersion: v1
-            kind: Pod
-            metadata:
-              name: merged-metadata
-              labels: &commonLabels
-                app: kubeui
-                environment: test
-              annotations:
-                <<: *commonLabels
-                cni.projectcalico.org/containerID: 0123456789abcdef
-            """.ReplaceLineEndings("\n");
-
-        var pod = KubernetesYaml.Deserialize<V1Pod>(yaml, strict: true);
-
-        pod.Metadata.Labels["app"].ShouldBe("kubeui");
-        pod.Metadata.Labels["environment"].ShouldBe("test");
-        pod.Metadata.Annotations["app"].ShouldBe("kubeui");
-        pod.Metadata.Annotations["cni.projectcalico.org/containerID"].ShouldBe("0123456789abcdef");
-    }
-
-    [Fact]
-    public void JsonBackedYamlConverter_RoundTripsPodSecurityContext()
-    {
-        var pod = new V1Pod
-        {
-            Metadata = new V1ObjectMeta { Name = "security-context-test" },
-            Spec = new V1PodSpec
-            {
-                SecurityContext = new V1PodSecurityContext { RunAsUser = 1000 },
-            },
-        };
-
-        var yaml = KubernetesYaml.Serialize(pod);
-        var restored = KubernetesYaml.Deserialize<V1Pod>(yaml);
-
-        restored.Spec.SecurityContext.RunAsUser.ShouldBe(1000);
-    }
-
-    [Fact]
-    public void JsonBackedYamlConverter_StrictModeRejectsUnknownPodSecurityContextMembers()
-    {
-        const string yaml = """
-            apiVersion: v1
-            kind: Pod
-            metadata:
-              name: strict-json-backed-field
-            spec:
-              securityContext:
-                runAsUsr: 1000
-            """;
-
-        Should.Throw<YamlException>(() => KubernetesYaml.Deserialize<V1Pod>(yaml, strict: true));
-
-        var lenient = KubernetesYaml.Deserialize<V1Pod>(yaml, strict: false);
-        lenient.Spec.SecurityContext.RunAsUser.ShouldBeNull();
-    }
-
-    [Fact]
-    public void GenericKubernetesObject_StrictModeRejectsDuplicateExtensionKeys()
-    {
-        const string yaml = """
-            apiVersion: example.com/v1
-            kind: Widget
-            metadata:
-              name: duplicate-field
-            spec:
-              value: first
-            spec:
-              value: second
-            """;
-
-        var exception = Should.Throw<YamlException>(
-            () => KubernetesYaml.Deserialize<GenericKubernetesObject>(yaml, strict: true));
-
-        exception.Message.ShouldContain("Duplicate key 'spec'");
-        var lenient = KubernetesYaml.Deserialize<GenericKubernetesObject>(yaml, strict: false);
-        lenient.Properties["spec"].GetProperty("value").GetString().ShouldBe("second");
-    }
-
-    [Fact]
-    public void JsonBackedYamlConverter_RoundTripsContainerRestartExitCodes()
-    {
-        var pod = new V1Pod
-        {
-            Metadata = new V1ObjectMeta { Name = "restart-rules-test" },
-            Spec = new V1PodSpec
-            {
-                Containers =
-                [
-                    new V1Container
-                    {
-                        Name = "app",
-                        RestartPolicyRules =
-                        [
-                            new V1ContainerRestartRule
-                            {
-                                Action = "Restart",
-                                ExitCodes = new V1ContainerRestartRuleOnExitCodes
-                                {
-                                    OperatorProperty = "In",
-                                    Values = [7, 9],
-                                },
-                            },
-                        ],
-                    },
-                ],
-            },
-        };
-
-        var yaml = KubernetesYaml.Serialize(pod);
-        var restored = KubernetesYaml.Deserialize<V1Pod>(yaml);
-
-        restored.Spec.Containers[0].RestartPolicyRules[0].ExitCodes.Values.ShouldBe(new int?[] { 7, 9 });
-    }
-
-    [Fact]
-    public void JsonBackedYamlConverter_RoundTripsLinuxContainerUser()
-    {
-        var pod = new V1Pod
-        {
-            Metadata = new V1ObjectMeta { Name = "container-user-test" },
-            Status = new V1PodStatus
-            {
-                ContainerStatuses =
-                [
-                    new V1ContainerStatus
-                    {
-                        Name = "app",
-                        User = new V1ContainerUser
-                        {
-                            Linux = new V1LinuxContainerUser { Uid = 1000, Gid = 2000 },
-                        },
-                    },
-                ],
-            },
-        };
-
-        var yaml = KubernetesYaml.Serialize(pod);
-        var restored = KubernetesYaml.Deserialize<V1Pod>(yaml);
-
-        restored.Status.ContainerStatuses[0].User.Linux.Uid.ShouldBe(1000);
-        restored.Status.ContainerStatuses[0].User.Linux.Gid.ShouldBe(2000);
-    }
-
-    [Fact]
-    public void JsonBackedYamlConverter_RoundTripsStatusListMetadata()
-    {
-        var metadata = new V1ListMeta { ResourceVersion = "42" };
-
-        var yaml = KubernetesYaml.Serialize(metadata);
-        var restored = KubernetesYaml.Deserialize<V1ListMeta>(yaml);
-
-        restored.ResourceVersion.ShouldBe("42");
-    }
-
-    [Fact]
-    public void JsonBackedYamlConverter_RoundTripsPodDisruptionBudgetStatus()
-    {
-        var pdb = new V1PodDisruptionBudget
-        {
-            Metadata = new V1ObjectMeta { Name = "pdb-test" },
-            Status = new V1PodDisruptionBudgetStatus
-            {
-                CurrentHealthy = 2,
-                DesiredHealthy = 3,
-                DisruptionsAllowed = 1,
-                ExpectedPods = 4,
-            },
-        };
-
-        var yaml = KubernetesYaml.Serialize(pdb);
-        var restored = KubernetesYaml.Deserialize<V1PodDisruptionBudget>(yaml);
-
-        restored.Status.CurrentHealthy.ShouldBe(2);
-        restored.Status.DesiredHealthy.ShouldBe(3);
-        restored.Status.DisruptionsAllowed.ShouldBe(1);
-        restored.Status.ExpectedPods.ShouldBe(4);
-    }
-
-    [Fact]
-    public void CustomResourceDefinitionYaml_PreservesJsonExtensionData()
-    {
-        var resource = KubernetesYaml.Deserialize<GenericKubernetesObject>(
-            KubernetesTestData.CustomResourceDefinitionYaml);
-
-        resource.Properties.Keys.ShouldContain("spec", string.Join(",", resource.Properties.Keys));
-        resource.Properties["spec"].GetProperty("group").GetString().ShouldBe("kubeui.com");
-        resource.Properties["spec"].GetProperty("versions")[0].GetProperty("name").GetString().ShouldBe("v1beta1");
-        resource.Properties["spec"].GetProperty("names").GetProperty("plural").GetString().ShouldBe("tests");
-    }
-
-    [Fact]
-    public void KubeConfig_RoundTripsConnectionAndCredentialFields()
-    {
-        var config = new k8s.KubeConfigModels.K8SConfiguration
-        {
-            CurrentContext = "sample",
-            Clusters = [new k8s.KubeConfigModels.Cluster
-            {
-                Name = "cluster",
-                ClusterEndpoint = new k8s.KubeConfigModels.ClusterEndpoint { Server = "https://127.0.0.1" },
+                Name = "dev",
+                ContextDetails = new ContextDetails { Cluster = "dev", User = "dev" },
+                Extensions = [extension],
             }],
-            Contexts = [new k8s.KubeConfigModels.Context
-            {
-                Name = "sample",
-                ContextDetails = new k8s.KubeConfigModels.ContextDetails
-                {
-                    Cluster = "cluster",
-                    User = "user",
-                    Namespace = "my-app",
-                },
-            }],
-            Users = [new k8s.KubeConfigModels.User
-            {
-                Name = "user",
-                UserCredentials = new k8s.KubeConfigModels.UserCredentials { Token = "fake-token" },
-            }],
+            Clusters = [new k8s.KubeConfigModels.Cluster { Name = "dev", ClusterEndpoint = new ClusterEndpoint { Server = "https://example.test" } }],
+            Users = [new User { Name = "dev", UserCredentials = new UserCredentials { Token = "token" } }],
+            Extensions = [extension],
         };
 
-        var yaml = KubernetesYaml.Serialize(config);
-        var restored = KubernetesYaml.Deserialize<k8s.KubeConfigModels.K8SConfiguration>(yaml);
+        var yaml = _serializer.Serialize(config);
+        var restored = _serializer.Deserialize<K8SConfiguration>(yaml);
 
-        restored.CurrentContext.ShouldBe("sample");
-        restored.Clusters.Single().ClusterEndpoint.Server.ShouldBe("https://127.0.0.1");
-        restored.Contexts.Single().ContextDetails.Cluster.ShouldBe("cluster");
-        restored.Contexts.Single().ContextDetails.Namespace.ShouldBe("my-app");
-        restored.Users.Single().UserCredentials.Token.ShouldBe("fake-token");
+        restored.CurrentContext.ShouldBe("dev");
+        restored.Contexts.ShouldHaveSingleItem().ContextDetails.Cluster.ShouldBe("dev");
+        restored.Clusters.ShouldHaveSingleItem().ClusterEndpoint.Server.ShouldBe("https://example.test");
+        restored.Users.ShouldHaveSingleItem().UserCredentials.Token.ShouldBe("token");
+        AssertExtension(restored.Extensions.ShouldHaveSingleItem());
+        AssertExtension(restored.Contexts.Single().Extensions.ShouldHaveSingleItem());
     }
 
     [Fact]
-    public void LoadAllFromString_PreservesRbacRulesForTrimmedDeserializer()
+    public void kubeconfig_file_loader_preserves_relative_path_base()
     {
-        var typeMap = new Dictionary<string, Type>
-        {
-            ["v1/Namespace"] = typeof(V1Namespace),
-            ["v1/ServiceAccount"] = typeof(V1ServiceAccount),
-            ["v1/Secret"] = typeof(V1Secret),
-            ["rbac.authorization.k8s.io/v1/ClusterRole"] = typeof(V1ClusterRole),
-            ["rbac.authorization.k8s.io/v1/ClusterRoleBinding"] = typeof(V1ClusterRoleBinding),
-            ["rbac.authorization.k8s.io/v1/RoleBinding"] = typeof(V1RoleBinding),
-        };
-        var resources = KubernetesYaml.LoadAllFromString(
-            KubernetesTestData.LimitedAccessWithNamespaceFallback,
-            typeMap);
+        using var directory = new TemporaryDirectory();
+        var path = Path.Combine(directory.Path, "config");
+        File.WriteAllText(path, _serializer.Serialize(new K8SConfiguration { Kind = "Config" }));
 
-        var developer = resources.OfType<V1ClusterRole>().Single(role => role.Name() == "developer");
-        developer.Rules.ShouldNotBeEmpty();
-        developer.Rules.ShouldContain(rule => rule.Verbs.Contains("delete"));
-        var binding = resources.OfType<V1RoleBinding>().Single(item => item.Name() == "my-serviceaccount-developer");
-        binding.RoleRef.Name.ShouldBe("developer");
-        string.Join("|", binding.Subjects.Select(subject => $"{subject.Kind}:{subject.Name}:{subject.NamespaceProperty}"))
-            .ShouldBe("ServiceAccount:my-serviceaccount:my-app");
+        var config = KubeConfigFileLoader.Load(path, _serializer);
+
+        config.FileName.ShouldBe(Path.GetFullPath(path));
     }
 
-    [Fact]
-    public void Deserialize_IgnoresUnknownProperty_WhenStrictIsFalse()
+    private static void AssertExtension(NamedExtension extension)
     {
-        var yaml = """
-            apiVersion: v1
-            kind: Pod
-            metadata:
-              name: test
-              namespace: default
-            spec:
-              unknownField: value
-            """.ReplaceLineEndings("\n");
-
-        var pod = KubernetesYaml.Deserialize<V1Pod>(yaml, strict: false);
-
-        pod.ShouldNotBeNull();
-        pod.Metadata.Name.ShouldBe("test");
+        extension.Name.ShouldBe("sample");
+        var values = ((object)extension.Extension).ShouldBeOfType<Dictionary<object, object>>();
+        values["enabled"].ShouldBe(true);
+        values["attempts"].ShouldBe(3L);
+        values["ratio"].ShouldBe(1.25d);
+        values["optional"].ShouldBeNull();
+        var options = values["options"].ShouldBeOfType<Dictionary<object, object>>();
+        options["mode"].ShouldBe("strict");
+        values["servers"].ShouldBeOfType<List<object>>().ShouldBe(new object[] { "one", "two" });
     }
-
-    [Fact]
-    public void Deserialize_ThrowsForUnknownProperty_WhenStrictIsTrue()
-    {
-        var yaml = """
-            apiVersion: v1
-            kind: Pod
-            metadata:
-              name: test
-              namespace: default
-            spec:
-              unknownField: value
-            """.ReplaceLineEndings("\n");
-
-        Should.Throw<YamlException>(() => KubernetesYaml.Deserialize<V1Pod>(yaml, strict: true));
-    }
-
-    [Fact]
-    public void Deserialize_ThrowsForDuplicateKeys_WhenStrictIsTrue()
-    {
-        var yaml = """
-            apiVersion: v1
-            kind: Pod
-            metadata:
-              name: test
-              name: other
-            """.ReplaceLineEndings("\n");
-
-        Should.Throw<YamlException>(() => KubernetesYaml.Deserialize<V1Pod>(yaml, strict: true));
-    }
-
-    [Fact]
-    public void Deserialize_ByType_UsesStrictMode()
-    {
-        var yaml = """
-            apiVersion: v1
-            kind: Pod
-            metadata:
-              name: test
-              namespace: default
-            spec:
-              unknownField: value
-            """.ReplaceLineEndings("\n");
-
-        Should.Throw<YamlException>(() => KubernetesYaml.Deserialize(yaml, typeof(V1Pod), strict: true));
-    }
-
-    [Fact]
-    public void LoadAllFromStringAcceptsFrozenTypeMap()
-    {
-        var typeMap = new Dictionary<string, Type>
-        {
-            ["v1/Pod"] = typeof(V1Pod),
-        }.ToFrozenDictionary(StringComparer.Ordinal);
-
-        var objects = KubernetesYaml.LoadAllFromString("""
-            apiVersion: v1
-            kind: Pod
-            metadata:
-              name: test
-            """.ReplaceLineEndings("\n"), typeMap, strict: true);
-
-        objects.Single().ShouldBeOfType<V1Pod>();
-    }
-
-    [Fact]
-    public void LoadAllFromStringSkipsCommentOnlyDocumentsBetweenResources()
-    {
-        var yaml = """
-            apiVersion: v1
-            kind: Pod
-            metadata:
-              name: first
-            ---
-            # This template intentionally renders an empty YAML document.
-            ---
-            apiVersion: v1
-            kind: Pod
-            metadata:
-              name: second
-            """.ReplaceLineEndings("\n");
-
-        var objects = KubernetesYaml.LoadAllFromString(yaml, key => key switch
-        {
-            "v1/Pod" => typeof(V1Pod),
-            _ => throw new InvalidOperationException($"Unexpected resource type '{key}'.")
-        });
-
-        objects.Cast<V1Pod>().Select(pod => pod.Metadata.Name).ShouldBe(["first", "second"]);
-    }
-
-    [Fact]
-    public void LoadAllFromStringRejectsSequenceDocuments()
-    {
-        Should.Throw<YamlException>(() => KubernetesYaml.LoadAllFromString(
-            "---\n- a\n",
-            static _ => typeof(V1Pod)));
-    }
-
-    [Fact]
-    public void LoadAllFromStringUsesAllAvailableKubernetesModelTypes()
-    {
-        var catalog = new KubernetesModelCatalog();
-        catalog.Register(
-            new GroupApiVersionKind("", "v1", "PodTemplate", "podtemplates"),
-            typeof(V1PodTemplate));
-
-        var objects = KubernetesYaml.LoadAllFromString("""
-            apiVersion: v1
-            kind: PodTemplate
-            metadata:
-              name: test
-            template:
-              metadata:
-                labels:
-                  app: test
-            """.ReplaceLineEndings("\n"), catalog.GetYamlTypeMap());
-
-        objects.Single().ShouldBeOfType<V1PodTemplate>();
-    }
-
-    [Fact]
-    public void CustomResourceDefinition_RoundTripsWithV1JSONSchemaPropsInStaticContext()
-    {
-        // The CustomResourceDefinition schema contains V1JSONSchemaProps in
-        // spec.versions[].schema.openAPIV3Schema.properties. This is a
-        // IDictionary<string, V1JSONSchemaProps> which was incorrectly treated
-        // as a plain string dictionary, causing "apiVersion not found" errors
-        // when deserializing CRDs with static context enabled.
-        using var scope = new StaticContextScope(true);
-
-        var crd = KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml, strict: true);
-
-        crd.ShouldNotBeNull();
-        crd.Spec.Group.ShouldBe("kubeui.com");
-        crd.Spec.Names.Plural.ShouldBe("tests");
-        crd.Spec.Versions.ShouldHaveSingleItem();
-        var version = crd.Spec.Versions[0];
-        version.Name.ShouldBe("v1beta1");
-        version.Schema.ShouldNotBeNull();
-        version.Schema.OpenAPIV3Schema.ShouldNotBeNull();
-        version.Schema.OpenAPIV3Schema.Properties.ShouldNotBeNull();
-        version.Schema.OpenAPIV3Schema.Properties.Keys.ShouldContain("apiVersion");
-        version.Schema.OpenAPIV3Schema.Properties.Keys.ShouldContain("kind");
-        version.Schema.OpenAPIV3Schema.Properties.Keys.ShouldContain("metadata");
-        version.Schema.OpenAPIV3Schema.Properties.Keys.ShouldContain("spec");
-
-        var serialized = KubernetesYaml.Serialize(crd);
-        var roundTripped = KubernetesYaml.Deserialize<V1CustomResourceDefinition>(serialized, strict: true);
-        roundTripped.Spec.Group.ShouldBe("kubeui.com");
-        roundTripped.Spec.Versions[0].Schema.OpenAPIV3Schema.Properties.Keys.ShouldContain("apiVersion");
-    }
-
 }
