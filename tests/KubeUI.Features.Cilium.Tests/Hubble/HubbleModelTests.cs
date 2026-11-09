@@ -28,6 +28,7 @@ public sealed class HubbleModelTests
     }
 
     [Fact]
+    [Obsolete]
     public void Flow_mapper_reads_layer_seven_latency()
     {
         var flow = new Flow
@@ -39,6 +40,7 @@ public sealed class HubbleModelTests
     }
 
     [Fact]
+    [Obsolete]
     public void Flow_mapper_reads_source_and_destination_services()
     {
         var flow = new Flow
@@ -195,6 +197,7 @@ public sealed class HubbleModelTests
     }
 
     [Fact]
+    [Obsolete]
     public void Flow_mapper_keeps_endpoint_dns_names_and_world_identity_for_service_map()
     {
         var flow = new Flow
@@ -234,6 +237,7 @@ public sealed class HubbleModelTests
     }
 
     [Fact]
+    [Obsolete]
     public void Service_map_access_points_use_mapped_destination_port_not_source_port()
     {
         var flow = new Flow
