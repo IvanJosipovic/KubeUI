@@ -19,6 +19,16 @@ internal sealed class KubernetesYamlSerializer : IKubernetesYamlSerializer
     private static readonly JsonTypeInfo<JsonElement> s_jsonElementTypeInfo = KubernetesJsonStaticContext.Default.JsonElement;
     private readonly JsonSerializerOptions _jsonOptions;
     private readonly JsonSerializerOptions _strictJsonOptions;
+    private readonly YamlSerializerOptions _lenientYamlOptions = new()
+    {
+        ResolveMergeKeys = true,
+        DuplicateKeyHandling = YamlDuplicateKeyHandling.LastWins,
+    };
+    private readonly YamlSerializerOptions _strictYamlOptions = new()
+    {
+        ResolveMergeKeys = true,
+        DuplicateKeyHandling = YamlDuplicateKeyHandling.Reject,
+    };
 
     public KubernetesYamlSerializer(JsonSerializerOptions jsonOptions)
     {
@@ -81,8 +91,7 @@ internal sealed class KubernetesYamlSerializer : IKubernetesYamlSerializer
 
         var jsonOptions = GetOptions(strict);
         List<object> resources = [];
-        var normalizedYaml = YamlInputNormalizer.Normalize(yaml, strict);
-        foreach (var document in YamlSerializer.DeserializeDocuments(normalizedYaml, s_jsonElementTypeInfo))
+        foreach (var document in YamlSerializer.DeserializeDocuments(yaml, s_jsonElementTypeInfo, GetYamlOptions(strict)))
         {
             if (document.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
             {
@@ -105,8 +114,10 @@ internal sealed class KubernetesYamlSerializer : IKubernetesYamlSerializer
         return resources;
     }
 
-    private static JsonElement DeserializeElement(string yaml, bool strict) =>
-        YamlSerializer.Deserialize(YamlInputNormalizer.Normalize(yaml, strict), s_jsonElementTypeInfo);
+    private JsonElement DeserializeElement(string yaml, bool strict) =>
+        YamlSerializer.Deserialize(yaml, s_jsonElementTypeInfo, GetYamlOptions(strict));
+
+    private YamlSerializerOptions GetYamlOptions(bool strict) => strict ? _strictYamlOptions : _lenientYamlOptions;
 
     private static JsonElement SerializeToJsonElement(object value, JsonSerializerOptions options)
     {

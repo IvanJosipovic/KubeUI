@@ -61,7 +61,7 @@
     
     <!-- YAML/Serialization -->
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
-    <PackageVersion Include="SVCSystems.Text.Json.Yaml" Version="1.0.0-alpha.2" />
+    <PackageVersion Include="SVCSystems.Text.Json.Yaml" Version="1.0.0-alpha.3" />
     <PackageVersion Include="JsonPathLINQ" Version="1.0.0-alpha.16" />
     <PackageVersion Include="Microsoft.OpenApi" Version="3.11.0" />
     
