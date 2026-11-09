@@ -1,17 +1,19 @@
 # Prometheus Authentication — Plan
 
-Status: Phase 1 implementation complete (2026-11-08), except settings presentation for conflicting Basic Auth and custom Authorization configuration, which remains planned. Phases 2 and 3 remain planned.
+Status: Phase 1 implementation complete (2026-11-09). Phases 2 and 3 remain planned.
 
 Progress:
 
-- [x] Agreed on file-backed persistence with a plaintext-secret notice and HTTPS enforcement enabled by default.
+- [x] Agreed on file-backed persistence with a plaintext-secret notice and a warning for authentication over HTTP.
 - [x] Add persisted custom headers and Basic Auth settings.
-- [ ] Show a conflict-specific settings message when Basic Auth and a custom Authorization header are both configured.
-- [x] Apply request authentication safely and enforce HTTPS policy.
+- [x] Show a conflict-specific settings message when Basic Auth and a custom Authorization header are both configured.
+- [x] Apply request authentication safely and warn when credentials use HTTP.
 - [x] Add settings UI, localization, and regression tests.
 - [x] Build and run focused plus full test suites.
 
-Verification: `dotnet build KubeUI.slnx --tl:off -clp:ErrorsOnly` succeeded with 0 errors. Full `dotnet test --no-restore --minimum-expected-tests 1` passed: 1,865 passed, 12 skipped, 0 failed. Two unrelated flaky failures on the first full run passed when isolated and on the subsequent full run.
+Verification (2026-11-08): `dotnet build KubeUI.slnx --tl:off -clp:ErrorsOnly` succeeded with 0 errors. Full `dotnet test --no-restore --minimum-expected-tests 1` passed: 1,865 passed, 12 skipped, 0 failed. Two unrelated flaky failures on the first full run passed when isolated and on the subsequent full run.
+
+Latest verification (2026-11-09): affected source and test projects built successfully. Full solution build was blocked because running `KubeUI.Desktop` held output DLLs. All 65 Clusters feature tests, 428 Kubernetes tests, and 4 JSON resource contract tests passed.
 
 ## Goals
 
@@ -33,7 +35,7 @@ Verification: `dotnet build KubeUI.slnx --tl:off -clp:ErrorsOnly` succeeded with
 
 - Provide username and password fields; KubeUI constructs the `Authorization: Basic …` header.
 - Mask the password in the UI. Do not require users to Base64-encode credentials themselves.
-- Basic Auth and custom `Authorization` headers are mutually exclusive for a request; requests reject conflicting configuration, while a conflict-specific settings message remains planned.
+- Basic Auth and custom `Authorization` headers are mutually exclusive for a request; requests reject conflicting configuration, and settings show a conflict-specific warning.
 
 ### 3. OIDC/OAuth — later phase
 
@@ -56,13 +58,18 @@ Verification: `dotnet build KubeUI.slnx --tl:off -clp:ErrorsOnly` succeeded with
 - Existing settings persistence restricts the settings directory/file to the current user on Unix. Windows relies on the user-profile directory ACL; do not imply that file permissions encrypt credentials.
 - OS credential-store integration may be considered later; it is not a prerequisite for the initial feature.
 
-## HTTPS behavior
+## HTTP and HTTPS behavior
 
-- Add a user-selectable **Require HTTPS for authentication** option, checked by default.
-- When enabled, do not send configured credentials to an HTTP endpoint; explain the required correction.
-- When disabled, allow the request but show a clear warning that credentials and traffic are unencrypted in transit.
-- Apply consistently to custom headers, Basic Auth, and future OAuth flows. Reuse existing endpoint HTTPS configuration where possible; avoid duplicate scheme controls.
+- Allow configured credentials over HTTP, and show a warning that credentials and traffic are unencrypted in transit.
+- **Use HTTPS** selects the scheme for Kubernetes service connections; a direct URL uses its own scheme.
+- Apply the warning consistently to custom headers, Basic Auth, and future OAuth flows.
 - Never silently downgrade an HTTPS endpoint to HTTP.
+
+## Endpoint selection
+
+- Manual configuration offers Kubernetes Service port-forward and Direct URL as distinct endpoint modes.
+- Service mode requires service name, namespace, and port; Direct URL mode does not require Kubernetes service details.
+- A populated Direct URL selects direct mode and takes precedence over service settings. Keep both endpoint modes and authentication in separate expandable settings sections.
 
 ## Deployment context
 
@@ -73,7 +80,7 @@ Verification: `dotnet build KubeUI.slnx --tl:off -clp:ErrorsOnly` succeeded with
 
 ## Delivery order
 
-1. Add custom headers and Basic Auth, settings persistence, masking, conflict validation, HTTPS enforcement/override, and tests.
+1. Add custom headers and Basic Auth, settings persistence, masking, conflict validation, HTTP transport warning, and tests.
 2. Add OIDC/OAuth after deciding token lifecycle and persistence behavior.
 3. Add provider integrations individually, prioritized by user demand; retain Azure's existing flow and assess AWS SigV4 and Google Cloud identity.
 
@@ -81,7 +88,7 @@ Verification: `dotnet build KubeUI.slnx --tl:off -clp:ErrorsOnly` succeeded with
 
 - Request tests verify custom headers and Basic Auth are applied only to the intended endpoint and never leak into logs.
 - Settings tests verify intended persistence and round-trip behavior for header values and Basic Auth credentials.
-- HTTPS tests cover default enforcement, explicit HTTP opt-out, warnings/state, and no credential transmission when HTTPS is required.
+- HTTP transport tests verify authentication is sent when configured and the settings warning tracks endpoint scheme and credentials.
 - Validation tests cover malformed/duplicate headers, protected header names, and conflicts with Basic Auth or OAuth.
 - OAuth/provider tests must cover expiry, refresh/re-authentication, cancellation, and one-time retry behavior where applicable.
 - Keep provider-specific signing tests separate from generic header tests.

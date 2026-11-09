@@ -97,5 +97,4 @@ public sealed record ResolvedPrometheusEndpoint(
     bool UseAzureMonitorAuthentication = false,
     IReadOnlyList<PrometheusHeader>? CustomHeaders = null,
     string? BasicAuthUsername = null,
-    string? BasicAuthPassword = null,
-    bool RequireHttpsForAuthentication = true);
+    string? BasicAuthPassword = null);

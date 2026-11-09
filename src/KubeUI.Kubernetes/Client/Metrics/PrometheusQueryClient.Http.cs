@@ -83,7 +83,7 @@ public sealed partial class PrometheusQueryClient
         return await _httpClient!.SendAsync(retryRequest, cancellationToken).ConfigureAwait(false);
     }
 
-    private static void ValidateAuthentication(ResolvedPrometheusEndpoint endpoint, Uri baseAddress)
+    private static void ValidateAuthentication(ResolvedPrometheusEndpoint endpoint)
     {
         var hasUsername = !string.IsNullOrEmpty(endpoint.BasicAuthUsername);
         var hasPassword = !string.IsNullOrEmpty(endpoint.BasicAuthPassword);
@@ -137,13 +137,6 @@ public sealed partial class PrometheusQueryClient
         if (hasUsername && hasAuthorizationHeader)
         {
             throw new InvalidOperationException("Prometheus Basic Auth cannot be combined with a custom Authorization header.");
-        }
-
-        if (HasConfiguredAuthentication(endpoint)
-            && endpoint.RequireHttpsForAuthentication
-            && !string.Equals(baseAddress.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
-        {
-            throw new InvalidOperationException("Prometheus authentication requires an HTTPS endpoint. Disable the HTTPS requirement only if you accept sending credentials without transport encryption.");
         }
     }
 

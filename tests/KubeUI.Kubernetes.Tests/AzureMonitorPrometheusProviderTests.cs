@@ -19,12 +19,12 @@ public sealed class AzureMonitorPrometheusProviderTests
         serialized.ShouldContain("secret-password");
         serialized.ShouldContain("PrometheusCustomHeaders");
         serialized.ShouldContain("PrometheusBasicAuthPassword");
+        serialized.ShouldNotContain("PrometheusRequireHttpsForAuthentication");
 
         var restored = JsonSerializer.Deserialize(serialized, MetricsTestJsonContext.Default.ClusterMetricsSettings);
         restored.ShouldNotBeNull();
         restored.PrometheusCustomHeaders.ShouldHaveSingleItem().Value.ShouldBe("Bearer secret-token");
         restored.PrometheusBasicAuthPassword.ShouldBe("secret-password");
-        restored.PrometheusRequireHttpsForAuthentication.ShouldBeTrue();
     }
 
     [Fact]

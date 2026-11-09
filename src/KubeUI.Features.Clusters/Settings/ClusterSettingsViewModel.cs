@@ -154,19 +154,24 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
     public bool ShowPrometheusSettings => ClusterSettings?.MetricsSettings.MetricsServiceType == MetricsServiceType.Prometheus;
 
     public bool ShowPrometheusServiceSettings => ShowPrometheusSettings
-        && SelectedPrometheusProvider?.Value is not (PrometheusProviderKind.External or PrometheusProviderKind.AzureMonitor);
+        && SelectedPrometheusProvider?.Value is not (PrometheusProviderKind.External or PrometheusProviderKind.AzureMonitor)
+        && string.IsNullOrWhiteSpace(ClusterSettings?.MetricsSettings.PrometheusDirectUrl);
 
     public bool ShowPrometheusDirectUrlSettings => ShowPrometheusSettings && SelectedPrometheusProvider?.Value != PrometheusProviderKind.AzureMonitor;
 
     public bool ShowPrometheusCustomTransportSettings => ShowPrometheusSettings && SelectedPrometheusProvider?.Value != PrometheusProviderKind.AzureMonitor;
 
+    public bool ShowPrometheusAuthenticationConflictWarning =>
+        (!string.IsNullOrEmpty(ClusterSettings?.MetricsSettings.PrometheusBasicAuthUsername)
+            || !string.IsNullOrEmpty(ClusterSettings?.MetricsSettings.PrometheusBasicAuthPassword))
+        && ClusterSettings.MetricsSettings.PrometheusCustomHeaders.Any(static header =>
+            string.Equals(header.Name, "Authorization", StringComparison.OrdinalIgnoreCase));
+
     public bool ShowInsecureAuthenticationWarning
     {
         get
         {
-            if (!ShowPrometheusCustomTransportSettings
-                || ClusterSettings.MetricsSettings.PrometheusRequireHttpsForAuthentication
-                || !HasPrometheusAuthentication)
+            if (!ShowPrometheusCustomTransportSettings || !HasPrometheusAuthentication)
             {
                 return false;
             }
@@ -620,6 +625,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         OnPropertyChanged(nameof(ShowPrometheusDirectUrlSettings));
         OnPropertyChanged(nameof(ShowPrometheusCustomTransportSettings));
         OnPropertyChanged(nameof(ShowAzureMonitorSettings));
+        OnPropertyChanged(nameof(ShowPrometheusAuthenticationConflictWarning));
         OnPropertyChanged(nameof(ShowInsecureAuthenticationWarning));
         OnPropertyChanged(nameof(ActiveMetricsServiceText));
     }

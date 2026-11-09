@@ -189,7 +189,6 @@ public sealed class PrometheusProviderQueryTests
             PrometheusCustomHeaders = [header],
             PrometheusBasicAuthUsername = "metrics-user",
             PrometheusBasicAuthPassword = "secret",
-            PrometheusRequireHttpsForAuthentication = false,
         };
 
         var endpoint = await provider.TryResolveServiceAsync(client, settings);
@@ -199,7 +198,48 @@ public sealed class PrometheusProviderQueryTests
         endpoint.CustomHeaders.ShouldHaveSingleItem().Value.ShouldBe("initial");
         endpoint.BasicAuthUsername.ShouldBe("metrics-user");
         endpoint.BasicAuthPassword.ShouldBe("secret");
-        endpoint.RequireHttpsForAuthentication.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task ManualProvider_resolves_direct_url_without_service_settings()
+    {
+        var provider = new ManualPrometheusProvider();
+        var settings = new ClusterMetricsSettings
+        {
+            PrometheusDirectUrl = "https://prometheus.example",
+            PrometheusPathPrefix = "/prometheus",
+        };
+
+        var endpoint = await provider.TryResolveServiceAsync(null!, settings);
+
+        endpoint.ShouldNotBeNull();
+        endpoint.DirectUrl.ShouldBe("https://prometheus.example");
+        endpoint.Namespace.ShouldBeNull();
+        endpoint.ServiceName.ShouldBeNull();
+        endpoint.ServicePort.ShouldBeNull();
+        endpoint.PathPrefix.ShouldBe("/prometheus");
+    }
+
+    [Fact]
+    public async Task ManualProvider_resolves_service_port_forward_when_direct_url_is_empty()
+    {
+        var provider = new ManualPrometheusProvider();
+        var settings = new ClusterMetricsSettings
+        {
+            PrometheusServiceName = "prometheus",
+            PrometheusServiceNamespace = "monitoring",
+            PrometheusServicePort = 9090,
+            PrometheusUseHttps = true,
+        };
+
+        var endpoint = await provider.TryResolveServiceAsync(null!, settings);
+
+        endpoint.ShouldNotBeNull();
+        endpoint.DirectUrl.ShouldBeNull();
+        endpoint.Namespace.ShouldBe("monitoring");
+        endpoint.ServiceName.ShouldBe("prometheus");
+        endpoint.ServicePort.ShouldBe(9090);
+        endpoint.UseHttps.ShouldBeTrue();
     }
 
     [Theory]

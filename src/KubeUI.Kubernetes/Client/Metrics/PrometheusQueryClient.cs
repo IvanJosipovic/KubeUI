@@ -142,7 +142,7 @@ public sealed partial class PrometheusQueryClient : IPrometheusQueryClient, IDis
 
                 if (_httpClient is not null)
                 {
-                    ValidateAuthentication(endpoint, _httpClient.BaseAddress!);
+                    ValidateAuthentication(endpoint);
                     if (endpoint.UseAzureMonitorAuthentication)
                     {
                         var token = await GetAzureMonitorTokenAsync(cancellationToken).ConfigureAwait(false);
@@ -228,7 +228,6 @@ public sealed partial class PrometheusQueryClient : IPrometheusQueryClient, IDis
             endpoint.UseHttps,
             endpoint.PathPrefix,
             credentialHash,
-            endpoint.RequireHttpsForAuthentication,
             endpoint.UseAzureMonitorAuthentication);
     }
 }

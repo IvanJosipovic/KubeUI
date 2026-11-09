@@ -78,7 +78,7 @@ public sealed class ClusterSettingsViewModelTests
     }
 
     [AvaloniaFact]
-    public void insecure_authentication_warning_tracks_endpoint_scheme_and_https_requirement()
+    public void insecure_authentication_warning_tracks_endpoint_scheme()
     {
         var settings = new Moq.Mock<IClusterPreferenceStore>();
         var azureMonitor = new Moq.Mock<IAzureMonitorWorkspaceService>();
@@ -90,17 +90,71 @@ public sealed class ClusterSettingsViewModelTests
                 {
                     MetricsServiceType = MetricsServiceType.Prometheus,
                     PrometheusDirectUrl = "http://prometheus.example",
-                    PrometheusRequireHttpsForAuthentication = false,
                     PrometheusCustomHeaders = [new PrometheusHeader { Name = "X-Api-Key", Value = "secret" }],
                 },
             },
         };
 
         viewModel.ShowInsecureAuthenticationWarning.ShouldBeTrue();
-        viewModel.ClusterSettings.MetricsSettings.PrometheusRequireHttpsForAuthentication = true;
-        viewModel.ShowInsecureAuthenticationWarning.ShouldBeFalse();
-        viewModel.ClusterSettings.MetricsSettings.PrometheusRequireHttpsForAuthentication = false;
         viewModel.ClusterSettings.MetricsSettings.PrometheusDirectUrl = "https://prometheus.example";
         viewModel.ShowInsecureAuthenticationWarning.ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public void authentication_conflict_warning_tracks_basic_auth_and_authorization_header()
+    {
+        var settings = new Moq.Mock<IClusterPreferenceStore>();
+        var azureMonitor = new Moq.Mock<IAzureMonitorWorkspaceService>();
+        var authorizationHeader = new PrometheusHeader { Name = "authorization", Value = "Bearer token" };
+        using var viewModel = new ClusterSettingsViewModel(settings.Object, azureMonitor.Object)
+        {
+            ClusterSettings = new ClusterSettings
+            {
+                MetricsSettings = new ClusterMetricsSettings
+                {
+                    MetricsServiceType = MetricsServiceType.Prometheus,
+                    PrometheusBasicAuthUsername = "user",
+                    PrometheusBasicAuthPassword = "password",
+                    PrometheusCustomHeaders = [authorizationHeader],
+                },
+            },
+        };
+
+        viewModel.ShowPrometheusAuthenticationConflictWarning.ShouldBeTrue();
+
+        authorizationHeader.Name = "X-Api-Key";
+        viewModel.ShowPrometheusAuthenticationConflictWarning.ShouldBeFalse();
+
+        authorizationHeader.Name = "Authorization";
+        viewModel.ClusterSettings.MetricsSettings.PrometheusBasicAuthUsername = null;
+        viewModel.ClusterSettings.MetricsSettings.PrometheusBasicAuthPassword = null;
+        viewModel.ShowPrometheusAuthenticationConflictWarning.ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public void manual_prometheus_direct_url_selects_direct_endpoint_mode()
+    {
+        var settings = new Moq.Mock<IClusterPreferenceStore>();
+        var azureMonitor = new Moq.Mock<IAzureMonitorWorkspaceService>();
+        using var viewModel = new ClusterSettingsViewModel(settings.Object, azureMonitor.Object)
+        {
+            ClusterSettings = new ClusterSettings
+            {
+                MetricsSettings = new ClusterMetricsSettings
+                {
+                    MetricsServiceType = MetricsServiceType.Prometheus,
+                    PrometheusProviderKind = PrometheusProviderKind.Manual,
+                    PrometheusDirectUrl = "https://prometheus.example",
+                },
+            },
+        };
+
+        viewModel.ShowPrometheusServiceSettings.ShouldBeFalse();
+        viewModel.ShowPrometheusDirectUrlSettings.ShouldBeTrue();
+
+        viewModel.ClusterSettings.MetricsSettings.PrometheusDirectUrl = null;
+
+        viewModel.ShowPrometheusServiceSettings.ShouldBeTrue();
+        viewModel.ShowPrometheusDirectUrlSettings.ShouldBeTrue();
     }
 }

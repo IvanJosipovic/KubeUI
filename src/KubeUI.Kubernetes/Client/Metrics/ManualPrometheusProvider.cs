@@ -10,6 +10,20 @@ public sealed class ManualPrometheusProvider : PrometheusProviderBase
 
     public override Task<ResolvedPrometheusEndpoint?> TryResolveServiceAsync(k8s.Kubernetes client, ClusterMetricsSettings settings, CancellationToken cancellationToken = default)
     {
+        if (!string.IsNullOrWhiteSpace(settings.PrometheusDirectUrl))
+        {
+            return Task.FromResult<ResolvedPrometheusEndpoint?>(ApplyAuthenticationSettings(new ResolvedPrometheusEndpoint(
+                Kind,
+                Name,
+                IsConfigurable,
+                null,
+                null,
+                null,
+                settings.PrometheusDirectUrl,
+                false,
+                NormalizePrefix(settings.PrometheusPathPrefix)), settings));
+        }
+
         if (string.IsNullOrWhiteSpace(settings.PrometheusServiceNamespace)
             || string.IsNullOrWhiteSpace(settings.PrometheusServiceName)
             || settings.PrometheusServicePort is not > 0)
@@ -24,7 +38,7 @@ public sealed class ManualPrometheusProvider : PrometheusProviderBase
             settings.PrometheusServiceNamespace,
             settings.PrometheusServiceName,
             settings.PrometheusServicePort,
-            settings.PrometheusDirectUrl,
+            null,
             settings.PrometheusUseHttps,
             NormalizePrefix(settings.PrometheusPathPrefix)), settings));
     }

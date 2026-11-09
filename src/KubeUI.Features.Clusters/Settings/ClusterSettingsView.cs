@@ -121,13 +121,41 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
                 CreateActiveMetricsServiceRow(vm),
                 CreatePrometheusProviderRow(vm),
                 CreateAzureMonitorSettings(vm),
-                CreatePrometheusServiceNameRow(vm),
-                CreatePrometheusServiceNamespaceRow(vm),
-                CreatePrometheusServicePortRow(vm),
-                CreatePrometheusDirectUrlRow(vm),
-                CreatePrometheusPathPrefixRow(vm),
-                CreatePrometheusHttpsRow(vm),
+                CreatePrometheusEndpointSettings(vm),
                 CreatePrometheusAuthenticationSettings(vm));
+    }
+
+    private static StackPanel CreatePrometheusEndpointSettings(ClusterSettingsViewModel vm)
+    {
+        return new StackPanel()
+            .Spacing(6)
+            .Children(
+                new ExpandableSection()
+                    .Header(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusPortForwardSection.ToBinding())
+                    .IsVisible(vm, x => x.ShowPrometheusServiceSettings)
+                    .Content(
+                        new StackPanel()
+                            .Spacing(6)
+                            .Children(
+                                new TextBlock()
+                                    .Text(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusPortForwardDescription.ToBinding())
+                                    .TextWrapping(TextWrapping.Wrap),
+                                CreatePrometheusServiceNameRow(vm),
+                                CreatePrometheusServiceNamespaceRow(vm),
+                                CreatePrometheusServicePortRow(vm),
+                                CreatePrometheusHttpsRow(vm))),
+                new ExpandableSection()
+                    .Header(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusDirectUrlSection.ToBinding())
+                    .IsVisible(vm, x => x.ShowPrometheusDirectUrlSettings)
+                    .Content(
+                        new StackPanel()
+                            .Spacing(6)
+                            .Children(
+                                new TextBlock()
+                                    .Text(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusDirectUrlDescription.ToBinding())
+                                    .TextWrapping(TextWrapping.Wrap),
+                                CreatePrometheusDirectUrlRow(vm))),
+                CreatePrometheusPathPrefixRow(vm));
     }
 
     private static Border CreateHeading(BindingBase text)
@@ -290,87 +318,78 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
             x => x.ShowPrometheusCustomTransportSettings);
     }
 
-    private static StackPanel CreatePrometheusAuthenticationSettings(ClusterSettingsViewModel vm)
+    private static ExpandableSection CreatePrometheusAuthenticationSettings(ClusterSettingsViewModel vm)
     {
-        return new StackPanel()
-            .Spacing(6)
+        return new ExpandableSection()
+            .Header(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusAuthenticationSection.ToBinding())
             .IsVisible(vm, x => x.ShowPrometheusCustomTransportSettings)
-            .Children(
-                new TextBlock()
-                    .Text(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusAuthenticationNotice.ToBinding())
-                    .TextWrapping(TextWrapping.Wrap),
-                new TextBlock()
-                    .Text(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusCustomHeadersLabel.ToBinding())
-                    .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusCustomHeadersTooltip.ToBinding()),
-                new ItemsControl()
-                    .ItemsSource(vm, x => x.ClusterSettings.MetricsSettings.PrometheusCustomHeaders)
-                    .ItemTemplate(new FuncDataTemplate<PrometheusHeader>((header, _) =>
-                    {
-                        if (header is null)
-                        {
-                            return new TextBlock();
-                        }
+            .Content(
+                new StackPanel()
+                    .Spacing(6)
+                    .Children(
+                        new TextBlock()
+                            .Text(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusAuthenticationNotice.ToBinding())
+                            .TextWrapping(TextWrapping.Wrap),
+                        new TextBlock()
+                            .Text(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusCustomHeadersLabel.ToBinding())
+                            .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusCustomHeadersTooltip.ToBinding()),
+                        new ItemsControl()
+                            .ItemsSource(vm, x => x.ClusterSettings.MetricsSettings.PrometheusCustomHeaders)
+                            .ItemTemplate(new FuncDataTemplate<PrometheusHeader>((header, _) =>
+                            {
+                                if (header is null)
+                                {
+                                    return new TextBlock();
+                                }
 
-                        return new Grid()
-                            .Cols("*,2*,Auto")
+                                return new Grid()
+                                    .Cols("*,2*,Auto")
+                                    .Children(
+                                        new TextBox()
+                                            .Col(0)
+                                            .PlaceholderText(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusHeaderNamePlaceholder.ToBinding())
+                                            .Text(header, x => x.Name, BindingMode.TwoWay),
+                                        new TextBox()
+                                            .Col(1)
+                                            .PlaceholderText(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusHeaderValuePlaceholder.ToBinding())
+                                            .PasswordChar('●')
+                                            .Text(header, x => x.Value, BindingMode.TwoWay),
+                                        new Button()
+                                            .Col(2)
+                                            .Content(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusRemoveHeader.ToBinding())
+                                            .Command(vm, x => x.RemovePrometheusHeaderCommand)
+                                            .CommandParameter(header));
+                            })),
+                        new Button()
+                            .HorizontalAlignment(HorizontalAlignment.Left)
+                            .Content(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusAddHeader.ToBinding())
+                            .Command(vm, x => x.AddPrometheusHeaderCommand),
+                        CreatePrometheusTextRow(
+                            vm,
+                            ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusBasicAuthUsernameLabel.ToBinding(),
+                            ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusBasicAuthTooltip.ToBinding(),
+                            x => x.ClusterSettings.MetricsSettings.PrometheusBasicAuthUsername,
+                            x => x.ShowPrometheusCustomTransportSettings),
+                        new Grid()
+                            .Cols("*,2*")
+                            .IsVisible(vm, x => x.ShowPrometheusCustomTransportSettings)
+                            .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusBasicAuthTooltip.ToBinding())
                             .Children(
-                                new TextBox()
-                                    .Col(0)
-                                    .PlaceholderText(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusHeaderNamePlaceholder.ToBinding())
-                                    .Text(header, x => x.Name, BindingMode.TwoWay),
+                                new Label()
+                                    .Content(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusBasicAuthPasswordLabel.ToBinding())
+                                    .Col(0),
                                 new TextBox()
                                     .Col(1)
-                                    .PlaceholderText(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusHeaderValuePlaceholder.ToBinding())
                                     .PasswordChar('●')
-                                    .Text(header, x => x.Value, BindingMode.TwoWay),
-                                new Button()
-                                    .Col(2)
-                                    .Content(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusRemoveHeader.ToBinding())
-                                    .Command(vm, x => x.RemovePrometheusHeaderCommand)
-                                    .CommandParameter(header));
-                    })),
-                new Button()
-                    .HorizontalAlignment(HorizontalAlignment.Left)
-                    .Content(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusAddHeader.ToBinding())
-                    .Command(vm, x => x.AddPrometheusHeaderCommand),
-                CreatePrometheusTextRow(
-                    vm,
-                    ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusBasicAuthUsernameLabel.ToBinding(),
-                    ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusBasicAuthTooltip.ToBinding(),
-                    x => x.ClusterSettings.MetricsSettings.PrometheusBasicAuthUsername,
-                    x => x.ShowPrometheusCustomTransportSettings),
-                new Grid()
-                    .Cols("*,2*")
-                    .IsVisible(vm, x => x.ShowPrometheusCustomTransportSettings)
-                    .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusBasicAuthTooltip.ToBinding())
-                    .Children(
-                        new Label()
-                            .Content(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusBasicAuthPasswordLabel.ToBinding())
-                            .Col(0),
-                        new TextBox()
-                            .Col(1)
-                            .PasswordChar('●')
-                            .Text(vm, x => x.ClusterSettings.MetricsSettings.PrometheusBasicAuthPassword, BindingMode.TwoWay)),
-                CreatePrometheusHttpsAuthenticationRequirementRow(vm),
-                new TextBlock()
-                    .IsVisible(vm, x => x.ShowInsecureAuthenticationWarning)
-                    .Text(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusInsecureAuthenticationWarning.ToBinding())
-                    .TextWrapping(TextWrapping.Wrap));
-    }
-
-    private static Grid CreatePrometheusHttpsAuthenticationRequirementRow(ClusterSettingsViewModel vm)
-    {
-        return new Grid()
-            .Cols("*,2*")
-            .IsVisible(vm, x => x.ShowPrometheusCustomTransportSettings)
-            .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusRequireHttpsForAuthenticationTooltip.ToBinding())
-            .Children(
-                new Label()
-                    .Content(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusRequireHttpsForAuthenticationLabel.ToBinding())
-                    .Col(0),
-                new CheckBox()
-                    .Col(1)
-                    .IsChecked(vm, x => x.ClusterSettings.MetricsSettings.PrometheusRequireHttpsForAuthentication, BindingMode.TwoWay));
+                                    .Text(vm, x => x.ClusterSettings.MetricsSettings.PrometheusBasicAuthPassword, BindingMode.TwoWay)),
+                        new TextBlock()
+                            .IsVisible(vm, x => x.ShowPrometheusAuthenticationConflictWarning)
+                            .Text(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusAuthenticationConflictWarning.ToBinding())
+                            .TextWrapping(TextWrapping.Wrap),
+                        new TextBlock()
+                            .IsVisible(vm, x => x.ShowInsecureAuthenticationWarning)
+                            .Text(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusInsecureAuthenticationWarning.ToBinding())
+                            .TextWrapping(TextWrapping.Wrap)));
     }
 
     private static Grid CreatePrometheusTextRow<TValue>(
@@ -397,7 +416,7 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
     {
         return new Grid()
             .Cols("*,2*")
-            .IsVisible(vm, x => x.ShowPrometheusCustomTransportSettings)
+            .IsVisible(vm, x => x.ShowPrometheusServiceSettings)
             .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusUseHttpsTooltip.ToBinding())
             .Children(
                 new Label()

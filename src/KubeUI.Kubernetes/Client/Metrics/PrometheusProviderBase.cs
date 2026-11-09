@@ -217,7 +217,6 @@ public abstract class PrometheusProviderBase : IPrometheusProvider
                 .ToArray(),
             BasicAuthUsername = settings.PrometheusBasicAuthUsername,
             BasicAuthPassword = settings.PrometheusBasicAuthPassword,
-            RequireHttpsForAuthentication = settings.PrometheusRequireHttpsForAuthentication,
         };
     }
 

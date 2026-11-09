@@ -114,8 +114,7 @@ public sealed class PrometheusQueryClientTests
             null,
             false,
             string.Empty,
-            CustomHeaders: [new PrometheusHeader { Name = "Authorization", Value = "Bearer prometheus-token" }],
-            RequireHttpsForAuthentication: false);
+            CustomHeaders: [new PrometheusHeader { Name = "Authorization", Value = "Bearer prometheus-token" }]);
 
         var response = await client.QueryRangeAsync(
             cluster,
@@ -216,11 +215,11 @@ public sealed class PrometheusQueryClientTests
     }
 
     [Fact]
-    public async Task QueryRangeAsync_refuses_authentication_over_http_when_https_is_required()
+    public async Task QueryRangeAsync_allows_basic_authentication_over_http()
     {
-        var requestSent = false;
-        using var queryHandler = new RecordingHandler(_ => requestSent = true);
-        var fixture = CreateCluster("prometheus-require-https");
+        string? observedAuthorization = null;
+        using var queryHandler = new RecordingHandler(request => observedAuthorization = request.Headers.Authorization?.ToString());
+        var fixture = CreateCluster("prometheus-basic-auth-http");
         await using var cluster = fixture.Cluster;
         using var metricsService = fixture.Service;
         using var client = new PrometheusQueryClient(
@@ -238,17 +237,17 @@ public sealed class PrometheusQueryClientTests
             "http://prometheus.example",
             false,
             string.Empty,
-            CustomHeaders: [new PrometheusHeader { Name = "X-Api-Key", Value = "secret" }]);
+            BasicAuthUsername: "metrics-user",
+            BasicAuthPassword: "sample-password");
 
-        await Should.ThrowAsync<InvalidOperationException>(() => client.QueryRangeAsync(
-            cluster, endpoint, "up", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddMinutes(1), 60,
-            TestContext.Current.CancellationToken));
+        _ = await client.QueryRangeAsync(cluster, endpoint, "up", DateTimeOffset.UnixEpoch,
+            DateTimeOffset.UnixEpoch.AddMinutes(1), 60, TestContext.Current.CancellationToken);
 
-        requestSent.ShouldBeFalse();
+        observedAuthorization.ShouldBe("Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes("metrics-user:sample-password")));
     }
 
     [Fact]
-    public async Task QueryRangeAsync_allows_authentication_over_http_after_explicit_opt_out()
+    public async Task QueryRangeAsync_allows_custom_header_authentication_over_http()
     {
         string? observedHeader = null;
         using var queryHandler = new RecordingHandler(request => observedHeader = request.Headers.GetValues("X-Api-Key").Single());
@@ -270,8 +269,7 @@ public sealed class PrometheusQueryClientTests
             "http://prometheus.example",
             false,
             string.Empty,
-            CustomHeaders: [new PrometheusHeader { Name = "X-Api-Key", Value = "secret" }],
-            RequireHttpsForAuthentication: false);
+            CustomHeaders: [new PrometheusHeader { Name = "X-Api-Key", Value = "secret" }]);
 
         _ = await client.QueryRangeAsync(cluster, endpoint, "up", DateTimeOffset.UnixEpoch,
             DateTimeOffset.UnixEpoch.AddMinutes(1), 60, TestContext.Current.CancellationToken);

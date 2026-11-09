@@ -52,10 +52,6 @@ public partial class ClusterMetricsSettings : ObservableObject
     [ObservableProperty]
     public partial string? PrometheusBasicAuthPassword { get; set; }
 
-    /// <summary>Gets or sets whether authentication must use an HTTPS endpoint.</summary>
-    [ObservableProperty]
-    public partial bool PrometheusRequireHttpsForAuthentication { get; set; } = true;
-
     [ObservableProperty]
     public partial string? AzureMonitorWorkspaceId { get; set; }
 
