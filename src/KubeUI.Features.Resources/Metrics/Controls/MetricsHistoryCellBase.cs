@@ -296,7 +296,12 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
     {
         if (IsCellVisibleInViewport())
         {
-            _refreshSubscription ??= _refreshClock.Subscribe(() => RefreshCell());
+            if (_refreshSubscription is null)
+            {
+                _nextRefreshUtc = DateTimeOffset.MinValue;
+                _refreshSubscription = _refreshClock.Subscribe(() => RefreshCell());
+            }
+
             return;
         }
 

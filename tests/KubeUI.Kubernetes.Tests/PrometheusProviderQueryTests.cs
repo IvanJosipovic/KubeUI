@@ -259,4 +259,23 @@ public sealed class PrometheusProviderQueryTests
         query.ShouldContain($"status=~\"{expectedStatusPattern}\"");
         query.ShouldNotContain("\\\\d");
     }
+
+    [Theory]
+    [InlineData("requestDurationSeconds", "nginx_ingress_controller_request_duration_seconds")]
+    [InlineData("responseDurationSeconds", "nginx_ingress_controller_response_duration_seconds")]
+    public void BuildIngressLatencyQuery_calculates_average_duration_per_request(string queryName, string histogramName)
+    {
+        var provider = new ExternalPrometheusProvider();
+        IReadOnlyDictionary<string, string> options = new Dictionary<string, string>
+        {
+            ["ingress"] = "sample-ingress",
+            ["namespace"] = "default",
+        };
+
+        var query = provider.BuildQuery(MetricCategory.Ingress, queryName, options);
+
+        var sumRate = $"sum(rate({histogramName}_sum{{ingress=\"sample-ingress\", namespace=\"default\"}}[1m])) by (ingress, namespace)";
+        var countRate = $"sum(rate({histogramName}_count{{ingress=\"sample-ingress\", namespace=\"default\"}}[1m])) by (ingress, namespace)";
+        query.ShouldBe($"{sumRate} / {countRate}");
+    }
 }

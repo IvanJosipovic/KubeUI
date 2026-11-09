@@ -156,8 +156,8 @@ public abstract class PrometheusProviderBase : IPrometheusProvider
         {
             "bytesSentSuccess" => BytesSent(rateAccuracy, ingress, ns, "^2[0-9]*"),
             "bytesSentFailure" => BytesSent(rateAccuracy, ingress, ns, "^5[0-9]*"),
-            "requestDurationSeconds" => $$"""sum(rate(nginx_ingress_controller_request_duration_seconds_sum{ingress="{{ingress}}", namespace="{{ns}}"}[{{rateAccuracy}}])) by (ingress, namespace)""",
-            "responseDurationSeconds" => $$"""sum(rate(nginx_ingress_controller_response_duration_seconds_sum{ingress="{{ingress}}", namespace="{{ns}}"}[{{rateAccuracy}}])) by (ingress, namespace)""",
+            "requestDurationSeconds" => AverageDuration("nginx_ingress_controller_request_duration_seconds", rateAccuracy, ingress, ns),
+            "responseDurationSeconds" => AverageDuration("nginx_ingress_controller_response_duration_seconds", rateAccuracy, ingress, ns),
             _ => throw new InvalidOperationException($"Unsupported ingress query '{queryName}'."),
         };
     }
@@ -305,5 +305,12 @@ public abstract class PrometheusProviderBase : IPrometheusProvider
     private static string BytesSent(string rateAccuracy, string ingress, string ns, string statuses)
     {
         return $$"""sum(rate(nginx_ingress_controller_bytes_sent_sum{ingress="{{ingress}}",namespace="{{ns}}",status=~"{{statuses}}"}[{{rateAccuracy}}])) by (ingress, namespace)""";
+    }
+
+    private static string AverageDuration(string histogram, string rateAccuracy, string ingress, string ns)
+    {
+        var selector = $"{{ingress=\"{ingress}\", namespace=\"{ns}\"}}";
+        const string grouping = " by (ingress, namespace)";
+        return $"sum(rate({histogram}_sum{selector}[{rateAccuracy}])){grouping} / sum(rate({histogram}_count{selector}[{rateAccuracy}])){grouping}";
     }
 }

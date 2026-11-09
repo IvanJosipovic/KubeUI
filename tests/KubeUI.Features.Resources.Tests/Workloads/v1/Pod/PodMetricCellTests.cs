@@ -574,6 +574,46 @@ public sealed class PodMetricCellTests
     }
 
     [AvaloniaFact]
+    public async Task prometheus_history_cell_refreshes_immediately_when_returning_to_viewport()
+    {
+        var queryClient = new FakePrometheusQueryClient
+        {
+            Result = CreateMetricResult("cpuUsage", 1.234),
+        };
+        await using var fixture = await MetricCellFixture.CreateAsync(queryClient);
+        var initialTime = fixture.TimeProvider.GetUtcNow();
+        fixture.TimeProvider.SetUtcNow(new DateTimeOffset(
+            initialTime.Year,
+            initialTime.Month,
+            initialTime.Day,
+            initialTime.Hour,
+            initialTime.Minute,
+            0,
+            TimeSpan.Zero).AddSeconds(55));
+        var cell = fixture.CreateCpuCell(CreatePod());
+        using var window = Application.Current.CreateTestWindow(content: cell);
+
+        window.Show();
+        cell.Initialize(fixture.Workspace);
+        await TestWait.UntilAsync(
+            () => queryClient.Queries == 2 && MetricBars(cell).Length > 0,
+            timeout: TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+
+        cell.IsVisible = false;
+        fixture.RefreshClock.SubscriberCount.ShouldBe(0);
+        fixture.TimeProvider.Advance(TimeSpan.FromSeconds(10));
+        cell.IsVisible = true;
+
+        await TestWait.UntilAsync(
+            () => queryClient.Queries == 4,
+            timeout: TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+    }
+
+    [AvaloniaFact]
     public async Task prometheus_history_keeps_refresh_schedule_for_same_resource_update()
     {
         var queryClient = new FakePrometheusQueryClient
