@@ -8,6 +8,7 @@ using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
 using KubeUI.App.Infrastructure.Docking;
 using KubeUI.App.Services.Settings;
+
 using KubeUI.Desktop;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources.Settings;
@@ -21,18 +22,17 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Moq;
 
+#pragma warning disable IDE0001 // Linked file has different namespace imports in consuming test projects.
+using KubeUIApplication = global::KubeUI.App.App;
+#pragma warning restore IDE0001
+
 namespace KubeUI.App.Tests.Infra;
 
 
 
 
 
-<<<<<<< TODO: Unmerged change from project 'KubeUI.App.Tests', Before:
-public class TestApp : global::KubeUI.App.App, IDisposable
-=======
-public class TestApp : KubeUI.App.App, IDisposable
->>>>>>> After
-public class TestApp : App, IDisposable
+public class TestApp : KubeUIApplication, IDisposable
 {
     public Mock<IDialogManager>? DialogManager { get; private set; }
     public INotification? Notification { get; private set; }
