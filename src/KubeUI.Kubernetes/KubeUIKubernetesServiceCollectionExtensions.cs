@@ -74,11 +74,13 @@ public static partial class KubeUIKubernetesServiceCollectionExtensions
 
         return allowReflection
             ? JsonTypeInfoResolver.Combine(
+                new KubeConfigJsonTypeInfoResolver(),
                 new KubeConfigNamedExtensionJsonTypeInfoResolver(),
                 KubernetesJsonStaticContext.Default,
                 SourceGenerationContext.Default,
                 reflectionResolver)
             : JsonTypeInfoResolver.Combine(
+                new KubeConfigJsonTypeInfoResolver(),
                 new KubeConfigNamedExtensionJsonTypeInfoResolver(),
                 KubernetesJsonStaticContext.Default,
                 SourceGenerationContext.Default);

@@ -116,15 +116,15 @@ public sealed class HelmReleasesViewModelTests : IDisposable
         yaml.YamlDocument.Text.ShouldContain("replicas: 2");
         yaml.YamlDocument.Text.TrimStart().ShouldNotStartWith("{");
         var parsed = Application.Current.GetTestServices().GetRequiredService<IKubernetesYamlSerializer>()
-            .Deserialize<Dictionary<string, object>>(yaml.YamlDocument.Text);
+            .Deserialize<Dictionary<string, JsonElement>>(yaml.YamlDocument.Text);
         parsed.ShouldContainKey("server");
         parsed.ShouldContainKey("unset");
-        parsed["enabled"].ShouldBe(true);
-        parsed["replicas"].ShouldBe(2);
-        parsed["unset"].ShouldBeNull();
-        var server = parsed["server"].ShouldBeOfType<Dictionary<object, object>>();
-        server["name"].ShouldBe("true");
-        server["ports"].ShouldBeOfType<List<object>>().ShouldBe([80, 443]);
+        parsed["enabled"].GetBoolean().ShouldBeTrue();
+        parsed["replicas"].GetInt32().ShouldBe(2);
+        parsed["unset"].ValueKind.ShouldBe(JsonValueKind.Null);
+        var server = parsed["server"];
+        server.GetProperty("name").GetString().ShouldBe("true");
+        server.GetProperty("ports").EnumerateArray().Select(item => item.GetInt32()).ShouldBe([80, 443]);
         viewModel.Status.ShouldBeEmpty();
 
         var view = new ResourceYamlView { DataContext = yaml };

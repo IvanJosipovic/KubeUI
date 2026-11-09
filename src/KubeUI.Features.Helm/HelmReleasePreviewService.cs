@@ -94,9 +94,7 @@ public sealed class HelmReleasePreviewService : IHelmReleasePreviewService
                     ? resourceType
                     : typeof(GenericKubernetesObject);
             });
-        var resources = parsed
-            .Cast<IKubernetesObject<V1ObjectMeta>>()
-            .ToArray();
+        var resources = parsed.ToArray();
         if (resources.Length == 0)
         {
             throw new InvalidOperationException(HelmLanguageManager.Instance.HelmReleasePreviewService_NoResources.CurrentValue()!);

@@ -134,10 +134,10 @@ public sealed class KubernetesYamlTests : IDisposable
             value: second
             """;
 
-        var restored = _serializer.Deserialize<Dictionary<string, object>>(yaml);
+        var restored = _serializer.Deserialize<Dictionary<string, JsonElement>>(yaml);
 
-        restored["value"].ShouldBe("second");
-        Should.Throw<YamlException>(() => _serializer.Deserialize<Dictionary<string, object>>(yaml, strict: true));
+        restored["value"].GetString().ShouldBe("second");
+        Should.Throw<YamlException>(() => _serializer.Deserialize<Dictionary<string, JsonElement>>(yaml, strict: true));
     }
 
     [Fact]
@@ -207,6 +207,36 @@ public sealed class KubernetesYamlTests : IDisposable
     }
 
     [Fact]
+    public void generic_documents_load_directly_as_generic_kubernetes_objects()
+    {
+        const string yaml = """
+            apiVersion: example.com/v1
+            kind: Widget
+            metadata:
+              name: generic-widget
+            spec:
+              enabled: true
+              replicas: 3
+            ---
+            # Empty documents are ignored.
+            ---
+            apiVersion: other.example/v1
+            kind: Gadget
+            metadata:
+              name: generic-gadget
+            """;
+
+        var resources = _serializer.LoadGenericResourcesFromString(yaml);
+
+        resources.Count.ShouldBe(2);
+        resources[0].ApiVersion.ShouldBe("example.com/v1");
+        resources[0].Kind.ShouldBe("Widget");
+        resources[0].Metadata.Name.ShouldBe("generic-widget");
+        resources[0].Properties["spec"].GetProperty("enabled").GetBoolean().ShouldBeTrue();
+        resources[1].Kind.ShouldBe("Gadget");
+    }
+
+    [Fact]
     public void load_all_skips_empty_and_comment_only_documents_between_resources()
     {
         const string yaml = """
@@ -240,6 +270,22 @@ public sealed class KubernetesYamlTests : IDisposable
         Should.Throw<FormatException>(() => _serializer.LoadAllFromString(
             "metadata:\n  name: missing-identity",
             static _ => typeof(GenericKubernetesObject)));
+    }
+
+    [Fact]
+    public void load_all_rejects_resolved_types_that_are_not_kubernetes_resources()
+    {
+        const string yaml = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: test
+            """;
+
+        var exception = Should.Throw<JsonException>(() =>
+            _serializer.LoadAllFromString(yaml, static _ => typeof(JsonElement)));
+
+        exception.Message.ShouldContain("is not a Kubernetes resource");
     }
 
     [Fact]

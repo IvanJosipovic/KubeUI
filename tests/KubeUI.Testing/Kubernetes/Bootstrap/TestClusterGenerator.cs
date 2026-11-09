@@ -483,7 +483,7 @@ public sealed class TestClusterGenerator
 
         await ApplyResourcesAsync(
             client,
-            _services.GetRequiredService<IKubernetesYamlSerializer>().LoadAllFromString(yaml, key => typeMap[key]).Cast<IKubernetesObject>(),
+            _services.GetRequiredService<IKubernetesYamlSerializer>().LoadAllFromString(yaml, key => typeMap[key]),
             cancellationToken).ConfigureAwait(false);
     }
 

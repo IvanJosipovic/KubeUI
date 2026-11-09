@@ -32,7 +32,7 @@ internal sealed class KubeConfigNamedExtensionJsonConverter : JsonConverter<Name
                 ? name.GetString()
                 : null,
             Extension = root.TryGetProperty("extension", out var extension)
-                ? KubernetesYamlSerializer.DeserializeExtension(extension)
+                ? KubeConfigExtensionValueCodec.Read(extension)
                 : null,
         };
     }
@@ -42,7 +42,7 @@ internal sealed class KubeConfigNamedExtensionJsonConverter : JsonConverter<Name
         writer.WriteStartObject();
         writer.WriteString("name", value.Name);
         writer.WritePropertyName("extension");
-        KubernetesYamlSerializer.WriteExtension(writer, (object?)value.Extension);
+        KubeConfigExtensionValueCodec.Write(writer, (object?)value.Extension);
         writer.WriteEndObject();
     }
 }

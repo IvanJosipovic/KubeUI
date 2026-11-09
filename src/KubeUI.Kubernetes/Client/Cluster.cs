@@ -809,11 +809,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     private List<GenericKubernetesObject> LoadGenericResources(Stream stream)
     {
         using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
-        return _yamlSerializer.LoadAllFromString(
-                reader.ReadToEnd(),
-                static _ => typeof(GenericKubernetesObject))
-            .Cast<GenericKubernetesObject>()
-            .ToList();
+        return _yamlSerializer.LoadGenericResourcesFromString(reader.ReadToEnd());
     }
 
     public async Task ImportFolder(string path)
