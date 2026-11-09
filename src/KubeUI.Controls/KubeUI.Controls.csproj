@@ -24,7 +24,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="KubeUI.App" />
-    <InternalsVisibleTo Include="KubeUI.Avalonia.Tests" />
+    <InternalsVisibleTo Include="KubeUI.App.Tests" />
     <InternalsVisibleTo Include="KubeUI.Features.Resources.Tests" />
     <InternalsVisibleTo Include="KubeUI.Features.Resources" />
     <InternalsVisibleTo Include="KubeUI.Features.Helm.Tests" />

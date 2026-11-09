@@ -1,6 +1,6 @@
 using Avalonia.Headless.XUnit;
 using k8s.Models;
-using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.App.Tests.Infra;
 using KubeUI.Features.Cilium;
 using Shouldly;
 

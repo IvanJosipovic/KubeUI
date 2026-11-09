@@ -6,7 +6,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.App.Tests.Infra;
 using KubeUI.Controls.Layout;
 using Shouldly;
 

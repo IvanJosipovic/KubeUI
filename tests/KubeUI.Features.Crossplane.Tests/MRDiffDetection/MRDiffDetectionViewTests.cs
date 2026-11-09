@@ -40,15 +40,15 @@ public sealed class MRDiffDetectionViewTests
 
         var leading = toolbar.Leading.ShouldBeOfType<StackPanel>();
         var providerSelector = leading.Children.OfType<ComboBox>().ShouldHaveSingleItem();
-        providerSelector.VerticalAlignment.ShouldBe(global::Avalonia.Layout.VerticalAlignment.Stretch);
+        providerSelector.VerticalAlignment.ShouldBe(Avalonia.Layout.VerticalAlignment.Stretch);
 
         var searchBox = leading.Children.OfType<TextBox>().ShouldHaveSingleItem();
-        searchBox.VerticalAlignment.ShouldBe(global::Avalonia.Layout.VerticalAlignment.Stretch);
-        searchBox.Background.ShouldBe(global::Avalonia.Media.Brushes.Transparent);
+        searchBox.VerticalAlignment.ShouldBe(Avalonia.Layout.VerticalAlignment.Stretch);
+        searchBox.Background.ShouldBe(Avalonia.Media.Brushes.Transparent);
 
         toolbar.Measure(new Size(1000, 40));
         toolbar.Arrange(new Rect(0, 0, 1000, 40));
-        searchBox.VerticalContentAlignment.ShouldBe(global::Avalonia.Layout.VerticalAlignment.Center);
+        searchBox.VerticalContentAlignment.ShouldBe(Avalonia.Layout.VerticalAlignment.Center);
         providerSelector.Bounds.Height.ShouldBe(searchBox.Bounds.Height);
 
         toolbar.Middle.ShouldBeOfType<TextBlock>();

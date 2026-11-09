@@ -5,7 +5,7 @@ using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Toolchains.InProcess.NoEmit;
 using KubeUI.App.Infrastructure.Presentation;
 using KubeUI.App.Shell.Main;
-using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.App.Tests.Infra;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace KubeUI.Benchmarks;

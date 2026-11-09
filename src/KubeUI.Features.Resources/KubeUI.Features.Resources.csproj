@@ -47,7 +47,7 @@
     <InternalsVisibleTo Include="KubeUI.Features.Cilium" />
     <InternalsVisibleTo Include="KubeUI.Features.Crossplane" />
     <InternalsVisibleTo Include="KubeUI.Features.Helm" />
-    <InternalsVisibleTo Include="KubeUI.Avalonia.Tests" />
+    <InternalsVisibleTo Include="KubeUI.App.Tests" />
     <InternalsVisibleTo Include="KubeUI.Features.Resources.Tests" />
     <InternalsVisibleTo Include="KubeUI.Features.Cilium.Tests" />
     <InternalsVisibleTo Include="KubeUI.Features.Crossplane.Tests" />

@@ -93,7 +93,7 @@ public sealed class HelmEditorViewModelTests : IDisposable
         {
             window.Show();
             await TestApplicationExtensions.WaitForUiAsync();
-            var textEditor = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+            var textEditor = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
                 .OfType<TextEditor>().Single();
             var foldingMargin = textEditor.TextArea.LeftMargins.OfType<FoldingMargin>().Single();
 
@@ -184,10 +184,10 @@ public sealed class HelmEditorViewModelTests : IDisposable
         {
             window.Show();
             await TestApplicationExtensions.WaitForUiAsync();
-            var textEditor = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+            var textEditor = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
                 .OfType<TextEditor>().Single();
             textEditor.IsReadOnly.ShouldBeFalse();
-            var chartSelector = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+            var chartSelector = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
                 .OfType<ComboBox>().Single(control => control.Name == "Chart");
             DataValidationErrors.GetHasErrors(chartSelector).ShouldBeTrue();
             DataValidationErrors.GetErrors(chartSelector).Cast<string>()
@@ -213,7 +213,7 @@ public sealed class HelmEditorViewModelTests : IDisposable
                     .Returns(Task.CompletedTask);
                 await editor.PreviewCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
                 GetFieldError(editor, nameof(HelmReleaseEditorViewModel.Chart)).ShouldBe("Chart reference cannot be resolved");
-                var chartReference = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+                var chartReference = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
                     .OfType<TextBox>().Single(control => control.Name == "ChartReference");
                 DataValidationErrors.GetHasErrors(chartReference).ShouldBeTrue();
                 editor.Chart.ShouldBe(reference);
@@ -265,7 +265,7 @@ public sealed class HelmEditorViewModelTests : IDisposable
         {
             window.Show();
             await TestApplicationExtensions.WaitForUiAsync();
-            var controls = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view).ToArray();
+            var controls = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view).ToArray();
             var repositorySource = controls.OfType<RadioButton>()
                 .Single(control => Equals(control.Content, HelmLanguageManager.Instance.HelmReleaseEditorView_RepositorySource.CurrentValue()));
             var ociSource = controls.OfType<RadioButton>()
@@ -365,15 +365,15 @@ public sealed class HelmEditorViewModelTests : IDisposable
             window.Height = 450;
             window.Show();
             await TestApplicationExtensions.WaitForUiAsync();
-            var outerScrollViewer = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+            var outerScrollViewer = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
                 .OfType<ScrollViewer>().First();
-            var textEditor = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+            var textEditor = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
                 .OfType<TextEditor>().Single();
-            var valuesScrollViewer = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(textEditor)
+            var valuesScrollViewer = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(textEditor)
                 .OfType<ScrollViewer>().First();
             outerScrollViewer.Offset = new Vector(0, 100);
             outerScrollViewer.Offset.Y.ShouldBe(100);
-            var dropdowns = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+            var dropdowns = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
                 .OfType<ComboBox>().ToDictionary(control => control.Name!);
 
             dropdowns["Repository"].SelectedItem = "stable";
@@ -487,7 +487,7 @@ public sealed class HelmEditorViewModelTests : IDisposable
             window.Height = 350;
             window.Show();
             await TestApplicationExtensions.WaitForUiAsync();
-            var controls = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view).ToArray();
+            var controls = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view).ToArray();
             var textEditor = controls.OfType<TextEditor>().Single();
             var namespaceLabel = controls.OfType<TextBlock>()
                 .Single(control => control.Text == HelmLanguageManager.Instance.HelmReleaseEditorView_Namespace.CurrentValue());
@@ -513,7 +513,7 @@ public sealed class HelmEditorViewModelTests : IDisposable
             textEditor.Options.HighlightCurrentLine.ShouldBeTrue();
             textEditor.Options.IndentationSize.ShouldBe(2);
             textEditor.Options.ShowBoxForControlCharacters.ShouldBeFalse();
-            var valuesScroll = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(textEditor)
+            var valuesScroll = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(textEditor)
                 .OfType<ScrollViewer>().First();
             valuesScroll.Extent.Height.ShouldBeGreaterThan(valuesScroll.Viewport.Height);
             valuesScroll.Offset = new Vector(0, valuesScroll.Extent.Height);
@@ -591,23 +591,23 @@ public sealed class HelmEditorViewModelTests : IDisposable
         {
             window.Show();
             await TestApplicationExtensions.WaitForUiAsync();
-            var textEditor = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+            var textEditor = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
                 .OfType<TextEditor>().Single();
             textEditor.Text.ShouldBe(editor.ValuesYaml);
             textEditor.IsReadOnly.ShouldBeFalse();
-            var versions = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+            var versions = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
                 .OfType<ComboBox>().Single(control => control.Name == "ChartVersion");
-            var dropdowns = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+            var dropdowns = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
                 .OfType<ComboBox>().ToDictionary(control => control.Name!);
             dropdowns["Repository"].SelectedItem.ShouldBe("bitnami");
             dropdowns["Chart"].SelectedItem.ShouldBe("nginx");
-            dropdowns["Repository"].HorizontalAlignment.ShouldBe(global::Avalonia.Layout.HorizontalAlignment.Stretch);
-            dropdowns["Chart"].HorizontalAlignment.ShouldBe(global::Avalonia.Layout.HorizontalAlignment.Stretch);
-            versions.HorizontalAlignment.ShouldBe(global::Avalonia.Layout.HorizontalAlignment.Stretch);
+            dropdowns["Repository"].HorizontalAlignment.ShouldBe(Avalonia.Layout.HorizontalAlignment.Stretch);
+            dropdowns["Chart"].HorizontalAlignment.ShouldBe(Avalonia.Layout.HorizontalAlignment.Stretch);
+            versions.HorizontalAlignment.ShouldBe(Avalonia.Layout.HorizontalAlignment.Stretch);
             var repositoryPosition = dropdowns["Repository"].TranslatePoint(default, view).ShouldNotBeNull();
             var chartPosition = dropdowns["Chart"].TranslatePoint(default, view).ShouldNotBeNull();
             var versionPosition = versions.TranslatePoint(default, view).ShouldNotBeNull();
-            var namespaceField = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+            var namespaceField = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
                 .OfType<TextBox>().Where(control => control.IsVisible).ElementAt(1);
             var namespacePosition = namespaceField.TranslatePoint(default, view).ShouldNotBeNull();
             var chartVersionGap = versionPosition.Y - chartPosition.Y - dropdowns["Chart"].Bounds.Height;
@@ -691,7 +691,7 @@ public sealed class HelmEditorViewModelTests : IDisposable
         {
             window.Show();
             await TestApplicationExtensions.WaitForUiAsync();
-            var valuesEditor = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+            var valuesEditor = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
                 .OfType<TextEditor>().Single();
             DataValidationErrors.GetHasErrors(valuesEditor).ShouldBeTrue();
             DataValidationErrors.GetErrors(valuesEditor).Cast<string>()
@@ -780,7 +780,7 @@ public sealed class HelmEditorViewModelTests : IDisposable
         {
             window.Show();
             await TestApplicationExtensions.WaitForUiAsync();
-            var timeoutInput = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+            var timeoutInput = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
                 .OfType<NumericUpDown>().Single();
 
             timeoutInput.Value = null;
@@ -829,7 +829,7 @@ public sealed class HelmEditorViewModelTests : IDisposable
         {
             window.Show();
             await TestApplicationExtensions.WaitForUiAsync();
-            var versionSelector = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+            var versionSelector = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
                 .OfType<ComboBox>().Single(control => control.Name == "ChartVersion");
             DataValidationErrors.GetHasErrors(versionSelector).ShouldBeTrue();
             DataValidationErrors.GetErrors(versionSelector).Cast<string>()

@@ -2,7 +2,7 @@ using Avalonia;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using k8s.Models;
-using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.App.Tests.Infra;
 using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Testing.Utilities;

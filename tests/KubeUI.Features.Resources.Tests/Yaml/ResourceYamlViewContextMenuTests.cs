@@ -12,7 +12,7 @@ using AvaloniaEdit.Rendering;
 using k8s.Models;
 using Shouldly;
 
-namespace KubeUI.Avalonia.Tests.Features.Resources.Yaml;
+namespace KubeUI.App.Tests.Features.Resources.Yaml;
 
 public sealed class ResourceYamlViewContextMenuTests
 {
