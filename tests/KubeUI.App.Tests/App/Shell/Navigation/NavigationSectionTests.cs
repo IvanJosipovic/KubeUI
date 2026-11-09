@@ -31,7 +31,7 @@ public sealed class NavigationSectionTests
     [InlineData(true, true)]
     public async Task settings_control_helm_and_hubble_navigation_after_restart(bool helmEnabled, bool hubbleEnabled)
     {
-        using var workspace = await Application.Current.CreateClusterAsync();
+        using var workspace = await Application.Current.CreateClusterAsync(config => config.Resources = [CreateCiliumCrd("cilium.io")]);
         SettingsPersistenceData settings = new();
         settings.Settings.PreviewFeatures.Helm = helmEnabled;
         settings.Settings.PreviewFeatures.Hubble = hubbleEnabled;
@@ -121,7 +121,7 @@ public sealed class NavigationSectionTests
     }
 
     [AvaloniaFact]
-    public async Task hubble_documents_remain_visible_while_cilium_detection_is_pending()
+    public async Task hubble_documents_are_hidden_without_exact_cilium_crd()
     {
         using var workspace = await Application.Current.CreateClusterAsync(connect: false);
         await workspace.Connect();
@@ -130,13 +130,11 @@ public sealed class NavigationSectionTests
         var provider = new HubbleNavigationSectionProvider(enabled: true);
         var builder = CreateBuilder(new NavigationSectionCatalog([provider]));
 
+        provider.Documents.ShouldAllBe(document => !document.IsAvailable(workspace));
+
         builder.Reconcile(node);
 
-        var cilium = node.NavigationItems.Single(item => item.Id == $"{workspace.Runtime.Name}-section-cilium");
-        cilium.Name.ShouldBe(CiliumLanguageManager.Instance.HubbleNavigationSectionProvider_SectionTitle.CurrentValue());
-        var hubble = cilium.NavigationItems.Single(item => item.Name == CiliumLanguageManager.Instance.HubbleNavigationSectionProvider_GroupName.CurrentValue());
-        hubble.NavigationItems.OfType<NavigationLink>().Select(link => link.DocumentId).OrderBy(id => id)
-            .ShouldBe(new[] { HubbleNavigationSectionProvider.FlowsDocumentId, HubbleNavigationSectionProvider.ServiceMapDocumentId }.OrderBy(id => id));
+        node.NavigationItems.ShouldNotContain(item => item.Id == $"{workspace.Runtime.Name}-section-cilium");
     }
 
     [AvaloniaFact]
@@ -156,7 +154,9 @@ public sealed class NavigationSectionTests
     [AvaloniaFact]
     public async Task hubble_documents_are_nested_under_cilium_and_hubble()
     {
-        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        using var workspace = await Application.Current.CreateClusterAsync(
+            config => config.Resources = [CreateCiliumCrd("cilium.io")],
+            connect: false);
         await workspace.Connect();
 
         using var node = new ClusterNavigationNode(workspace);
@@ -221,21 +221,37 @@ public sealed class NavigationSectionTests
     public async Task hubble_documents_are_hidden_when_feature_flag_is_disabled()
     {
         using var workspace = await Application.Current.CreateClusterAsync(
-            config => config.Resources =
-            [
-                new V1CustomResourceDefinition
-                {
-                    Metadata = new V1ObjectMeta { Name = "ciliumnetworkpolicies.cilium.io" }
-                }
-            ],
+            config => config.Resources = [CreateCiliumCrd("cilium.io")],
             connect: false);
         await workspace.Connect();
 
         using var node = new ClusterNavigationNode(workspace);
         var provider = new HubbleNavigationSectionProvider(enabled: false);
         var builder = CreateBuilder(new NavigationSectionCatalog([provider]));
+        provider.Documents.ShouldAllBe(document => !document.IsAvailable(workspace));
         builder.Reconcile(node);
         builder.Reconcile(node);
+        var cilium = node.NavigationItems.Single(item => item.Id == $"{workspace.Runtime.Name}-section-cilium");
+        cilium.NavigationItems.ShouldNotContain(item => item.Id.EndsWith("/hubble", StringComparison.Ordinal));
+    }
+
+    [AvaloniaFact]
+    public async Task subgroup_crd_does_not_create_cilium_section_without_exact_group_crd()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        await workspace.Connect();
+        workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
+        var subgroupConfig = new FakeCustomResourceConfig(typeof(TestCiliumSubgroupResource), "Network Policies");
+        workspace.AddResourceConfigForTest(subgroupConfig);
+        workspace.GetResourceConfigs().ShouldContain(config => config.Kind == subgroupConfig.Kind);
+
+        using var node = new ClusterNavigationNode(workspace);
+        var provider = new HubbleNavigationSectionProvider(enabled: false);
+        var builder = CreateBuilder(new NavigationSectionCatalog([provider]));
+        provider.Place(subgroupConfig).ShouldNotBeNull();
+
+        builder.Reconcile(node);
+
         node.NavigationItems.ShouldNotContain(item => item.Id == $"{workspace.Runtime.Name}-section-cilium");
     }
 
@@ -279,6 +295,26 @@ public sealed class NavigationSectionTests
 
         placement.ShouldNotBeNull().Groups.Select(group => group.Name).ShouldBe(
             ["crossplane.io", "aws.crossplane.io", "provider.aws.crossplane.io"]);
+    }
+
+    [AvaloniaFact]
+    public async Task crossplane_subgroup_crd_does_not_create_section_without_exact_group_crd()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        await workspace.Connect();
+        workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
+        var subgroupConfig = new FakeCustomResourceConfig(typeof(TestCrossplaneSubgroupResource), "Provider Resources");
+        workspace.AddResourceConfigForTest(subgroupConfig);
+        workspace.GetResourceConfigs().ShouldContain(config => config.Kind == subgroupConfig.Kind);
+
+        using var node = new ClusterNavigationNode(workspace);
+        var provider = new CrossplaneNavigationSectionProvider();
+        var builder = CreateBuilder(new NavigationSectionCatalog([provider]));
+        provider.Place(subgroupConfig).ShouldNotBeNull();
+
+        builder.Reconcile(node);
+
+        node.NavigationItems.ShouldNotContain(item => item.Id == $"{workspace.Runtime.Name}-section-crossplane");
     }
 
     [Fact]
@@ -445,7 +481,9 @@ public sealed class NavigationSectionTests
     [AvaloniaFact]
     public async Task alias_identity_survives_and_stale_count_is_cleared_on_resource_version_replacement()
     {
-        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        using var workspace = await Application.Current.CreateClusterAsync(
+            config => config.InitialResources = [CreateCrossplaneCrd()],
+            connect: false);
         await workspace.Connect();
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
         var firstConfig = new FakeCustomResourceConfig(typeof(TestCrossplaneVersionedResourceV1), "Versioned Resources");
@@ -471,7 +509,9 @@ public sealed class NavigationSectionTests
         Reconcile();
 
         var currentSection = node.NavigationItems.SingleOrDefault(item => item.Id == section.Id).ShouldNotBeNull();
-        GetResourceLinks(currentSection).Select(link => link.ResourceKind?.GroupApiVersion)
+        GetResourceLinks(currentSection)
+            .Where(link => link.ResourceKind?.Group == replacementConfig.Kind.Group)
+            .Select(link => link.ResourceKind?.GroupApiVersion)
             .ShouldBe([replacementConfig.Kind.GroupApiVersion]);
         var replacementAlias = FindResourceLink(currentSection, replacementConfig.Kind).ShouldNotBeNull();
         currentSection.ShouldBeSameAs(section);
@@ -630,6 +670,20 @@ public sealed class NavigationSectionTests
             .Returns(new GroupApiVersionKind(group, apiVersion, "TestResource", "testresources"));
         return config.Object;
     }
+
+    private static V1CustomResourceDefinition CreateCiliumCrd(string group)
+        => NavigationTestCustomResourceDefinitionFactory.Create(
+            $"networkpolicies.{group}",
+            "Network Policies",
+            "someString",
+            group);
+
+    private static V1CustomResourceDefinition CreateCrossplaneCrd()
+        => NavigationTestCustomResourceDefinitionFactory.Create(
+            "roots.crossplane.io",
+            "Root Resources",
+            "someString",
+            "crossplane.io");
 }
 
 [KubernetesEntity(Group = "versions.crossplane.io", ApiVersion = "v1", Kind = "VersionedResource")]
@@ -645,6 +699,22 @@ internal sealed class TestCrossplaneVersionedResourceV2 : IKubernetesObject<V1Ob
 {
     public string ApiVersion { get; set; } = "versions.crossplane.io/v2";
     public string Kind { get; set; } = "VersionedResource";
+    public V1ObjectMeta Metadata { get; set; } = new();
+}
+
+[KubernetesEntity(Group = "api.cilium.io", ApiVersion = "v1", Kind = "TestCiliumSubgroupResource")]
+internal sealed class TestCiliumSubgroupResource : IKubernetesObject<V1ObjectMeta>
+{
+    public string ApiVersion { get; set; } = "api.cilium.io/v1";
+    public string Kind { get; set; } = "TestCiliumSubgroupResource";
+    public V1ObjectMeta Metadata { get; set; } = new();
+}
+
+[KubernetesEntity(Group = "provider.crossplane.io", ApiVersion = "v1", Kind = "TestCrossplaneSubgroupResource")]
+internal sealed class TestCrossplaneSubgroupResource : IKubernetesObject<V1ObjectMeta>
+{
+    public string ApiVersion { get; set; } = "provider.crossplane.io/v1";
+    public string Kind { get; set; } = "TestCrossplaneSubgroupResource";
     public V1ObjectMeta Metadata { get; set; } = new();
 }
 

@@ -1,4 +1,6 @@
 using FluentIcons.Common;
+using k8s.Models;
+using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Crossplane.MRDiffDetection;
 using KubeUI.Features.Resources;
 using Microsoft.Extensions.DependencyInjection;
@@ -39,6 +41,19 @@ internal sealed class CrossplaneNavigationSectionProvider : INavigationSectionPr
     }
 
     public NavigationSection Section { get; }
+
+    public bool IsSectionAvailable(ClusterWorkspace cluster)
+    {
+        try
+        {
+            return cluster.Runtime.GetResourceList<V1CustomResourceDefinition>()
+                .Any(definition => string.Equals(definition.Spec?.Group, "crossplane.io", StringComparison.OrdinalIgnoreCase));
+        }
+        catch
+        {
+            return false;
+        }
+    }
 
     public IReadOnlyList<NavigationDocument> Documents { get; }
 

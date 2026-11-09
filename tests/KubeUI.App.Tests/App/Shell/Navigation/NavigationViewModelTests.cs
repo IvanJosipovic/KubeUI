@@ -412,9 +412,90 @@ public class NavigationViewModelTests
     }
 
     [AvaloniaFact]
-    public async Task crossplane_crd_appears_in_canonical_and_section_trees_and_tracks_access_updates()
+    public async Task cilium_section_tracks_exact_group_crd_add_and_remove()
     {
         using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        using var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        var clusterNode = vm.Clusters.Single(node => node.Cluster == workspace);
+
+        await workspace.Connect();
+        await WaitForAsync(() => clusterNode.NavigationItems.Count > 0);
+        clusterNode.NavigationItems.ShouldNotContain(item => item.Id == $"{workspace.Runtime.Name}-section-cilium");
+
+        await workspace.Runtime.SeedResource<V1CustomResourceDefinition>(true, TestContext.Current.CancellationToken);
+        var crd = NavigationTestCustomResourceDefinitionFactory.Create(
+            "networkpolicies.cilium.io",
+            "Network Policies",
+            "someString",
+            "cilium.io");
+        var subgroupCrd = NavigationTestCustomResourceDefinitionFactory.Create(
+            "networkpolicies.api.cilium.io",
+            "API Network Policies",
+            "someString",
+            "api.cilium.io");
+        await workspace.Runtime.AddOrUpdateResource(crd);
+        await workspace.Runtime.AddOrUpdateResource(subgroupCrd);
+
+        await TestWait.UntilAsync(
+            () => workspace.Runtime.GetResourceList<V1CustomResourceDefinition>().Count >= 2
+                && workspace.Runtime.GetResourceList<V1CustomResourceDefinition>()
+                    .Any(definition => string.Equals(definition.Spec?.Group, "cilium.io", StringComparison.Ordinal)),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken);
+        var section = await WaitForValueAsync(
+            () => clusterNode.NavigationItems.SingleOrDefault(item => item.Id == $"{workspace.Runtime.Name}-section-cilium"),
+            timeoutMs: 10000);
+        section.ShouldNotBeNull();
+
+        await workspace.Runtime.DeleteResource(crd);
+        await TestWait.UntilAsync(
+            () => workspace.Runtime.GetResourceList<V1CustomResourceDefinition>()
+                .All(definition => !string.Equals(definition.Spec?.Group, "cilium.io", StringComparison.Ordinal)),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken);
+        workspace.Runtime.GetResourceList<V1CustomResourceDefinition>()
+            .Any(definition => string.Equals(definition.Spec?.Group, "api.cilium.io", StringComparison.Ordinal))
+            .ShouldBeTrue();
+        await WaitForAsync(
+            () => clusterNode.NavigationItems.All(item => item.Id != $"{workspace.Runtime.Name}-section-cilium"),
+            timeoutMs: 10000);
+    }
+
+    [AvaloniaFact]
+    public async Task cilium_section_appears_for_initial_exact_group_crd()
+    {
+        var crd = NavigationTestCustomResourceDefinitionFactory.Create(
+            "networkpolicies.cilium.io",
+            "Network Policies",
+            "someString",
+            "cilium.io");
+        using var workspace = await Application.Current.CreateClusterAsync(
+            config => config.InitialResources = [crd],
+            connect: false);
+        using var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        var clusterNode = vm.Clusters.Single(node => node.Cluster == workspace);
+
+        await workspace.Connect();
+
+        var section = await WaitForValueAsync(
+            () => clusterNode.NavigationItems.SingleOrDefault(item => item.Id == $"{workspace.Runtime.Name}-section-cilium"),
+            timeoutMs: 10000);
+        section.ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task crossplane_crd_appears_in_canonical_and_section_trees_and_tracks_access_updates()
+    {
+        var rootCrd = NavigationTestCustomResourceDefinitionFactory.Create(
+            "roots.crossplane.io",
+            "Root Resources",
+            "someString",
+            "crossplane.io");
+        using var workspace = await Application.Current.CreateClusterAsync(
+            config => config.InitialResources = [rootCrd],
+            connect: false);
         await workspace.Connect();
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
         var providerKind = GroupApiVersionKind.From<TestCrossplaneManagedResourceDefinition>();
@@ -447,7 +528,7 @@ public class NavigationViewModelTests
             "Denied Managed Resources",
             canListAndWatch: false));
         await WaitForAsync(() => FindResourceLinks(node.NavigationItems, providerKind).Count == 0);
-        node.NavigationItems.ShouldNotContain(item => item.Id == $"{workspace.Runtime.Name}-section-crossplane");
+        node.NavigationItems.ShouldContain(item => item.Id == $"{workspace.Runtime.Name}-section-crossplane");
 
         workspace.AddResourceConfigForTest(CreateConfiguredFakeCustomResourceConfig(typeof(TestCrossplaneManagedResourceDefinition), "Restored Managed Resources"));
         await WaitForAsync(() => FindResourceLinks(node.NavigationItems, providerKind).Count == 2);
