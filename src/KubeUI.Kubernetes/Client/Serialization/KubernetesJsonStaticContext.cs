@@ -114,10 +114,6 @@ namespace KubeUI.Kubernetes.Serialization;
 
 [JsonSerializable(typeof(ExecCredentialResponse))]
 [JsonSerializable(typeof(ExecCredentialResponse.ExecStatus))]
-[JsonSerializable(typeof(IList<V1FieldSelectorRequirement>))]
-[JsonSerializable(typeof(IList<V1APIGroup>))]
-[JsonSerializable(typeof(IList<V1ServerAddressByClientCIDR>))]
-[JsonSerializable(typeof(IList<V1GroupVersionForDiscovery>))]
 
 [JsonSerializable(typeof(V2beta1APIGroupDiscoveryList))]
 

@@ -1,4 +1,6 @@
+using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Avalonia.Headless.XUnit;
 using k8s;
 using k8s.Models;
@@ -14,6 +16,22 @@ namespace KubeUI.Avalonia.Tests.App.Infrastructure;
 
 public sealed class SerializationFeatureTests
 {
+    [Fact]
+    public void source_generation_contexts_do_not_register_duplicate_root_types()
+    {
+        var kubeUiTypes = GetExplicitMetadataTypes(KubernetesJsonStaticContext.Default);
+        kubeUiTypes.ShouldNotBeEmpty();
+
+        // The SDK context exposes transitive metadata too; KubeUI should only root types it does not already cover.
+        var duplicates = kubeUiTypes
+            .Where(type => SourceGenerationContext.Default.GetTypeInfo(type) is not null)
+            .OrderBy(type => type.FullName, StringComparer.Ordinal)
+            .ToArray();
+
+        duplicates.ShouldBeEmpty(
+            $"KubeUI roots types already covered by KubernetesClient metadata: {string.Join(", ", duplicates.Select(type => type.FullName))}");
+    }
+
     [AvaloniaFact]
     public async Task generated_json_metadata_covers_registered_resource_types_for_json_and_yaml()
     {
@@ -94,6 +112,14 @@ public sealed class SerializationFeatureTests
         settings.Settings.PreviewFeatures.DisableJsonSerializationReflection = disableJsonReflection;
         return Program.CreateHostBuilder([], includeOptionalServices: false, settingsOverride: settings).Build();
     }
+
+    private static HashSet<Type> GetExplicitMetadataTypes(JsonSerializerContext context)
+        => context.GetType()
+            .GetCustomAttributesData()
+            .Where(attribute => attribute.AttributeType == typeof(JsonSerializableAttribute))
+            .Select(attribute => attribute.ConstructorArguments[0].Value)
+            .OfType<Type>()
+            .ToHashSet();
 
     private static void AssertCapabilities(IHost host, bool disableJsonReflection)
     {

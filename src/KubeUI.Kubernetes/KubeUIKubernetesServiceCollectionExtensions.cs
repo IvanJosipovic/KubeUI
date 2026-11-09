@@ -57,26 +57,26 @@ public static partial class KubeUIKubernetesServiceCollectionExtensions
         Justification = "Reflection is retained as an explicit opt-in mode, guarded by JsonSerializer.IsReflectionEnabledByDefault; source-generated mode remains the default.")]
     private static IJsonTypeInfoResolver CreateKubeUIKubernetesJsonResolver(bool allowReflection, ILogger? logger)
     {
-        var reflectionResolver = new DefaultJsonTypeInfoResolver
-        {
-            Modifiers =
-            {
-                jsonTypeInfo =>
-                {
-                    if (jsonTypeInfo.OriginatingResolver is DefaultJsonTypeInfoResolver
-                        && logger is not null)
-                    {
-                        LogTypeSerializedUsingReflection(logger, jsonTypeInfo.Type);
-                    }
-                }
-            }
-        };
+        var reflectionResolver = n;
 
         return allowReflection
             ? JsonTypeInfoResolver.Combine(
                 KubernetesJsonStaticContext.Default,
                 SourceGenerationContext.Default,
-                reflectionResolver)
+                new DefaultJsonTypeInfoResolver
+                {
+                    Modifiers =
+                    {
+                        jsonTypeInfo =>
+                        {
+                            if (jsonTypeInfo.OriginatingResolver is DefaultJsonTypeInfoResolver
+                                && logger is not null)
+                            {
+                                LogTypeSerializedUsingReflection(logger, jsonTypeInfo.Type);
+                            }
+                        }
+                    }
+                })
             : JsonTypeInfoResolver.Combine(
                 KubernetesJsonStaticContext.Default,
                 SourceGenerationContext.Default);
