@@ -12,9 +12,15 @@ using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests.Clusters.Runtime;
 
-public abstract class ClusterRuntimeAssertions
+public abstract class ClusterRuntimeAssertions : IDisposable
 {
+    private readonly ServiceProvider _yamlServices = new ServiceCollection()
+        .AddKubeUIKubernetesServices(jsonAllowReflection: false)
+        .BuildServiceProvider();
+
     protected abstract Task<TestCluster> CreateHarnessAsync(KubernetesBackend backend);
+
+    public void Dispose() => _yamlServices.Dispose();
 
     protected async Task InitializationExposesConnectedClusterCore(KubernetesBackend backend)
     {
@@ -594,21 +600,11 @@ public abstract class ClusterRuntimeAssertions
         }
     }
 
-    private static string SerializeYaml(object value)
-    {
-        using var services = new ServiceCollection()
-            .AddKubeUIKubernetesServices(jsonAllowReflection: false)
-            .BuildServiceProvider();
-        return services.GetRequiredService<IKubernetesYamlSerializer>().Serialize(value);
-    }
+    private string SerializeYaml(object value)
+        => _yamlServices.GetRequiredService<IKubernetesYamlSerializer>().Serialize(value);
 
-    private static T DeserializeYaml<T>(string yaml)
-    {
-        using var services = new ServiceCollection()
-            .AddKubeUIKubernetesServices(jsonAllowReflection: false)
-            .BuildServiceProvider();
-        return services.GetRequiredService<IKubernetesYamlSerializer>().Deserialize<T>(yaml);
-    }
+    private T DeserializeYaml<T>(string yaml)
+        => _yamlServices.GetRequiredService<IKubernetesYamlSerializer>().Deserialize<T>(yaml);
 
     protected async Task RootAccessCanICore(KubernetesBackend backend)
     {

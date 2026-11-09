@@ -3,6 +3,7 @@ using k8s;
 using KubeUI.Features.Resources.Infrastructure;
 using KubeUI.Kubernetes.Serialization;
 using YamlDotNet.Core;
+using YamlDotNet.RepresentationModel;
 
 namespace KubeUI.Features.Resources.Yaml;
 
@@ -22,6 +23,7 @@ internal static class YamlDotNetDiagnosticFactory
         }
 
         if (meaningfulException is JsonException jsonException
+            && !IsUnmappedMemberException(jsonException)
             && TryGetJsonValueLocation(yaml, jsonException.Path, out var jsonLocation))
         {
             var field = jsonException.Path?.Split('.', StringSplitOptions.RemoveEmptyEntries).LastOrDefault() ?? "value";
@@ -109,49 +111,148 @@ internal static class YamlDotNetDiagnosticFactory
 
     private static bool TryGetJsonValueLocation(string yaml, string? jsonPath, out YamlDiagnosticLocation location)
     {
-        var field = jsonPath?.Split('.', StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
-        if (string.IsNullOrWhiteSpace(field))
+        if (!TryParseJsonPath(jsonPath, out var path))
         {
             location = default!;
             return false;
         }
 
-        var lines = yaml.ReplaceLineEndings("\n").Split('\n');
-        for (var index = 0; index < lines.Length; index++)
+        try
         {
-            if (!TryGetMappingKey(lines[index], out var key, out _, out var keyColumn)
-                || !string.Equals(key.Trim('"', '\''), field, StringComparison.Ordinal))
+            var stream = new YamlStream();
+            stream.Load(new StringReader(yaml));
+            if (stream.Documents.Count != 1)
             {
+                location = default!;
+                return false;
+            }
+
+            var node = stream.Documents[0].RootNode;
+            foreach (var segment in path)
+            {
+                if (segment.Property is { } property)
+                {
+                    if (node is not YamlMappingNode mapping
+                        || !mapping.Children.TryGetValue(new YamlScalarNode(property), out var child))
+                    {
+                        location = default!;
+                        return false;
+                    }
+
+                    node = child;
+                }
+                else if (node is YamlSequenceNode sequence
+                    && segment.Index >= 0
+                    && segment.Index < sequence.Children.Count)
+                {
+                    node = sequence.Children[segment.Index];
+                }
+                else
+                {
+                    location = default!;
+                    return false;
+                }
+            }
+
+            location = new YamlDiagnosticLocation(
+                (int)Math.Max(1L, node.Start.Line),
+                (int)Math.Max(1L, node.Start.Column),
+                (int)Math.Max(1L, node.End.Line),
+                (int)Math.Max(1L, node.End.Column));
+            return true;
+        }
+        catch (YamlException)
+        {
+            location = default!;
+            return false;
+        }
+    }
+
+    private static bool IsUnmappedMemberException(JsonException exception)
+        => exception.Message.Contains("could not be mapped to any .NET member", StringComparison.OrdinalIgnoreCase);
+
+    private static bool TryParseJsonPath(string? jsonPath, out IReadOnlyList<JsonPathSegment> path)
+    {
+        List<JsonPathSegment> segments = [];
+        if (string.IsNullOrEmpty(jsonPath) || jsonPath[0] != '$')
+        {
+            path = [];
+            return false;
+        }
+
+        var position = 1;
+        while (position < jsonPath.Length)
+        {
+            if (jsonPath[position] == '.')
+            {
+                var start = ++position;
+                while (position < jsonPath.Length && jsonPath[position] is not '.' and not '[')
+                {
+                    position++;
+                }
+
+                if (start == position)
+                {
+                    path = [];
+                    return false;
+                }
+
+                segments.Add(new JsonPathSegment(jsonPath[start..position], -1));
                 continue;
             }
 
-            var separator = lines[index].IndexOf(':', keyColumn - 1);
-            var valueStart = separator + 1;
-            while (valueStart < lines[index].Length && char.IsWhiteSpace(lines[index][valueStart]))
+            if (jsonPath[position] == '[')
             {
-                valueStart++;
-            }
-
-            if (valueStart >= lines[index].Length || lines[index][valueStart] == '#')
-            {
-                location = new YamlDiagnosticLocation(index + 1, keyColumn, index + 1, keyColumn + key.Length);
-            }
-            else
-            {
-                var end = lines[index].Length;
-                while (end > valueStart && char.IsWhiteSpace(lines[index][end - 1]))
+                position++;
+                if (position < jsonPath.Length && jsonPath[position] is '\'' or '"')
                 {
-                    end--;
+                    var quote = jsonPath[position++];
+                    var property = new System.Text.StringBuilder();
+                    while (position < jsonPath.Length && jsonPath[position] != quote)
+                    {
+                        if (jsonPath[position] == '\\' && position + 1 < jsonPath.Length)
+                        {
+                            position++;
+                        }
+
+                        property.Append(jsonPath[position++]);
+                    }
+
+                    if (position >= jsonPath.Length || ++position >= jsonPath.Length || jsonPath[position++] != ']')
+                    {
+                        path = [];
+                        return false;
+                    }
+
+                    segments.Add(new JsonPathSegment(property.ToString(), -1));
+                    continue;
                 }
 
-                location = new YamlDiagnosticLocation(index + 1, valueStart + 1, index + 1, Math.Max(valueStart + 1, end));
+                var start = position;
+                while (position < jsonPath.Length && char.IsAsciiDigit(jsonPath[position]))
+                {
+                    position++;
+                }
+
+                if (start == position
+                    || position >= jsonPath.Length
+                    || jsonPath[position++] != ']'
+                    || !int.TryParse(jsonPath.AsSpan(start, position - start - 1), out var index))
+                {
+                    path = [];
+                    return false;
+                }
+
+                segments.Add(new JsonPathSegment(null, index));
+                continue;
             }
 
-            return true;
+            path = [];
+            return false;
         }
 
-        location = default!;
-        return false;
+        path = segments;
+        return segments.Count > 0;
     }
 
     private static bool TryGetDuplicateKeyLocation(string yaml, long firstKeyLine, out YamlDiagnosticLocation location)
@@ -276,4 +377,6 @@ internal static class YamlDotNetDiagnosticFactory
     }
 
     private sealed record YamlDiagnosticLocation(int StartLine, int StartColumn, int EndLine, int EndColumn);
+
+    private readonly record struct JsonPathSegment(string? Property, int Index);
 }

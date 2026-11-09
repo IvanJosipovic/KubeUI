@@ -57,6 +57,7 @@ public class ClusterManagerTests
 
         yamlSerializer.Verify(serializer => serializer.Deserialize<K8SConfiguration>("fixture contents", false), Times.Once);
         cluster.Status.ShouldBe(ClusterStatus.Errored);
+        cluster.LastError.ShouldContain("Cluster not found for context");
     }
 
     [Fact]

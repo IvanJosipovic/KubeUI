@@ -3407,6 +3407,7 @@ public class ResourceYamlViewModelTests
         diagnostics.Count.ShouldBe(1);
         diagnostics[0].Severity.ShouldBe(YamlDiagnosticSeverity.Error);
         diagnostics[0].Message.ShouldContain("unknownField");
+        diagnostics[0].Message.ShouldNotContain("correct format");
     }
 
     [AvaloniaFact]
@@ -3432,6 +3433,35 @@ public class ResourceYamlViewModelTests
         diagnostics[0].StartColumn.ShouldBeGreaterThan(25);
         diagnostics[0].EndLine.ShouldBe(7);
         diagnostics[0].EndColumn.ShouldBeGreaterThanOrEqualTo(diagnostics[0].StartColumn);
+    }
+
+    [AvaloniaFact]
+    public void YamlSyntaxValidationService_AnchorsNestedSequenceConversionError_ToMatchingValue()
+    {
+        var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+
+        var diagnostics = service.Validate("""
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: temp
+              namespace: default
+            spec:
+              containers:
+                - name: valid
+                  ports:
+                    - containerPort: 8080
+                - name: invalid
+                  ports:
+                    - containerPort: invalid
+            """.ReplaceLineEndings("\n"), cluster.Runtime.ModelCatalog);
+
+        diagnostics.Count.ShouldBe(1);
+        diagnostics[0].Message.ShouldContain("containerPort");
+        diagnostics[0].StartLine.ShouldBe(13);
+        diagnostics[0].StartColumn.ShouldBeGreaterThan(20);
+        diagnostics[0].EndLine.ShouldBe(13);
     }
 
     [AvaloniaFact]

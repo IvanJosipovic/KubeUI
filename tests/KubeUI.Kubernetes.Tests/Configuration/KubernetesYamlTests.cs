@@ -137,8 +137,8 @@ public sealed class KubernetesYamlTests : IDisposable
                 app: kubeui
                 environment: test
               annotations:
-                <<: *labels
                 app: override
+                <<: *labels
             """;
 
         var pod = _serializer.Deserialize<V1Pod>(yaml, strict: true);
