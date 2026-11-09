@@ -26,6 +26,7 @@ namespace KubeUI.App.Tests.Infra;
 
 
 
+
 <<<<<<< TODO: Unmerged change from project 'KubeUI.App.Tests', Before:
 public class TestApp : global::KubeUI.App.App, IDisposable
 =======
