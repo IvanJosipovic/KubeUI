@@ -1436,7 +1436,9 @@ public sealed class PodMetricCellTests
 
         public TaskCompletionSource? QueryGate { get; init; }
 
-        public int Queries { get; private set; }
+        private int _queries;
+
+        public int Queries => Volatile.Read(ref _queries);
 
         public System.Collections.Concurrent.ConcurrentQueue<string> QueryTexts { get; } = new();
 
@@ -1452,7 +1454,7 @@ public sealed class PodMetricCellTests
             int stepSeconds,
             CancellationToken cancellationToken = default)
         {
-            Queries++;
+            Interlocked.Increment(ref _queries);
             QueryTexts.Enqueue(query);
             if (QueryGate is not null)
             {

@@ -202,26 +202,14 @@ internal static class ResourceMetricsCatalog
             return new ResourceMetricsDescriptor([], string.Format(ResourcesLanguageManager.Instance.ResourceMetricsCatalog_NoPodsForWorkload.CurrentValue()!, workloadName));
         }
 
-        // The workload is identified by its label selector rather than by a regex alternation of every
-        // matching pod name. A large deployment would otherwise produce a very large regex that
-        // Prometheus has to evaluate against every series in the cluster on each refresh.
-        var labelSelector = BuildPrometheusLabelSelector(selector);
+        // kube-state-metrics may not expose these Kubernetes labels as kube_pod_labels. Use the
+        // matching Pod names unless label availability has been verified for this Prometheus source.
         var options = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["namespace"] = ns,
-            ["pods"] = ".*",
+            ["pods"] = string.Join("|", matchingPods.Select(pod => Regex.Escape(pod.Name()))),
             ["selector"] = seriesSelector,
         };
-
-        if (!string.IsNullOrWhiteSpace(labelSelector))
-        {
-            options["labelSelector"] = labelSelector;
-        }
-        else
-        {
-            // The selector cannot be expressed as a label match, so fall back to matching pod names.
-            options["pods"] = string.Join("|", matchingPods.Select(pod => Regex.Escape(pod.Name())));
-        }
 
         return new ResourceMetricsDescriptor(
             [

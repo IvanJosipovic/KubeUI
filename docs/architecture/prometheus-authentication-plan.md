@@ -1,11 +1,12 @@
 # Prometheus Authentication — Plan
 
-Status: Phase 1 complete (2026-11-08). Phases 2 and 3 remain planned.
+Status: Phase 1 implementation complete (2026-11-08), except settings presentation for conflicting Basic Auth and custom Authorization configuration, which remains planned. Phases 2 and 3 remain planned.
 
 Progress:
 
 - [x] Agreed on file-backed persistence with a plaintext-secret notice and HTTPS enforcement enabled by default.
 - [x] Add persisted custom headers and Basic Auth settings.
+- [ ] Show a conflict-specific settings message when Basic Auth and a custom Authorization header are both configured.
 - [x] Apply request authentication safely and enforce HTTPS policy.
 - [x] Add settings UI, localization, and regression tests.
 - [x] Build and run focused plus full test suites.
@@ -32,7 +33,7 @@ Verification: `dotnet build KubeUI.slnx --tl:off -clp:ErrorsOnly` succeeded with
 
 - Provide username and password fields; KubeUI constructs the `Authorization: Basic …` header.
 - Mask the password in the UI. Do not require users to Base64-encode credentials themselves.
-- Basic Auth and custom `Authorization` headers are mutually exclusive for a request; surface conflicting configuration clearly.
+- Basic Auth and custom `Authorization` headers are mutually exclusive for a request; requests reject conflicting configuration, while a conflict-specific settings message remains planned.
 
 ### 3. OIDC/OAuth — later phase
 

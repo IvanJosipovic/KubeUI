@@ -71,6 +71,10 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
         => _kubernetesMetricsCollector.GetAllKubernetesNodeMetricsSnapshot();
 
     /// <inheritdoc />
+    public ImmutableArray<PodMetrics> GetCurrentKubernetesPodMetricsSnapshot()
+        => _kubernetesMetricsCollector.GetCurrentKubernetesPodMetricsSnapshot();
+
+    /// <inheritdoc />
     [ObservableProperty]
     public partial bool IsMetricsAvailable { get; set; }
 
@@ -79,13 +83,14 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
     public partial ActiveMetricsBackend ActiveMetricsBackend { get; set; } = ActiveMetricsBackend.None;
 
     /// <inheritdoc />
-    public async Task InitializeAsync(Cluster cluster)
+    public async Task InitializeAsync(Cluster cluster, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(cluster);
 
         await StopAsync().ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
         _cluster = cluster;
-        _lifecycleCancellationTokenSource = new CancellationTokenSource();
+        _lifecycleCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
         var kube = cluster.Client as k8s.Kubernetes;
         if (kube == null)

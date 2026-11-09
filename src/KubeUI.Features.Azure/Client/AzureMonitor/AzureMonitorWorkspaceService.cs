@@ -62,7 +62,7 @@ public sealed class AzureMonitorWorkspaceService : IAzureMonitorWorkspaceService
                 TenantId = ReadClaim(token.Token, "tid"),
             };
         }
-        catch (CredentialUnavailableException)
+        catch (Exception ex) when (ex is CredentialUnavailableException or AuthenticationFailedException)
         {
             _logger.LogDebug("Azure CLI credentials are unavailable. Sign in with Azure CLI to access Azure Monitor workspaces.");
             return new AzureAuthenticationStatus { AzureCliSignedIn = false };
@@ -95,26 +95,23 @@ public sealed class AzureMonitorWorkspaceService : IAzureMonitorWorkspaceService
         var subscription = armClient.GetSubscriptionResource(new ResourceIdentifier($"/subscriptions/{subscriptionId}"));
 
         List<AzureMonitorWorkspaceInfo> workspaces = [];
-        await foreach (var resourceGroup in subscription.GetResourceGroups().GetAllAsync(cancellationToken: cancellationToken).ConfigureAwait(false))
+        await foreach (var workspace in subscription.GetMonitorWorkspaceResourcesAsync(cancellationToken).ConfigureAwait(false))
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            await foreach (var workspace in resourceGroup.GetMonitorWorkspaceResources().GetAllAsync(cancellationToken).ConfigureAwait(false))
+            var endpoint = workspace.Data.Metrics?.PrometheusQueryEndpoint;
+            if (string.IsNullOrWhiteSpace(endpoint))
             {
-                var endpoint = workspace.Data.Metrics?.PrometheusQueryEndpoint;
-                if (string.IsNullOrWhiteSpace(endpoint))
-                {
-                    continue;
-                }
-
-                workspaces.Add(new AzureMonitorWorkspaceInfo
-                {
-                    ResourceId = workspace.Id.ToString(),
-                    Name = workspace.Data.Name,
-                    Location = workspace.Data.Location.ToString(),
-                    QueryEndpoint = endpoint,
-                });
+                continue;
             }
+
+            workspaces.Add(new AzureMonitorWorkspaceInfo
+            {
+                ResourceId = workspace.Id.ToString(),
+                Name = workspace.Data.Name,
+                Location = workspace.Data.Location.ToString(),
+                QueryEndpoint = endpoint,
+            });
         }
 
         _logger.LogInformation(

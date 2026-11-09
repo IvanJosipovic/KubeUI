@@ -273,10 +273,13 @@ public sealed partial class PrometheusQueryClient
     /// <returns>The base address including the configured path prefix.</returns>
     private static Uri BuildBaseAddress(ResolvedPrometheusEndpoint endpoint)
     {
-        var builder = new UriBuilder(endpoint.DirectUrl!)
-        {
-            Path = string.IsNullOrEmpty(endpoint.PathPrefix) ? "/" : endpoint.PathPrefix.TrimEnd('/') + "/",
-        };
+        var builder = new UriBuilder(endpoint.DirectUrl!);
+        var endpointPath = builder.Path.TrimEnd('/');
+        var pathPrefix = endpoint.PathPrefix?.Trim('/');
+        var combinedPath = string.IsNullOrEmpty(pathPrefix)
+            ? endpointPath
+            : string.Concat(endpointPath, "/", pathPrefix);
+        builder.Path = combinedPath.TrimEnd('/') + "/";
 
         return builder.Uri;
     }

@@ -26,10 +26,13 @@ internal sealed class NullMetricsService : ObservableObject, IMetricsService
     public ImmutableArray<NodeMetrics> GetAllKubernetesNodeMetricsSnapshot() =>
         ImmutableArray<NodeMetrics>.Empty;
 
-    public Task<MetricResultSet> QueryPrometheusAsync(MetricRequest request, CancellationToken cancellationToken = default) =>
-        Task.FromException<MetricResultSet>(new InvalidOperationException("Metrics service is not registered."));
+    public ImmutableArray<PodMetrics> GetCurrentKubernetesPodMetricsSnapshot() =>
+        ImmutableArray<PodMetrics>.Empty;
 
-    public Task InitializeAsync(Cluster cluster) => Task.CompletedTask;
+    public Task<MetricResultSet> QueryPrometheusAsync(MetricRequest request, CancellationToken cancellationToken = default) =>
+        Task.FromResult(MetricResultSet.BackendUnavailableResult);
+
+    public Task InitializeAsync(Cluster cluster, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
     public Task StopAsync() => Task.CompletedTask;
 

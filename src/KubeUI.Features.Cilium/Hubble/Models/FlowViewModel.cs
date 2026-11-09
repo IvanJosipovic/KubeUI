@@ -117,6 +117,7 @@ public sealed partial class FlowViewModel : ObservableObject
 
     public FlowCacheKey CacheKey => new(string.IsNullOrWhiteSpace(Uuid) ? _fallbackCacheIdentity : Uuid);
 
+    [Obsolete]
     public void UpdateFrom(Pb.Flow flow)
     {
         if (flow.Time != null)
@@ -242,6 +243,10 @@ public sealed partial class FlowViewModel : ObservableObject
         if (flow.L7 != null)
         {
             L7Type = flow.L7.Type;
+            if (flow.L7.Kafka != null)
+            {
+                ApplicationProtocol = "Kafka";
+            }
             if (flow.L7.Dns != null)
             {
                 ApplicationProtocol = "DNS";

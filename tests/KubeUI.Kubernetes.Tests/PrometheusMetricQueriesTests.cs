@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Net;
 using k8s;
 using k8s.Models;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,6 +15,25 @@ namespace KubeUI.Kubernetes.Tests;
 /// </summary>
 public sealed class PrometheusMetricQueriesTests
 {
+    [Theory]
+    [InlineData(HttpStatusCode.BadRequest, false)]
+    [InlineData(HttpStatusCode.UnprocessableEntity, false)]
+    [InlineData(HttpStatusCode.RequestTimeout, true)]
+    [InlineData(HttpStatusCode.TooManyRequests, true)]
+    [InlineData(HttpStatusCode.ServiceUnavailable, true)]
+    public void Retry_predicate_only_handles_transient_http_statuses(HttpStatusCode statusCode, bool expected)
+    {
+        PrometheusMetricQueries.ShouldRetry(new HttpRequestException("request failed", null, statusCode)).ShouldBe(expected);
+    }
+
+    [Fact]
+    public void Retry_predicate_handles_transport_failures_and_timeouts()
+    {
+        PrometheusMetricQueries.ShouldRetry(new HttpRequestException("connection failed")).ShouldBeTrue();
+        PrometheusMetricQueries.ShouldRetry(new Polly.Timeout.TimeoutRejectedException()).ShouldBeTrue();
+        PrometheusMetricQueries.ShouldRetry(new InvalidOperationException("bad query")).ShouldBeFalse();
+    }
+
     [Fact]
     public async Task RequestAsync_caches_a_successful_query_and_reuses_it()
     {
@@ -307,7 +327,9 @@ public sealed class PrometheusMetricQueriesTests
         private readonly Queue<PrometheusClientQueryRangeResponse> _responses = new();
         private readonly TaskCompletionSource _release = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public int QueryCalls { get; private set; }
+        private int _queryCalls;
+
+        public int QueryCalls => Volatile.Read(ref _queryCalls);
 
         public DateTimeOffset? LastStart { get; private set; }
 
@@ -339,7 +361,7 @@ public sealed class PrometheusMetricQueriesTests
             int stepSeconds,
             CancellationToken cancellationToken = default)
         {
-            QueryCalls++;
+            Interlocked.Increment(ref _queryCalls);
             LastStart = start;
             LastEnd = end;
             LastStepSeconds = stepSeconds;
@@ -408,11 +430,14 @@ public sealed class PrometheusMetricQueriesTests
         public ImmutableArray<NodeMetrics> GetAllKubernetesNodeMetricsSnapshot()
             => ImmutableArray<NodeMetrics>.Empty;
 
+        public ImmutableArray<PodMetrics> GetCurrentKubernetesPodMetricsSnapshot()
+            => ImmutableArray<PodMetrics>.Empty;
+
         public bool IsMetricsAvailable => false;
 
         public ActiveMetricsBackend ActiveMetricsBackend => ActiveMetricsBackend.None;
 
-        public Task InitializeAsync(Cluster cluster) => Task.CompletedTask;
+        public Task InitializeAsync(Cluster cluster, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
         public Task StopAsync() => Task.CompletedTask;
 

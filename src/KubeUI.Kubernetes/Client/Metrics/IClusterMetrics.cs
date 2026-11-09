@@ -33,6 +33,9 @@ public interface IClusterMetrics : INotifyPropertyChanged
     /// <summary>Gets all retained Kubernetes Metrics Server Pod samples.</summary>
     ImmutableArray<PodMetrics> GetAllKubernetesPodMetricsSnapshot();
 
+    /// <summary>Gets the latest Pod samples returned by the most recent Metrics Server response.</summary>
+    ImmutableArray<PodMetrics> GetCurrentKubernetesPodMetricsSnapshot();
+
     /// <summary>Gets all retained Kubernetes Metrics Server Node samples.</summary>
     ImmutableArray<NodeMetrics> GetAllKubernetesNodeMetricsSnapshot();
 

@@ -20,6 +20,7 @@ internal sealed class KubernetesMetricsCollector(
     private ImmutableDictionary<string, ImmutableArray<NodeMetrics>> _nodeMetricsByResource =
         ImmutableDictionary.Create<string, ImmutableArray<NodeMetrics>>(StringComparer.Ordinal);
     private ImmutableArray<PodMetrics> _allPodMetrics = ImmutableArray<PodMetrics>.Empty;
+    private ImmutableArray<PodMetrics> _currentPodMetrics = ImmutableArray<PodMetrics>.Empty;
     private ImmutableArray<NodeMetrics> _allNodeMetrics = ImmutableArray<NodeMetrics>.Empty;
     private readonly Lock _snapshotLock = new();
     private int _disposed;
@@ -37,27 +38,30 @@ internal sealed class KubernetesMetricsCollector(
         }
 
         logger.LogInformation("Kubernetes Metrics Server metrics activated for cluster {Name}.", cluster.Name);
-        _cancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        _timer = new PeriodicTimer(TimeSpan.FromSeconds(30));
+        var cancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var timer = new PeriodicTimer(TimeSpan.FromSeconds(30));
+        _cancellation = cancellation;
+        _timer = timer;
+        var token = cancellation.Token;
         Interlocked.Increment(ref _generation);
-        await SyncAsync(cluster, _cancellation.Token).ConfigureAwait(false);
+        await SyncAsync(cluster, token).ConfigureAwait(false);
         _refreshTask = Task.Run(async () =>
         {
             try
             {
-                while (await _timer.WaitForNextTickAsync(_cancellation.Token).ConfigureAwait(false))
+                while (await timer.WaitForNextTickAsync(token).ConfigureAwait(false))
                 {
-                    await SyncAsync(cluster, _cancellation.Token).ConfigureAwait(false);
+                    await SyncAsync(cluster, token).ConfigureAwait(false);
                 }
             }
-            catch (OperationCanceledException) when (_cancellation.IsCancellationRequested)
+            catch (OperationCanceledException) when (token.IsCancellationRequested)
             {
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Kubernetes Metrics Server refresh loop failed for cluster {Name}.", cluster.Name);
             }
-        }, _cancellation.Token);
+        }, token);
         return true;
     }
 
@@ -154,6 +158,14 @@ internal sealed class KubernetesMetricsCollector(
         }
     }
 
+    public ImmutableArray<PodMetrics> GetCurrentKubernetesPodMetricsSnapshot()
+    {
+        lock (_snapshotLock)
+        {
+            return _currentPodMetrics;
+        }
+    }
+
     public void RebuildSnapshotIndexes()
     {
         var podMetricsByResource = ImmutableDictionary.CreateBuilder<string, ImmutableArray<PodMetrics>>(StringComparer.Ordinal);
@@ -222,14 +234,12 @@ internal sealed class KubernetesMetricsCollector(
             {
                 podMetrics.Clear();
                 nodeMetrics.Clear();
+                RebuildSnapshotIndexes();
+                lock (_snapshotLock)
+                {
+                    _currentPodMetrics = ImmutableArray<PodMetrics>.Empty;
+                }
             });
-            Volatile.Write(ref _podMetricsByResource, ImmutableDictionary.Create<string, ImmutableArray<PodMetrics>>(StringComparer.Ordinal));
-            Volatile.Write(ref _nodeMetricsByResource, ImmutableDictionary.Create<string, ImmutableArray<NodeMetrics>>(StringComparer.Ordinal));
-            lock (_snapshotLock)
-            {
-                _allPodMetrics = ImmutableArray<PodMetrics>.Empty;
-                _allNodeMetrics = ImmutableArray<NodeMetrics>.Empty;
-            }
         }
         catch (ObjectDisposedException)
         {
@@ -272,11 +282,20 @@ internal sealed class KubernetesMetricsCollector(
             // awaited so that a sync never blocks on a dispatcher that might not be pumping.
             _ = dispatcher.Scheduler.Schedule(() =>
             {
+                if (generation != Volatile.Read(ref _generation))
+                {
+                    return;
+                }
+
                 PruneExpired(nodeMetrics, static metric => metric.Timestamp);
                 PruneExpired(podMetrics, static metric => metric.Timestamp);
                 AppendRecent(nodeMetrics, nodeList.Items.OfType<NodeMetrics>(), static metric => metric.Name() ?? string.Empty, static metric => metric.Timestamp);
                 AppendRecent(podMetrics, podList.Items.OfType<PodMetrics>(), static metric => string.Concat(metric.Namespace(), "/", metric.Name()), static metric => metric.Timestamp);
                 RebuildSnapshotIndexes();
+                lock (_snapshotLock)
+                {
+                    _currentPodMetrics = CreateCurrentPodMetricsSnapshot(podList.Items.OfType<PodMetrics>());
+                }
             });
         }
         catch (OperationCanceledException) { }
@@ -288,6 +307,27 @@ internal sealed class KubernetesMetricsCollector(
                 _syncLock.Release();
             }
         }
+    }
+
+    private static ImmutableArray<PodMetrics> CreateCurrentPodMetricsSnapshot(IEnumerable<PodMetrics> metrics)
+    {
+        Dictionary<(string? Namespace, string? Name), PodMetrics> latestByPod = [];
+        foreach (var metric in metrics)
+        {
+            if (!metric.Timestamp.HasValue)
+            {
+                continue;
+            }
+
+            var key = (metric.Namespace(), metric.Name());
+            if (!latestByPod.TryGetValue(key, out var previous)
+                || previous.Timestamp!.Value.ToUniversalTime() <= metric.Timestamp.Value.ToUniversalTime())
+            {
+                latestByPod[key] = metric;
+            }
+        }
+
+        return latestByPod.Values.ToImmutableArray();
     }
 
     private async Task<bool> CanUseMetricsServerAsync(Cluster cluster, k8s.Kubernetes kube, CancellationToken cancellationToken)

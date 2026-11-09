@@ -36,6 +36,17 @@ public sealed class AzureMonitorWorkspaceServiceTests
     }
 
     [Fact]
+    public async Task GetAuthenticationStatusAsync_reports_failed_sign_in_as_signed_out()
+    {
+        using var service = new AzureMonitorWorkspaceService(
+            new FakeTokenCredential("unused", new AuthenticationFailedException("Azure CLI session expired.")));
+
+        var status = await service.GetAuthenticationStatusAsync(TestContext.Current.CancellationToken);
+
+        status.AzureCliSignedIn.ShouldBeFalse();
+    }
+
+    [Fact]
     public async Task GetPrometheusAccessTokenAsync_requests_prometheus_audience()
     {
         var credential = new FakeTokenCredential("prometheus-token");

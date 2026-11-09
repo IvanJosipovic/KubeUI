@@ -1,6 +1,7 @@
 using k8s.Models;
 using KubeUI.Controls.Threading;
 using KubeUI.Features.Clusters.Workspace;
+using KubeUI.Features.Resources.Metrics;
 using KubeUI.Features.Resources.Metrics.Controls;
 using KubeUI.Kubernetes;
 
@@ -89,27 +90,7 @@ public abstract class NodeMetricsHistoryCellBase : MetricsHistoryCellBase<V1Node
             StringComparison.Ordinal);
 
     private static string GetNodeInstancePattern(V1Node node)
-    {
-        List<string> names = [];
-        if (!string.IsNullOrWhiteSpace(node.Name()))
-        {
-            names.Add(node.Name());
-        }
-
-        if (node.Status?.Addresses != null)
-        {
-            foreach (var address in node.Status.Addresses)
-            {
-                if (!string.IsNullOrWhiteSpace(address.Address)
-                    && !names.Contains(address.Address, StringComparer.OrdinalIgnoreCase))
-                {
-                    names.Add(address.Address);
-                }
-            }
-        }
-
-        return string.Join("|", names.Select(System.Text.RegularExpressions.Regex.Escape));
-    }
+        => ResourceMetricsCatalog.GetNodeInstancePattern(node);
 
     protected override double? GetMetricLimit(V1Node node)
     {

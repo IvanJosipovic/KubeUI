@@ -37,7 +37,7 @@ public abstract class PrometheusProviderBase : IPrometheusProvider
             "cpuUsage" => $$"""sum(rate(node_cpu_seconds_total{instance=~"({{instanceSelector}})(:[0-9]+)?",mode=~"user|system"}[{{GetRateAccuracy(options)}}])) by (instance)""",
             "cpuCapacity" => $$"""sum(kube_node_status_capacity{node=~"{{nodeSelector}}",resource="cpu"}) by (node)""",
             "cpuAllocatableCapacity" => $$"""sum(kube_node_status_allocatable{node=~"{{nodeSelector}}",resource="cpu"}) by (node)""",
-            "memoryUsage" => $$"""sum((node_memory_MemTotal_bytes{instance=~"{{instanceSelector}}"} - (node_memory_MemFree_bytes{instance=~"{{instanceSelector}}"} + node_memory_Buffers_bytes{instance=~"{{instanceSelector}}"} + node_memory_Cached_bytes{instance=~"{{instanceSelector}}"}))) by (instance)""",
+            "memoryUsage" => $$"""sum((node_memory_MemTotal_bytes{instance=~"({{instanceSelector}})(:[0-9]+)?"} - (node_memory_MemFree_bytes{instance=~"({{instanceSelector}})(:[0-9]+)?"} + node_memory_Buffers_bytes{instance=~"({{instanceSelector}})(:[0-9]+)?"} + node_memory_Cached_bytes{instance=~"({{instanceSelector}})(:[0-9]+)?"}))) by (instance)""",
             "workloadMemoryUsage" => """sum(container_memory_working_set_bytes{image!="",pod!=""}) by (node)""",
             "memoryCapacity" => $$"""sum(kube_node_status_capacity{node=~"{{nodeSelector}}",resource="memory"}) by (node)""",
             "memoryAllocatableCapacity" => $$"""sum(kube_node_status_allocatable{node=~"{{nodeSelector}}",resource="memory"}) by (node)""",
@@ -45,7 +45,7 @@ public abstract class PrometheusProviderBase : IPrometheusProvider
             "podCapacity" => """sum(kube_node_status_capacity{resource="pods"}) by (node)""",
             "podAllocatableCapacity" => """sum(kube_node_status_allocatable{resource="pods"}) by (node)""",
             "fsSize" => $$"""sum(node_filesystem_size_bytes{instance=~"({{instanceSelector}})(:[0-9]+)?",mountpoint=~"{{mountpointSelector}}"}) by (instance)""",
-            "fsUsage" => $$"""sum((node_filesystem_size_bytes{instance=~"({{instanceSelector}})(:[0-9]+)?",mountpoint=~"{{mountpointSelector}}"} - node_filesystem_avail_bytes{instance=~"({{instanceSelector}})(:[0-9]+)?",mountpoint=~"{{mountpointSelector}}"}) by (instance)""",
+            "fsUsage" => $$"""sum((node_filesystem_size_bytes{instance=~"({{instanceSelector}})(:[0-9]+)?",mountpoint=~"{{mountpointSelector}}"} - node_filesystem_avail_bytes{instance=~"({{instanceSelector}})(:[0-9]+)?",mountpoint=~"{{mountpointSelector}}"})) by (instance)""",
             _ => throw new InvalidOperationException($"Unsupported node query '{queryName}'."),
         };
     }

@@ -90,7 +90,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
             Key = "cpu",
             Name = ResourcesLanguageManager.Instance.V1PodConfig_CPU.CurrentValue()!,
             CustomControl = typeof(MetricsHistoryCPUCellView),
-            Field = x => Cluster.Runtime.Metrics.GetKubernetesPodMetricsSnapshot(x.Namespace(), x.Name() ?? string.Empty).LastOrDefault()?.Containers.Sum(z => z.Usage["cpu"]) ?? 0,
+            Field = x => GetLatestPodMetricUsage(Cluster, x, "cpu"),
             Width = 80,
             WidthMode = DynamicTableViewWidthMode.Pixel
         });
@@ -99,12 +99,43 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
             Key = "memory",
             Name = ResourcesLanguageManager.Instance.V1PodConfig_Memory.CurrentValue()!,
             CustomControl = typeof(MetricsHistoryMemoryCellView),
-            Field = x => Cluster.Runtime.Metrics.GetKubernetesPodMetricsSnapshot(x.Namespace(), x.Name() ?? string.Empty).LastOrDefault()?.Containers.Sum(z => z.Usage["memory"]) ?? 0,
+            Field = x => GetLatestPodMetricUsage(Cluster, x, "memory"),
             Width = 80,
             WidthMode = DynamicTableViewWidthMode.Pixel
         });
 
         return cols;
+    }
+
+    private static decimal GetLatestPodMetricUsage(ClusterWorkspace cluster, V1Pod pod, string resourceName)
+    {
+        var metrics = cluster.Runtime.Metrics.GetKubernetesPodMetricsSnapshot(pod.Namespace(), pod.Name() ?? string.Empty);
+        PodMetrics? latestMetric = null;
+        foreach (var metric in metrics)
+        {
+            if (metric.Timestamp.HasValue
+                && (latestMetric?.Timestamp is not { } previousTimestamp
+                    || metric.Timestamp.Value.ToUniversalTime() > previousTimestamp.ToUniversalTime()))
+            {
+                latestMetric = metric;
+            }
+        }
+
+        if (latestMetric?.Containers is not { } containers)
+        {
+            return 0m;
+        }
+
+        var total = 0m;
+        foreach (var container in containers)
+        {
+            if (container.Usage?.TryGetValue(resourceName, out var usage) == true)
+            {
+                total += usage.ToDecimal();
+            }
+        }
+
+        return total;
     }
 
     protected override IEnumerable<MenuItemViewModel> CreateCustomMenuItems(IEnumerable<V1Pod>? selectedItems)

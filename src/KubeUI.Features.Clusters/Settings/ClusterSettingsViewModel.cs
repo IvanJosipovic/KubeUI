@@ -212,6 +212,8 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
             }
 
             ClusterSettings.MetricsSettings.AzureMonitorSubscriptionId = value.SubscriptionId;
+            ClusterSettings.MetricsSettings.AzureMonitorWorkspaceId = null;
+            ClusterSettings.MetricsSettings.AzureMonitorQueryEndpoint = null;
             OnPropertyChanged();
             _ = LoadAzureMonitorWorkspacesAsync(value);
         }

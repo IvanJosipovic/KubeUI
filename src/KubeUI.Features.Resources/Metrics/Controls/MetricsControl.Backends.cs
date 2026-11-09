@@ -267,11 +267,9 @@ internal static class MetricsControlMetricsServerBackend
         string containerName)
     {
         var samples = new List<MetricsServerSamplePoint>();
-        foreach (var metric in cluster.Runtime.Metrics.GetAllKubernetesPodMetricsSnapshot())
+        foreach (var metric in cluster.Runtime.Metrics.GetKubernetesPodMetricsSnapshot(pod.Namespace(), pod.Name() ?? string.Empty))
         {
-            if (!string.Equals(metric.Name(), pod.Name(), StringComparison.Ordinal)
-                || !string.Equals(metric.Namespace(), pod.Namespace(), StringComparison.Ordinal)
-                || !metric.Timestamp.HasValue)
+            if (!metric.Timestamp.HasValue)
             {
                 continue;
             }
@@ -338,32 +336,34 @@ internal static class MetricsControlMetricsServerBackend
     private static List<MetricsServerSamplePoint> CreatePodMetricsServerSamples(ClusterWorkspace cluster, IReadOnlyList<V1Pod> pods)
     {
         HashSet<(string? Namespace, string? Name)> selectedPods = [];
+        Dictionary<DateTime, (double Cpu, double Memory)> aggregates = [];
         foreach (var pod in pods)
         {
-            selectedPods.Add((pod.Namespace(), pod.Name()));
-        }
-
-        Dictionary<DateTime, (double Cpu, double Memory)> aggregates = [];
-        foreach (var metric in cluster.Runtime.Metrics.GetAllKubernetesPodMetricsSnapshot())
-        {
-            if (!metric.Timestamp.HasValue
-                || !selectedPods.Contains((metric.Namespace(), metric.Name())))
+            if (!selectedPods.Add((pod.Namespace(), pod.Name())))
             {
                 continue;
             }
 
-            var timestamp = metric.Timestamp.Value.ToUniversalTime();
-            aggregates.TryGetValue(timestamp, out var aggregate);
-            if (metric.Containers != null)
+            foreach (var metric in cluster.Runtime.Metrics.GetKubernetesPodMetricsSnapshot(pod.Namespace(), pod.Name() ?? string.Empty))
             {
-                foreach (var containerMetric in metric.Containers)
+                if (!metric.Timestamp.HasValue)
                 {
-                    aggregate.Cpu += GetContainerCpu(containerMetric.Usage);
-                    aggregate.Memory += GetContainerMemory(containerMetric.Usage);
+                    continue;
                 }
-            }
 
-            aggregates[timestamp] = aggregate;
+                var timestamp = metric.Timestamp.Value.ToUniversalTime();
+                aggregates.TryGetValue(timestamp, out var aggregate);
+                if (metric.Containers != null)
+                {
+                    foreach (var containerMetric in metric.Containers)
+                    {
+                        aggregate.Cpu += GetContainerCpu(containerMetric.Usage);
+                        aggregate.Memory += GetContainerMemory(containerMetric.Usage);
+                    }
+                }
+
+                aggregates[timestamp] = aggregate;
+            }
         }
 
         var samples = new List<MetricsServerSamplePoint>();

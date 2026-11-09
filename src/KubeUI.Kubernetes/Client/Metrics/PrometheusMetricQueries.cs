@@ -23,12 +23,23 @@ internal sealed class PrometheusMetricQueries(
         Delay = s_retryBaseDelay,
         BackoffType = DelayBackoffType.Exponential,
         UseJitter = true,
+        ShouldHandle = static args => ValueTask.FromResult(ShouldRetry(args.Outcome.Exception)),
     })
     .AddTimeout(new Polly.Timeout.TimeoutStrategyOptions { Timeout = s_requestTimeout })
     .Build();
     private readonly Lock _sync = new();
     private readonly Dictionary<string, CachedSeries> _queryCache = new(StringComparer.Ordinal);
     private readonly Dictionary<string, InflightRequest> _inflight = new(StringComparer.Ordinal);
+
+    internal static bool ShouldRetry(Exception? exception) => exception switch
+    {
+        HttpRequestException { StatusCode: { } status } =>
+            ((int)status is >= 500 and <= 599)
+            || status is System.Net.HttpStatusCode.RequestTimeout or System.Net.HttpStatusCode.TooManyRequests,
+        HttpRequestException => true,
+        Polly.Timeout.TimeoutRejectedException => true,
+        _ => false,
+    };
 
     public async Task<MetricResultSet> RequestAsync(
         Cluster cluster,

@@ -33,6 +33,7 @@ public sealed class MetricsServiceTests
         cluster.Metrics.KubernetesNodeMetrics.ShouldBeEmpty();
         cluster.Metrics.GetAllKubernetesPodMetricsSnapshot().ShouldBeEmpty();
         cluster.Metrics.GetAllKubernetesNodeMetricsSnapshot().ShouldBeEmpty();
+        (await cluster.Metrics.QueryPrometheusAsync(CreateRequest())).ShouldBe(MetricResultSet.BackendUnavailableResult);
     }
 
     [Fact]
@@ -216,11 +217,18 @@ public sealed class MetricsServiceTests
         service.GetKubernetesPodMetricsSnapshot("default", "missing-pod").ShouldBeEmpty();
         service.GetKubernetesNodeMetricsSnapshot("node-1").Select(static metric => metric.Timestamp).ShouldBe([retained, latest]);
         service.GetKubernetesNodeMetricsSnapshot("missing-node").ShouldBeEmpty();
+        service.GetCurrentKubernetesPodMetricsSnapshot().ShouldHaveSingleItem()
+            .ShouldSatisfyAllConditions(
+                metric => metric.Name().ShouldBe("pod-1"),
+                metric => metric.Namespace().ShouldBe("default"),
+                metric => metric.Timestamp.ShouldBe(latest),
+                metric => metric.Containers.ShouldHaveSingleItem().Usage["cpu"].ToDecimal().ShouldBe(0.125m));
 
         await service.StopAsync();
 
         service.GetKubernetesPodMetricsSnapshot("default", "pod-1").ShouldBeEmpty();
         service.GetKubernetesNodeMetricsSnapshot("node-1").ShouldBeEmpty();
+        service.GetCurrentKubernetesPodMetricsSnapshot().ShouldBeEmpty();
     }
 
     [Fact]
@@ -747,7 +755,9 @@ public sealed class MetricsServiceTests
 
         public int PrepareCalls { get; private set; }
 
-        public int QueryCalls { get; private set; }
+        private int _queryCalls;
+
+        public int QueryCalls => Volatile.Read(ref _queryCalls);
 
         public int ResetCalls { get; private set; }
 
@@ -782,7 +792,7 @@ public sealed class MetricsServiceTests
             int stepSeconds,
             CancellationToken cancellationToken = default)
         {
-            QueryCalls++;
+            Interlocked.Increment(ref _queryCalls);
 
             QueryStarted.TrySetResult();
             if (WaitForRelease)

@@ -38,8 +38,26 @@ public sealed class PrometheusProviderQueryTests
         query.ShouldContain($"{metricName}{{instance=~");
         query.ShouldContain("mountpoint=~\"^/$\"");
         query.ShouldContain(") by (instance)");
+        if (queryName == "fsUsage")
+        {
+            query.ShouldEndWith("})) by (instance)");
+        }
         query.ShouldNotContain("kube_pod_info");
         query.ShouldNotContain("on (pod");
+    }
+
+    [Fact]
+    public void BuildNodeMemoryUsageQuery_matches_node_exporter_instance_port()
+    {
+        var provider = new ExternalPrometheusProvider();
+        IReadOnlyDictionary<string, string> options = new Dictionary<string, string>
+        {
+            ["instance"] = "10\\.0\\.0\\.1",
+        };
+
+        var query = provider.BuildQuery(MetricCategory.Nodes, "memoryUsage", options);
+
+        query.Split("instance=~\"(10\\\\.0\\\\.0\\\\.1)(:[0-9]+)?\"", StringSplitOptions.None).Length.ShouldBe(5);
     }
 
     [Fact]

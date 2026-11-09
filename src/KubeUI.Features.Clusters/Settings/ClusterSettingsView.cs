@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
+using Avalonia.Data;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using KubeUI.Controls.Presentation;
 using KubeUI.Foundation.Styles;
@@ -10,14 +11,6 @@ namespace KubeUI.Features.Clusters.Settings;
 
 public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
 {
-    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
-    {
-        // The view model subscribes to the cluster runtime and to the persisted settings. Releasing it
-        // here prevents the view model from outliving the settings document.
-        (DataContext as IDisposable)?.Dispose();
-        base.OnDetachedFromVisualTree(e);
-    }
-
     protected override object Build(ClusterSettingsViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);
@@ -123,7 +116,7 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
     {
         return new StackPanel()
             .Children(
-                CreateHeading(ClustersLanguageManager.Instance.ClusterSettingsView_MetricsHeading.CurrentValue()),
+                CreateHeading(ClustersLanguageManager.Instance.ClusterSettingsView_MetricsHeading.ToBinding()),
                 CreateMetricsServiceRow(vm),
                 CreateActiveMetricsServiceRow(vm),
                 CreatePrometheusProviderRow(vm),
@@ -137,7 +130,7 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
                 CreatePrometheusAuthenticationSettings(vm));
     }
 
-    private static Border CreateHeading(string text)
+    private static Border CreateHeading(BindingBase text)
     {
         return new Border()
             .MinHeight(28)
@@ -156,10 +149,10 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
     {
         return new Grid()
             .Cols("*,2*")
-            .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_MetricsServiceTooltip.CurrentValue())
+            .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_MetricsServiceTooltip.ToBinding())
             .Children(
                 new Label()
-                    .Content(ClustersLanguageManager.Instance.ClusterSettingsView_MetricsServiceLabel.CurrentValue())
+                    .Content(ClustersLanguageManager.Instance.ClusterSettingsView_MetricsServiceLabel.ToBinding())
                     .Col(0),
                 new ComboBox()
                     .Col(1)
@@ -173,10 +166,10 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
         return new Grid()
             .Cols("*,2*")
             .IsVisible(vm, x => x.ShowPrometheusSettings)
-            .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusProviderTooltip.CurrentValue())
+            .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusProviderTooltip.ToBinding())
             .Children(
                 new Label()
-                    .Content(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusProviderLabel.CurrentValue())
+                    .Content(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusProviderLabel.ToBinding())
                     .Col(0),
                 new ComboBox()
                     .Col(1)
@@ -189,10 +182,10 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
     {
         return new Grid()
             .Cols("*,2*")
-            .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_ActiveMetricsServiceTooltip.CurrentValue())
+            .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_ActiveMetricsServiceTooltip.ToBinding())
             .Children(
                 new Label()
-                    .Content(ClustersLanguageManager.Instance.ClusterSettingsView_ActiveMetricsServiceLabel.CurrentValue())
+                    .Content(ClustersLanguageManager.Instance.ClusterSettingsView_ActiveMetricsServiceLabel.ToBinding())
                     .Col(0),
                 new TextBlock()
                     .Col(1)
@@ -210,7 +203,7 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
                     .Cols("*,2*")
                     .Children(
                         new Label()
-                            .Content(ClustersLanguageManager.Instance.ClusterSettingsView_AzureMonitorSubscriptionLabel.CurrentValue())
+                            .Content(ClustersLanguageManager.Instance.ClusterSettingsView_AzureMonitorSubscriptionLabel.ToBinding())
                             .Col(0),
                         new ComboBox()
                             .Col(1)
@@ -221,7 +214,7 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
                     .Cols("*,2*")
                     .Children(
                         new Label()
-                            .Content(ClustersLanguageManager.Instance.ClusterSettingsView_AzureMonitorWorkspaceLabel.CurrentValue())
+                            .Content(ClustersLanguageManager.Instance.ClusterSettingsView_AzureMonitorWorkspaceLabel.ToBinding())
                             .Col(0),
                         new ComboBox()
                             .Col(1)
@@ -242,7 +235,7 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
                         new Button()
                             .Col(1)
                             .HorizontalAlignment(HorizontalAlignment.Left)
-                            .Content(ClustersLanguageManager.Instance.ClusterSettingsView_AzureMonitorRefresh.CurrentValue())
+                            .Content(ClustersLanguageManager.Instance.ClusterSettingsView_AzureMonitorRefresh.ToBinding())
                             .Command(vm, x => x.RefreshAzureMonitorCommand)
                             .IsEnabled(vm, x => !x.IsAzureMonitorBusy)));
     }
@@ -251,8 +244,8 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
     {
         return CreatePrometheusTextRow(
             vm,
-            ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusServiceNameLabel.CurrentValue(),
-            ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusServiceNameTooltip.CurrentValue(),
+            ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusServiceNameLabel.ToBinding(),
+            ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusServiceNameTooltip.ToBinding(),
             x => x.ClusterSettings.MetricsSettings.PrometheusServiceName,
             x => x.ShowPrometheusServiceSettings);
     }
@@ -261,8 +254,8 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
     {
         return CreatePrometheusTextRow(
             vm,
-            ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusServiceNamespaceLabel.CurrentValue(),
-            ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusServiceNamespaceTooltip.CurrentValue(),
+            ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusServiceNamespaceLabel.ToBinding(),
+            ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusServiceNamespaceTooltip.ToBinding(),
             x => x.ClusterSettings.MetricsSettings.PrometheusServiceNamespace,
             x => x.ShowPrometheusServiceSettings);
     }
@@ -271,8 +264,8 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
     {
         return CreatePrometheusTextRow(
             vm,
-            ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusServicePortLabel.CurrentValue(),
-            ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusServicePortTooltip.CurrentValue(),
+            ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusServicePortLabel.ToBinding(),
+            ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusServicePortTooltip.ToBinding(),
             x => x.ClusterSettings.MetricsSettings.PrometheusServicePort,
             x => x.ShowPrometheusServiceSettings);
     }
@@ -281,8 +274,8 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
     {
         return CreatePrometheusTextRow(
             vm,
-            ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusDirectUrlLabel.CurrentValue(),
-            ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusDirectUrlTooltip.CurrentValue(),
+            ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusDirectUrlLabel.ToBinding(),
+            ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusDirectUrlTooltip.ToBinding(),
             x => x.ClusterSettings.MetricsSettings.PrometheusDirectUrl,
             x => x.ShowPrometheusDirectUrlSettings);
     }
@@ -291,8 +284,8 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
     {
         return CreatePrometheusTextRow(
             vm,
-            ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusPathPrefixLabel.CurrentValue(),
-            ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusPathPrefixTooltip.CurrentValue(),
+            ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusPathPrefixLabel.ToBinding(),
+            ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusPathPrefixTooltip.ToBinding(),
             x => x.ClusterSettings.MetricsSettings.PrometheusPathPrefix,
             x => x.ShowPrometheusCustomTransportSettings);
     }
@@ -308,7 +301,7 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
                     .TextWrapping(TextWrapping.Wrap),
                 new TextBlock()
                     .Text(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusCustomHeadersLabel.ToBinding())
-                    .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusCustomHeadersTooltip.CurrentValue()),
+                    .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusCustomHeadersTooltip.ToBinding()),
                 new ItemsControl()
                     .ItemsSource(vm, x => x.ClusterSettings.MetricsSettings.PrometheusCustomHeaders)
                     .ItemTemplate(new FuncDataTemplate<PrometheusHeader>((header, _) =>
@@ -342,14 +335,14 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
                     .Command(vm, x => x.AddPrometheusHeaderCommand),
                 CreatePrometheusTextRow(
                     vm,
-                    ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusBasicAuthUsernameLabel.CurrentValue(),
-                    ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusBasicAuthTooltip.CurrentValue(),
+                    ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusBasicAuthUsernameLabel.ToBinding(),
+                    ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusBasicAuthTooltip.ToBinding(),
                     x => x.ClusterSettings.MetricsSettings.PrometheusBasicAuthUsername,
                     x => x.ShowPrometheusCustomTransportSettings),
                 new Grid()
                     .Cols("*,2*")
                     .IsVisible(vm, x => x.ShowPrometheusCustomTransportSettings)
-                    .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusBasicAuthTooltip.CurrentValue())
+                    .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusBasicAuthTooltip.ToBinding())
                     .Children(
                         new Label()
                             .Content(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusBasicAuthPasswordLabel.ToBinding())
@@ -370,7 +363,7 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
         return new Grid()
             .Cols("*,2*")
             .IsVisible(vm, x => x.ShowPrometheusCustomTransportSettings)
-            .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusRequireHttpsForAuthenticationTooltip.CurrentValue())
+            .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusRequireHttpsForAuthenticationTooltip.ToBinding())
             .Children(
                 new Label()
                     .Content(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusRequireHttpsForAuthenticationLabel.ToBinding())
@@ -382,8 +375,8 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
 
     private static Grid CreatePrometheusTextRow<TValue>(
         ClusterSettingsViewModel vm,
-        string label,
-        string tooltip,
+        BindingBase label,
+        BindingBase tooltip,
         Expression<Func<ClusterSettingsViewModel, TValue>> getter,
         Expression<Func<ClusterSettingsViewModel, bool>> visibility)
     {
@@ -405,10 +398,10 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
         return new Grid()
             .Cols("*,2*")
             .IsVisible(vm, x => x.ShowPrometheusCustomTransportSettings)
-            .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusUseHttpsTooltip.CurrentValue())
+            .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusUseHttpsTooltip.ToBinding())
             .Children(
                 new Label()
-                    .Content(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusUseHttpsLabel.CurrentValue())
+                    .Content(ClustersLanguageManager.Instance.ClusterSettingsView_PrometheusUseHttpsLabel.ToBinding())
                     .Col(0),
                 new CheckBox()
                     .Col(1)

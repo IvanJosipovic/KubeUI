@@ -11,6 +11,46 @@ namespace KubeUI.Kubernetes.Tests;
 
 public sealed class PrometheusQueryClientTests
 {
+    [Theory]
+    [InlineData("https://prometheus.example/prometheus", "", "/prometheus/api/v1/query_range")]
+    [InlineData("https://prometheus.example/gateway", "/metrics/prometheus", "/gateway/metrics/prometheus/api/v1/query_range")]
+    public async Task QueryRangeAsync_preserves_and_combines_direct_url_paths(
+        string directUrl,
+        string pathPrefix,
+        string expectedPath)
+    {
+        using var queryHandler = new RecordingHandler(_ => { });
+        var fixture = CreateCluster("prometheus-direct-path");
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
+        using var client = new PrometheusQueryClient(
+            NullLogger<PrometheusQueryClient>.Instance,
+            null,
+            null,
+            () => queryHandler);
+        var endpoint = new ResolvedPrometheusEndpoint(
+            PrometheusProviderKind.External,
+            "External URL",
+            true,
+            null,
+            null,
+            null,
+            directUrl,
+            false,
+            pathPrefix);
+
+        _ = await client.QueryRangeAsync(
+            cluster,
+            endpoint,
+            "up",
+            DateTimeOffset.UnixEpoch,
+            DateTimeOffset.UnixEpoch.AddMinutes(1),
+            60,
+            TestContext.Current.CancellationToken);
+
+        queryHandler.RequestUris.ShouldHaveSingleItem().Split('?')[0].ShouldBe(expectedPath);
+    }
+
     [Fact]
     public async Task PrepareAsync_lists_service_when_seeded_cache_does_not_contain_target()
     {
@@ -35,7 +75,7 @@ public sealed class PrometheusQueryClientTests
             false,
             string.Empty);
 
-        await client.PrepareAsync(cluster, endpoint);
+        await client.PrepareAsync(cluster, endpoint, TestContext.Current.CancellationToken);
 
         observedUris.Count(uri => new Uri(uri).AbsolutePath == "/api/v1/namespaces/monitoring/services").ShouldBe(1);
         var service = cluster.GetResource<k8s.Models.V1Service>("monitoring", "prometheus-operated");
@@ -83,7 +123,8 @@ public sealed class PrometheusQueryClientTests
             "up{job=\"kube api\"}",
             DateTimeOffset.UnixEpoch,
             DateTimeOffset.UnixEpoch.AddMinutes(1),
-            60);
+            60,
+            TestContext.Current.CancellationToken);
 
         response.ShouldNotBeNull();
         response.Status.ShouldBe("success");
@@ -448,8 +489,8 @@ public sealed class PrometheusQueryClientTests
             false,
             string.Empty);
 
-        await client.PrepareAsync(cluster, endpoint);
-        await client.PrepareAsync(cluster, endpoint);
+        await client.PrepareAsync(cluster, endpoint, TestContext.Current.CancellationToken);
+        await client.PrepareAsync(cluster, endpoint, TestContext.Current.CancellationToken);
 
         logger.Messages.Count(message => message.Contains("Prepared Prometheus transport", StringComparison.Ordinal))
             .ShouldBe(1);
@@ -483,7 +524,7 @@ public sealed class PrometheusQueryClientTests
             false,
             string.Empty);
 
-        await Task.WhenAll(Enumerable.Range(0, 16).Select(_ => client.PrepareAsync(cluster, endpoint)));
+        await Task.WhenAll(Enumerable.Range(0, 16).Select(_ => client.PrepareAsync(cluster, endpoint, TestContext.Current.CancellationToken)));
 
         httpHandlerCreations.ShouldBe(1);
         await client.ResetAsync();
@@ -510,8 +551,8 @@ public sealed class PrometheusQueryClientTests
             string.Empty);
         var secondEndpoint = firstEndpoint with { ServiceName = "prometheus-secondary" };
 
-        await client.PrepareAsync(cluster, firstEndpoint);
-        await client.PrepareAsync(cluster, secondEndpoint);
+        await client.PrepareAsync(cluster, firstEndpoint, TestContext.Current.CancellationToken);
+        await client.PrepareAsync(cluster, secondEndpoint, TestContext.Current.CancellationToken);
 
         logger.Messages.Count(message => message.Contains("Prepared Prometheus transport", StringComparison.Ordinal))
             .ShouldBe(2);
@@ -543,8 +584,8 @@ public sealed class PrometheusQueryClientTests
             string.Empty,
             UseAzureMonitorAuthentication: true);
 
-        await client.QueryRangeAsync(cluster, endpoint, "up", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddMinutes(1), 60);
-        await client.QueryRangeAsync(cluster, endpoint, "up", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddMinutes(1), 60);
+        await client.QueryRangeAsync(cluster, endpoint, "up", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddMinutes(1), 60, TestContext.Current.CancellationToken);
+        await client.QueryRangeAsync(cluster, endpoint, "up", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddMinutes(1), 60, TestContext.Current.CancellationToken);
 
         // The token is attached to the transport once, so the second query reuses it instead of
         // resolving a new token for every single HTTP request.
@@ -581,8 +622,8 @@ public sealed class PrometheusQueryClientTests
             string.Empty,
             UseAzureMonitorAuthentication: true);
 
-        var response = await client.QueryRangeAsync(cluster, endpoint, "up", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddMinutes(1), 60);
-        _ = await client.QueryRangeAsync(cluster, endpoint, "up", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddMinutes(1), 60);
+        var response = await client.QueryRangeAsync(cluster, endpoint, "up", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddMinutes(1), 60, TestContext.Current.CancellationToken);
+        _ = await client.QueryRangeAsync(cluster, endpoint, "up", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddMinutes(1), 60, TestContext.Current.CancellationToken);
 
         response.ShouldNotBeNull();
         response.Status.ShouldBe("success");
@@ -621,6 +662,38 @@ public sealed class PrometheusQueryClientTests
         var value = response.Data.Result[0].Values[0];
         value.Timestamp.ShouldBe(DateTimeOffset.FromUnixTimeMilliseconds(1735689600250));
         value.Value.ShouldBe(1.5d);
+    }
+
+    [Fact]
+    public void QueryRangeResponse_deserializes_infinities_and_null_as_zero()
+    {
+        const string json =
+            """
+            {
+              "status": "success",
+              "data": {
+                "resultType": "matrix",
+                "result": [
+                  {
+                    "metric": { "pod": "pod-a" },
+                    "values": [
+                      [ 1735689600, "+Inf" ],
+                      [ 1735689660, "-Inf" ],
+                      [ 1735689720, null ],
+                      [ 1735689780, "1.25" ]
+                    ]
+                  }
+                ]
+              }
+            }
+            """;
+
+        var response = JsonSerializer.Deserialize(
+            json,
+            Serialization.KubernetesJsonStaticContext.Default.PrometheusClientQueryRangeResponse);
+
+        var values = response!.Data.Result[0].Values.Select(static item => item.Value).ToArray();
+        values.ShouldBe([double.PositiveInfinity, double.NegativeInfinity, 0d, 1.25d]);
     }
 
     private static (Cluster Cluster, MetricsService Service) CreateCluster(string name, DelegatingHandler? handler = null)

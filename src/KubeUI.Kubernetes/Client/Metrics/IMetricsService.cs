@@ -4,7 +4,7 @@ namespace KubeUI.Kubernetes;
 public interface IMetricsService : IClusterMetrics
 {
     /// <summary>Starts the configured backend, selecting Kubernetes Metrics Server or Prometheus.</summary>
-    Task InitializeAsync(Cluster cluster);
+    Task InitializeAsync(Cluster cluster, CancellationToken cancellationToken = default);
 
     /// <summary>Stops the active metrics backend and clears retained samples.</summary>
     Task StopAsync();

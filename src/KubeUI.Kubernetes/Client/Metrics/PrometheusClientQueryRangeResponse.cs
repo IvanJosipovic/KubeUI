@@ -72,7 +72,14 @@ public sealed class PrometheusClientQueryRangeResponse
                     throw new JsonException("Prometheus value entry must contain exactly two items.");
                 }
 
-                values.Add((timestamp, double.Parse(rawValue ?? "0", CultureInfo.InvariantCulture)));
+                var value = rawValue switch
+                {
+                    "+Inf" => double.PositiveInfinity,
+                    "-Inf" => double.NegativeInfinity,
+                    null => 0d,
+                    _ => double.Parse(rawValue, CultureInfo.InvariantCulture),
+                };
+                values.Add((timestamp, value));
             }
 
             throw new JsonException("Unexpected end of Prometheus values payload.");

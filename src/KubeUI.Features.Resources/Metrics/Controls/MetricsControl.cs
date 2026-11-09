@@ -54,6 +54,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
     private CancellationTokenSource? _lifecycleCancellation;
     private int _refreshPending;
+    private int _disposeStarted;
     private bool _suppressRefreshQueue;
     private V1Pod? _pod;
     private V1Container? _container;
@@ -342,6 +343,11 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
 
     public void Dispose()
     {
+        if (Interlocked.Exchange(ref _disposeStarted, 1) != 0)
+        {
+            return;
+        }
+
         _timer.Stop();
         _timer.Tick -= Timer_Tick;
         _lifecycleCancellation?.Cancel();
@@ -560,7 +566,10 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
         {
             var hadVisibleMetricsServerChart = ShowTabs && SelectedPanel?.Series.Count > 0;
             ShowTimeRangeSelector = false;
-            var metricsServerTabs = await MetricsControlMetricsServerBackend.TryCaptureMetricsServerChartsAsync(_cluster, resource, cancellationToken);
+            var cluster = _cluster;
+            var metricsServerTabs = await Task.Run(
+                () => MetricsControlMetricsServerBackend.TryCaptureMetricsServerChartsAsync(cluster, resource, cancellationToken),
+                cancellationToken);
             MergeTabs(metricsServerTabs);
             ShowTabs = Tabs.Count > 0;
             ShowStatus = !ShowTabs;
@@ -764,7 +773,12 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
         {
             var hadVisibleMetricsServerChart = ShowTabs && SelectedPanel?.Series.Count > 0;
             ShowTimeRangeSelector = false;
-            var tabs = MetricsControlMetricsServerBackend.CapturePodContainerMetricsServerCharts(_cluster, Pod, Container.Name);
+            var cluster = _cluster;
+            var pod = Pod;
+            var containerName = Container.Name;
+            var tabs = await Task.Run(
+                () => MetricsControlMetricsServerBackend.CapturePodContainerMetricsServerCharts(cluster, pod, containerName),
+                cancellationToken);
             MergeTabs(tabs);
             ShowTabs = Tabs.Count > 0;
             ShowStatus = !ShowTabs;

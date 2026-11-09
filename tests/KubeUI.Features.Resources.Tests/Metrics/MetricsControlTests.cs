@@ -1012,7 +1012,9 @@ public sealed class MetricsControlTests
 
         public bool WaitForRelease { get; init; }
 
-        public int QueryCalls { get; private set; }
+        private int _queryCalls;
+
+        public int QueryCalls => Volatile.Read(ref _queryCalls);
 
         public System.Collections.Concurrent.ConcurrentQueue<string> Queries { get; } = new();
 
@@ -1034,7 +1036,7 @@ public sealed class MetricsControlTests
             int stepSeconds,
             CancellationToken cancellationToken = default)
         {
-            QueryCalls++;
+            Interlocked.Increment(ref _queryCalls);
             Queries.Enqueue(query);
             if (WaitForRelease)
             {

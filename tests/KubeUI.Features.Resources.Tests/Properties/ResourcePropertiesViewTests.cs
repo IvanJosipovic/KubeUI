@@ -2,7 +2,10 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.VisualTree;
 using k8s.Models;
+using KubeUI.Features.Resources.Metrics.Controls;
+using KubeUI.Features.Resources.Properties;
 using KubeUI.Features.Resources.Properties.Controls;
+using LiveChartsCore.Defaults;
 using Shouldly;
 
 
@@ -27,6 +30,51 @@ public sealed class ResourcePropertiesViewTests
         await TestApplicationExtensions.WaitForUiAsync();
         view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>()
             .ShouldContain(item => item.Key == ResourcesLanguageManager.Instance.ResourcePropertiesView_Name.CurrentValue()! && Equals(item.Value, "second"));
+    }
+
+    [AvaloniaFact]
+    public async Task disposing_properties_view_model_disposes_nested_metrics_tabs()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        using var viewModel = Application.Current.GetRequiredTestService<ResourcePropertiesViewModel<V1Pod>>();
+        viewModel.Initialize(workspace, new V1Pod
+        {
+            Metadata = new V1ObjectMeta { Name = "pod-1", NamespaceProperty = "default" },
+            Spec = new V1PodSpec
+            {
+                Containers = [new V1Container { Name = "app", Image = "example/app:1" }],
+            },
+        });
+        var view = new ResourcePropertiesView<V1Pod> { DataContext = viewModel };
+        using var window = Application.Current.CreateTestWindow(content: view);
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
+
+        var metricsControls = view.GetVisualDescendants().OfType<MetricsControl>().ToArray();
+        metricsControls.Length.ShouldBeGreaterThan(1);
+        var panels = new List<MetricPanelViewModel>();
+        foreach (var metricsControl in metricsControls)
+        {
+            var panel = new MetricPanelViewModel { Title = "CPU" };
+            panel.MergeSeries([new MetricSeriesSnapshot("Usage", [new DateTimePoint(DateTime.UtcNow, 0.1)])]);
+            var tab = new MetricTabViewModel { Title = "CPU" };
+            tab.Panels.Add(panel);
+            metricsControl.Tabs.Add(tab);
+            panels.Add(panel);
+        }
+
+        viewModel.Dispose();
+        await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
+
+        foreach (var metricsControl in metricsControls)
+        {
+            metricsControl.Tabs.ShouldBeEmpty();
+        }
+
+        foreach (var panel in panels)
+        {
+            panel.Series.ShouldBeEmpty();
+        }
     }
 
     [AvaloniaFact]
