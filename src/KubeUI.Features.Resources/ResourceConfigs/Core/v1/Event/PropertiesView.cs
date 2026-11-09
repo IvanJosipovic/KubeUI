@@ -34,7 +34,7 @@ public sealed class PropertiesView : ViewBase<Corev1Event>
                     .Key(FoundationLanguageManager.Instance.Shared_Type.CurrentValue()!)
                     .Value(vm.Type ?? ""),
                 ResourcePropertiesSection.Create(
-                    ResourcesLanguageManager.Instance.EventPropertiesView_InvolvedObject,
+                    ResourcesLanguageManager.Instance.EventPropertiesView_InvolvedObject.ToBinding(),
                     new PropertyItem()
                         .Key(FoundationLanguageManager.Instance.Shared_Kind.CurrentValue()!)
                         .Value($"{vm.InvolvedObject?.ApiVersion ?? ""}/{vm.InvolvedObject?.Kind ?? ""}"),

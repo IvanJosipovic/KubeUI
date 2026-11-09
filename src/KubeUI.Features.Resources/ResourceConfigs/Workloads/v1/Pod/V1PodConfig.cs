@@ -85,24 +85,27 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
                 },
             ];
 
-        cols.Insert(3, new ResourceListColumn<V1Pod, decimal>()
+        if (Cluster.Runtime.Metrics.IsMetricsAvailable)
         {
-            Key = "cpu",
-            Name = ResourcesLanguageManager.Instance.V1PodConfig_CPU.CurrentValue()!,
-            CustomControl = typeof(MetricsHistoryCPUCellView),
-            Field = x => GetLatestPodMetricUsage(Cluster, x, "cpu"),
-            Width = 80,
-            WidthMode = DynamicTableViewWidthMode.Pixel
-        });
-        cols.Insert(4, new ResourceListColumn<V1Pod, decimal>()
-        {
-            Key = "memory",
-            Name = ResourcesLanguageManager.Instance.V1PodConfig_Memory.CurrentValue()!,
-            CustomControl = typeof(MetricsHistoryMemoryCellView),
-            Field = x => GetLatestPodMetricUsage(Cluster, x, "memory"),
-            Width = 80,
-            WidthMode = DynamicTableViewWidthMode.Pixel
-        });
+            cols.Insert(3, new ResourceListColumn<V1Pod, decimal>()
+            {
+                Key = "cpu",
+                Name = ResourcesLanguageManager.Instance.V1PodConfig_CPU.CurrentValue()!,
+                CustomControl = typeof(MetricsHistoryCPUCellView),
+                Field = x => GetLatestPodMetricUsage(Cluster, x, "cpu"),
+                Width = 80,
+                WidthMode = DynamicTableViewWidthMode.Pixel
+            });
+            cols.Insert(4, new ResourceListColumn<V1Pod, decimal>()
+            {
+                Key = "memory",
+                Name = ResourcesLanguageManager.Instance.V1PodConfig_Memory.CurrentValue()!,
+                CustomControl = typeof(MetricsHistoryMemoryCellView),
+                Field = x => GetLatestPodMetricUsage(Cluster, x, "memory"),
+                Width = 80,
+                WidthMode = DynamicTableViewWidthMode.Pixel
+            });
+        }
 
         return cols;
     }

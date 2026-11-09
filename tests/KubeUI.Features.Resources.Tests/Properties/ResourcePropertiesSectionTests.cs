@@ -29,6 +29,17 @@ public sealed class ResourcePropertiesSectionTests
         section.Header.ShouldBe("Metadata");
     }
 
+    [AvaloniaFact]
+    public void Create_applies_binding_base_header()
+    {
+        var expectedHeader = FoundationLanguageManager.Instance.Shared_Metadata.CurrentValue();
+
+        var section = ResourcePropertiesSection.Create(
+            FoundationLanguageManager.Instance.Shared_Metadata.ToBinding());
+
+        section.Header.ShouldBe(expectedHeader);
+    }
+
     private sealed class ImmediateObservable(string? value) : IObservable<string?>
     {
         public IDisposable Subscribe(IObserver<string?> observer)

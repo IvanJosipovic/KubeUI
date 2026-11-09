@@ -29,7 +29,7 @@ public sealed class PropertiesView : ViewBase<V1Node>
                     .Key(ResourcesLanguageManager.Instance.NodePropertiesView_Kubelet_Version.CurrentValue()!)
                     .Value(vm.Status?.NodeInfo?.KubeletVersion ?? ""),
                 ResourcePropertiesSection.Create(
-                    FoundationLanguageManager.Instance.Shared_Status,
+                    FoundationLanguageManager.Instance.Shared_Status.ToBinding(),
                     new PropertyItem()
                         .Key(ResourcesLanguageManager.Instance.NodePropertiesView_Addresses.CurrentValue()!)
                         .Value(vm.Status?.Addresses?.Count ?? 0),
@@ -40,7 +40,7 @@ public sealed class PropertiesView : ViewBase<V1Node>
                         .Key(FoundationLanguageManager.Instance.Shared_Conditions.CurrentValue()!)
                         .Value(vm.Status?.Conditions?.Count ?? 0)),
                 ResourcePropertiesSection.Create(
-                    FoundationLanguageManager.Instance.Shared_Resources,
+                    FoundationLanguageManager.Instance.Shared_Resources.ToBinding(),
                     new PropertyItem()
                         .Key(FoundationLanguageManager.Instance.Shared_Capacity_Entries.CurrentValue()!)
                         .Value(vm.Status?.Capacity?.Count ?? 0),

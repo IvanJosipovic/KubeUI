@@ -26,7 +26,7 @@ public sealed class PropertiesView : ViewBase<V1PersistentVolumeClaim>
                     .Key(FoundationLanguageManager.Instance.Shared_Access_Modes.CurrentValue()!)
                     .Value(vm.Spec?.AccessModes?.Count ?? 0),
                 ResourcePropertiesSection.Create(
-                    FoundationLanguageManager.Instance.Shared_Configuration,
+                    FoundationLanguageManager.Instance.Shared_Configuration.ToBinding(),
                     new PropertyItem()
                         .Key(FoundationLanguageManager.Instance.Shared_Volume_Mode.CurrentValue()!)
                         .Value(vm.Spec?.VolumeMode ?? ""),
@@ -34,7 +34,7 @@ public sealed class PropertiesView : ViewBase<V1PersistentVolumeClaim>
                         .Key(ResourcesLanguageManager.Instance.PersistentVolumeClaimPropertiesView_Requested_Storage.CurrentValue()!)
                         .Value(vm.Spec?.Resources?.Requests?.Count ?? 0)),
                 ResourcePropertiesSection.Create(
-                    FoundationLanguageManager.Instance.Shared_Status,
+                    FoundationLanguageManager.Instance.Shared_Status.ToBinding(),
                     new PropertyItem()
                         .Key(FoundationLanguageManager.Instance.Shared_Capacity_Entries.CurrentValue()!)
                         .Value(vm.Status?.Capacity?.Count ?? 0),

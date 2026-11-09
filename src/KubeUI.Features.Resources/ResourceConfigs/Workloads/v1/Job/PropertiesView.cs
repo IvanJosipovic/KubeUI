@@ -26,7 +26,7 @@ public sealed class PropertiesView : ViewBase<V1Job>
                     .Key(ResourcesLanguageManager.Instance.JobPropertiesView_Failed.CurrentValue()!)
                     .Value(vm.Status?.Failed ?? 0),
                 ResourcePropertiesSection.Create(
-                    FoundationLanguageManager.Instance.Shared_Configuration,
+                    FoundationLanguageManager.Instance.Shared_Configuration.ToBinding(),
                     new PropertyItem()
                         .Key(ResourcesLanguageManager.Instance.JobPropertiesView_Backoff_Limit.CurrentValue()!)
                         .Value(vm.Spec?.BackoffLimit ?? 0),
@@ -40,7 +40,7 @@ public sealed class PropertiesView : ViewBase<V1Job>
                         .Key(FoundationLanguageManager.Instance.Shared_Suspend.CurrentValue()!)
                         .Value(vm.Spec?.Suspend ?? false)),
                 ResourcePropertiesSection.Create(
-                    FoundationLanguageManager.Instance.Shared_Status,
+                    FoundationLanguageManager.Instance.Shared_Status.ToBinding(),
                     new PropertyItem()
                         .Key(ResourcesLanguageManager.Instance.JobPropertiesView_Active_Pods.CurrentValue()!)
                         .Value(vm.Status?.Active ?? 0),

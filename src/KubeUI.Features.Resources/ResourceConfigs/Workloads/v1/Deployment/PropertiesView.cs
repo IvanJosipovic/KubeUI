@@ -26,7 +26,7 @@ public sealed class PropertiesView : ViewBase<V1Deployment>
                     .Key(FoundationLanguageManager.Instance.Shared_Updated_Replicas.CurrentValue()!)
                     .Value(vm.Status?.UpdatedReplicas ?? 0),
                 ResourcePropertiesSection.Create(
-                    ResourcesLanguageManager.Instance.DeploymentPropertiesView_Rollout,
+                    ResourcesLanguageManager.Instance.DeploymentPropertiesView_Rollout.ToBinding(),
                     new PropertyItem()
                         .Key(ResourcesLanguageManager.Instance.DeploymentPropertiesView_Unavailable_Replicas.CurrentValue()!)
                         .Value(vm.Status?.UnavailableReplicas ?? 0),

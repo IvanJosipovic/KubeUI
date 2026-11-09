@@ -32,7 +32,7 @@ public sealed class PropertiesView : ViewBase<V1StatefulSet>
                     .Key(ResourcesLanguageManager.Instance.StatefulSetPropertiesView_Service_Name.CurrentValue()!)
                     .Value(vm.Spec?.ServiceName ?? ""),
                 ResourcePropertiesSection.Create(
-                    FoundationLanguageManager.Instance.Shared_Status,
+                    FoundationLanguageManager.Instance.Shared_Status.ToBinding(),
                     new PropertyItem()
                         .Key(ResourcesLanguageManager.Instance.StatefulSetPropertiesView_Current_Revision.CurrentValue()!)
                         .Value(vm.Status?.CurrentRevision ?? ""),
@@ -43,7 +43,7 @@ public sealed class PropertiesView : ViewBase<V1StatefulSet>
                         .Key(FoundationLanguageManager.Instance.Shared_Conditions.CurrentValue()!)
                         .Value(vm.Status?.Conditions?.Count ?? 0)),
                 ResourcePropertiesSection.Create(
-                    FoundationLanguageManager.Instance.Shared_Configuration,
+                    FoundationLanguageManager.Instance.Shared_Configuration.ToBinding(),
                     new PropertyItem()
                         .Key(ResourcesLanguageManager.Instance.StatefulSetPropertiesView_Pod_Management_Policy.CurrentValue()!)
                         .Value(vm.Spec?.PodManagementPolicy ?? ""),

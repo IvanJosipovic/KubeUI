@@ -26,7 +26,7 @@ public sealed class PropertiesView : ViewBase<V1ReplicaSet>
                     .Key(FoundationLanguageManager.Instance.Shared_Available_Replicas.CurrentValue()!)
                     .Value(vm.Status?.AvailableReplicas ?? 0),
                 ResourcePropertiesSection.Create(
-                    FoundationLanguageManager.Instance.Shared_Status,
+                    FoundationLanguageManager.Instance.Shared_Status.ToBinding(),
                     new PropertyItem()
                         .Key(ResourcesLanguageManager.Instance.ReplicaSetPropertiesView_Fully_Labeled_Replicas.CurrentValue()!)
                         .Value(vm.Status?.FullyLabeledReplicas ?? 0),
@@ -37,7 +37,7 @@ public sealed class PropertiesView : ViewBase<V1ReplicaSet>
                         .Key(FoundationLanguageManager.Instance.Shared_Conditions.CurrentValue()!)
                         .Value(vm.Status?.Conditions?.Count ?? 0)),
                 ResourcePropertiesSection.Create(
-                    FoundationLanguageManager.Instance.Shared_Configuration,
+                    FoundationLanguageManager.Instance.Shared_Configuration.ToBinding(),
                     new PropertyItem()
                         .Key(FoundationLanguageManager.Instance.Shared_Min_Ready_Seconds.CurrentValue()!)
                         .Value(vm.Spec?.MinReadySeconds ?? 0),

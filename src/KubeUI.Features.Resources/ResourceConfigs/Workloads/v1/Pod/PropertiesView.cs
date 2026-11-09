@@ -33,7 +33,7 @@ public sealed class PropertiesView : ViewBase<V1Pod>
                     .Value(vm.Spec?.ServiceAccountName ?? ""),
                 new MetricsControl { DataContext = vm, Pod = vm },
                 ResourcePropertiesSection.Create(
-                    FoundationLanguageManager.Instance.Shared_Metadata,
+                    FoundationLanguageManager.Instance.Shared_Metadata.ToBinding(),
                     new CollectionItem()
                         .Key(ResourcesLanguageManager.Instance.PodPropertiesView_Labels.CurrentValue()!)
                         .Value(vm.Metadata?.Labels ?? new Dictionary<string, string>())
@@ -43,7 +43,7 @@ public sealed class PropertiesView : ViewBase<V1Pod>
                         .Value(vm.Metadata?.Annotations ?? new Dictionary<string, string>())
                         .ItemTemplate(CreateKeyValueTemplate())),
                 ResourcePropertiesSection.Create(
-                    ResourcesLanguageManager.Instance.PodPropertiesView_Status,
+                    ResourcesLanguageManager.Instance.PodPropertiesView_Status.ToBinding(),
                     new PropertyItem()
                         .Key(ResourcesLanguageManager.Instance.PodPropertiesView_Pod_IPs.CurrentValue()!)
                         .Value(vm.Status?.PodIPs?.Count ?? 0),
