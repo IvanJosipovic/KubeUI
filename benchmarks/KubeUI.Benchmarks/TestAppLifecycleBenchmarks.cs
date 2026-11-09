@@ -1,5 +1,5 @@
 using BenchmarkDotNet.Attributes;
-using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.App.Tests.Infra;
 
 namespace KubeUI.Benchmarks;
 

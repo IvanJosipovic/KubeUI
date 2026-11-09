@@ -1,0 +1,307 @@
+using System.Net;
+using Avalonia.Controls;
+using Avalonia.Headless.XUnit;
+using Avalonia.Media;
+using Avalonia.VisualTree;
+using Dock.Avalonia.Controls;
+using Dock.Model.Controls;
+using Dock.Model.Core;
+using Dock.Model.Mvvm.Controls;
+using KubeUI.App.Infrastructure.DependencyInjection;
+using KubeUI.App.Shell.Documents.Updates;
+using KubeUI.App.Shell.Main;
+using KubeUI.Features.Clusters.Cloud.Aks;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http;
+using Shouldly;
+
+namespace KubeUI.App.Tests.App.Shell;
+
+public sealed class MainViewModelTests
+{
+    private MainViewModel CreateViewModel()
+    {
+        return Application.Current.GetTestServices().GetRequiredService<MainViewModel>()
+            ?? throw new InvalidOperationException("Test services are not initialized.");
+    }
+
+    [AvaloniaFact]
+    public async Task load_aks_clusters_command_opens_docked_aks_assistant()
+    {
+        var vm = CreateViewModel();
+        var documents = Application.Current.GetRequiredTestService<IFactory>().GetDockable<IDocumentDock>("Documents");
+        documents.ShouldNotBeNull();
+
+        vm.ImportAksClusterCommand.Execute(null);
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        documents.VisibleDockables!
+            .OfType<ImportAksClusterViewModel>()
+            .Count()
+            .ShouldBe(1);
+    }
+
+    [AvaloniaFact]
+    public void update_check_opens_one_document_and_refreshes_it_on_subsequent_checks()
+    {
+        var vm = CreateViewModel();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var documents = factory.GetDockable<IDocumentDock>("Documents")
+            .ShouldNotBeNull();
+
+        vm.ShowUpdateAvailableView("2.1.0", "2.2.0", "## 2.2.0", _ => Task.CompletedTask);
+        var updateViewModel = documents.VisibleDockables!
+            .OfType<UpdateAvailableViewModel>()
+            .ShouldHaveSingleItem();
+
+        try
+        {
+            vm.ShowUpdateAvailableView("2.2.0", "2.3.0", "## 2.3.0", _ => Task.CompletedTask);
+
+            documents.VisibleDockables!
+                .OfType<UpdateAvailableViewModel>()
+                .ShouldHaveSingleItem()
+                .ShouldBeSameAs(updateViewModel);
+            updateViewModel.VersionSummary.ShouldBe("Update Available 2.2.0 -> 2.3.0");
+        }
+        finally
+        {
+            factory.CloseDockable(updateViewModel);
+        }
+    }
+
+    [Fact]
+    public async Task github_releases_http_client_retries_transient_failures()
+    {
+        var requestCount = 0;
+        using var handler = new StubHttpMessageHandler((_, _) =>
+            Interlocked.Increment(ref requestCount) == 1
+                ? HttpStatusCode.ServiceUnavailable
+                : HttpStatusCode.OK);
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddKubeUIShellServices();
+        services.Configure<HttpClientFactoryOptions>(
+            MainViewModel.GitHubReleasesHttpClientName,
+            options => options.HttpMessageHandlerBuilderActions.Add(
+                builder => builder.PrimaryHandler = handler));
+
+        using var serviceProvider = services.BuildServiceProvider();
+        using var client = serviceProvider.GetRequiredService<IHttpClientFactory>()
+            .CreateClient(MainViewModel.GitHubReleasesHttpClientName);
+        using var response = await client.GetAsync(
+            "https://api.github.com/releases",
+            TestContext.Current.CancellationToken);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        requestCount.ShouldBe(2);
+    }
+
+    private sealed class StubHttpMessageHandler(
+        Func<HttpRequestMessage, CancellationToken, HttpStatusCode> responseFactory) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(new HttpResponseMessage(responseFactory(request, cancellationToken)));
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task floating_home_can_be_docked_as_document()
+    {
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var documents = factory.GetDockable<IDocumentDock>("Documents")
+            .ShouldNotBeNull();
+        var home = factory.FindDockableById(nameof(HomeViewModel))
+            .ShouldBeOfType<HomeViewModel>();
+
+        factory.FloatDockable(home);
+        await TestApplicationExtensions.WaitForUiAsync();
+        home.Owner.ShouldBeAssignableTo<IDocumentDock>();
+        factory.GetDockable<IRootDock>("Root")!
+            .Windows!
+            .Single()
+            .Host
+            .ShouldBeOfType<HostWindow>()
+            .Icon
+            .ShouldNotBeNull();
+        factory.GetDockable<IRootDock>("Root")!
+            .Windows!
+            .Single()
+            .Title
+            .ShouldBe("KubeUI 2");
+        factory.DockAsDocument(home);
+
+        home.Owner.ShouldBeSameAs(documents);
+    }
+
+    [AvaloniaFact]
+    public async Task floating_tool_from_tool_dock_uses_document_window()
+    {
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var bottomDock = factory.GetDockable<IToolDock>("BottomDock")
+            .ShouldNotBeNull();
+        Tool tool = new()
+        {
+            Id = "FloatingTool",
+            Title = "Floating tool",
+            CanClose = true,
+            CanDockAsDocument = true,
+            CanFloat = true
+        };
+
+        factory.AddDockable(bottomDock, tool);
+        factory.FloatDockable(tool);
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var floatingDocuments = tool.Owner.ShouldBeAssignableTo<IDocumentDock>();
+        floatingDocuments.ActiveDockable.ShouldBeSameAs(tool);
+        tool.Owner.ShouldNotBeSameAs(bottomDock);
+        factory.FindRoot(tool)!.Window!.Host!.ShouldBeOfType<HostWindow>().IsToolWindow.ShouldBeFalse();
+
+        factory.DockAsDocument(tool);
+    }
+
+    [AvaloniaFact]
+    public void closing_last_bottom_viewer_keeps_bottom_dock_available_for_next_viewer()
+    {
+        CreateViewModel().Initialize();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var bottomDock = factory.GetDockable<IToolDock>("BottomDock")
+            .ShouldNotBeNull();
+        var splitter = factory.GetDockable<IProportionalDockSplitter>("BottomDockSplitter")
+            .ShouldNotBeNull();
+        Tool firstViewer = new()
+        {
+            Id = "YamlViewer1",
+            Title = "YAML viewer 1",
+            CanClose = true
+        };
+        Tool secondViewer = new()
+        {
+            Id = "YamlViewer2",
+            Title = "YAML viewer 2",
+            CanClose = true
+        };
+
+        factory.AddToBottom(firstViewer).ShouldBeTrue();
+        factory.CloseDockable(firstViewer);
+        bottomDock.Owner.ShouldNotBeNull();
+        factory.AddToBottom(secondViewer).ShouldBeTrue();
+
+        factory.GetDockable<IToolDock>("BottomDock").ShouldBeSameAs(bottomDock);
+        bottomDock.VisibleDockables.ShouldContain(secondViewer);
+        splitter.CanResize.ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public void reset_publishes_only_initialized_layouts()
+    {
+        var vm = CreateViewModel();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        IRootDock? publishedLayout = null;
+
+        vm.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(MainViewModel.Layout))
+            {
+                publishedLayout = vm.Layout;
+                publishedLayout?.Factory.ShouldBeSameAs(factory);
+            }
+        };
+
+        vm.ResetLayoutCommand.Execute(null);
+
+        publishedLayout.ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
+    public void close_layout_clears_published_layout()
+    {
+        var vm = CreateViewModel();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var layout = factory.CreateLayout();
+        factory.InitLayout(layout);
+        vm.Layout = layout;
+
+        vm.CloseLayoutCommand.Execute(null);
+
+        vm.Layout.ShouldBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task main_view_attaches_the_injected_factory_to_dock_control()
+    {
+        var vm = CreateViewModel();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        MainView view = new() { DataContext = vm };
+        using var window = Application.Current.CreateTestWindow(content: view);
+
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        view.GetVisualDescendants()
+            .OfType<DockControl>()
+            .Single()
+            .Factory
+            .ShouldBeSameAs(factory);
+    }
+
+    [AvaloniaFact]
+    public void options_menu_contains_check_for_updates_command()
+    {
+        using var scope = Application.Current.GetTestServices().CreateScope();
+        var vm = scope.ServiceProvider.GetRequiredService<MainViewModel>();
+        var menu = MainMenu.CreateOptionsMenu(vm);
+
+        menu.Items
+            .OfType<MenuItem>()
+            .Single(item => item.Header?.ToString() == AppLanguageManager.Instance.MainView_Menu_Help.CurrentValue()!)
+            .Items
+            .OfType<MenuItem>()
+            .Single(item => item.Header?.ToString() == "_Check for Updates")
+            .Command
+            .ShouldBeSameAs(vm.CheckForUpdatesCommand);
+    }
+
+    [Fact]
+    public void update_check_unavailable_prompt_uses_user_facing_text()
+    {
+        var settings = MainViewModel.CreateUpdateCheckUnavailableDialogSettings();
+
+        settings.Title.ShouldBe("Update Check Unavailable");
+        var content = settings.Content.ShouldBeOfType<string>();
+        content.ShouldBe("Automatic updates are unavailable for this copy of KubeUI. Please run KubeUI from an installed or portable package.");
+        content.ShouldNotContain("Velopack");
+    }
+
+    [AvaloniaFact]
+    public async Task resetting_layout_keeps_unpinned_tool_dock_backgrounds_opaque()
+    {
+        var vm = CreateViewModel();
+        MainView view = new() { DataContext = vm };
+        using var window = Application.Current.CreateTestWindow(content: view);
+
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        vm.ResetLayoutCommand.Execute(null);
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var toolDocks = view.GetVisualDescendants()
+            .OfType<ToolControl>()
+            .Where(x => x.IsVisible)
+            .ToArray();
+
+        toolDocks.ShouldNotBeEmpty();
+        foreach (var toolDock in toolDocks)
+        {
+            var background = toolDock.Background.ShouldBeOfType<SolidColorBrush>();
+            background.Color.A.ShouldBe(byte.MaxValue);
+        }
+    }
+
+}

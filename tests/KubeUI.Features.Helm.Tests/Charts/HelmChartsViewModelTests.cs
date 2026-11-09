@@ -6,7 +6,7 @@ using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
 using HanumanInstitute.MvvmDialogs;
 using Helm.NET;
-using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.App.Tests.Infra;
 using KubeUI.Controls.Layout;
 using KubeUI.Features.Helm;
 using KubeUI.Features.Helm.Charts;
@@ -54,7 +54,7 @@ public sealed class HelmChartsViewModelTests : IDisposable
             await TestWait.UntilAsync(() => charts.ItemCount == 1,
                 TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
 
-            global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+            Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
                 .OfType<ComboBox>().Single().SelectedItem.ShouldBe("repo");
             helm.Verify(service => service.ListChartsAsync(
                 It.IsAny<HelmConnection>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
@@ -115,7 +115,7 @@ public sealed class HelmChartsViewModelTests : IDisposable
         {
             window.Show();
             await TestApplicationExtensions.WaitForUiAsync();
-            var controls = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view).ToArray();
+            var controls = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view).ToArray();
             var header = controls.OfType<CompactToolbar>().Single();
             header.MinHeight.ShouldBe(32);
             header.Margin.ShouldBe(new Thickness(0, 2));

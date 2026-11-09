@@ -50,7 +50,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="KubeUI.Avalonia.Tests" />
+    <InternalsVisibleTo Include="KubeUI.App.Tests" />
     <InternalsVisibleTo Include="KubeUI.Benchmarks" />
   </ItemGroup>
 

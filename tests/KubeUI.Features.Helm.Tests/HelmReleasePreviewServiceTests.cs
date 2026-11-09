@@ -236,7 +236,7 @@ public sealed class HelmReleasePreviewServiceTests : IDisposable
                         () => visualization.Graph?.Resources.Count > 1 || visualization.Error is not null,
                         TimeSpan.FromSeconds(10),
                         cancellationToken: TestContext.Current.CancellationToken);
-                    var graphControl = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+                    var graphControl = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
                         .OfType<ResourceGraphControl>().Single();
                     await TestWait.UntilAsync(
                         () => graphControl.IsViewportStable || visualization.Error is not null,
@@ -302,7 +302,7 @@ public sealed class HelmReleasePreviewServiceTests : IDisposable
         {
             window.Show();
             await TestApplicationExtensions.WaitForUiAsync();
-            var textEditor = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
+            var textEditor = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
                 .OfType<TextEditor>().Single();
             textEditor.Text = "replicas: 4\nserver:\n  enabled: false\n";
             await TestApplicationExtensions.WaitForUiAsync();
@@ -323,7 +323,7 @@ public sealed class HelmReleasePreviewServiceTests : IDisposable
         {
             returnedWindow.Show();
             await TestApplicationExtensions.WaitForUiAsync();
-            global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(returnedView)
+            Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(returnedView)
                 .OfType<TextEditor>().Single().Text.ShouldBe("replicas: 4\nserver:\n  enabled: false\n");
         }
         finally

@@ -54,9 +54,9 @@ public sealed class HelmRepositoriesViewModelTests : IDisposable
         {
             window.Show();
             await TestApplicationExtensions.WaitForUiAsync();
-            var repositoryHeader = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(repositoryView)
+            var repositoryHeader = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(repositoryView)
                 .OfType<CompactToolbar>().Single();
-            var releaseHeader = global::Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(releaseView)
+            var releaseHeader = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(releaseView)
                 .OfType<CompactToolbar>().Single();
             repositoryHeader.MinHeight.ShouldBe(releaseHeader.MinHeight);
             repositoryHeader.Margin.ShouldBe(releaseHeader.Margin);

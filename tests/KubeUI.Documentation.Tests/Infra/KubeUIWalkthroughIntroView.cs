@@ -25,8 +25,8 @@ internal sealed class KubeUIWalkthroughIntroView : UserControl
                     .Background(new DynamicResourceExtension("SystemAltHighColor"))
                     .Children(
                         new StackPanel()
-                            .HorizontalAlignment(global::Avalonia.Layout.HorizontalAlignment.Center)
-                            .VerticalAlignment(global::Avalonia.Layout.VerticalAlignment.Center)
+                            .HorizontalAlignment(Avalonia.Layout.HorizontalAlignment.Center)
+                            .VerticalAlignment(Avalonia.Layout.VerticalAlignment.Center)
                             .Spacing(18)
                             .Children(
                                 new Image()
@@ -34,14 +34,14 @@ internal sealed class KubeUIWalkthroughIntroView : UserControl
                                     .Width(250)
                                     .Height(250)
                                     .Stretch(Stretch.Uniform)
-                                    .HorizontalAlignment(global::Avalonia.Layout.HorizontalAlignment.Center),
+                                    .HorizontalAlignment(Avalonia.Layout.HorizontalAlignment.Center),
                                 new TextBlock()
                                     .Text("KubeUI")
                                     .FontSize(56)
                                     .FontWeight(FontWeight.SemiBold)
                                     .Foreground(new DynamicResourceExtension("SystemBaseHighBrush"))
                                     .TextAlignment(TextAlignment.Center)
-                                    .HorizontalAlignment(global::Avalonia.Layout.HorizontalAlignment.Center),
+                                    .HorizontalAlignment(Avalonia.Layout.HorizontalAlignment.Center),
                                 new TextBlock()
                                     .Text(title)
                                     .FontSize(36)
@@ -49,6 +49,6 @@ internal sealed class KubeUIWalkthroughIntroView : UserControl
                                     .TextAlignment(TextAlignment.Center)
                                     .TextWrapping(TextWrapping.Wrap)
                                     .MaxWidth(1100)
-                                    .HorizontalAlignment(global::Avalonia.Layout.HorizontalAlignment.Center))));
+                                    .HorizontalAlignment(Avalonia.Layout.HorizontalAlignment.Center))));
     }
 }

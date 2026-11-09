@@ -41,7 +41,7 @@ public sealed class AgentChatViewTests
         prompt.ShouldNotBeNull();
         send.ShouldNotBeNull();
         prompt!.AcceptsReturn.ShouldBeTrue();
-        prompt.TextWrapping.ShouldBe(global::Avalonia.Media.TextWrapping.Wrap);
+        prompt.TextWrapping.ShouldBe(Avalonia.Media.TextWrapping.Wrap);
         prompt.MaxHeight.ShouldBe(160);
         var sendGesture = prompt.KeyBindings.OfType<KeyBinding>()
             .Select(binding => binding.Gesture)
