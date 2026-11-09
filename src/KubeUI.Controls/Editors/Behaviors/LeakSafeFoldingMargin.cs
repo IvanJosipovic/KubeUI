@@ -11,12 +11,15 @@ internal sealed class LeakSafeFoldingMargin : FoldingMargin
         base.OnTextViewVisualLinesChanged();
     }
 
+    /// <summary>Detaches and removes logical children retained by a folding margin.</summary>
     internal static void ClearLogicalChildren(FoldingMargin margin)
     {
-        var children = ((ILogical)margin).LogicalChildren.ToArray();
+        var logicalChildren = ((ILogical)margin).LogicalChildren;
+        var children = logicalChildren.ToArray();
         foreach (var child in children)
         {
             ((ISetLogicalParent)child).SetParent(null);
         }
+        ((IList)logicalChildren).Clear();
     }
 }

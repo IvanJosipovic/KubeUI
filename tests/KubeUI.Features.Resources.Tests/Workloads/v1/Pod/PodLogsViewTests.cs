@@ -863,10 +863,10 @@ public sealed class PodLogsViewTests
             var originalTheme = application.RequestedThemeVariant;
             try
             {
-                application.RequestedThemeVariant = global::Avalonia.Styling.ThemeVariant.Light;
+                application.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Light;
                 Dispatcher.UIThread.RunJobs();
                 behavior.IsTextMateInstalled.ShouldBeTrue();
-                application.RequestedThemeVariant = global::Avalonia.Styling.ThemeVariant.Dark;
+                application.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
                 Dispatcher.UIThread.RunJobs();
                 behavior.IsTextMateInstalled.ShouldBeTrue();
             }

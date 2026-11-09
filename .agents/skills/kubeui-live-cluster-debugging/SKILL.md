@@ -9,7 +9,7 @@ Use this workflow when a bug depends on real cluster resources, permissions, end
 
 ## Set up a gated live test
 
-- Read `tests/KubeUI.Avalonia.Tests/AGENTS.md` and `.agents/skills/kube-ui-testing/SKILL.md` first. Follow their build-before-test, cancellation, disposal, and Microsoft.Testing.Platform rules.
+- Read `tests/KubeUI.App.Tests/AGENTS.md` and `.agents/skills/kube-ui-testing/SKILL.md` first. Follow their build-before-test, cancellation, disposal, and Microsoft.Testing.Platform rules.
 - Inspect `LiveClusterFactAttribute` and `LiveClusterTestBase` in the current checkout. The attribute only gates execution using `KUBEUI_LIVE_CONTEXT`; the base fixture connects using its `LiveClusterName`. Set both to the intended kubeconfig context.
 - Set `KUBEUI_LIVE_CONTEXT` only for the test process. Never change the user's persistent environment or current kubeconfig context.
 - Preserve staged and unrelated work. Check `git status --short` before editing. Do not stage or revert user changes.
@@ -28,7 +28,7 @@ Run only the selected test first, with `--minimum-expected-tests 1`, and verify 
 
 ```powershell
 $env:KUBEUI_LIVE_CONTEXT = 'microk8s'
-dotnet test --project tests/KubeUI.Avalonia.Tests/KubeUI.Avalonia.Tests.csproj --no-restore --filter-method <fully-qualified-method> --minimum-expected-tests 1
+dotnet test --project tests/KubeUI.App.Tests/KubeUI.App.Tests.csproj --no-restore --filter-method <fully-qualified-method> --minimum-expected-tests 1
 ```
 
 ## Separate startup, cache, and transport failures

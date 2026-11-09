@@ -27,15 +27,15 @@ When a test run hangs or crashes and produces a dump, inspect that dump before c
 
 ## CLI examples
 
-The examples use `KubeUI.Avalonia.Tests` as “project A”,
-`KubeUI.Avalonia.Tests.Controls.Converters.PropertyItemValueConverterTests` as “class A”,
+The examples use `KubeUI.App.Tests` as “project A”,
+`KubeUI.App.Tests.Controls.Converters.PropertyItemValueConverterTests` as “class A”,
 and `converts_utc_datetime_to_local_time` as “test A”. Replace them with the
 real project, fully qualified class, and method names for the change.
 
 ### Test project A
 
 ```text
-dotnet test --project tests/KubeUI.Avalonia.Tests/KubeUI.Avalonia.Tests.csproj --no-restore --minimum-expected-tests 1
+dotnet test --project tests/KubeUI.App.Tests/KubeUI.App.Tests.csproj --no-restore --minimum-expected-tests 1
 ```
 
 ### Test all projects
@@ -49,7 +49,7 @@ dotnet test --no-restore --minimum-expected-tests 1
 Use the project target with a fully qualified class filter:
 
 ```text
-dotnet test --project tests/KubeUI.Avalonia.Tests/KubeUI.Avalonia.Tests.csproj --no-restore --filter-class KubeUI.Avalonia.Tests.Controls.Converters.PropertyItemValueConverterTests --minimum-expected-tests 1
+dotnet test --project tests/KubeUI.App.Tests/KubeUI.App.Tests.csproj --no-restore --filter-class KubeUI.App.Tests.Controls.Converters.PropertyItemValueConverterTests --minimum-expected-tests 1
 ```
 
 ### Test project A, test A
@@ -57,13 +57,13 @@ dotnet test --project tests/KubeUI.Avalonia.Tests/KubeUI.Avalonia.Tests.csproj -
 List tests from the project when the exact generated name is uncertain:
 
 ```text
-dotnet test --project tests/KubeUI.Avalonia.Tests/KubeUI.Avalonia.Tests.csproj --no-restore --list-tests
+dotnet test --project tests/KubeUI.App.Tests/KubeUI.App.Tests.csproj --no-restore --list-tests
 ```
 
 Use a fully qualified method filter:
 
 ```text
-dotnet test --project tests/KubeUI.Avalonia.Tests/KubeUI.Avalonia.Tests.csproj --no-restore --filter-method KubeUI.Avalonia.Tests.Controls.Converters.PropertyItemValueConverterTests.converts_utc_datetime_to_local_time --minimum-expected-tests 1
+dotnet test --project tests/KubeUI.App.Tests/KubeUI.App.Tests.csproj --no-restore --filter-method KubeUI.App.Tests.Controls.Converters.PropertyItemValueConverterTests.converts_utc_datetime_to_local_time --minimum-expected-tests 1
 ```
 
 Use the fully qualified class or method name returned by `--list-tests` when selecting another target.

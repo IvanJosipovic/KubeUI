@@ -133,7 +133,7 @@ public sealed class HelmReleasesViewModelTests : IDisposable
             editor.IsReadOnly.ShouldBeTrue();
             editor.Text.ShouldBe(yaml.YamlDocument.Text);
             yaml.ValidationDiagnostics.ShouldBeEmpty();
-            view.FindControl<global::Avalonia.Controls.Primitives.ToggleButton>("HideNoisyFieldsToggle")!
+            view.FindControl<Avalonia.Controls.Primitives.ToggleButton>("HideNoisyFieldsToggle")!
                 .IsVisible.ShouldBeFalse();
             yaml.HideNoisyFields = !yaml.HideNoisyFields;
             editor.Text.ShouldBe(yaml.YamlDocument.Text);
@@ -175,7 +175,7 @@ public sealed class HelmReleasesViewModelTests : IDisposable
         {
             window.Show();
             var toolbar = view.GetVisualDescendants().OfType<StackPanel>()
-                .Single(panel => panel.Orientation == global::Avalonia.Layout.Orientation.Horizontal
+                .Single(panel => panel.Orientation == Avalonia.Layout.Orientation.Horizontal
                     && panel.Children.OfType<NamespaceScopePicker>().Any());
             toolbar.Children[0].ShouldBeOfType<TextBlock>();
             var picker = toolbar.Children.OfType<NamespaceScopePicker>().Single();

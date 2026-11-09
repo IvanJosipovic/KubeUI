@@ -11,7 +11,7 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using FluentIcons.Avalonia;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.App.Tests.Infra;
 using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Features.Cilium.Hubble.Controls;

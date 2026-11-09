@@ -4,7 +4,7 @@ using Avalonia.Threading;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Avalonia.Tests.Infra;
+using KubeUI.App.Tests.Infra;
 using KubeUI.Features.Cilium;
 using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Features.Clusters.Workspace;

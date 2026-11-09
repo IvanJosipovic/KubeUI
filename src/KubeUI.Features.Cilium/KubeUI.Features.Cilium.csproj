@@ -44,7 +44,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="KubeUI.Features.Cilium.Tests" />
-    <InternalsVisibleTo Include="KubeUI.Avalonia.Tests" />
+    <InternalsVisibleTo Include="KubeUI.App.Tests" />
     <InternalsVisibleTo Include="KubeUI.Testing" />
     <ProjectCapability Include="Avalonia" />
     <ProjectReference Include="..\KubeUI.Controls\KubeUI.Controls.csproj" />

@@ -20,7 +20,7 @@
     <Using Include="Microsoft.Extensions.Logging" />
     <Using Include="System.Collections.ObjectModel" />
     <Using Include="System.ComponentModel" />
-    <InternalsVisibleTo Include="KubeUI.Avalonia.Tests" />
+    <InternalsVisibleTo Include="KubeUI.App.Tests" />
     <InternalsVisibleTo Include="KubeUI.Features.AI.Tests" />
     <InternalsVisibleTo Include="KubeUI.Desktop" />
     <Using Include="KubeUI.Features.AI.Assets" />

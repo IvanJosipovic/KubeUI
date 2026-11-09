@@ -110,7 +110,7 @@ internal static class KubernetesYaml
             .WithTypeConverter(new SystemTextJsonYamlTypeConverter())
             .WithTypeConverter(new KubernetesDateTimeYamlConverter())
             .WithTypeConverter(new KubernetesDateTimeOffsetYamlConverter())
-            .WithTypeInspector(x => new SystemTextJsonTypeInspector(x))
+            .WithTypeInspector(x => new SystemTextJsonTypeInspector(x, ignoreOrder: true))
             .WithAttemptingUnquotedStringTypeDeserialization();
 
     /// <summary>
@@ -170,7 +170,7 @@ internal static class KubernetesYaml
 
     private static IValueSerializer CreateStaticSerializer() =>
         new StaticSerializerBuilder(s_staticContext)
-            .AddSystemTextJson()
+            .AddSystemTextJson(ignoreOrder: true)
             .DisableAliases()
 
             .WithTypeConverter(new JsonBackedYamlTypeConverter<IntOrString>(KubernetesJsonStaticContext.Default.IntOrString))
@@ -206,7 +206,7 @@ internal static class KubernetesYaml
             .WithTypeConverter(new KubernetesDateTimeYamlConverter())
             .WithTypeConverter(new KubernetesDateTimeOffsetYamlConverter())
             .WithTypeConverter(new SystemTextJsonYamlTypeConverter(true))
-            .WithTypeInspector(x => new SystemTextJsonTypeInspector(x))
+            .WithTypeInspector(x => new SystemTextJsonTypeInspector(x, ignoreOrder: true))
             .WithTypeInspector(x => new SortedTypeInspector(x))
             .WithEventEmitter(e => new StringQuotingEmitter(e))
             .WithEventEmitter(e => new FloatEmitter(e))

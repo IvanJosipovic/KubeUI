@@ -3,7 +3,6 @@ using Avalonia.LogicalTree;
 using AvaloniaEdit.Folding;
 using BenchmarkDotNet.Attributes;
 using KubeUI.Controls.Editors.Behaviors;
-using KubeUI.Features.Resources.Yaml.Behaviors;
 
 namespace KubeUI.Benchmarks;
 
@@ -33,6 +32,7 @@ public class FoldingMarginLeakBenchmarks
         return CountLogicalChildren(margin);
     }
 
+    /// <summary>Simulates repeated folding-marker replacement, optionally clearing old children first.</summary>
     private static void AddMarkers(
         FoldingMargin margin,
         int refreshCount,

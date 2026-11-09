@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" />
+    <PackageReference Include="Avalonia.Headless.XUnit" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,8 +24,8 @@
     <Using Include="KubeUI.Controls.Converters" />
     <Using Include="KubeUI.App" />
     <PackageReference Include="Moq" />
-    <Compile Include="..\..\tests\KubeUI.Avalonia.Tests\Infra\TestApp.cs" Link="TestApp.cs" />
-    <Compile Include="..\..\tests\KubeUI.Avalonia.Tests\Infra\TestSettingsService.cs" Link="TestSettingsService.cs" />
+    <Compile Include="..\..\tests\KubeUI.App.Tests\Infra\TestApp.cs" Link="TestApp.cs" />
+    <Compile Include="..\..\tests\KubeUI.App.Tests\Infra\TestSettingsService.cs" Link="TestSettingsService.cs" />
   </ItemGroup>
 
   <Target Name="DisableAnalyzers" BeforeTargets="CoreCompile">

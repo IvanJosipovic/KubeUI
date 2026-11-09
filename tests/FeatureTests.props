@@ -12,14 +12,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\KubeUI.Avalonia.Tests\Infra\TestApp.cs" Link="Infra\TestApp.cs" />
-    <Compile Include="..\KubeUI.Avalonia.Tests\Infra\TestApplicationExtensions.cs" Link="Infra\TestApplicationExtensions.cs" />
-    <Compile Include="..\KubeUI.Avalonia.Tests\Infra\TestScreenshot.cs" Link="Infra\TestScreenshot.cs" />
-    <Compile Include="..\KubeUI.Avalonia.Tests\Infra\TestSettingsService.cs" Link="Infra\TestSettingsService.cs" />
-    <Compile Include="..\KubeUI.Avalonia.Tests\Infra\TestFeatureClient.cs" Link="Infra\TestFeatureClient.cs" />
-    <Compile Include="..\KubeUI.Avalonia.Tests\Infra\Initializer.cs" Link="Infra\Initializer.cs" />
-    <Compile Include="..\KubeUI.Avalonia.Tests\Infra\LiveClusterFactAttribute.cs" Link="Infra\LiveClusterFactAttribute.cs" />
-    <Compile Include="..\KubeUI.Avalonia.Tests\GlobalUsings.cs" Link="GlobalUsings.cs" />
+    <Compile Include="..\KubeUI.App.Tests\Infra\TestApp.cs" Link="Infra\TestApp.cs" />
+    <Compile Include="..\KubeUI.App.Tests\Infra\TestApplicationExtensions.cs" Link="Infra\TestApplicationExtensions.cs" />
+    <Compile Include="..\KubeUI.App.Tests\Infra\TestScreenshot.cs" Link="Infra\TestScreenshot.cs" />
+    <Compile Include="..\KubeUI.App.Tests\Infra\TestSettingsService.cs" Link="Infra\TestSettingsService.cs" />
+    <Compile Include="..\KubeUI.App.Tests\Infra\TestFeatureClient.cs" Link="Infra\TestFeatureClient.cs" />
+    <Compile Include="..\KubeUI.App.Tests\Infra\Initializer.cs" Link="Infra\Initializer.cs" />
+    <Compile Include="..\KubeUI.App.Tests\Infra\LiveClusterFactAttribute.cs" Link="Infra\LiveClusterFactAttribute.cs" />
+    <Compile Include="..\KubeUI.App.Tests\GlobalUsings.cs" Link="GlobalUsings.cs" />
     <Using Include="Xunit" />
     <Using Include="KubeUI.Controls.Converters" />
     <Using Include="KubeUI.Controls.Presentation" />
