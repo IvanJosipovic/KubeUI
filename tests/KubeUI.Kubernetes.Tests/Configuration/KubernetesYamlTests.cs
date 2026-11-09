@@ -59,6 +59,21 @@ public sealed class KubernetesYamlTests : IDisposable
     }
 
     [Fact]
+    public void runtime_type_deserialization_uses_the_resolved_json_contract_directly()
+    {
+        const string yaml = """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: runtime-type-pod
+            """;
+
+        var restored = _serializer.Deserialize(yaml, typeof(V1Pod)).ShouldBeOfType<V1Pod>();
+
+        restored.Metadata.Name.ShouldBe("runtime-type-pod");
+    }
+
+    [Fact]
     public void secret_round_trips_binary_data()
     {
         V1Secret secret = new()
@@ -266,6 +281,29 @@ public sealed class KubernetesYamlTests : IDisposable
         restored.Users.ShouldHaveSingleItem().UserCredentials.Token.ShouldBe("token");
         AssertExtension(restored.Extensions.ShouldHaveSingleItem());
         AssertExtension(restored.Contexts.Single().Extensions.ShouldHaveSingleItem());
+    }
+
+    [Fact]
+    public void standalone_named_extension_uses_the_application_json_contract()
+    {
+        NamedExtension extension = new()
+        {
+            Name = "sample",
+            Extension = new Dictionary<string, object>
+            {
+                ["enabled"] = true,
+                ["nested"] = new Dictionary<string, object> { ["mode"] = "strict" },
+            },
+        };
+
+        var yaml = _serializer.Serialize(extension);
+        yaml.ShouldContain("name: sample");
+        yaml.ShouldContain("mode: strict");
+
+        var restored = _serializer.Deserialize(yaml, typeof(NamedExtension)).ShouldBeOfType<NamedExtension>();
+        var values = ((object)restored.Extension).ShouldBeOfType<Dictionary<object, object>>();
+        values["enabled"].ShouldBe(true);
+        values["nested"].ShouldBeOfType<Dictionary<object, object>>()["mode"].ShouldBe("strict");
     }
 
     [Fact]

@@ -45,15 +45,15 @@ internal sealed class KubernetesYamlSerializer : IKubernetesYamlSerializer
     {
         ArgumentNullException.ThrowIfNull(value);
 
-        var json = SerializeToJsonElement(value, _jsonOptions);
-        return YamlSerializer.Serialize(json, s_jsonElementTypeInfo);
+        var document = GetSerializableDocument(value, _jsonOptions);
+        return YamlSerializer.Serialize(document.Value, document.TypeInfo);
     }
 
     public string SerializeAll(IEnumerable<object> values)
     {
         ArgumentNullException.ThrowIfNull(values);
 
-        List<JsonElement> documents = [];
+        List<(object? Value, JsonTypeInfo TypeInfo)> documents = [];
         foreach (var value in values)
         {
             if (value is null)
@@ -61,18 +61,17 @@ internal sealed class KubernetesYamlSerializer : IKubernetesYamlSerializer
                 continue;
             }
 
-            documents.Add(SerializeToJsonElement(value, _jsonOptions));
+            documents.Add(GetSerializableDocument(value, _jsonOptions));
         }
 
-        return YamlSerializer.SerializeDocuments(documents, s_jsonElementTypeInfo);
+        return YamlSerializer.SerializeDocuments(documents);
     }
 
     public T Deserialize<T>(string yaml, bool strict = false)
     {
         ArgumentNullException.ThrowIfNull(yaml);
 
-        var json = DeserializeElement(yaml, strict);
-        return (T)DeserializeJsonElement(json, typeof(T), GetOptions(strict))!;
+        return (T)DeserializeYaml(yaml, typeof(T), strict)!;
     }
 
     public object? Deserialize(string yaml, Type type, bool strict = false)
@@ -80,8 +79,7 @@ internal sealed class KubernetesYamlSerializer : IKubernetesYamlSerializer
         ArgumentNullException.ThrowIfNull(yaml);
         ArgumentNullException.ThrowIfNull(type);
 
-        var json = DeserializeElement(yaml, strict);
-        return DeserializeJsonElement(json, type, GetOptions(strict));
+        return DeserializeYaml(yaml, type, strict);
     }
 
     public List<object> LoadAllFromString(string yaml, Func<string, Type> resolveType, bool strict = false)
@@ -119,28 +117,33 @@ internal sealed class KubernetesYamlSerializer : IKubernetesYamlSerializer
 
     private YamlSerializerOptions GetYamlOptions(bool strict) => strict ? _strictYamlOptions : _lenientYamlOptions;
 
-    private static JsonElement SerializeToJsonElement(object value, JsonSerializerOptions options)
+    private object? DeserializeYaml(string yaml, Type type, bool strict)
+    {
+        var options = GetOptions(strict);
+        var yamlOptions = GetYamlOptions(strict);
+        if (type == typeof(object) || type == typeof(Dictionary<string, object>))
+        {
+            return DeserializeJsonElement(DeserializeElement(yaml, strict), type, options);
+        }
+
+        if (type == typeof(K8SConfiguration))
+        {
+            var document = YamlSerializer.Deserialize(yaml, KubeConfigJsonContext.Default.KubeConfigDocument, yamlOptions)
+                ?? throw new JsonException("The kubeconfig document is empty.");
+            return ToKubeConfig(document);
+        }
+
+        return YamlSerializer.Deserialize(yaml, options.GetTypeInfo(type), yamlOptions);
+    }
+
+    private static (object? Value, JsonTypeInfo TypeInfo) GetSerializableDocument(object value, JsonSerializerOptions options)
     {
         if (value is K8SConfiguration kubeConfig)
         {
-            return JsonSerializer.SerializeToElement(
-                ToKubeConfigDocument(kubeConfig),
-                KubeConfigJsonContext.Default.KubeConfigDocument);
+            return (ToKubeConfigDocument(kubeConfig), KubeConfigJsonContext.Default.KubeConfigDocument);
         }
 
-        if (value is NamedExtension extension)
-        {
-            KubeConfigNamedExtensionDocument document = new()
-            {
-                Name = extension.Name,
-                Extension = SerializeExtension((object?)extension.Extension),
-            };
-            return JsonSerializer.SerializeToElement(
-                document,
-                KubeConfigJsonContext.Default.KubeConfigNamedExtensionDocument);
-        }
-
-        return JsonSerializer.SerializeToElement(value, options.GetTypeInfo(value.GetType()));
+        return (value, options.GetTypeInfo(value.GetType()));
     }
 
     private static object? DeserializeJsonElement(JsonElement json, Type type, JsonSerializerOptions options)
@@ -162,17 +165,6 @@ internal sealed class KubernetesYamlSerializer : IKubernetesYamlSerializer
             var document = JsonSerializer.Deserialize(json, KubeConfigJsonContext.Default.KubeConfigDocument)
                 ?? throw new JsonException("The kubeconfig document is empty.");
             return ToKubeConfig(document);
-        }
-
-        if (type == typeof(NamedExtension))
-        {
-            var document = JsonSerializer.Deserialize(json, KubeConfigJsonContext.Default.KubeConfigNamedExtensionDocument)
-                ?? throw new JsonException("The kubeconfig extension document is empty.");
-            return new NamedExtension
-            {
-                Name = document.Name,
-                Extension = DeserializeExtension(document.Extension),
-            };
         }
 
         return JsonSerializer.Deserialize(json, options.GetTypeInfo(type));
@@ -418,7 +410,7 @@ internal sealed class KubernetesYamlSerializer : IKubernetesYamlSerializer
         return document.RootElement.Clone();
     }
 
-    private static void WriteExtension(Utf8JsonWriter writer, object? value)
+    internal static void WriteExtension(Utf8JsonWriter writer, object? value)
     {
         switch (value)
         {
@@ -479,7 +471,7 @@ internal sealed class KubernetesYamlSerializer : IKubernetesYamlSerializer
         }
     }
 
-    private static object? DeserializeExtension(JsonElement value)
+    internal static object? DeserializeExtension(JsonElement value)
     {
         switch (value.ValueKind)
         {
