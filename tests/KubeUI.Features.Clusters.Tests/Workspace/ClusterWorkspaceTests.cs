@@ -36,6 +36,55 @@ public class ClusterWorkspaceTests
         workspace.GetResourceConfigs().ShouldNotContain(config => config is CustomResourceConfig);
     }
 
+    [AvaloniaTheory, KubernetesBackendData]
+    [Trait("Category", "Kind")]
+    public async Task discovery_registers_custom_resource_without_crd_list_or_watch_access(KubernetesBackend backend)
+    {
+        var services = Application.Current.GetTestServices();
+        var crd = TestCustomResourceDefinitionFactory.Create("widgets.kubeui.com", "widgets", "value");
+        var expectedKind = GetCustomResourceKind(crd);
+        var config = CreateRestrictedClusterConfig(backend,
+        [
+            crd,
+            .. KubernetesRbac.InNamespace(
+                KubernetesRbac.ServiceAccountNamespace,
+                new RbacRule("widgets", "list", "kubeui.com"),
+                new RbacRule("widgets", "watch", "kubeui.com")),
+        ]);
+        await using var testCluster = await services.GetRequiredService<TestClusterGenerator>()
+            .CreateAsync(config, TestContext.Current.CancellationToken);
+        using var workspace = CreateWorkspace(testCluster, services);
+
+        await workspace.Connect();
+
+        workspace.Runtime.Connected.ShouldBeTrue();
+        workspace.Runtime.LastError.ShouldBeNull();
+        workspace.Runtime.ApiDiscoverySnapshot.ShouldNotBeNull()
+            .Resources.ShouldContain(resource => resource.Kind == expectedKind);
+        workspace.Runtime.ModelCatalog.IsCustomResource(expectedKind).ShouldBeTrue();
+
+        var resourceConfig = await TestWait.UntilValueAsync(
+            () => workspace.GetResourceConfigs().OfType<CustomResourceConfig>()
+                .FirstOrDefault(candidate => candidate.Kind == expectedKind),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+
+        resourceConfig.ShouldNotBeNull();
+        resourceConfig.CanListAndWatch.ShouldBeTrue();
+        workspace.Runtime.Permissions.CanI<V1CustomResourceDefinition>(Verb.List).ShouldBeFalse();
+        workspace.Runtime.Permissions.CanI<V1CustomResourceDefinition>(Verb.Watch).ShouldBeFalse();
+
+        await resourceConfig.SeedResource(false, TestContext.Current.CancellationToken);
+
+        var container = GetSeededContainer(workspace.Runtime, expectedKind);
+        container.ShouldNotBeNull();
+        GetInformers(container).Count.ShouldBe(1);
+        var requestPaths = testCluster.FakeApi!.RequestUris.Select(static uri => uri?.AbsolutePath).ToArray();
+        requestPaths.ShouldContain("/apis/kubeui.com/v1beta1/namespaces/my-app/widgets");
+        requestPaths.ShouldNotContain("/apis/kubeui.com/v1beta1/widgets");
+    }
+
     [AvaloniaFact]
     public async Task connected_workspace_registers_resource_config_models_in_catalog()
     {
@@ -155,10 +204,10 @@ public class ClusterWorkspaceTests
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
         resourceConfig.ShouldNotBeNull();
-        resourceConfig.ShouldBeOfType<CustomResourceConfig>();
+        resourceConfig.ShouldBeOfType<CustomResourceConfig>().Origin.ShouldBe(ResourceOrigin.ApiDiscovery);
         resourceConfig.Kind.ShouldBe(resourceKind);
         resourceConfig.IsCustomResource.ShouldBeTrue();
-        resourceConfig.CustomResourceDefinition.ShouldNotBeNull().Name().ShouldBe(crd.Name());
+        resourceConfig.CustomResourceDefinition.ShouldBeNull();
 
         await resourceConfig.SeedResource(false, TestContext.Current.CancellationToken);
         await TestWait.UntilAsync(
@@ -266,7 +315,7 @@ public class ClusterWorkspaceTests
 
     [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
-    public async Task updated_crd_updates_resource_config_gvk_entry_and_seeded_informer(KubernetesBackend backend)
+    public async Task crd_schema_update_keeps_discovery_backed_config_and_seeded_informer(KubernetesBackend backend)
     {
         using var workspace = await Application.Current.CreateClusterAsync(
             config => config.Type = backend);
@@ -302,19 +351,9 @@ public class ClusterWorkspaceTests
         var updatedKind = await WaitForRegisteredCustomResourceKindAsync(workspace.Runtime, updatedCrd);
         updatedKind.ShouldBe(originalKind);
 
-        var updatedResourceConfig = await TestWait.UntilValueAsync(
-            () =>
-            {
-                var resourceConfig = GetCustomResourceConfig(workspace, updatedCrd);
-                return resourceConfig?.Kind == updatedKind && !ReferenceEquals(resourceConfig, originalResourceConfig)
-                    ? resourceConfig
-                    : null;
-            },
-            TimeSpan.FromSeconds(10),
-            cancellationToken: TestContext.Current.CancellationToken,
-            beforePoll: () => Dispatcher.UIThread.RunJobs());
-        updatedResourceConfig.ShouldNotBeNull();
-        updatedResourceConfig.ShouldNotBeSameAs(originalResourceConfig);
+        await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
+        var updatedResourceConfig = GetCustomResourceConfig(workspace, updatedCrd);
+        updatedResourceConfig.ShouldBeSameAs(originalResourceConfig);
         updatedResourceConfig.Kind.ShouldBe(updatedKind);
 
         var updatedContainer = await TestWait.UntilValueAsync(
@@ -500,7 +539,7 @@ public class ClusterWorkspaceTests
         resourceConfig.ShouldNotBeNull();
 
         GroupApiVersionKind? removedKind = null;
-        workspace.CustomResourceDefinitionRemoved += (_, kind) => removedKind = kind;
+        workspace.CustomResourceRemoved += (_, kind) => removedKind = kind;
 
         var invalidCrd = TestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "tests", "someString");
         var currentCrd = workspace.Runtime.GetResource<V1CustomResourceDefinition>(null, crd.Name()).ShouldNotBeNull();
@@ -508,8 +547,6 @@ public class ClusterWorkspaceTests
         invalidCrd.Metadata.Generation = 2;
         invalidCrd.Spec.Versions = [];
         await workspace.Runtime.ReplaceAsync(invalidCrd, TestContext.Current.CancellationToken);
-
-        await workspace.Runtime.DeleteAsync(invalidCrd, TestContext.Current.CancellationToken);
 
         await TestWait.UntilAsync(
             () => GetCustomResourceConfig(workspace, crd) == null && removedKind == resourceKind,

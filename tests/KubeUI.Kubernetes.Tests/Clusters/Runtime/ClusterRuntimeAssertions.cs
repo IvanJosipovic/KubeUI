@@ -456,9 +456,11 @@ public abstract class ClusterRuntimeAssertions
             crd.ShouldNotBeNull();
             crd.Name().ShouldBe("tests.kubeui.com");
 
-            harness.Cluster.ModelCatalog.IsCustomResource(
-                new GroupApiVersionKind("kubeui.com", "v1beta1", "Test", "tests"))
-                .ShouldBeTrue();
+            await TestWait.UntilAsync(
+                () => harness.Cluster.ModelCatalog.IsCustomResource(
+                    new GroupApiVersionKind("kubeui.com", "v1beta1", "Test", "tests")),
+                TimeSpan.FromSeconds(10),
+                cancellationToken: TestContext.Current.CancellationToken);
 
         }
         finally

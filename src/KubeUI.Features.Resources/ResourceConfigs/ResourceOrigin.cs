@@ -8,4 +8,7 @@ public enum ResourceOrigin
 
     /// <summary>The kind is discovered at runtime from a custom resource definition.</summary>
     CustomResourceDefinition,
+
+    /// <summary>The kind is discovered from the Kubernetes API resource snapshot.</summary>
+    ApiDiscovery,
 }

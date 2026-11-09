@@ -12,6 +12,8 @@ public sealed class KubernetesApiDiscoveryClient
     private readonly k8s.Kubernetes _client;
     private string? _coreETag;
     private string? _groupedETag;
+    private V2beta1APIGroupDiscoveryList? _cachedCore;
+    private V2beta1APIGroupDiscoveryList? _cachedGroups;
     private int _refreshInProgress;
     private int _refreshRequested;
 
@@ -28,6 +30,12 @@ public sealed class KubernetesApiDiscoveryClient
     /// <summary>Gets grouped API discovery data, or null before a successful refresh.</summary>
     public V2beta1APIGroupDiscoveryList? Groups { get; private set; }
 
+    /// <summary>Gets the last complete discovery snapshot, or null before a successful refresh.</summary>
+    public ApiDiscoverySnapshot? Snapshot { get; private set; }
+
+    /// <summary>Raised after a complete discovery refresh, including an unchanged ETag response.</summary>
+    public event Action<ApiDiscoverySnapshot>? SnapshotRefreshed;
+
     /// <summary>Refreshes core and grouped API discovery data, skipping concurrent requests.</summary>
     /// <param name="cancellationToken">Token used to cancel the refresh.</param>
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
@@ -43,8 +51,24 @@ public sealed class KubernetesApiDiscoveryClient
             do
             {
                 Volatile.Write(ref _refreshRequested, 0);
-                Core = await RefreshEndpointAsync(true, cancellationToken).ConfigureAwait(false);
-                Groups = await RefreshEndpointAsync(false, cancellationToken).ConfigureAwait(false);
+                var core = await RefreshEndpointAsync(true, cancellationToken).ConfigureAwait(false);
+                var groups = await RefreshEndpointAsync(false, cancellationToken).ConfigureAwait(false);
+                ApiDiscoverySnapshot snapshot;
+                try
+                {
+                    snapshot = ApiDiscoverySnapshot.Create(core, groups);
+                }
+                catch
+                {
+                    _coreETag = null;
+                    _groupedETag = null;
+                    throw;
+                }
+
+                Core = core;
+                Groups = groups;
+                Snapshot = snapshot;
+                SnapshotRefreshed?.Invoke(snapshot);
             }
             while (Interlocked.Exchange(ref _refreshRequested, 0) != 0);
         }
@@ -86,27 +110,32 @@ public sealed class KubernetesApiDiscoveryClient
             {
                 activity?.SetStatus(ActivityStatusCode.Ok);
                 return core
-                    ? Core ?? throw new InvalidOperationException("Core API discovery cache is empty.")
-                    : Groups ?? throw new InvalidOperationException("Grouped API discovery cache is empty.");
+                    ? _cachedCore ?? throw new InvalidOperationException("Core API discovery cache is empty.")
+                    : _cachedGroups ?? throw new InvalidOperationException("Grouped API discovery cache is empty.");
             }
 
             response.EnsureSuccessStatusCode();
-            if (response.Headers.ETag is { } responseETag)
-            {
-                if (core)
-                {
-                    _coreETag = responseETag.Tag;
-                }
-                else
-                {
-                    _groupedETag = responseETag.Tag;
-                }
-            }
-
             var result = await response.Content.ReadFromJsonAsync(
                     KubernetesJsonStaticContext.Default.V2beta1APIGroupDiscoveryList,
                     cancellationToken).ConfigureAwait(false)
                 ?? throw new InvalidOperationException("API group discovery response was empty.");
+            if (!string.Equals(result.kind, "APIGroupDiscoveryList", StringComparison.Ordinal)
+                || result.items is null)
+            {
+                throw new InvalidOperationException("API group discovery response was incomplete.");
+            }
+
+            if (core)
+            {
+                _cachedCore = result;
+                _coreETag = response.Headers.ETag?.Tag;
+            }
+            else
+            {
+                _cachedGroups = result;
+                _groupedETag = response.Headers.ETag?.Tag;
+            }
+
             activity?.SetStatus(ActivityStatusCode.Ok);
             return result;
         }

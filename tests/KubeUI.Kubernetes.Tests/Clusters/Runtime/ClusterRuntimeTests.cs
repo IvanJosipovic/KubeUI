@@ -3,6 +3,7 @@ namespace KubeUI.Kubernetes.Tests.Clusters.Runtime;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using DynamicData;
+using k8s;
 using KubernetesClient.Informer.Client;
 using Shouldly;
 using V1Namespace = k8s.Models.V1Namespace;
@@ -10,6 +11,7 @@ using V1ObjectMeta = k8s.Models.V1ObjectMeta;
 using V1Pod = k8s.Models.V1Pod;
 using V1Service = k8s.Models.V1Service;
 using V1ServiceAccount = k8s.Models.V1ServiceAccount;
+using V1CustomResourceDefinition = k8s.Models.V1CustomResourceDefinition;
 
 [Trait("Category", "Kind")]
 public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
@@ -163,6 +165,65 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
             $"connected={cluster.Connected}; namespaced={cluster.IsResourceNamespaced<V1Pod>()}; requests={discoveryState.RequestCount}");
     }
 
+    [Fact]
+    public async Task CrdInformerCoalescesDiscoveryRefreshBurst()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var requestState = new DiscoveryRequestCounterState();
+        var definitions = Enumerable.Range(1, 6)
+            .Select(index =>
+            {
+                var definition = TestCustomResourceDefinitionFactory.Create(
+                    $"things-{index}.kubeui.com",
+                    $"things{index}",
+                    "value");
+                definition.Spec.Names.Kind = $"Thing{index}";
+                definition.Spec.Names.ListKind = $"Thing{index}List";
+                return (IKubernetesObject<V1ObjectMeta>)definition;
+            })
+            .ToArray();
+
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig
+            {
+                Type = KubernetesBackend.Fake,
+                InitialResources = definitions,
+                ResponseLatency = TimeSpan.FromMilliseconds(50),
+                HttpHandlerFactory = () => [new DiscoveryRequestCounterHandler(requestState)],
+            },
+            cancellationToken);
+
+        var cluster = harness.Cluster;
+        await cluster.Connect();
+        await cluster.RefreshApiDiscoveryAsync();
+        await WaitForStableDiscoveryRequestCountAsync(requestState, cancellationToken);
+        var startingRequestCount = requestState.RequestCount;
+        var customResourceDefinitionKind = GroupApiVersionKind.From<V1CustomResourceDefinition>();
+        await cluster.Permissions.UpdatePermissionsAllNamespaceAsync(customResourceDefinitionKind, true, Verb.List);
+        await cluster.Permissions.UpdatePermissionsAllNamespaceAsync(customResourceDefinitionKind, true, Verb.Watch);
+        var snapshotRefreshCount = 0;
+        void OnSnapshotRefreshed(IClusterRuntime runtime, ApiDiscoverySnapshot snapshot)
+            => Interlocked.Increment(ref snapshotRefreshCount);
+
+        cluster.ApiDiscoverySnapshotRefreshed += OnSnapshotRefreshed;
+        try
+        {
+            await cluster.SeedResource<V1CustomResourceDefinition>(waitForReady: true, cancellationToken);
+            await TestWait.UntilAsync(
+                () => Volatile.Read(ref snapshotRefreshCount) > 0,
+                TimeSpan.FromSeconds(10),
+                cancellationToken: cancellationToken);
+            await WaitForStableDiscoveryRequestCountAsync(requestState, cancellationToken);
+
+            Volatile.Read(ref snapshotRefreshCount).ShouldBe(1);
+            requestState.RequestCount.ShouldBe(startingRequestCount + 2);
+        }
+        finally
+        {
+            cluster.ApiDiscoverySnapshotRefreshed -= OnSnapshotRefreshed;
+        }
+    }
+
     private sealed class DiscoveryGateState
     {
         private int _requestCount;
@@ -172,6 +233,52 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
         public int RequestCount => Volatile.Read(ref _requestCount);
 
         public void OnDiscoveryRequest() => Interlocked.Increment(ref _requestCount);
+    }
+
+    private sealed class DiscoveryRequestCounterState
+    {
+        private int _requestCount;
+
+        public int RequestCount => Volatile.Read(ref _requestCount);
+
+        public void Increment() => Interlocked.Increment(ref _requestCount);
+    }
+
+    private static Task WaitForStableDiscoveryRequestCountAsync(
+        DiscoveryRequestCounterState state,
+        CancellationToken cancellationToken)
+    {
+        var previousCount = state.RequestCount;
+        var unchangedSince = System.Diagnostics.Stopwatch.GetTimestamp();
+        return TestWait.UntilAsync(
+            () =>
+            {
+                var currentCount = state.RequestCount;
+                if (currentCount != previousCount)
+                {
+                    previousCount = currentCount;
+                    unchangedSince = System.Diagnostics.Stopwatch.GetTimestamp();
+                }
+
+                return System.Diagnostics.Stopwatch.GetElapsedTime(unchangedSince) >= TimeSpan.FromMilliseconds(750);
+            },
+            TimeSpan.FromSeconds(10),
+            cancellationToken: cancellationToken);
+    }
+
+    private sealed class DiscoveryRequestCounterHandler(DiscoveryRequestCounterState state) : DelegatingHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            if (request.RequestUri?.AbsolutePath is "/api" or "/apis")
+            {
+                state.Increment();
+            }
+
+            return base.SendAsync(request, cancellationToken);
+        }
     }
 
     private sealed class DiscoveryGateHandler(DiscoveryGateState state) : DelegatingHandler

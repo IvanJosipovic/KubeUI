@@ -18,12 +18,16 @@ public interface IClusterRuntime
     event Action<IClusterRuntime>? NamespaceSelectionRequired;
     event Action<IClusterRuntime, GroupApiVersionKind>? ResourceSeeded;
     event Action<IClusterRuntime, GroupApiVersionKind>? ResourceUnseeded;
+    /// <summary>Raised after a complete API discovery refresh.</summary>
+    event Action<IClusterRuntime, ApiDiscoverySnapshot>? ApiDiscoverySnapshotRefreshed;
     IKubernetes? Client { get; set; }
     K8SConfiguration KubeConfig { get; set; }
     /// <summary>
     /// Gets or sets the model catalog owned by this cluster runtime.
     /// </summary>
     ClusterModelCatalog ModelCatalog { get; set; }
+    /// <summary>Gets the last complete API discovery snapshot.</summary>
+    ApiDiscoverySnapshot? ApiDiscoverySnapshot { get; }
     string KubeConfigPath { get; set; }
     string Name { get; set; }
     ReadOnlyObservableCollection<V1Namespace> Namespaces { get; }
@@ -39,6 +43,8 @@ public interface IClusterRuntime
     void RemovePortForward(PortForwarder pf);
     Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task Connect();
+    /// <summary>Refreshes authenticated `/api` and `/apis` discovery.</summary>
+    Task RefreshApiDiscoveryAsync();
     Task EnsureOpenApiSchemasAsync();
     Task Disconnect();
     Task DeleteResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();

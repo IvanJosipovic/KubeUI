@@ -111,6 +111,29 @@ public sealed class FakeKubernetesHttpApiTests
     }
 
     [Fact]
+    public async Task AggregatedDiscoveryClient_keeps_last_snapshot_when_group_refresh_fails()
+    {
+        using var api = new FakeKubernetesHttpApi();
+        using var client = KubernetesClientMaterializer.Create(
+            new KubernetesClientConfiguration { Host = "http://fake-kubernetes" },
+            api);
+        var discovery = new KubernetesApiDiscoveryClient(client);
+
+        await discovery.RefreshAsync(TestContext.Current.CancellationToken);
+        var snapshot = discovery.Snapshot.ShouldNotBeNull();
+        var core = discovery.Core;
+        var groups = discovery.Groups;
+        api.GroupedDiscoveryStatusCode = HttpStatusCode.ServiceUnavailable;
+
+        await Should.ThrowAsync<HttpRequestException>(
+            () => discovery.RefreshAsync(TestContext.Current.CancellationToken));
+
+        discovery.Snapshot.ShouldBeSameAs(snapshot);
+        discovery.Core.ShouldBeSameAs(core);
+        discovery.Groups.ShouldBeSameAs(groups);
+    }
+
+    [Fact]
     public async Task AggregatedDiscoveryClient_skips_a_concurrent_refresh()
     {
         using var api = new FakeKubernetesHttpApi();

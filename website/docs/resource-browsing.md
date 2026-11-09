@@ -13,7 +13,9 @@ After a cluster connects, choose a resource type in its navigation tree. KubeUI 
 
 Resource tables support sorting, filtering, and search. Use the namespace selection and table filters to narrow a large list, then select a row to open its resource details. The available columns and actions depend on the resource type.
 
-KubeUI includes views for built-in Kubernetes resources and can discover custom resources from installed CRDs. A resource that your identity cannot list may be absent even while other resource types remain available.
+KubeUI discovers served resource types through the authenticated Kubernetes API. You do not need permission to list or watch CRD definitions just to discover a custom resource. Discovery does not grant access: KubeUI still checks your identity's list/watch permissions, and a resource you cannot list may be absent while other types remain available.
+
+Custom-resource tables start with Name, Namespace when applicable, and Age. If your identity can list and watch CRD definitions, KubeUI adds printer columns from the matching served CRD version. Without that access, discovery and resource browsing still work, but those extra columns are unavailable. Values come from full resource objects, so they continue updating with watch events.
 
 <ThemeVideo name="browse-pods" />
 

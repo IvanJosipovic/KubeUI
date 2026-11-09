@@ -58,6 +58,7 @@ public sealed class ClusterModelCatalog
     public void RegisterResource(GroupApiVersionKind resourceKind, Type resourceType)
     {
         _sharedCatalog.Register(resourceKind, resourceType);
+        RemoveDiscoveredResource(resourceKind);
     }
 
     /// <summary>Registers a CLR resource model and its typed seed operation.</summary>
@@ -175,8 +176,53 @@ public sealed class ClusterModelCatalog
         }
     }
 
+    /// <summary>Replaces dynamic resource keys from a complete API discovery snapshot.</summary>
+    /// <param name="resources">Served resource endpoints from the snapshot.</param>
+    /// <returns>Previously registered dynamic kinds absent from the new snapshot.</returns>
+    public IReadOnlyList<GroupApiVersionKind> ReplaceDiscoveredCustomResources(
+        IEnumerable<ApiDiscoveryResource> resources)
+    {
+        ArgumentNullException.ThrowIfNull(resources);
+        var discoveredKinds = resources
+            .Select(static resource => resource.Kind)
+            .Where(kind => !_sharedCatalog.ContainsResourceIdentity(kind.Group, kind.Kind))
+            .Distinct()
+            .ToArray();
+
+        lock (_gate)
+        {
+            var previousKinds = _customResourceKinds.Values.ToHashSet();
+            _customResourceKinds.Clear();
+            _customResourceKindsByDefinitionName.Clear();
+
+            foreach (var kind in discoveredKinds)
+            {
+                _customResourceKinds[CreateLookupKey(kind)] = kind;
+            }
+
+            previousKinds.ExceptWith(discoveredKinds);
+            return previousKinds.ToArray();
+        }
+    }
+
     private static (string Group, string Version, string Kind) CreateLookupKey(GroupApiVersionKind kind)
         => (kind.Group, kind.ApiVersion, kind.Kind);
+
+    private void RemoveDiscoveredResource(GroupApiVersionKind kind)
+    {
+        lock (_gate)
+        {
+            _customResourceKinds.Remove(CreateLookupKey(kind));
+            var definitionNames = _customResourceKindsByDefinitionName
+                .Where(pair => pair.Value == kind)
+                .Select(static pair => pair.Key)
+                .ToArray();
+            foreach (var definitionName in definitionNames)
+            {
+                _customResourceKindsByDefinitionName.Remove(definitionName);
+            }
+        }
+    }
 
     private static (string Group, string Version, string Kind) CreateLookupKey(string apiVersion, string kind)
     {

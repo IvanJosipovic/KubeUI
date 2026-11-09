@@ -9,7 +9,7 @@ namespace KubeUI.Features.Resources
         bool ShowNewResource { get; }
 
         /// <summary>Gets whether this resource configuration is backed by a custom resource definition.</summary>
-        bool IClusterResourceConfig.IsCustomResource => Origin == ResourceOrigin.CustomResourceDefinition;
+        bool IClusterResourceConfig.IsCustomResource => Origin is ResourceOrigin.CustomResourceDefinition or ResourceOrigin.ApiDiscovery;
 
         /// <summary>Gets where this kind's model comes from.</summary>
         ResourceOrigin Origin { get; }

@@ -37,6 +37,12 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
 
     public bool CanRefreshPermissions => !IsRefreshingPermissions;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanRefreshApiDiscovery))]
+    public partial bool IsRefreshingApiDiscovery { get; set; }
+
+    public bool CanRefreshApiDiscovery => !IsRefreshingApiDiscovery;
+
     public string ClusterTitle => string.Format(ClustersLanguageManager.Instance.ClusterSettingsView_TitleFormat.CurrentValue()!, Cluster?.Runtime.Name);
 
     [RelayCommand]
@@ -55,6 +61,25 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         finally
         {
             IsRefreshingPermissions = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task RefreshApiDiscoveryAsync()
+    {
+        if (Cluster is null || IsRefreshingApiDiscovery)
+        {
+            return;
+        }
+
+        IsRefreshingApiDiscovery = true;
+        try
+        {
+            await Cluster.RefreshApiDiscoveryAsync();
+        }
+        finally
+        {
+            IsRefreshingApiDiscovery = false;
         }
     }
 

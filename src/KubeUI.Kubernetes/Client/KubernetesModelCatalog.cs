@@ -77,6 +77,16 @@ public sealed class KubernetesModelCatalog
         }
     }
 
+    internal bool ContainsResourceIdentity(string group, string kind)
+    {
+        lock (_sync)
+        {
+            return _types.Keys.Any(candidate =>
+                string.Equals(candidate.Group, group, StringComparison.Ordinal)
+                && string.Equals(candidate.Kind, kind, StringComparison.Ordinal));
+        }
+    }
+
     private static string CreateYamlKey(GroupApiVersionKind key)
     {
         var groupPrefix = string.IsNullOrEmpty(key.Group) ? string.Empty : $"{key.Group}/";
