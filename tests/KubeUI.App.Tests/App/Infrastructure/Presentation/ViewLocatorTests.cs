@@ -208,7 +208,6 @@ public sealed class ViewLocatorTests
         SettingsPersistenceData settings = new();
         settings.Settings.PreviewFeatures.Hubble = true;
         settings.Settings.PreviewFeatures.DisableJsonSerializationReflection = disableReflection;
-        settings.Settings.PreviewFeatures.DisableYamlSerializationReflection = disableReflection;
         var persistence = new Mock<ISettingsPersistence>();
         persistence.Setup(value => value.Load()).Returns(settings);
         return Program.CreateHostBuilder(

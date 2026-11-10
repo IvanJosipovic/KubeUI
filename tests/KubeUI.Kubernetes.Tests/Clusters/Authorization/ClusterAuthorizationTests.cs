@@ -2,6 +2,8 @@ using System.Net;
 using System.Reflection;
 using k8s;
 using k8s.Models;
+using KubeUI.Kubernetes.Serialization;
+using Microsoft.Extensions.DependencyInjection;
 using KubernetesClient.Informer.Client;
 using Shouldly;
 
@@ -676,7 +678,11 @@ public sealed class ClusterAuthorizationTests
     [Fact]
     public void custom_resource_definition_resolves_its_served_storage_version()
     {
-        var crd = Serialization.KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
+        using var services = new ServiceCollection()
+            .AddKubeUIKubernetesServices(jsonAllowReflection: false)
+            .BuildServiceProvider();
+        var crd = services.GetRequiredService<IKubernetesYamlSerializer>()
+            .Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
 
         crd.TryGetResourceKind(out var kind).ShouldBeTrue();
         kind.ShouldBe(new GroupApiVersionKind("kubeui.com", "v1beta1", "Test", "tests"));

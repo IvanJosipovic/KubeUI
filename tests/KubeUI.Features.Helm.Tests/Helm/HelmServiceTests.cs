@@ -1,17 +1,12 @@
 using System.Text.Json;
 using Helm.NET;
 using KubeUI.Features.Helm.Helm;
-using KubeUI.Kubernetes.Serialization;
-using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
 namespace KubeUI.Features.Helm.Tests.Helm;
 
-public sealed class HelmServiceTests : IDisposable
+public sealed class HelmServiceTests
 {
-    private readonly ServiceProvider _services = new ServiceCollection().AddKubeUIKubernetesServices(jsonAllowReflection: false, yamlAllowReflection: true).BuildServiceProvider();
-
-    public void Dispose() => _services.Dispose();
     [Fact]
     public async Task GetChartValues_returns_default_yaml_for_chart_and_selected_version()
     {
@@ -40,7 +35,7 @@ public sealed class HelmServiceTests : IDisposable
         client.ListChartsCalls.ShouldBe([null]);
         (await service.GetManifestAsync(connection, "cilium", 2, token)).ShouldBe(client.TemplateResult);
         client.GetManifestCalls.ShouldBe([("cilium", "apps", 2)]);
-        Dictionary<string, object?> values = new() { ["enabled"] = true };
+        var values = JsonSerializer.SerializeToElement(new { enabled = true });
         (await service.TemplateVersionAsync(connection, "cilium", "cilium/cilium", "1.20.3", values, token))
             .ShouldBe(client.TemplateResult);
         client.TemplateVersion.ShouldBe("1.20.3");
@@ -80,8 +75,8 @@ public sealed class HelmServiceTests : IDisposable
 
     private static HelmConnection CreateConnection() => new("/home/user/.kube/config", "kind-test", "apps");
 
-    private HelmService CreateService(FakeHelmClientFactory factory)
-        => new(factory, _services.GetRequiredService<IKubernetesJsonSerializer>());
+    private static HelmService CreateService(FakeHelmClientFactory factory)
+        => new(factory);
 
     [Fact]
     public async Task ListRepositoriesAsync_returns_repositories_from_client()
@@ -181,7 +176,7 @@ public sealed class HelmServiceTests : IDisposable
         };
         using var factory = new FakeHelmClientFactory(client);
         using var sut = CreateService(factory);
-        Dictionary<string, object?> values = new() { ["replicas"] = 3 };
+        var values = JsonSerializer.SerializeToElement(new { replicas = 3 });
 
         var release = await sut.InstallAsync(
             CreateConnection(),
@@ -340,7 +335,7 @@ public sealed class HelmServiceTests : IDisposable
         var client = new FakeHelmClient { TemplateResult = "kind: Deployment" };
         using var factory = new FakeHelmClientFactory(client);
         using var sut = CreateService(factory);
-        Dictionary<string, object?> values = new() { ["image"] = "nginx:1.27" };
+        var values = JsonSerializer.SerializeToElement(new { image = "nginx:1.27" });
 
         var manifest = await sut.TemplateAsync(CreateConnection(), "web", "bitnami/nginx", values, TestContext.Current.CancellationToken);
 

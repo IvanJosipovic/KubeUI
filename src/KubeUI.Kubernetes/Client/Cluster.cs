@@ -15,8 +15,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Options;
 using Polly;
-using YamlDotNet.Core;
-using YamlDotNet.Core.Events;
 
 namespace KubeUI.Kubernetes;
 
@@ -191,16 +189,10 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                         Status = ClusterStatus.Connecting;
                         LastError = null;
                         ResetAuthorizationIndex();
-                        KubernetesClientConfiguration config;
-
-                        if (string.IsNullOrEmpty(KubeConfigPath))
-                        {
-                            config = KubernetesClientConfiguration.BuildConfigFromConfigObject(KubeConfig, Name);
-                        }
-                        else
-                        {
-                            config = KubernetesClientConfiguration.BuildConfigFromConfigFile(KubeConfigPath, Name);
-                        }
+                        var kubeConfig = string.IsNullOrEmpty(KubeConfigPath)
+                            ? KubeConfig
+                            : KubeConfigFileLoader.Load(KubeConfigPath, _yamlSerializer);
+                        var config = KubernetesClientConfiguration.BuildConfigFromConfigObject(kubeConfig, Name);
 
                         if (KubernetesClientFactory is null)
                         {
@@ -949,18 +941,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     private List<GenericKubernetesObject> LoadGenericResources(Stream stream)
     {
         using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
-        var parser = new Parser(reader);
-        parser.Consume<StreamStart>();
-        var resources = new List<GenericKubernetesObject>();
-
-        while (parser.Accept<DocumentStart>(out _))
-        {
-            resources.Add((GenericKubernetesObject)_yamlSerializer.Deserialize(
-                parser,
-                typeof(GenericKubernetesObject))!);
-        }
-
-        return resources;
+        return _yamlSerializer.LoadGenericResourcesFromString(reader.ReadToEnd());
     }
 
     public async Task ImportFolder(string path)

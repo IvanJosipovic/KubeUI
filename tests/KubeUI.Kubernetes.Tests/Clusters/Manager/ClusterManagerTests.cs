@@ -4,12 +4,62 @@ using k8s.KubeConfigModels;
 using KubeUI.Kubernetes.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests.Clusters.Manager;
 
 public class ClusterManagerTests
 {
+    [Fact]
+    public async Task Cluster_connect_loads_kubeconfig_path_with_the_injected_yaml_serializer()
+    {
+        var dispatcher = new RecordingThreadDispatcher();
+        using var directory = new TemporaryDirectory();
+        var path = Path.Combine(directory.Path, "kubeconfig");
+        File.WriteAllText(path, "fixture contents");
+        await using var services = KubernetesTestServiceProvider.Build(new KubernetesTestSettingsStore(), collection =>
+        {
+            collection.AddSingleton<IThreadDispatcher>(dispatcher);
+        });
+
+        var parsedConfig = new K8SConfiguration
+        {
+            Contexts =
+            [
+                new Context
+                {
+                    Name = "path-context",
+                    ContextDetails = new ContextDetails { Cluster = "missing-cluster" },
+                },
+            ],
+            Clusters = [],
+        };
+        var yamlSerializer = new Mock<IKubernetesYamlSerializer>(MockBehavior.Strict);
+        yamlSerializer.Setup(serializer => serializer.Deserialize<K8SConfiguration>("fixture contents", false))
+            .Returns(parsedConfig);
+        await using var cluster = new Cluster(
+            NullLogger<Cluster>.Instance,
+            NullLoggerFactory.Instance,
+            services.GetRequiredService<ClusterModelCatalog>(),
+            services.GetRequiredService<IClusterSettingsStore>(),
+            services,
+            dispatcher,
+            services.GetRequiredService<IKubernetesJsonSerializer>(),
+            yamlSerializer.Object)
+        {
+            Name = "path-context",
+            KubeConfigPath = path,
+            KubeConfig = new K8SConfiguration(),
+        };
+
+        await cluster.Connect();
+
+        yamlSerializer.Verify(serializer => serializer.Deserialize<K8SConfiguration>("fixture contents", false), Times.Once);
+        cluster.Status.ShouldBe(ClusterStatus.Errored);
+        cluster.LastError.ShouldContain("Cluster not found for context");
+    }
+
     [Fact]
     public async Task LoadClustersAsync_treats_a_missing_kubeconfig_collection_as_empty()
     {
@@ -95,7 +145,7 @@ public class ClusterManagerTests
         });
 
         var existingConfig = CreateKubeConfig("existing-context", "existing-cluster", "existing-user", "https://existing.example.com");
-        File.WriteAllText(kubeConfigPath, Serialization.KubernetesYaml.Serialize(existingConfig));
+        File.WriteAllText(kubeConfigPath, services.GetRequiredService<IKubernetesYamlSerializer>().Serialize(existingConfig));
 
         using var manager = new ClusterManager(
             NullLogger<ClusterManager>.Instance,
@@ -111,7 +161,7 @@ public class ClusterManagerTests
         manager.GetCluster("existing-context").ShouldNotBeNull();
 
         var importedConfig = CreateKubeConfig("imported-context", "imported-cluster", "imported-user", "https://imported.example.com");
-        var importedYaml = Serialization.KubernetesYaml.Serialize(importedConfig);
+        var importedYaml = services.GetRequiredService<IKubernetesYamlSerializer>().Serialize(importedConfig);
         importedYaml.ShouldContain("imported-context");
         importedYaml.ShouldContain("imported-cluster");
 
@@ -122,7 +172,8 @@ public class ClusterManagerTests
         rawYaml.ShouldContain("imported-context");
         rawYaml.ShouldContain("imported-cluster");
 
-        var mergedConfig = KubernetesClientConfiguration.LoadKubeConfig(kubeConfigPath);
+        var mergedConfig = services.GetRequiredService<IKubernetesYamlSerializer>()
+            .Deserialize<K8SConfiguration>(File.ReadAllText(kubeConfigPath));
         mergedConfig.Contexts.Select(x => x.Name).ShouldContain("existing-context");
         mergedConfig.Contexts.Select(x => x.Name).ShouldContain("imported-context");
 
@@ -148,7 +199,7 @@ public class ClusterManagerTests
             "https://test-aks.example.com");
 
         config.FileName = kubeConfigPath;
-        File.WriteAllText(kubeConfigPath, Serialization.KubernetesYaml.Serialize(config));
+        File.WriteAllText(kubeConfigPath, services.GetRequiredService<IKubernetesYamlSerializer>().Serialize(config));
 
         using var manager = new ClusterManager(
             NullLogger<ClusterManager>.Instance,
@@ -170,7 +221,8 @@ public class ClusterManagerTests
         dispatcher.Drain();
 
         manager.GetCluster("clusterUser_test-aks_test-aks").ShouldBeNull();
-        var updated = KubernetesClientConfiguration.LoadKubeConfig(kubeConfigPath);
+        var updated = services.GetRequiredService<IKubernetesYamlSerializer>()
+            .Deserialize<K8SConfiguration>(File.ReadAllText(kubeConfigPath));
         updated.Contexts.Select(x => x.Name).ShouldNotContain("clusterUser_test-aks_test-aks");
     }
 
@@ -413,7 +465,8 @@ public class ClusterManagerTests
     {
         var path = Path.Combine(directory, fileName);
         var config = CreateKubeConfig(contextName, contextName + "-cluster", contextName + "-user", "https://" + contextName + ".example.com");
-        File.WriteAllText(path, Serialization.KubernetesYaml.Serialize(config));
+        using var services = KubernetesTestServiceProvider.Build(new KubernetesTestSettingsStore());
+        File.WriteAllText(path, services.GetRequiredService<IKubernetesYamlSerializer>().Serialize(config));
         return path;
     }
 

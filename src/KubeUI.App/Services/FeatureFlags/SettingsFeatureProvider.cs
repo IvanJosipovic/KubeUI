@@ -34,7 +34,6 @@ public sealed class SettingsFeatureProvider : IFeatureProvider
             FeatureFlagKeys.Helm => Resolve(flagKey, features.Helm),
             FeatureFlagKeys.Hubble => Resolve(flagKey, features.Hubble),
             FeatureFlagKeys.DisableJsonSerializationReflection => Resolve(flagKey, features.DisableJsonSerializationReflection),
-            FeatureFlagKeys.DisableYamlSerializationReflection => Resolve(flagKey, features.DisableYamlSerializationReflection),
             _ => new ResolutionDetails<bool>(
                 flagKey,
                 defaultValue,

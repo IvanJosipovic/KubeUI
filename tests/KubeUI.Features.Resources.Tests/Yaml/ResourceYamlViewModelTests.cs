@@ -135,10 +135,10 @@ public class ResourceYamlViewModelTests
             },
         };
 
-        using var serializationServices = new ServiceCollection().AddKubeUIKubernetesServices(jsonAllowReflection: false, yamlAllowReflection: true).BuildServiceProvider();
+        using var serializationServices = new ServiceCollection().AddKubeUIKubernetesServices(jsonAllowReflection: false).BuildServiceProvider();
         var clone = Utilities.CloneObject(pod, serializationServices.GetRequiredService<IKubernetesJsonSerializer>());
         clone.ShouldBeOfType<V1Pod>();
-        var yaml = KubernetesYaml.Serialize(clone);
+        var yaml = serializationServices.GetRequiredService<IKubernetesYamlSerializer>().Serialize(clone);
 
         yaml.ShouldContain("spec:");
         yaml.ShouldContain("containers:");
@@ -159,7 +159,7 @@ public class ResourceYamlViewModelTests
             }
             """)!;
 
-        using var serializationServices = new ServiceCollection().AddKubeUIKubernetesServices(jsonAllowReflection: false, yamlAllowReflection: true).BuildServiceProvider();
+        using var serializationServices = new ServiceCollection().AddKubeUIKubernetesServices(jsonAllowReflection: false).BuildServiceProvider();
         var clone = Utilities.CloneObject(resource, serializationServices.GetRequiredService<IKubernetesJsonSerializer>());
 
         clone.ShouldBeOfType<GenericKubernetesObject>();
@@ -821,7 +821,7 @@ public class ResourceYamlViewModelTests
 
         await TestApplicationExtensions.WaitForUiAsync();
 
-        vm.YamlDocument.Text.ShouldNotContain("updated: \"true\"");
+        vm.YamlDocument.Text.ShouldNotContain("updated:");
 
         var editor = view.FindControl<TextEditor>("Editor");
         editor.ShouldNotBeNull();
@@ -847,10 +847,13 @@ public class ResourceYamlViewModelTests
 
         await cluster.Runtime.AddOrUpdateResource(updatedResource);
         await WaitForUiAsync(
-            () => vm.YamlDocument.Text.Contains("updated: \"true\"", StringComparison.OrdinalIgnoreCase));
+            () => vm.YamlDocument.Text.Contains("updated:", StringComparison.OrdinalIgnoreCase));
         await TestApplicationExtensions.WaitForUiAsync();
 
-        vm.YamlDocument.Text.ShouldContain("updated: \"true\"");
+        var updatedYaml = Application.Current.GetTestServices()
+            .GetRequiredService<IKubernetesYamlSerializer>()
+            .Deserialize<V1Namespace>(vm.YamlDocument.Text);
+        updatedYaml.Metadata.Labels.ShouldContainKeyAndValue("updated", "true");
 
         foldingManager = GetFoldingManager(behavior);
         foldingManager.ShouldNotBeNull();
@@ -3360,7 +3363,8 @@ public class ResourceYamlViewModelTests
         var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
         var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
 
-        var crd = KubernetesYaml.Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
+        var crd = Application.Current.GetRequiredTestService<IKubernetesYamlSerializer>()
+            .Deserialize<V1CustomResourceDefinition>(KubernetesTestData.CustomResourceDefinitionYaml);
         var version = crd.Spec.Versions.First(version => version.Served && version.Storage).Name;
         var kind = new GroupApiVersionKind(crd.Spec.Group, version, crd.Spec.Names.Kind, crd.Spec.Names.Plural);
         try
@@ -3423,6 +3427,7 @@ public class ResourceYamlViewModelTests
         diagnostics.Count.ShouldBe(1);
         diagnostics[0].Severity.ShouldBe(YamlDiagnosticSeverity.Error);
         diagnostics[0].Message.ShouldContain("unknownField");
+        diagnostics[0].Message.ShouldNotContain("correct format");
     }
 
     [AvaloniaFact]
@@ -3448,6 +3453,35 @@ public class ResourceYamlViewModelTests
         diagnostics[0].StartColumn.ShouldBeGreaterThan(25);
         diagnostics[0].EndLine.ShouldBe(7);
         diagnostics[0].EndColumn.ShouldBeGreaterThanOrEqualTo(diagnostics[0].StartColumn);
+    }
+
+    [AvaloniaFact]
+    public void YamlSyntaxValidationService_AnchorsNestedSequenceConversionError_ToMatchingValue()
+    {
+        var service = Application.Current.GetRequiredTestService<IYamlValidationService>();
+        var cluster = Application.Current.GetTestServices().GetRequiredService<ClusterWorkspaceCatalog>().Clusters.Single();
+
+        var diagnostics = service.Validate("""
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: temp
+              namespace: default
+            spec:
+              containers:
+                - name: valid
+                  ports:
+                    - containerPort: 8080
+                - name: invalid
+                  ports:
+                    - containerPort: invalid
+            """.ReplaceLineEndings("\n"), cluster.Runtime.ModelCatalog);
+
+        diagnostics.Count.ShouldBe(1);
+        diagnostics[0].Message.ShouldContain("containerPort");
+        diagnostics[0].StartLine.ShouldBe(13);
+        diagnostics[0].StartColumn.ShouldBeGreaterThan(20);
+        diagnostics[0].EndLine.ShouldBe(13);
     }
 
     [AvaloniaFact]

@@ -1,7 +1,9 @@
-﻿using k8s;
+﻿using System.Text.Json;
+using k8s;
 using KubeUI.Features.Resources.Infrastructure;
 using KubeUI.Kubernetes.Serialization;
 using YamlDotNet.Core;
+using YamlDotNet.RepresentationModel;
 
 namespace KubeUI.Features.Resources.Yaml;
 
@@ -18,6 +20,14 @@ internal static class YamlDotNetDiagnosticFactory
         if (meaningfulException is YamlException yamlException)
         {
             return CreateYamlExceptionDiagnostic(yaml, sourceException, yamlException);
+        }
+
+        if (meaningfulException is JsonException jsonException
+            && !IsUnmappedMemberException(jsonException)
+            && TryGetJsonValueLocation(yaml, jsonException.Path, out var jsonLocation))
+        {
+            var field = jsonException.Path?.Split('.', StringSplitOptions.RemoveEmptyEntries).LastOrDefault() ?? "value";
+            return [CreateDiagnostic(jsonLocation, $"Value for {field} is not in the correct format.")];
         }
 
         if (TryGetExceptionLocation(sourceException, out var location))
@@ -57,6 +67,11 @@ internal static class YamlDotNetDiagnosticFactory
         YamlException yamlException)
     {
         var message = ResourceUtilities.GetMeaningfulExceptionMessage(sourceException);
+        if (TryGetDuplicateKey(yamlException.Message, out var duplicateKey))
+        {
+            message = $"duplicate key {duplicateKey}";
+        }
+
         if (message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase)
             && TryGetDuplicateKeyLocation(yaml, yamlException.Start.Line, out var duplicateLocation))
         {
@@ -73,6 +88,171 @@ internal static class YamlDotNetDiagnosticFactory
                 message,
                 YamlDiagnosticSeverity.Error),
         ];
+    }
+
+    private static bool TryGetDuplicateKey(string message, out string key)
+    {
+        const string marker = "duplicate mapping key '";
+        var start = message.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+        if (start >= 0)
+        {
+            start += marker.Length;
+            var end = message.IndexOf('\'', start);
+            if (end >= start)
+            {
+                key = message[start..end];
+                return true;
+            }
+        }
+
+        key = string.Empty;
+        return false;
+    }
+
+    private static bool TryGetJsonValueLocation(string yaml, string? jsonPath, out YamlDiagnosticLocation location)
+    {
+        if (!TryParseJsonPath(jsonPath, out var path))
+        {
+            location = default!;
+            return false;
+        }
+
+        try
+        {
+            var stream = new YamlStream();
+            stream.Load(new StringReader(yaml));
+            if (stream.Documents.Count != 1)
+            {
+                location = default!;
+                return false;
+            }
+
+            var node = stream.Documents[0].RootNode;
+            foreach (var segment in path)
+            {
+                if (segment.Property is { } property)
+                {
+                    if (node is not YamlMappingNode mapping
+                        || !mapping.Children.TryGetValue(new YamlScalarNode(property), out var child))
+                    {
+                        location = default!;
+                        return false;
+                    }
+
+                    node = child;
+                }
+                else if (node is YamlSequenceNode sequence
+                    && segment.Index >= 0
+                    && segment.Index < sequence.Children.Count)
+                {
+                    node = sequence.Children[segment.Index];
+                }
+                else
+                {
+                    location = default!;
+                    return false;
+                }
+            }
+
+            location = new YamlDiagnosticLocation(
+                (int)Math.Max(1L, node.Start.Line),
+                (int)Math.Max(1L, node.Start.Column),
+                (int)Math.Max(1L, node.End.Line),
+                (int)Math.Max(1L, node.End.Column));
+            return true;
+        }
+        catch (YamlException)
+        {
+            location = default!;
+            return false;
+        }
+    }
+
+    private static bool IsUnmappedMemberException(JsonException exception)
+        => exception.Message.Contains("could not be mapped to any .NET member", StringComparison.OrdinalIgnoreCase);
+
+    private static bool TryParseJsonPath(string? jsonPath, out IReadOnlyList<JsonPathSegment> path)
+    {
+        List<JsonPathSegment> segments = [];
+        if (string.IsNullOrEmpty(jsonPath) || jsonPath[0] != '$')
+        {
+            path = [];
+            return false;
+        }
+
+        var position = 1;
+        while (position < jsonPath.Length)
+        {
+            if (jsonPath[position] == '.')
+            {
+                var start = ++position;
+                while (position < jsonPath.Length && jsonPath[position] is not '.' and not '[')
+                {
+                    position++;
+                }
+
+                if (start == position)
+                {
+                    path = [];
+                    return false;
+                }
+
+                segments.Add(new JsonPathSegment(jsonPath[start..position], -1));
+                continue;
+            }
+
+            if (jsonPath[position] == '[')
+            {
+                position++;
+                if (position < jsonPath.Length && jsonPath[position] is '\'' or '"')
+                {
+                    var quote = jsonPath[position++];
+                    var property = new System.Text.StringBuilder();
+                    while (position < jsonPath.Length && jsonPath[position] != quote)
+                    {
+                        if (jsonPath[position] == '\\' && position + 1 < jsonPath.Length)
+                        {
+                            position++;
+                        }
+
+                        property.Append(jsonPath[position++]);
+                    }
+
+                    if (position >= jsonPath.Length || ++position >= jsonPath.Length || jsonPath[position++] != ']')
+                    {
+                        path = [];
+                        return false;
+                    }
+
+                    segments.Add(new JsonPathSegment(property.ToString(), -1));
+                    continue;
+                }
+
+                var start = position;
+                while (position < jsonPath.Length && char.IsAsciiDigit(jsonPath[position]))
+                {
+                    position++;
+                }
+
+                if (start == position
+                    || position >= jsonPath.Length
+                    || jsonPath[position++] != ']'
+                    || !int.TryParse(jsonPath.AsSpan(start, position - start - 1), out var index))
+                {
+                    path = [];
+                    return false;
+                }
+
+                segments.Add(new JsonPathSegment(null, index));
+                continue;
+            }
+
+            path = [];
+            return false;
+        }
+
+        path = segments;
+        return segments.Count > 0;
     }
 
     private static bool TryGetDuplicateKeyLocation(string yaml, long firstKeyLine, out YamlDiagnosticLocation location)
@@ -197,4 +377,6 @@ internal static class YamlDotNetDiagnosticFactory
     }
 
     private sealed record YamlDiagnosticLocation(int StartLine, int StartColumn, int EndLine, int EndColumn);
+
+    private readonly record struct JsonPathSegment(string? Property, int Index);
 }

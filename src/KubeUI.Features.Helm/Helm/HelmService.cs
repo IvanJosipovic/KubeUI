@@ -2,7 +2,6 @@ using System.Text.Json;
 using System.Threading;
 using Helm.NET;
 using KubeUI.Features.Helm.Helm;
-using KubeUI.Kubernetes.Serialization;
 
 namespace KubeUI.Features.Helm.Helm;
 
@@ -13,7 +12,6 @@ namespace KubeUI.Features.Helm.Helm;
 public sealed class HelmService : IHelmService, IDisposable
 {
     private readonly IHelmClientFactory _clientFactory;
-    private readonly IKubernetesJsonSerializer _jsonSerializer;
     private readonly ReaderWriterLockSlim _nativeGate = new(LockRecursionPolicy.NoRecursion);
     private readonly CancellationTokenSource _disposeCancellation = new();
     private int _disposed;
@@ -25,13 +23,10 @@ public sealed class HelmService : IHelmService, IDisposable
     /// Initializes a Helm service.
     /// </summary>
     /// <param name="clientFactory">Factory creating the Helm client for each operation.</param>
-    /// <param name="jsonSerializer">Application-configured Kubernetes JSON serializer for Helm values.</param>
-    public HelmService(IHelmClientFactory clientFactory, IKubernetesJsonSerializer jsonSerializer)
+    public HelmService(IHelmClientFactory clientFactory)
     {
         ArgumentNullException.ThrowIfNull(clientFactory);
-        ArgumentNullException.ThrowIfNull(jsonSerializer);
         _clientFactory = clientFactory;
-        _jsonSerializer = jsonSerializer;
     }
 
     /// <inheritdoc />
@@ -83,18 +78,19 @@ public sealed class HelmService : IHelmService, IDisposable
     }
 
     /// <inheritdoc />
-    public Task<string> TemplateVersionAsync(HelmConnection connection, string releaseName, string chart, string version, IReadOnlyDictionary<string, object?>? values = null, CancellationToken cancellationToken = default)
+    public Task<string> TemplateVersionAsync(HelmConnection connection, string releaseName, string chart, string version, JsonElement? values = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseName);
         ArgumentException.ThrowIfNullOrWhiteSpace(chart);
         ArgumentException.ThrowIfNullOrWhiteSpace(version);
+        var jsonValues = values?.Clone();
         return InvokeAsync(
             connection,
             client => client.Template(
                 name: releaseName,
                 chart: chart,
                 namespaceName: connection.Namespace,
-                setValues: ToJsonElement(values),
+                setValues: jsonValues,
                 version: version),
             cancellationToken,
             isWriteOperation: true);
@@ -178,7 +174,7 @@ public sealed class HelmService : IHelmService, IDisposable
         HelmConnection connection,
         string releaseName,
         string chart,
-        IReadOnlyDictionary<string, object?>? values = null,
+        JsonElement? values = null,
         bool createNamespace = false,
         bool wait = false,
         TimeSpan? timeout = null,
@@ -187,6 +183,7 @@ public sealed class HelmService : IHelmService, IDisposable
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseName);
         ArgumentException.ThrowIfNullOrWhiteSpace(chart);
+        var jsonValues = values?.Clone();
 
         return InvokeAsync(
             connection,
@@ -194,7 +191,7 @@ public sealed class HelmService : IHelmService, IDisposable
                 name: releaseName,
                 chart: chart,
                 namespaceName: connection.Namespace,
-                setValues: ToJsonElement(values),
+                setValues: jsonValues,
                 createNamespace: createNamespace,
                 wait: wait,
                 timeout: timeout,
@@ -208,7 +205,7 @@ public sealed class HelmService : IHelmService, IDisposable
         HelmConnection connection,
         string releaseName,
         string chart,
-        IReadOnlyDictionary<string, object?>? values = null,
+        JsonElement? values = null,
         bool installIfMissing = false,
         bool createNamespace = false,
         bool wait = false,
@@ -218,6 +215,7 @@ public sealed class HelmService : IHelmService, IDisposable
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseName);
         ArgumentException.ThrowIfNullOrWhiteSpace(chart);
+        var jsonValues = values?.Clone();
 
         return InvokeAsync(
             connection,
@@ -225,7 +223,7 @@ public sealed class HelmService : IHelmService, IDisposable
                 release: releaseName,
                 chart: chart,
                 namespaceName: connection.Namespace,
-                setValues: ToJsonElement(values),
+                setValues: jsonValues,
                 install: installIfMissing,
                 createNamespace: createNamespace,
                 wait: wait,
@@ -266,11 +264,12 @@ public sealed class HelmService : IHelmService, IDisposable
         HelmConnection connection,
         string releaseName,
         string chart,
-        IReadOnlyDictionary<string, object?>? values = null,
+        JsonElement? values = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseName);
         ArgumentException.ThrowIfNullOrWhiteSpace(chart);
+        var jsonValues = values?.Clone();
 
         return InvokeAsync(
             connection,
@@ -278,20 +277,9 @@ public sealed class HelmService : IHelmService, IDisposable
                 name: releaseName,
                 chart: chart,
                 namespaceName: connection.Namespace,
-                setValues: ToJsonElement(values)),
+                setValues: jsonValues),
             cancellationToken,
             isWriteOperation: true);
-    }
-
-    private JsonElement? ToJsonElement(IReadOnlyDictionary<string, object?>? values)
-    {
-        if (values is null)
-        {
-            return null;
-        }
-
-        using var document = JsonDocument.Parse(_jsonSerializer.Serialize(values));
-        return document.RootElement.Clone();
     }
 
     private Task InvokeVoidAsync(HelmConnection connection, Action<IHelmClient> operation, CancellationToken cancellationToken, bool isWriteOperation = false)

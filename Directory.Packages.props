@@ -61,8 +61,7 @@
     
     <!-- YAML/Serialization -->
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
-    <PackageVersion Include="YamlDotNet.System.Text.Json" Version="1.11.2" />
-    <PackageVersion Include="Vecc.YamlDotNet.Analyzers.StaticGenerator" Version="18.1.0" />
+    <PackageVersion Include="SVCSystems.Text.Json.Yaml" Version="1.0.0-alpha.5" />
     <PackageVersion Include="JsonPathLINQ" Version="1.0.0-alpha.16" />
     <PackageVersion Include="Microsoft.OpenApi" Version="3.11.0" />
     

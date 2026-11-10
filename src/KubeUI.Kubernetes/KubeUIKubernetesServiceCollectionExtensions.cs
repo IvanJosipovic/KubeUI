@@ -11,17 +11,21 @@ public static partial class KubeUIKubernetesServiceCollectionExtensions
     /// <summary>Adds KubeUI Kubernetes services and configures Kubernetes JSON serialization.</summary>
     /// <param name="services">Service collection to configure.</param>
     /// <param name="jsonAllowReflection">Whether Kubernetes JSON serialization may use reflection instead of generated metadata.</param>
-    /// <param name="yamlAllowReflection">Whether YAML serialization may inspect runtime model properties.</param>
     /// <returns>The configured service collection.</returns>
     public static IServiceCollection AddKubeUIKubernetesServices(
         this IServiceCollection services,
-        bool jsonAllowReflection,
-        bool yamlAllowReflection)
+        bool jsonAllowReflection)
     {
         EnsureJsonReflectionIsAvailable(jsonAllowReflection);
+        services.AddSingleton(provider =>
+        {
+            var options = CreateKubeUIKubernetesJsonOptions(
+                jsonAllowReflection, provider.GetService<ILoggerFactory>()?.CreateLogger("KubeUI.KubernetesJson"));
+            options.MakeReadOnly();
+            return options;
+        });
         services.AddSingleton<IKubernetesJsonSerializer>(provider =>
-            new KubernetesJsonSerializer(CreateKubeUIKubernetesJsonOptions(
-                jsonAllowReflection, provider.GetService<ILoggerFactory>()?.CreateLogger("KubeUI.KubernetesJson"))));
+            new KubernetesJsonSerializer(provider.GetRequiredService<JsonSerializerOptions>()));
         services.AddSingleton<IThreadDispatcher, ImmediateThreadDispatcher>();
         services.AddSingleton<IKubeConfigPathProvider, DefaultKubeConfigPathProvider>();
         services.AddSingleton<IKubeConfigDiscovery, KubeConfigDiscovery>();
@@ -29,7 +33,8 @@ public static partial class KubeUIKubernetesServiceCollectionExtensions
         services.AddSingleton<IPodLogStreamClient, PodLogStreamClient>();
         services.AddSingleton<KubernetesModelCatalog>();
         services.AddTransient<ClusterModelCatalog>();
-        services.AddSingleton<IKubernetesYamlSerializer>(_ => new KubernetesYamlSerializer(yamlAllowReflection));
+        services.AddSingleton<IKubernetesYamlSerializer>(provider =>
+            new KubernetesYamlSerializer(provider.GetRequiredService<JsonSerializerOptions>()));
         services.AddTransient<Cluster>();
         services.AddTransient<IClusterRuntime>(sp => sp.GetRequiredService<Cluster>());
         services.AddSingleton<ClusterManager>();
@@ -76,10 +81,14 @@ public static partial class KubeUIKubernetesServiceCollectionExtensions
 
         return allowReflection
             ? JsonTypeInfoResolver.Combine(
+                new KubeConfigJsonTypeInfoResolver(),
+                new KubeConfigNamedExtensionJsonTypeInfoResolver(),
                 KubernetesJsonStaticContext.Default,
                 SourceGenerationContext.Default,
                 reflectionResolver)
             : JsonTypeInfoResolver.Combine(
+                new KubeConfigJsonTypeInfoResolver(),
+                new KubeConfigNamedExtensionJsonTypeInfoResolver(),
                 KubernetesJsonStaticContext.Default,
                 SourceGenerationContext.Default);
     }

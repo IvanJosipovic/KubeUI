@@ -167,7 +167,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
         {
             try
             {
-                var config = await Task.Run(() => KubernetesClientConfiguration.LoadKubeConfig(path), CancellationToken.None)
+                var config = await Task.Run(() => KubeConfigFileLoader.Load(path, _yamlSerializer), CancellationToken.None)
                     .WaitAsync(cancellationToken)
                     .ConfigureAwait(false);
                 AddClustersFromConfig(config, discoveryGeneration);
@@ -207,7 +207,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
         {
             try
             {
-                var config = KubernetesClientConfiguration.LoadKubeConfig(path);
+                var config = KubeConfigFileLoader.Load(path, _yamlSerializer);
                 AddClustersFromConfig(config, discoveryGeneration);
                 return;
             }
@@ -477,7 +477,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
         {
             if (File.Exists(_kubeConfigPathProvider.DefaultPath))
             {
-                var kubeConfig = KubernetesClientConfiguration.LoadKubeConfig(_kubeConfigPathProvider.DefaultPath);
+                var kubeConfig = KubeConfigFileLoader.Load(_kubeConfigPathProvider.DefaultPath, _yamlSerializer);
                 return GetCluster(kubeConfig.CurrentContext);
             }
 
@@ -502,7 +502,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
         try
         {
-            var config = KubernetesClientConfiguration.LoadKubeConfig(cluster.KubeConfigPath);
+            var config = KubeConfigFileLoader.Load(cluster.KubeConfigPath, _yamlSerializer);
             var context = config.Contexts.FirstOrDefault(x =>
                 string.Equals(x.Name, cluster.Name, StringComparison.Ordinal) ||
                 string.Equals(x.ContextDetails?.Cluster, cluster.Name, StringComparison.Ordinal));

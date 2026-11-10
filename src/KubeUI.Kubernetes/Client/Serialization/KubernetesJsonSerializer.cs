@@ -11,7 +11,7 @@ internal sealed class KubernetesJsonSerializer : IKubernetesJsonSerializer
         Options = options;
     }
 
-    private JsonSerializerOptions Options { get; }
+    internal JsonSerializerOptions Options { get; }
 
     public void ConfigureClient(KubernetesClientConfiguration configuration)
     {

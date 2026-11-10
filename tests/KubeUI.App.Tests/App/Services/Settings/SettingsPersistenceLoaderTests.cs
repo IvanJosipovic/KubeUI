@@ -35,7 +35,6 @@ public sealed class SettingsPersistenceLoaderTests
             result.Settings.PreviewFeatures.Helm.ShouldBeTrue();
             result.Settings.PreviewFeatures.Hubble.ShouldBeFalse();
             result.Settings.PreviewFeatures.DisableJsonSerializationReflection.ShouldBeTrue();
-            result.Settings.PreviewFeatures.DisableYamlSerializationReflection.ShouldBeFalse();
         }
         finally
         {
@@ -57,6 +56,7 @@ public sealed class SettingsPersistenceLoaderTests
 
         savedSettings.GetProperty("PreviewFeatures").GetProperty("Helm").GetBoolean().ShouldBeTrue();
         savedSettings.TryGetProperty("Features", out _).ShouldBeFalse();
+        savedSettings.GetProperty("PreviewFeatures").TryGetProperty("DisableYamlSerializationReflection", out _).ShouldBeFalse();
     }
 
     [Fact]
@@ -71,7 +71,6 @@ public sealed class SettingsPersistenceLoaderTests
             result.Settings.PreviewFeatures.Helm.ShouldBeFalse();
             result.Settings.PreviewFeatures.Hubble.ShouldBeFalse();
             result.Settings.PreviewFeatures.DisableJsonSerializationReflection.ShouldBeFalse();
-            result.Settings.PreviewFeatures.DisableYamlSerializationReflection.ShouldBeFalse();
         }
         finally
         {
@@ -91,7 +90,6 @@ public sealed class SettingsPersistenceLoaderTests
         result.Settings.PreviewFeatures.Helm.ShouldBeFalse();
         result.Settings.PreviewFeatures.Hubble.ShouldBeFalse();
         result.Settings.PreviewFeatures.DisableJsonSerializationReflection.ShouldBeFalse();
-        result.Settings.PreviewFeatures.DisableYamlSerializationReflection.ShouldBeFalse();
     }
 
     [Fact]

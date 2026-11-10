@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
@@ -23,9 +24,12 @@ namespace KubeUI.Features.Helm.Tests.Releases;
 
 public sealed class HelmEditorViewModelTests : IDisposable
 {
-    private readonly KubernetesYamlSerializer _yamlSerializer = new(allowReflection: true);
+    private readonly ServiceProvider _serializationServices = new ServiceCollection()
+        .AddKubeUIKubernetesServices(jsonAllowReflection: false)
+        .BuildServiceProvider();
+    private IKubernetesYamlSerializer _yamlSerializer => _serializationServices.GetRequiredService<IKubernetesYamlSerializer>();
 
-    public void Dispose() => _yamlSerializer.Dispose();
+    public void Dispose() => _serializationServices.Dispose();
 
     [AvaloniaFact]
     public async Task Upgrade_editors_for_same_release_name_in_different_namespaces_have_distinct_ids()
@@ -207,7 +211,7 @@ public sealed class HelmEditorViewModelTests : IDisposable
                 preview.SetupSequence(service => service.PreviewVersionAsync(workspace,
                         It.Is<HelmConnection>(connection => connection.Namespace == "apps"),
                         "web", reference, "1.0",
-                        It.Is<IReadOnlyDictionary<string, object?>>(values => Convert.ToInt64(values["replicas"]) == 4),
+                        It.Is<JsonElement?>(values => values.HasValue && values.Value.GetProperty("replicas").GetInt32() == 4),
                         It.IsAny<CancellationToken>()))
                     .ThrowsAsync(new InvalidOperationException("Chart reference cannot be resolved"))
                     .Returns(Task.CompletedTask);
@@ -233,7 +237,7 @@ public sealed class HelmEditorViewModelTests : IDisposable
         editor.SaveCommand.CanExecute(null).ShouldBeTrue();
         helm.Verify(service => service.UpgradeAsync(
             It.IsAny<HelmConnection>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<IReadOnlyDictionary<string, object?>>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<bool>(),
+            It.IsAny<JsonElement?>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<bool>(),
             It.IsAny<TimeSpan?>(), It.IsAny<CancellationToken>(), It.IsAny<string?>()), Times.Never);
         factory.Verify(service => service.RemoveDockable(editor, false), Times.Never);
     }
@@ -246,7 +250,7 @@ public sealed class HelmEditorViewModelTests : IDisposable
         helm.Setup(service => service.ListRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([new("first", "https://first.test"), new("second", "https://second.test")]);
         helm.Setup(service => service.GetValuesAsync(It.IsAny<HelmConnection>(), "web", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(System.Text.Json.JsonSerializer.SerializeToElement(new Dictionary<string, object?>()));
+            .ReturnsAsync(JsonSerializer.SerializeToElement(new { }));
         helm.Setup(service => service.ListChartsAsync(It.IsAny<HelmConnection>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([
                 new("first/web", "web", "1.0"), new("second/web", "web", "2.0"),
@@ -561,7 +565,7 @@ public sealed class HelmEditorViewModelTests : IDisposable
         helm.Setup(service => service.StatusAsync(It.IsAny<HelmConnection>(), "web", It.IsAny<CancellationToken>()))
             .ReturnsAsync(release);
         helm.Setup(service => service.UpgradeAsync(
-                It.IsAny<HelmConnection>(), "web", "bitnami/nginx", It.IsAny<IReadOnlyDictionary<string, object?>>(),
+                It.IsAny<HelmConnection>(), "web", "bitnami/nginx", It.IsAny<JsonElement?>(),
                 It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<TimeSpan?>(),
                 It.IsAny<CancellationToken>(), "2.0.0"))
             .ReturnsAsync(new HelmRelease("web", "apps", 2, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), "deployed", "nginx-2.0.0", "2.0.0", "nginx", "2.0.0"));
@@ -649,13 +653,13 @@ public sealed class HelmEditorViewModelTests : IDisposable
         await editor.PreviewCommand.ExecuteAsync(null);
         preview.Verify(service => service.PreviewVersionAsync(workspace,
             It.Is<HelmConnection>(connection => connection.Namespace == "apps"), "web", "bitnami/nginx", "2.0.0",
-            It.Is<IReadOnlyDictionary<string, object?>>(values => Convert.ToInt64(values["replicas"]) == 5),
+             It.Is<JsonElement?>(values => values.HasValue && values.Value.GetProperty("replicas").GetInt32() == 5),
             It.IsAny<CancellationToken>()), Times.Once);
         editor.SaveCommand.CanExecute(null).ShouldBeTrue();
         await editor.SaveCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
         helm.Verify(service => service.UpgradeAsync(
             It.Is<HelmConnection>(connection => connection.Namespace == "apps"), "web", "bitnami/nginx",
-            It.Is<IReadOnlyDictionary<string, object?>>(values => Convert.ToInt64(values["replicas"]) == 5),
+             It.Is<JsonElement?>(values => values.HasValue && values.Value.GetProperty("replicas").GetInt32() == 5),
             false, false, true, TimeSpan.FromMinutes(5), It.IsAny<CancellationToken>(), "2.0.0"), Times.Once);
         releaseChanges.ShouldBe(1);
     }
@@ -728,7 +732,7 @@ public sealed class HelmEditorViewModelTests : IDisposable
         editor.SaveCommand.CanExecute(null).ShouldBeFalse();
         if (valuesSucceed)
         {
-            pendingValues.SetResult(System.Text.Json.JsonSerializer.SerializeToElement(new Dictionary<string, object?>()));
+            pendingValues.SetResult(JsonSerializer.SerializeToElement(new { }));
         }
         else
         {
@@ -924,12 +928,12 @@ public sealed class HelmEditorViewModelTests : IDisposable
                 "web",
                 "bitnami/nginx",
                 "1.0",
-                It.IsAny<IReadOnlyDictionary<string, object?>>(),
+                It.IsAny<JsonElement?>(),
                 It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
         helmService
             .Setup(service => service.InstallAsync(
-                It.IsAny<HelmConnection>(), "web", "bitnami/nginx", It.IsAny<IReadOnlyDictionary<string, object?>>(), true, true,
+                It.IsAny<HelmConnection>(), "web", "bitnami/nginx", It.IsAny<JsonElement?>(), true, true,
                 TimeSpan.FromSeconds(30), It.IsAny<CancellationToken>(), "1.0"))
             .ReturnsAsync(new HelmRelease("web", "apps", 1, new DateTimeOffset(2026, 01, 01, 0, 0, 0, TimeSpan.Zero), "deployed", "nginx-1.0.0", "1.0.0"));
         var factory = new Mock<IFactory>();
@@ -962,13 +966,13 @@ public sealed class HelmEditorViewModelTests : IDisposable
             "web",
             "bitnami/nginx",
             "1.0",
-            It.Is<IReadOnlyDictionary<string, object?>>(values => values.ContainsKey("replicas")),
+            It.Is<JsonElement?>(values => values.HasValue && values.Value.GetProperty("replicas").ValueKind == JsonValueKind.Number),
             It.IsAny<CancellationToken>()), Times.Once);
         helmService.Verify(service => service.InstallAsync(
             It.Is<HelmConnection>(connection => connection.Namespace == "apps"),
             "web",
             "bitnami/nginx",
-            It.Is<IReadOnlyDictionary<string, object?>>(values => values.ContainsKey("replicas")),
+            It.Is<JsonElement?>(values => values.HasValue && values.Value.GetProperty("replicas").ValueKind == JsonValueKind.Number),
             true,
             true,
             TimeSpan.FromSeconds(30),

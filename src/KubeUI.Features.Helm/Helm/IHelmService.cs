@@ -37,7 +37,7 @@ public interface IHelmService
     Task<string> GetManifestAsync(HelmConnection connection, string releaseName, int revision = 0, CancellationToken cancellationToken = default);
 
     /// <summary>Renders a specific chart version using the supplied values.</summary>
-    Task<string> TemplateVersionAsync(HelmConnection connection, string releaseName, string chart, string version, IReadOnlyDictionary<string, object?>? values = null, CancellationToken cancellationToken = default);
+    Task<string> TemplateVersionAsync(HelmConnection connection, string releaseName, string chart, string version, JsonElement? values = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Lists the configured chart repositories.
@@ -126,7 +126,7 @@ public interface IHelmService
     /// <param name="cancellationToken">Cancels waiting for the operation to start.</param>
     /// <param name="version">Optional chart version to install.</param>
     /// <returns>The created release.</returns>
-    Task<HelmRelease> InstallAsync(HelmConnection connection, string releaseName, string chart, IReadOnlyDictionary<string, object?>? values = null, bool createNamespace = false, bool wait = false, TimeSpan? timeout = null, CancellationToken cancellationToken = default, string? version = null);
+    Task<HelmRelease> InstallAsync(HelmConnection connection, string releaseName, string chart, JsonElement? values = null, bool createNamespace = false, bool wait = false, TimeSpan? timeout = null, CancellationToken cancellationToken = default, string? version = null);
 
     /// <summary>
     /// Upgrades an existing release, optionally installing it when it is missing.
@@ -142,7 +142,7 @@ public interface IHelmService
     /// <param name="cancellationToken">Cancels waiting for the operation to start.</param>
     /// <param name="version">Optional chart version to upgrade to.</param>
     /// <returns>The upgraded release.</returns>
-    Task<HelmRelease> UpgradeAsync(HelmConnection connection, string releaseName, string chart, IReadOnlyDictionary<string, object?>? values = null, bool installIfMissing = false, bool createNamespace = false, bool wait = false, TimeSpan? timeout = null, CancellationToken cancellationToken = default, string? version = null);
+    Task<HelmRelease> UpgradeAsync(HelmConnection connection, string releaseName, string chart, JsonElement? values = null, bool installIfMissing = false, bool createNamespace = false, bool wait = false, TimeSpan? timeout = null, CancellationToken cancellationToken = default, string? version = null);
 
     /// <summary>
     /// Rolls a release back to a revision, or to its previous revision when <paramref name="revision"/> is zero.
@@ -174,6 +174,6 @@ public interface IHelmService
     /// <param name="values">Optional chart values.</param>
     /// <param name="cancellationToken">Cancels waiting for the operation to start.</param>
     /// <returns>The rendered manifest.</returns>
-    Task<string> TemplateAsync(HelmConnection connection, string releaseName, string chart, IReadOnlyDictionary<string, object?>? values = null, CancellationToken cancellationToken = default);
+    Task<string> TemplateAsync(HelmConnection connection, string releaseName, string chart, JsonElement? values = null, CancellationToken cancellationToken = default);
 
 }

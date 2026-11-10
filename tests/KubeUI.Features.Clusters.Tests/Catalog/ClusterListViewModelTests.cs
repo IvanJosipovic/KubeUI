@@ -4,6 +4,7 @@ using k8s;
 using k8s.KubeConfigModels;
 using KubeUI.App.Services.Settings;
 using KubeUI.Features.Clusters.Catalog;
+using KubeUI.Kubernetes.Serialization;
 using Shouldly;
 
 namespace KubeUI.Features.Clusters.Tests.Catalog;
@@ -60,7 +61,9 @@ public sealed class ClusterListViewModelTests
             Users = [new User { Name = contextName, UserCredentials = new UserCredentials() }],
             Contexts = [new Context { Name = contextName, ContextDetails = new ContextDetails { Cluster = contextName, User = contextName } }],
         };
-        File.WriteAllText(path, KubernetesYaml.Serialize(config));
+        File.WriteAllText(
+            path,
+            Application.Current.GetTestServices().GetRequiredService<IKubernetesYamlSerializer>().Serialize(config));
         return path;
     }
 }

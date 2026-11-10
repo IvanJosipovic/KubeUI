@@ -29,7 +29,7 @@ public class ModelCatalogBenchmarks
     [GlobalSetup]
     public void Setup()
     {
-        _services = new ServiceCollection().AddKubeUIKubernetesServices(jsonAllowReflection: false, yamlAllowReflection: false).BuildServiceProvider();
+        _services = new ServiceCollection().AddKubeUIKubernetesServices(jsonAllowReflection: false).BuildServiceProvider();
         _sharedCatalog = new KubernetesModelCatalog();
         _clusterCatalog = new ClusterModelCatalog(_sharedCatalog);
         _podKey = new GroupApiVersionKind(string.Empty, "v1", "Pod", "pods");

@@ -8,9 +8,12 @@ namespace KubeUI.Features.Helm.Tests;
 
 public sealed class HelmValuesYamlTests : IDisposable
 {
-    private readonly KubernetesYamlSerializer _yamlSerializer = new(allowReflection: true);
+    private readonly ServiceProvider _serializationServices = new ServiceCollection()
+        .AddKubeUIKubernetesServices(jsonAllowReflection: false)
+        .BuildServiceProvider();
+    private IKubernetesYamlSerializer _yamlSerializer => _serializationServices.GetRequiredService<IKubernetesYamlSerializer>();
 
-    public void Dispose() => _yamlSerializer.Dispose();
+    public void Dispose() => _serializationServices.Dispose();
 
     [Fact]
     public void Values_roundtrip_preserves_nested_json_types_and_quoted_strings()
@@ -20,16 +23,25 @@ public sealed class HelmValuesYamlTests : IDisposable
             """);
         var yaml = HelmValuesYaml.Serialize(source.RootElement, _yamlSerializer);
         var parsed = HelmValuesYaml.Parse(yaml, _yamlSerializer);
-        using var result = JsonDocument.Parse(k8s.KubernetesJson.Serialize(parsed));
 
-        result.RootElement.GetProperty("replicas").GetInt32().ShouldBe(3);
-        result.RootElement.GetProperty("enabled").GetBoolean().ShouldBeTrue();
-        result.RootElement.GetProperty("ratio").GetDouble().ShouldBe(1.25);
-        var server = result.RootElement.GetProperty("server");
+        parsed.GetProperty("replicas").GetInt32().ShouldBe(3);
+        parsed.GetProperty("enabled").GetBoolean().ShouldBeTrue();
+        parsed.GetProperty("ratio").GetDouble().ShouldBe(1.25);
+        var server = parsed.GetProperty("server");
         server.GetProperty("name").GetString().ShouldBe("true");
         server.GetProperty("number").GetString().ShouldBe("123");
         server.GetProperty("ports").EnumerateArray().Select(item => item.GetInt32()).ShouldBe([80, 443]);
         server.GetProperty("unset").ValueKind.ShouldBe(JsonValueKind.Null);
+    }
+
+    [Fact]
+    public void Values_parse_returns_a_json_element()
+    {
+        object parsed = HelmValuesYaml.Parse("replicas: 3", _yamlSerializer);
+
+        var values = parsed.ShouldBeOfType<JsonElement>();
+        values.ValueKind.ShouldBe(JsonValueKind.Object);
+        values.GetProperty("replicas").GetInt32().ShouldBe(3);
     }
 
     [Fact]
@@ -44,9 +56,7 @@ public sealed class HelmValuesYamlTests : IDisposable
               image: apache
             """, _yamlSerializer);
 
-        using var result = JsonDocument.Parse(k8s.KubernetesJson.Serialize(parsed));
-
-        var server = result.RootElement.GetProperty("server");
+        var server = parsed.GetProperty("server");
         server.GetProperty("replicas").GetInt32().ShouldBe(2);
         server.GetProperty("image").GetString().ShouldBe("apache");
     }
@@ -64,9 +74,14 @@ public sealed class HelmValuesYamlTests : IDisposable
 
     [Fact]
     public void Values_reject_non_mapping_documents()
-        => Should.Throw<YamlException>(() => HelmValuesYaml.Parse("- one\n- two", _yamlSerializer));
+        => Should.Throw<JsonException>(() => HelmValuesYaml.Parse("- one\n- two", _yamlSerializer));
 
     [Fact]
-    public void Blank_values_parse_as_empty_mapping()
-        => HelmValuesYaml.Parse(string.Empty, _yamlSerializer).ShouldBeEmpty();
+    public void Blank_values_parse_as_empty_json_object()
+    {
+        var values = HelmValuesYaml.Parse(string.Empty, _yamlSerializer);
+
+        values.ValueKind.ShouldBe(JsonValueKind.Object);
+        values.EnumerateObject().ShouldBeEmpty();
+    }
 }

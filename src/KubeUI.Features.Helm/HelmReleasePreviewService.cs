@@ -1,3 +1,4 @@
+using System.Text.Json;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -35,7 +36,7 @@ public sealed class HelmReleasePreviewService : IHelmReleasePreviewService
 
     /// <inheritdoc />
     public async Task PreviewVersionAsync(ClusterWorkspace cluster, HelmConnection connection, string releaseName,
-        string chart, string version, IReadOnlyDictionary<string, object?>? values = null,
+        string chart, string version, JsonElement? values = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(cluster);
@@ -66,7 +67,7 @@ public sealed class HelmReleasePreviewService : IHelmReleasePreviewService
         HelmConnection connection,
         string releaseName,
         string chart,
-        IReadOnlyDictionary<string, object?>? values = null,
+        JsonElement? values = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(cluster);
@@ -93,9 +94,7 @@ public sealed class HelmReleasePreviewService : IHelmReleasePreviewService
                     ? resourceType
                     : typeof(GenericKubernetesObject);
             });
-        var resources = parsed
-            .Cast<IKubernetesObject<V1ObjectMeta>>()
-            .ToArray();
+        var resources = parsed.ToArray();
         if (resources.Length == 0)
         {
             throw new InvalidOperationException(HelmLanguageManager.Instance.HelmReleasePreviewService_NoResources.CurrentValue()!);
