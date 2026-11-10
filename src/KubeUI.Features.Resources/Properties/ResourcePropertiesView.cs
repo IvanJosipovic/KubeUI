@@ -6,6 +6,7 @@ using k8s.Models;
 using KubeUI.Controls.Presentation;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources;
+using KubeUI.Features.Resources.Metrics.Controls;
 using KubeUI.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Features.Resources.Properties;
@@ -17,6 +18,7 @@ public partial class ResourcePropertiesView<[DynamicallyAccessedMembers(Dynamica
 
     private ScrollViewer? _scrollViewer;
     private INotifyPropertyChanged? _viewModel;
+    private ResourcePropertiesViewModel<T>? _lifecycleViewModel;
     private bool _isDetached;
     private Control[]? _propertyControls;
     private ResourceConfigBase<T>? _propertyConfig;
@@ -81,6 +83,21 @@ public partial class ResourcePropertiesView<[DynamicallyAccessedMembers(Dynamica
     {
         UnsubscribeFromViewModel();
 
+        var lifecycleViewModel = DataContext as ResourcePropertiesViewModel<T>;
+        if (!ReferenceEquals(_lifecycleViewModel, lifecycleViewModel))
+        {
+            if (_lifecycleViewModel is not null)
+            {
+                _lifecycleViewModel.Disposed -= ViewModelOnDisposed;
+            }
+
+            _lifecycleViewModel = lifecycleViewModel;
+            if (_lifecycleViewModel is not null)
+            {
+                _lifecycleViewModel.Disposed += ViewModelOnDisposed;
+            }
+        }
+
         if (DataContext is INotifyPropertyChanged notifyPropertyChanged)
         {
             _viewModel = notifyPropertyChanged;
@@ -95,6 +112,21 @@ public partial class ResourcePropertiesView<[DynamicallyAccessedMembers(Dynamica
             _viewModel.PropertyChanged -= ViewModelOnPropertyChanged;
             _viewModel = null;
         }
+    }
+
+    private void ViewModelOnDisposed(object? sender, EventArgs e)
+    {
+        if (sender is ResourcePropertiesViewModel<T> viewModel)
+        {
+            viewModel.Disposed -= ViewModelOnDisposed;
+        }
+
+        _lifecycleViewModel = null;
+        DisposeMetricsControls(_propertyControls);
+        _propertyControls = null;
+        _propertyConfig = null;
+        _propertyResource = null;
+        _propertyControlsInitialized = false;
     }
 
     private void ViewModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -339,12 +371,44 @@ public partial class ResourcePropertiesView<[DynamicallyAccessedMembers(Dynamica
         var created = resourceConfig.Properties(resource)
             .Where(static control => control is not null)
             .ToArray();
+        DisposeMetricsControls(_propertyControls);
         _propertyControls = created;
         _propertyConfig = resourceConfig;
         _propertyResource = resource;
         _propertyControlsInitialized = false;
         reused = false;
         return created;
+    }
+
+    private static void DisposeMetricsControls(IEnumerable<Control>? controls)
+    {
+        if (controls is null)
+        {
+            return;
+        }
+
+        void DisposeControls()
+        {
+            foreach (var control in controls)
+            {
+                foreach (var descendant in EnumerateLogicalControls(control))
+                {
+                    if (descendant is MetricsControl metricsControl)
+                    {
+                        metricsControl.Dispose();
+                    }
+                }
+            }
+        }
+
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            DisposeControls();
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(DisposeControls, DispatcherPriority.Background);
+        }
     }
 
     private static bool IsSameResource(T left, T right)

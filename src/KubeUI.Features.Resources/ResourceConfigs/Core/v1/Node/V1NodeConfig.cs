@@ -6,6 +6,7 @@ using k8s;
 using k8s.Models;
 using KubeUI.Features.Resources.Common;
 using KubeUI.Features.Resources.Infrastructure;
+using KubeUI.Features.Resources.ResourceConfigs.Core.v1.Node;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Features.Resources.Core.v1.Node;
@@ -33,6 +34,7 @@ public sealed partial class V1NodeConfig : ResourceConfig<V1Node>
             {
                 Key = "cpu",
                 Name = ResourcesLanguageManager.Instance.V1NodeConfig_CPU.CurrentValue()!,
+                CustomControl = typeof(MetricsHistoryCPUCellView),
                 Field = x => x?.Status ?.Capacity ?.TryGetValue("cpu", out var value) == true && value != null ? value.ToDecimal() : 0,
                 Display = x => x?.Status?.Capacity?.TryGetValue("cpu", out var value) == true && value != null ? value.ToDecimal().ToString("0.##") + "c" : "0c",
                 WidthMode = DynamicTableViewWidthMode.Header
@@ -41,6 +43,7 @@ public sealed partial class V1NodeConfig : ResourceConfig<V1Node>
             {
                 Key = "memory",
                 Name = ResourcesLanguageManager.Instance.V1NodeConfig_Memory.CurrentValue()!,
+                CustomControl = typeof(MetricsHistoryMemoryCellView),
                 Field = x => x?.Status ?.Capacity ?.TryGetValue("memory", out var value) == true && value != null ? value.ToDecimal() : 0,
                 Display = x => x?.Status?.Capacity?.TryGetValue("memory", out var value) == true && value != null ? (value.ToDecimal() / 1048576 / 1024).ToString("0.##") + "Gi" : "0Gi",
                 WidthMode = DynamicTableViewWidthMode.Header

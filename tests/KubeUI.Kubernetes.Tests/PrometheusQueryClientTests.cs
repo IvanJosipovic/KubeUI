@@ -1,0 +1,881 @@
+using System.Net;
+using System.Text;
+using System.Text.Json;
+using k8s;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Shouldly;
+
+namespace KubeUI.Kubernetes.Tests;
+
+public sealed class PrometheusQueryClientTests
+{
+    [Theory]
+    [InlineData("https://prometheus.example/prometheus", "", "/prometheus/api/v1/query_range")]
+    [InlineData("https://prometheus.example/gateway", "/metrics/prometheus", "/gateway/metrics/prometheus/api/v1/query_range")]
+    public async Task QueryRangeAsync_preserves_and_combines_direct_url_paths(
+        string directUrl,
+        string pathPrefix,
+        string expectedPath)
+    {
+        using var queryHandler = new RecordingHandler(_ => { });
+        var fixture = CreateCluster("prometheus-direct-path");
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
+        using var client = new PrometheusQueryClient(
+            NullLogger<PrometheusQueryClient>.Instance,
+            null,
+            null,
+            () => queryHandler);
+        var endpoint = new ResolvedPrometheusEndpoint(
+            PrometheusProviderKind.External,
+            "External URL",
+            true,
+            null,
+            null,
+            null,
+            directUrl,
+            false,
+            pathPrefix);
+
+        _ = await client.QueryRangeAsync(
+            cluster,
+            endpoint,
+            "up",
+            DateTimeOffset.UnixEpoch,
+            DateTimeOffset.UnixEpoch.AddMinutes(1),
+            60,
+            TestContext.Current.CancellationToken);
+
+        queryHandler.RequestUris.ShouldHaveSingleItem().Split('?')[0].ShouldBe(expectedPath);
+    }
+
+    [Fact]
+    public async Task PrepareAsync_lists_service_when_seeded_cache_does_not_contain_target()
+    {
+        List<string> observedUris = [];
+        using var kubernetesHandler = new RecordingHandler(
+            request => observedUris.Add(request.RequestUri?.ToString() ?? string.Empty),
+            """
+            {"apiVersion":"v1","kind":"ServiceList","items":[{"apiVersion":"v1","kind":"Service","metadata":{"name":"prometheus-operated","namespace":"monitoring"},"spec":{"ports":[{"port":9090}]}}]}
+            """);
+        var fixture = CreateCluster("microk8s", kubernetesHandler);
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
+        using var client = new PrometheusQueryClient(NullLogger<PrometheusQueryClient>.Instance, null, null, null);
+        var endpoint = new ResolvedPrometheusEndpoint(
+            PrometheusProviderKind.Operator,
+            "Prometheus Operator",
+            false,
+            "monitoring",
+            "prometheus-operated",
+            9090,
+            null,
+            false,
+            string.Empty);
+
+        await client.PrepareAsync(cluster, endpoint, TestContext.Current.CancellationToken);
+
+        observedUris.Count(uri => new Uri(uri).AbsolutePath == "/api/v1/namespaces/monitoring/services").ShouldBe(1);
+        var service = cluster.GetResource<k8s.Models.V1Service>("monitoring", "prometheus-operated");
+        service.ShouldNotBeNull();
+        service.Spec.Ports[0].Port.ShouldBe(9090);
+        await client.ResetAsync();
+    }
+
+    [Fact]
+    public async Task QueryRangeAsync_reuses_existing_cluster_service_port_forward()
+    {
+        List<string> observedUris = [];
+        List<string?> observedTokens = [];
+        using var kubernetesHandler = new RecordingHandler(_ => { }, ServiceListResponseBody);
+        using var queryHandler = new RecordingHandler(request =>
+        {
+            observedUris.Add(request.RequestUri?.ToString() ?? string.Empty);
+            observedTokens.Add(request.Headers.Authorization?.Parameter);
+        });
+        var fixture = CreateCluster("microk8s", kubernetesHandler);
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
+        var existingPortForwarder = cluster.AddServicePortForward("monitoring", "prometheus-operated", 9090);
+        using var client = new PrometheusQueryClient(
+            NullLogger<PrometheusQueryClient>.Instance,
+            null,
+            null,
+            () => queryHandler);
+        var endpoint = new ResolvedPrometheusEndpoint(
+            PrometheusProviderKind.Operator,
+            "Prometheus Operator",
+            false,
+            "monitoring",
+            "prometheus-operated",
+            9090,
+            null,
+            false,
+            string.Empty,
+            CustomHeaders: [new PrometheusHeader { Name = "Authorization", Value = "Bearer prometheus-token" }]);
+
+        var response = await client.QueryRangeAsync(
+            cluster,
+            endpoint,
+            "up{job=\"kube api\"}",
+            DateTimeOffset.UnixEpoch,
+            DateTimeOffset.UnixEpoch.AddMinutes(1),
+            60,
+            TestContext.Current.CancellationToken);
+
+        response.ShouldNotBeNull();
+        response.Status.ShouldBe("success");
+        observedUris.Count.ShouldBe(1);
+        var observedUri = new Uri(observedUris[0]);
+        observedUri.Host.ShouldBe("prometheus-operated.monitoring.svc");
+        observedUri.Port.ShouldBe(existingPortForwarder.LocalPort);
+        observedUri.AbsolutePath.ShouldBe("/api/v1/query_range");
+        Uri.UnescapeDataString(observedUri.Query).ShouldContain("query=up{job=\"kube api\"}");
+        observedTokens.ShouldBe(["prometheus-token"]);
+        cluster.PortForwarders.Count.ShouldBe(1);
+        kubernetesHandler.RequestUris.Count(uri => uri.StartsWith("/api/v1/namespaces/monitoring/services?", StringComparison.Ordinal))
+            .ShouldBe(1);
+        await client.ResetAsync();
+    }
+
+    [Fact]
+    public async Task QueryRangeAsync_sends_configured_custom_headers_on_the_query_request()
+    {
+        Dictionary<string, string[]> observedHeaders = new(StringComparer.OrdinalIgnoreCase);
+        using var queryHandler = new RecordingHandler(request =>
+        {
+            observedHeaders = request.Headers.ToDictionary(
+                static header => header.Key,
+                static header => header.Value.ToArray(),
+                StringComparer.OrdinalIgnoreCase);
+        });
+        var fixture = CreateCluster("prometheus-custom-headers");
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
+        using var client = new PrometheusQueryClient(
+            NullLogger<PrometheusQueryClient>.Instance,
+            null,
+            null,
+            () => queryHandler);
+        var endpoint = new ResolvedPrometheusEndpoint(
+            PrometheusProviderKind.External,
+            "External URL",
+            true,
+            null,
+            null,
+            null,
+            "https://prometheus.example",
+            true,
+            string.Empty,
+            CustomHeaders:
+            [
+                new PrometheusHeader { Name = "Authorization", Value = "Bearer sample-token" },
+                new PrometheusHeader { Name = "X-Scope-OrgID", Value = "tenant-1" },
+            ]);
+
+        _ = await client.QueryRangeAsync(cluster, endpoint, "up", DateTimeOffset.UnixEpoch,
+            DateTimeOffset.UnixEpoch.AddMinutes(1), 60, TestContext.Current.CancellationToken);
+
+        observedHeaders["Authorization"].ShouldBe(["Bearer sample-token"]);
+        observedHeaders["X-Scope-OrgID"].ShouldBe(["tenant-1"]);
+    }
+
+    [Fact]
+    public async Task QueryRangeAsync_builds_basic_auth_authorization_header()
+    {
+        string? authorization = null;
+        using var queryHandler = new RecordingHandler(request => authorization = request.Headers.Authorization?.ToString());
+        var fixture = CreateCluster("prometheus-basic-auth");
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
+        using var client = new PrometheusQueryClient(
+            NullLogger<PrometheusQueryClient>.Instance,
+            null,
+            null,
+            () => queryHandler);
+        var endpoint = new ResolvedPrometheusEndpoint(
+            PrometheusProviderKind.External,
+            "External URL",
+            true,
+            null,
+            null,
+            null,
+            "https://prometheus.example",
+            true,
+            string.Empty,
+            BasicAuthUsername: "metrics-user",
+            BasicAuthPassword: "sample-password");
+
+        _ = await client.QueryRangeAsync(cluster, endpoint, "up", DateTimeOffset.UnixEpoch,
+            DateTimeOffset.UnixEpoch.AddMinutes(1), 60, TestContext.Current.CancellationToken);
+
+        authorization.ShouldBe("Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes("metrics-user:sample-password")));
+    }
+
+    [Fact]
+    public async Task QueryRangeAsync_allows_basic_authentication_over_http()
+    {
+        string? observedAuthorization = null;
+        using var queryHandler = new RecordingHandler(request => observedAuthorization = request.Headers.Authorization?.ToString());
+        var fixture = CreateCluster("prometheus-basic-auth-http");
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
+        using var client = new PrometheusQueryClient(
+            NullLogger<PrometheusQueryClient>.Instance,
+            null,
+            null,
+            () => queryHandler);
+        var endpoint = new ResolvedPrometheusEndpoint(
+            PrometheusProviderKind.External,
+            "External URL",
+            true,
+            null,
+            null,
+            null,
+            "http://prometheus.example",
+            false,
+            string.Empty,
+            BasicAuthUsername: "metrics-user",
+            BasicAuthPassword: "sample-password");
+
+        _ = await client.QueryRangeAsync(cluster, endpoint, "up", DateTimeOffset.UnixEpoch,
+            DateTimeOffset.UnixEpoch.AddMinutes(1), 60, TestContext.Current.CancellationToken);
+
+        observedAuthorization.ShouldBe("Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes("metrics-user:sample-password")));
+    }
+
+    [Fact]
+    public async Task QueryRangeAsync_allows_custom_header_authentication_over_http()
+    {
+        string? observedHeader = null;
+        using var queryHandler = new RecordingHandler(request => observedHeader = request.Headers.GetValues("X-Api-Key").Single());
+        var fixture = CreateCluster("prometheus-allow-http-auth");
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
+        using var client = new PrometheusQueryClient(
+            NullLogger<PrometheusQueryClient>.Instance,
+            null,
+            null,
+            () => queryHandler);
+        var endpoint = new ResolvedPrometheusEndpoint(
+            PrometheusProviderKind.External,
+            "External URL",
+            true,
+            null,
+            null,
+            null,
+            "http://prometheus.example",
+            false,
+            string.Empty,
+            CustomHeaders: [new PrometheusHeader { Name = "X-Api-Key", Value = "secret" }]);
+
+        _ = await client.QueryRangeAsync(cluster, endpoint, "up", DateTimeOffset.UnixEpoch,
+            DateTimeOffset.UnixEpoch.AddMinutes(1), 60, TestContext.Current.CancellationToken);
+
+        observedHeader.ShouldBe("secret");
+    }
+
+    [Fact]
+    public async Task QueryRangeAsync_rejects_duplicate_custom_header_names_case_insensitively()
+    {
+        var requestSent = false;
+        using var queryHandler = new RecordingHandler(_ => requestSent = true);
+        var fixture = CreateCluster("prometheus-duplicate-headers");
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
+        using var client = new PrometheusQueryClient(
+            NullLogger<PrometheusQueryClient>.Instance,
+            null,
+            null,
+            () => queryHandler);
+        var endpoint = new ResolvedPrometheusEndpoint(
+            PrometheusProviderKind.External,
+            "External URL",
+            true,
+            null,
+            null,
+            null,
+            "https://prometheus.example",
+            true,
+            string.Empty,
+            CustomHeaders:
+            [
+                new PrometheusHeader { Name = "X-Api-Key", Value = "one" },
+                new PrometheusHeader { Name = "x-api-key", Value = "two" },
+            ]);
+
+        await Should.ThrowAsync<InvalidOperationException>(() => client.QueryRangeAsync(
+            cluster, endpoint, "up", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddMinutes(1), 60,
+            TestContext.Current.CancellationToken));
+
+        requestSent.ShouldBeFalse();
+    }
+
+    [Theory]
+    [InlineData("invalid header", "value")]
+    [InlineData("X-Api-Key", "value\r\nX-Injected: yes")]
+    public async Task QueryRangeAsync_rejects_invalid_custom_header_name_or_value(string name, string value)
+    {
+        var requestSent = false;
+        using var queryHandler = new RecordingHandler(_ => requestSent = true);
+        var fixture = CreateCluster("prometheus-invalid-header");
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
+        using var client = new PrometheusQueryClient(
+            NullLogger<PrometheusQueryClient>.Instance,
+            null,
+            null,
+            () => queryHandler);
+        var endpoint = new ResolvedPrometheusEndpoint(
+            PrometheusProviderKind.External,
+            "External URL",
+            true,
+            null,
+            null,
+            null,
+            "https://prometheus.example",
+            true,
+            string.Empty,
+            CustomHeaders: [new PrometheusHeader { Name = name, Value = value }]);
+
+        await Should.ThrowAsync<InvalidOperationException>(() => client.QueryRangeAsync(
+            cluster, endpoint, "up", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddMinutes(1), 60,
+            TestContext.Current.CancellationToken));
+
+        requestSent.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task QueryRangeAsync_rejects_transport_controlled_custom_headers()
+    {
+        var requestSent = false;
+        using var queryHandler = new RecordingHandler(_ => requestSent = true);
+        var fixture = CreateCluster("prometheus-restricted-header");
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
+        using var client = new PrometheusQueryClient(
+            NullLogger<PrometheusQueryClient>.Instance,
+            null,
+            null,
+            () => queryHandler);
+        var endpoint = new ResolvedPrometheusEndpoint(
+            PrometheusProviderKind.External,
+            "External URL",
+            true,
+            null,
+            null,
+            null,
+            "https://prometheus.example",
+            true,
+            string.Empty,
+            CustomHeaders: [new PrometheusHeader { Name = "Host", Value = "attacker.example" }]);
+
+        await Should.ThrowAsync<InvalidOperationException>(() => client.QueryRangeAsync(
+            cluster, endpoint, "up", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddMinutes(1), 60,
+            TestContext.Current.CancellationToken));
+
+        requestSent.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task QueryRangeAsync_rejects_basic_auth_combined_with_custom_authorization()
+    {
+        var requestSent = false;
+        using var queryHandler = new RecordingHandler(_ => requestSent = true);
+        var fixture = CreateCluster("prometheus-conflicting-auth");
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
+        using var client = new PrometheusQueryClient(
+            NullLogger<PrometheusQueryClient>.Instance,
+            null,
+            null,
+            () => queryHandler);
+        var endpoint = new ResolvedPrometheusEndpoint(
+            PrometheusProviderKind.External,
+            "External URL",
+            true,
+            null,
+            null,
+            null,
+            "https://prometheus.example",
+            true,
+            string.Empty,
+            CustomHeaders: [new PrometheusHeader { Name = "Authorization", Value = "Bearer token" }],
+            BasicAuthUsername: "metrics-user",
+            BasicAuthPassword: "password");
+
+        await Should.ThrowAsync<InvalidOperationException>(() => client.QueryRangeAsync(
+            cluster, endpoint, "up", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddMinutes(1), 60,
+            TestContext.Current.CancellationToken));
+
+        requestSent.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task QueryRangeAsync_redacts_response_bodies_from_authenticated_request_logs()
+    {
+        var logger = new TestLogger<PrometheusQueryClient>();
+        using var queryHandler = new RecordingHandler(
+            _ => { },
+            "server echoed secret-value",
+            HttpStatusCode.Unauthorized);
+        var fixture = CreateCluster("prometheus-redact-auth-error");
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
+        using var client = new PrometheusQueryClient(logger, null, null, () => queryHandler);
+        var endpoint = new ResolvedPrometheusEndpoint(
+            PrometheusProviderKind.External,
+            "External URL",
+            true,
+            null,
+            null,
+            null,
+            "https://prometheus.example",
+            true,
+            string.Empty,
+            CustomHeaders: [new PrometheusHeader { Name = "X-Api-Key", Value = "secret-value" }]);
+
+        await Should.ThrowAsync<HttpRequestException>(() => client.QueryRangeAsync(
+            cluster, endpoint, "up", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddMinutes(1), 60,
+            TestContext.Current.CancellationToken));
+
+        string.Join(Environment.NewLine, logger.Messages).ShouldNotContain("secret-value");
+    }
+
+    [Fact]
+    public async Task QueryRangeAsync_service_forward_ignores_general_http_client_factory()
+    {
+        using var kubernetesHandler = new RecordingHandler(_ => { }, ServiceListResponseBody);
+        using var queryHandler = new RecordingHandler(_ => { });
+        using var services = new ServiceCollection().AddHttpClient().BuildServiceProvider();
+        var fixture = CreateCluster("microk8s", kubernetesHandler);
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
+        await using var client = new PrometheusQueryClient(
+            NullLogger<PrometheusQueryClient>.Instance, null, services.GetRequiredService<IHttpClientFactory>(), () => queryHandler);
+        var endpoint = new ResolvedPrometheusEndpoint(
+            PrometheusProviderKind.Operator, "Prometheus Operator", false,
+            "monitoring", "prometheus-operated", 9090, null, false, string.Empty);
+
+        var result = await client.QueryRangeAsync(cluster, endpoint, "up", DateTimeOffset.UnixEpoch,
+            DateTimeOffset.UnixEpoch.AddMinutes(1), 60, TestContext.Current.CancellationToken);
+
+        result.ShouldNotBeNull();
+        result.Status.ShouldBe("success");
+        queryHandler.RequestUris.Count.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task PrepareAsync_with_same_service_proxy_endpoint_logs_transport_once()
+    {
+        var logger = new TestLogger<PrometheusQueryClient>();
+        using var client = new PrometheusQueryClient(logger);
+        using var kubernetesHandler = new RecordingHandler(_ => { }, ServiceListResponseBody);
+        var fixture = CreateCluster("microk8s", kubernetesHandler);
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
+        var endpoint = new ResolvedPrometheusEndpoint(
+            PrometheusProviderKind.Operator,
+            "Prometheus Operator",
+            false,
+            "monitoring",
+            "prometheus-operated",
+            9090,
+            null,
+            false,
+            string.Empty);
+
+        await client.PrepareAsync(cluster, endpoint, TestContext.Current.CancellationToken);
+        await client.PrepareAsync(cluster, endpoint, TestContext.Current.CancellationToken);
+
+        logger.Messages.Count(message => message.Contains("Prepared Prometheus transport", StringComparison.Ordinal))
+            .ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task PrepareAsync_concurrent_same_endpoint_creates_one_http_client()
+    {
+        using var kubernetesHandler = new RecordingHandler(_ => { }, ServiceListResponseBody);
+        var fixture = CreateCluster("microk8s", kubernetesHandler);
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
+        var httpHandlerCreations = 0;
+        using var client = new PrometheusQueryClient(
+            NullLogger<PrometheusQueryClient>.Instance,
+            null,
+            null,
+            () =>
+            {
+                Interlocked.Increment(ref httpHandlerCreations);
+                return new RecordingHandler(_ => { });
+            });
+        var endpoint = new ResolvedPrometheusEndpoint(
+            PrometheusProviderKind.Operator,
+            "Prometheus Operator",
+            false,
+            "monitoring",
+            "prometheus-operated",
+            9090,
+            null,
+            false,
+            string.Empty);
+
+        await Task.WhenAll(Enumerable.Range(0, 16).Select(_ => client.PrepareAsync(cluster, endpoint, TestContext.Current.CancellationToken)));
+
+        httpHandlerCreations.ShouldBe(1);
+        await client.ResetAsync();
+    }
+
+    [Fact]
+    public async Task PrepareAsync_with_changed_endpoint_logs_transport_again()
+    {
+        var logger = new TestLogger<PrometheusQueryClient>();
+        using var client = new PrometheusQueryClient(logger);
+        using var kubernetesHandler = new RecordingHandler(_ => { }, ServiceListResponseBody);
+        var fixture = CreateCluster("microk8s", kubernetesHandler);
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
+        var firstEndpoint = new ResolvedPrometheusEndpoint(
+            PrometheusProviderKind.Operator,
+            "Prometheus Operator",
+            false,
+            "monitoring",
+            "prometheus-operated",
+            9090,
+            null,
+            false,
+            string.Empty);
+        var secondEndpoint = firstEndpoint with { ServiceName = "prometheus-secondary" };
+
+        await client.PrepareAsync(cluster, firstEndpoint, TestContext.Current.CancellationToken);
+        await client.PrepareAsync(cluster, secondEndpoint, TestContext.Current.CancellationToken);
+
+        logger.Messages.Count(message => message.Contains("Prepared Prometheus transport", StringComparison.Ordinal))
+            .ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task QueryRangeAsync_reuses_the_azure_token_attached_to_the_transport()
+    {
+        string[] observedTokens = [];
+        using var handler = new RecordingHandler(request => observedTokens = [.. observedTokens, request.Headers.Authorization?.Parameter ?? string.Empty]);
+        var azureService = new FakeAzureMonitorWorkspaceService();
+        using var client = new PrometheusQueryClient(
+            NullLogger<PrometheusQueryClient>.Instance,
+            azureService,
+            null,
+            () => handler);
+        var fixture = CreateCluster("azure-prometheus");
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
+        var endpoint = new ResolvedPrometheusEndpoint(
+            PrometheusProviderKind.AzureMonitor,
+            "Azure Managed Prometheus",
+            true,
+            null,
+            null,
+            null,
+            "https://workspace.eastus.prometheus.monitor.azure.com",
+            true,
+            string.Empty,
+            UseAzureMonitorAuthentication: true);
+
+        await client.QueryRangeAsync(cluster, endpoint, "up", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddMinutes(1), 60, TestContext.Current.CancellationToken);
+        await client.QueryRangeAsync(cluster, endpoint, "up", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddMinutes(1), 60, TestContext.Current.CancellationToken);
+
+        // The token is attached to the transport once, so the second query reuses it instead of
+        // resolving a new token for every single HTTP request.
+        observedTokens.ShouldBe(["azure-token-1", "azure-token-1"]);
+        azureService.TokenRequests.ShouldBe(1);
+        await client.ResetAsync();
+    }
+
+    [Fact]
+    public async Task QueryRangeAsync_refreshes_the_azure_token_and_retries_after_unauthorized()
+    {
+        string[] observedTokens = [];
+        using var handler = new SequencedStatusHandler(
+            [HttpStatusCode.Unauthorized, HttpStatusCode.OK, HttpStatusCode.OK],
+            request => observedTokens = [.. observedTokens, request.Headers.Authorization?.Parameter ?? string.Empty]);
+        var azureService = new FakeAzureMonitorWorkspaceService();
+        using var client = new PrometheusQueryClient(
+            NullLogger<PrometheusQueryClient>.Instance,
+            azureService,
+            null,
+            () => handler);
+        var fixture = CreateCluster("azure-prometheus");
+        await using var cluster = fixture.Cluster;
+        using var metricsService = fixture.Service;
+        var endpoint = new ResolvedPrometheusEndpoint(
+            PrometheusProviderKind.AzureMonitor,
+            "Azure Managed Prometheus",
+            true,
+            null,
+            null,
+            null,
+            "https://workspace.eastus.prometheus.monitor.azure.com",
+            true,
+            string.Empty,
+            UseAzureMonitorAuthentication: true);
+
+        var response = await client.QueryRangeAsync(cluster, endpoint, "up", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddMinutes(1), 60, TestContext.Current.CancellationToken);
+        _ = await client.QueryRangeAsync(cluster, endpoint, "up", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddMinutes(1), 60, TestContext.Current.CancellationToken);
+
+        response.ShouldNotBeNull();
+        response.Status.ShouldBe("success");
+        observedTokens.ShouldBe(["azure-token-1", "azure-token-2", "azure-token-2"]);
+        azureService.TokenRequests.ShouldBe(2);
+        azureService.TokenRefreshRequests.ShouldBe(1);
+        await client.ResetAsync();
+    }
+
+    [Fact]
+    public void QueryRangeResponse_deserializes_fractional_prometheus_timestamps()
+    {
+        const string json =
+            """
+            {
+              "status": "success",
+              "data": {
+                "resultType": "matrix",
+                "result": [
+                  {
+                    "metric": { "pod": "pod-a" },
+                    "values": [
+                      [ 1735689600.25, "1.5" ]
+                    ]
+                  }
+                ]
+              }
+            }
+            """;
+
+        var response = JsonSerializer.Deserialize(
+            json,
+            Serialization.KubernetesJsonStaticContext.Default.PrometheusClientQueryRangeResponse);
+
+        response.ShouldNotBeNull();
+        var value = response.Data.Result[0].Values[0];
+        value.Timestamp.ShouldBe(DateTimeOffset.FromUnixTimeMilliseconds(1735689600250));
+        value.Value.ShouldBe(1.5d);
+    }
+
+    [Fact]
+    public void QueryRangeResponse_deserializes_infinities_and_null_as_zero()
+    {
+        const string json =
+            """
+            {
+              "status": "success",
+              "data": {
+                "resultType": "matrix",
+                "result": [
+                  {
+                    "metric": { "pod": "pod-a" },
+                    "values": [
+                      [ 1735689600, "+Inf" ],
+                      [ 1735689660, "-Inf" ],
+                      [ 1735689720, null ],
+                      [ 1735689780, "1.25" ]
+                    ]
+                  }
+                ]
+              }
+            }
+            """;
+
+        var response = JsonSerializer.Deserialize(
+            json,
+            Serialization.KubernetesJsonStaticContext.Default.PrometheusClientQueryRangeResponse);
+
+        var values = response!.Data.Result[0].Values.Select(static item => item.Value).ToArray();
+        values.ShouldBe([double.PositiveInfinity, double.NegativeInfinity, 0d, 1.25d]);
+    }
+
+    private static (Cluster Cluster, MetricsService Service) CreateCluster(string name, DelegatingHandler? handler = null)
+    {
+        var metricsService = new MetricsService(
+            NullLogger<MetricsService>.Instance,
+            new TestClusterSettingsStore(),
+            [
+                new OperatorPrometheusProvider(),
+                new OpenShiftPrometheusProvider(),
+                new ManualPrometheusProvider(),
+                new ExternalPrometheusProvider(),
+                new AzureMonitorPrometheusProvider(),
+            ],
+            new NoopPrometheusQueryClient(),
+            new ImmediateThreadDispatcher());
+        var cluster = new Cluster(
+            NullLogger<Cluster>.Instance,
+            NullLoggerFactory.Instance,
+            new ClusterModelCatalog(new KubernetesModelCatalog()),
+            new TestClusterSettingsStore(),
+            new ServiceCollection().BuildServiceProvider(),
+            new ImmediateThreadDispatcher(),
+            new Serialization.KubernetesJsonSerializer(new JsonSerializerOptions(Serialization.KubernetesJsonStaticContext.Default.Options) { TypeInfoResolver = Serialization.KubernetesJsonStaticContext.Default }),
+            Moq.Mock.Of<Serialization.IKubernetesYamlSerializer>(),
+            metricsService)
+        {
+            Name = name,
+            Client = handler is null
+                ? new k8s.Kubernetes(new KubernetesClientConfiguration { Host = "http://localhost" })
+                : new k8s.Kubernetes(new KubernetesClientConfiguration { Host = "http://localhost" }, handler),
+        };
+        return (cluster, metricsService);
+    }
+
+    private const string ServiceListResponseBody =
+        "{\"apiVersion\":\"v1\",\"kind\":\"ServiceList\",\"items\":["
+        + "{\"apiVersion\":\"v1\",\"kind\":\"Service\",\"metadata\":{\"name\":\"prometheus-operated\",\"namespace\":\"monitoring\"},\"spec\":{\"ports\":[{\"port\":9090}]}},"
+        + "{\"apiVersion\":\"v1\",\"kind\":\"Service\",\"metadata\":{\"name\":\"prometheus-secondary\",\"namespace\":\"monitoring\"},\"spec\":{\"ports\":[{\"port\":9090}]}}]}";
+
+    private sealed class TestLogger<T> : ILogger<T>
+    {
+        public List<string> Messages { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        {
+            Messages.Add(formatter(state, exception));
+        }
+    }
+
+    private sealed class NoopPrometheusQueryClient : IPrometheusQueryClient
+    {
+        public Task PrepareAsync(Cluster cluster, ResolvedPrometheusEndpoint endpoint, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task<PrometheusClientQueryRangeResponse?> QueryRangeAsync(
+            Cluster cluster,
+            ResolvedPrometheusEndpoint endpoint,
+            string query,
+            DateTimeOffset start,
+            DateTimeOffset end,
+            int stepSeconds,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<PrometheusClientQueryRangeResponse?>(null);
+        }
+
+        public Task ResetAsync() => Task.CompletedTask;
+    }
+
+    private sealed class FakeAzureMonitorWorkspaceService : IAzureMonitorWorkspaceService
+    {
+        public int TokenRequests { get; private set; }
+
+        public int TokenRefreshRequests { get; private set; }
+
+        public Task<AzureAuthenticationStatus> GetAuthenticationStatusAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult(new AzureAuthenticationStatus { AzureCliSignedIn = true });
+
+        public Task<IReadOnlyList<AzureMonitorSubscriptionInfo>> GetSubscriptionsAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<AzureMonitorSubscriptionInfo>>([]);
+
+        public Task<IReadOnlyList<AzureMonitorWorkspaceInfo>> GetWorkspacesAsync(string subscriptionId, CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<AzureMonitorWorkspaceInfo>>([]);
+
+        public ValueTask<PrometheusAccessToken> GetPrometheusAccessTokenAsync(CancellationToken cancellationToken = default)
+            => ValueTask.FromResult(new PrometheusAccessToken($"azure-token-{++TokenRequests}", DateTimeOffset.UtcNow.AddMinutes(5)));
+
+        public ValueTask RefreshPrometheusAccessTokenAsync(CancellationToken cancellationToken = default)
+        {
+            TokenRefreshRequests++;
+            return ValueTask.CompletedTask;
+        }
+    }
+
+    /// <summary>Handler that returns a scripted sequence of status codes.</summary>
+    private sealed class SequencedStatusHandler : DelegatingHandler
+    {
+        public SequencedStatusHandler(IReadOnlyList<HttpStatusCode> statusCodes, Action<HttpRequestMessage> record)
+        {
+            _statusCodes = statusCodes;
+            _record = record;
+        }
+
+        private readonly IReadOnlyList<HttpStatusCode> _statusCodes;
+        private readonly Action<HttpRequestMessage> _record;
+        private int _index;
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var index = Interlocked.Increment(ref _index) - 1;
+            var statusCode = index < _statusCodes.Count ? _statusCodes[index] : HttpStatusCode.OK;
+            _record(request);
+            return Task.FromResult(new HttpResponseMessage(statusCode)
+            {
+                Content = new StringContent("{\"status\":\"success\",\"data\":{\"resultType\":\"matrix\",\"result\":[]}}"),
+                RequestMessage = request,
+            });
+        }
+    }
+
+    private sealed class RecordingHandler : DelegatingHandler
+    {
+        public RecordingHandler(
+            Action<HttpRequestMessage> record,
+            string responseBody = "{\"status\":\"success\",\"data\":{\"resultType\":\"matrix\",\"result\":[]}}",
+            HttpStatusCode statusCode = HttpStatusCode.OK)
+        {
+            _record = record;
+            _responseBody = responseBody;
+            _statusCode = statusCode;
+        }
+
+        private readonly Action<HttpRequestMessage> _record;
+        private readonly string _responseBody;
+        private readonly HttpStatusCode _statusCode;
+        public List<string> RequestUris { get; } = [];
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            RequestUris.Add(request.RequestUri?.PathAndQuery ?? string.Empty);
+            _record(request);
+            return Task.FromResult(new HttpResponseMessage(_statusCode)
+            {
+                Content = new StringContent(_responseBody),
+                RequestMessage = request,
+            });
+        }
+    }
+
+    private sealed class TestClusterSettingsStore : IClusterSettingsStore
+    {
+        public IReadOnlyCollection<string> KubeConfigPaths => [];
+
+        public bool KubeConfigAutoDiscoveryEnabled { get; set; }
+
+        public void RemoveKubeConfigPath(string path)
+        {
+        }
+
+        public void AddKubeConfigPath(string path)
+        {
+        }
+
+        public IReadOnlyCollection<string> GetClusterNamespaces(IClusterRuntime cluster)
+        {
+            return [];
+        }
+
+        public ClusterMetricsSettings GetClusterMetricsSettings(IClusterRuntime cluster)
+        {
+            return new ClusterMetricsSettings();
+        }
+
+        public void Persist()
+        {
+        }
+    }
+}

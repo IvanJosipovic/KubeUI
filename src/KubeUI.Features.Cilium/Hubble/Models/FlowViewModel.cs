@@ -244,6 +244,10 @@ public sealed partial class FlowViewModel : ObservableObject
         if (flow.L7 != null)
         {
             L7Type = flow.L7.Type;
+            if (flow.L7.Kafka != null)
+            {
+                ApplicationProtocol = "Kafka";
+            }
             if (flow.L7.Dns != null)
             {
                 ApplicationProtocol = "DNS";
@@ -255,10 +259,6 @@ public sealed partial class FlowViewModel : ObservableObject
                 HttpMethod = flow.L7.Http.Method;
                 HttpPath = flow.L7.Http.Url;
                 HttpStatusCode = flow.L7.Http.Code > 0 ? (int?)flow.L7.Http.Code : null;
-            }
-            if (flow.L7.Kafka != null)
-            {
-                ApplicationProtocol = "Kafka";
             }
         }
         else

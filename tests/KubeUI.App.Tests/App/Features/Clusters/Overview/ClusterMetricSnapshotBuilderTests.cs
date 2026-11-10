@@ -130,4 +130,5 @@ public sealed class ClusterMetricSnapshotBuilderTests
         snapshot.MemoryLimitsGi.ShouldBe(0);
         snapshot.MemoryUsageGi.ShouldBe(0);
     }
+
 }

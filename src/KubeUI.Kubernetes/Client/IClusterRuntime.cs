@@ -12,7 +12,8 @@ public interface IClusterRuntime
     bool Connected { get; set; }
     ClusterStatus Status { get; set; }
     string? LastError { get; set; }
-    bool IsMetricsAvailable { get; }
+    /// <summary>Gets metrics capability for Kubernetes Metrics Server and Prometheus backends.</summary>
+    IClusterMetrics Metrics { get; }
     bool ListNamespaces { get; set; }
     event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
     event Action<IClusterRuntime>? NamespaceSelectionRequired;
@@ -27,8 +28,6 @@ public interface IClusterRuntime
     string KubeConfigPath { get; set; }
     string Name { get; set; }
     ReadOnlyObservableCollection<V1Namespace> Namespaces { get; }
-    ObservableCollection<NodeMetrics> NodeMetrics { get; }
-    ObservableCollection<PodMetrics> PodMetrics { get; }
     ObservableCollection<PortForwarder> PortForwarders { get; }
     IClusterAuthorization Permissions { get; }
     bool IsResourceNamespaced(GroupApiVersionKind kind);
@@ -39,6 +38,8 @@ public interface IClusterRuntime
     void RemovePortForward(PortForwarder pf);
     Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task Connect();
+    /// <summary>Reapplies the current cluster metrics settings when the cluster is connected.</summary>
+    Task ReinitializeMetricsAsync() => Task.CompletedTask;
     Task EnsureOpenApiSchemasAsync();
     Task Disconnect();
     Task DeleteResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();

@@ -24,6 +24,9 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 {
     public IClusterAuthorization Permissions => this;
 
+    /// <inheritdoc />
+    public IClusterMetrics Metrics => _metricsService;
+
     private readonly IKubernetesJsonSerializer _jsonSerializer;
     private readonly IKubernetesYamlSerializer _yamlSerializer;
 
@@ -42,6 +45,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     private IServiceProvider _serviceProvider;
 
     private IThreadDispatcher _dispatcher;
+    private readonly IMetricsService _metricsService;
 
     public event Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? OnChange;
     public event Action<IClusterRuntime>? NamespaceSelectionRequired;
@@ -49,6 +53,9 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     public event Action<IClusterRuntime, GroupApiVersionKind>? ResourceUnseeded;
 
     private readonly SemaphoreSlim _connectionLimiter = new(1, 1);
+    private readonly SemaphoreSlim _connectionLifecycleLimiter = new(1, 1);
+    private CancellationTokenSource? _metricsInitializationCancellation;
+    private Task? _metricsInitializationTask;
     private int _disposeStarted;
 
     private CancellationTokenSource? _resourceInformerCancellationTokenSource = new();
@@ -106,7 +113,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     /// <param name="serviceProvider">Application service provider.</param>
     /// <param name="dispatcher">Dispatcher used for UI-bound observable updates.</param>
     /// <param name="authorizationOptions">Authorization behavior options.</param>
-    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ClusterModelCatalog modelCatalog, IClusterSettingsStore settings, IServiceProvider serviceProvider, IThreadDispatcher dispatcher, IKubernetesJsonSerializer jsonSerializer, IKubernetesYamlSerializer yamlSerializer, IOptions<ClusterAuthorizationOptions>? authorizationOptions = null)
+    public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ClusterModelCatalog modelCatalog, IClusterSettingsStore settings, IServiceProvider serviceProvider, IThreadDispatcher dispatcher, IKubernetesJsonSerializer jsonSerializer, IKubernetesYamlSerializer yamlSerializer, IMetricsService? metricsService = null, IOptions<ClusterAuthorizationOptions>? authorizationOptions = null)
     {
         _loggerFactory = loggerFactory;
         _logger = logger;
@@ -119,6 +126,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             loggerFactory.CreateLogger<KubernetesOpenApiSchemaLoader>());
         _settings = settings;
         _serviceProvider = serviceProvider;
+        _metricsService = metricsService ?? serviceProvider.GetService<IMetricsService>() ?? new NullMetricsService();
         _dispatcher = dispatcher;
         _authorizationOptions = authorizationOptions?.Value ?? new ClusterAuthorizationOptions();
     }
@@ -132,10 +140,23 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             return;
         }
 
-        StopNamespaceSubscription();
-        await StopResourceInformersAsync().ConfigureAwait(false);
-        _openApiSchemaLoader.Dispose();
-        _connectionLimiter.Dispose();
+        await _connectionLifecycleLimiter.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            StopNamespaceSubscription();
+            await StopMetricsInitializationAsync().ConfigureAwait(false);
+            if (_metricsService is IDisposable metricsDisposable)
+            {
+                metricsDisposable.Dispose();
+            }
+            await StopResourceInformersAsync().ConfigureAwait(false);
+            _openApiSchemaLoader.Dispose();
+            _connectionLimiter.Dispose();
+        }
+        finally
+        {
+            _connectionLifecycleLimiter.Release();
+        }
     }
 
     private Activity? StartClusterActivity(string activityName, ActivityKind activityKind = ActivityKind.Internal)
@@ -149,163 +170,274 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     {
         using var activity = StartClusterActivity(nameof(Connect));
 
-        await _connectionLimiter.WaitAsync();
-        _logger.LogInformation("Connecting to {name}", Name);
-
+        await _connectionLifecycleLimiter.WaitAsync();
         try
         {
-            if (!Connected)
+            if (Volatile.Read(ref _disposeStarted) != 0)
             {
-                try
+                return;
+            }
+
+            await _connectionLimiter.WaitAsync();
+            _logger.LogInformation("Connecting to {name}", Name);
+            var wasConnected = Connected;
+
+            try
+            {
+                if (!Connected)
                 {
-                    Status = ClusterStatus.Connecting;
-                    LastError = null;
-                    ResetAuthorizationIndex();
-                    KubernetesClientConfiguration config;
+                    try
+                    {
+                        Status = ClusterStatus.Connecting;
+                        LastError = null;
+                        ResetAuthorizationIndex();
+                        KubernetesClientConfiguration config;
 
-                    if (string.IsNullOrEmpty(KubeConfigPath))
-                    {
-                        config = KubernetesClientConfiguration.BuildConfigFromConfigObject(KubeConfig, Name);
-                    }
-                    else
-                    {
-                        config = KubernetesClientConfiguration.BuildConfigFromConfigFile(KubeConfigPath, Name);
-                    }
-
-                    if (KubernetesClientFactory is null)
-                    {
-                        // build a custom pipeline for HTTP calls
-                        var pipe = new ResiliencePipelineBuilder<HttpResponseMessage>()
+                        if (string.IsNullOrEmpty(KubeConfigPath))
                         {
-                            Name = "Cluster",
-                            InstanceName = Name
+                            config = KubernetesClientConfiguration.BuildConfigFromConfigObject(KubeConfig, Name);
                         }
-                        .AddRetry(new HttpRetryStrategyOptions
+                        else
                         {
-                            MaxRetryAttempts = 3,
-                        })
-                        .ConfigureTelemetry(_loggerFactory);
-
-                        var handler = new OperationKeyHandler(InvalidatePermissionsAfterForbiddenResponse, _authorizationOptions.ForbiddenCoalesceWindow)
-                        {
-                            InnerHandler = new ResilienceHandler(pipe.Build())
-                        };
-
-                        _jsonSerializer.ConfigureClient(config);
-                        Client = new k8s.Kubernetes(config, handler);
-                    }
-                    else
-                    {
-                        _jsonSerializer.ConfigureClient(config);
-                        Client = KubernetesClientFactory(config);
-                    }
-
-                    EnsureResourceInformerCancellationTokenSource();
-
-                    await UpdateNamespacePermission().ConfigureAwait(true);
-
-                    await SeedResource<V1Namespace>(true).ConfigureAwait(true);
-                    var namespaceCache = GetResourceSourceCache<V1Namespace>();
-
-                    // Cant list Namespaces
-                    if (!ListNamespaces)
-                    {
-                        var namespaces = _settings.GetClusterNamespaces(this);
-
-                        if (namespaces.Count == 0)
-                        {
-                            Connected = false;
-                            Status = ClusterStatus.Errored;
-                            LastError = "Unable to connect because the cluster cannot list namespaces and no fallback namespaces are configured.";
-                            NamespaceSelectionRequired?.Invoke(this);
-                            _logger.LogWarning(
-                                "Cluster {Name} cannot list namespaces and has no configured namespace fallback.",
-                                Name);
-                            return;
+                            config = KubernetesClientConfiguration.BuildConfigFromConfigFile(KubeConfigPath, Name);
                         }
 
-                        foreach (var item in namespaces)
+                        if (KubernetesClientFactory is null)
                         {
-                            namespaceCache.AddOrUpdate(new V1Namespace() { Metadata = new() { Name = item, Uid = item } });
+                            // build a custom pipeline for HTTP calls
+                            var pipe = new ResiliencePipelineBuilder<HttpResponseMessage>()
+                            {
+                                Name = "Cluster",
+                                InstanceName = Name
+                            }
+                            .AddRetry(new HttpRetryStrategyOptions
+                            {
+                                MaxRetryAttempts = 3,
+                            })
+                            .ConfigureTelemetry(_loggerFactory);
+
+                            var handler = new OperationKeyHandler(InvalidatePermissionsAfterForbiddenResponse, _authorizationOptions.ForbiddenCoalesceWindow)
+                            {
+                                InnerHandler = new ResilienceHandler(pipe.Build())
+                            };
+
+                            _jsonSerializer.ConfigureClient(config);
+                            Client = new k8s.Kubernetes(config, handler);
                         }
+                        else
+                        {
+                            _jsonSerializer.ConfigureClient(config);
+                            Client = KubernetesClientFactory(config);
+                        }
+
+                        EnsureResourceInformerCancellationTokenSource();
+
+                        await UpdateNamespacePermission().ConfigureAwait(true);
+
+                        await SeedResource<V1Namespace>(true).ConfigureAwait(true);
+                        var namespaceCache = GetResourceSourceCache<V1Namespace>();
+
+                        // Cant list Namespaces
+                        if (!ListNamespaces)
+                        {
+                            var namespaces = _settings.GetClusterNamespaces(this);
+
+                            if (namespaces.Count == 0)
+                            {
+                                Connected = false;
+                                Status = ClusterStatus.Errored;
+                                LastError = "Unable to connect because the cluster cannot list namespaces and no fallback namespaces are configured.";
+                                NamespaceSelectionRequired?.Invoke(this);
+                                _logger.LogWarning(
+                                    "Cluster {Name} cannot list namespaces and has no configured namespace fallback.",
+                                    Name);
+                                return;
+                            }
+
+                            foreach (var item in namespaces)
+                            {
+                                namespaceCache.AddOrUpdate(new V1Namespace() { Metadata = new() { Name = item, Uid = item } });
+                            }
+                        }
+
+                        StopNamespaceSubscription();
+                        _namespaceSubscription = namespaceCache
+                            .Connect()
+                            .ObserveOn(_dispatcher.Scheduler)
+                            .SortAndBind(out var filteredObjects, SortExpressionComparer<V1Namespace>.Ascending(p => p.Name()))
+                            .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Namespace Observable"));
+
+                        Namespaces = filteredObjects;
+
+                        Connected = true;
+                        Status = ClusterStatus.Connected;
+                        LastError = null;
+
+                        _ = RefreshApiGroupDiscoveryListAsync();
+                        _ = EnsureOpenApiSchemasAsync();
                     }
+                    catch (Exception ex)
+                    {
+                        activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+                        _logger.LogError(ex, "Error connecting to {name}", Name);
 
-                    StopNamespaceSubscription();
-                    _namespaceSubscription = namespaceCache
-                        .Connect()
-                        .ObserveOn(_dispatcher.Scheduler)
-                        .SortAndBind(out var filteredObjects, SortExpressionComparer<V1Namespace>.Ascending(p => p.Name()))
-                        .Subscribe((_) => { }, (y) => _logger.LogError(y, "Error Namespace Observable"));
+                        Connected = false;
 
-                    Namespaces = filteredObjects;
-
-                    Connected = true;
-                    Status = ClusterStatus.Connected;
-                    LastError = null;
-
-                    _ = RefreshApiGroupDiscoveryListAsync();
-                    _ = EnsureOpenApiSchemasAsync();
-                    _ = InitMetrics();
+                        Status = ClusterStatus.Errored;
+                        LastError = ex.Message;
+                    }
                 }
-                catch (Exception ex)
+            }
+            finally
+            {
+                _connectionLimiter.Release();
+                _logger.LogInformation("Connected to {name}", Name);
+            }
+
+            if (Connected)
+            {
+                if (!wasConnected)
                 {
-                    activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
-                    _logger.LogError(ex, "Error connecting to {name}", Name);
-
-                    Connected = false;
-
-                    Status = ClusterStatus.Errored;
-                    LastError = ex.Message;
+                    _ = StartMetricsInitialization();
                 }
             }
         }
         finally
         {
-            _connectionLimiter.Release();
-            _logger.LogInformation("Connected to {name}", Name);
+            _connectionLifecycleLimiter.Release();
         }
+
     }
 
     public async Task Disconnect()
     {
-        await _connectionLimiter.WaitAsync().ConfigureAwait(false);
-        _logger.LogInformation("Disconnecting from {name}", Name);
+        if (Volatile.Read(ref _disposeStarted) != 0)
+        {
+            return;
+        }
 
+        await _connectionLifecycleLimiter.WaitAsync().ConfigureAwait(false);
         try
         {
-            StopMetrics();
-            StopPortForwarders();
-            StopNamespaceSubscription();
+            await StopMetricsInitializationAsync().ConfigureAwait(false);
+            await _connectionLimiter.WaitAsync().ConfigureAwait(false);
+            _logger.LogInformation("Disconnecting from {name}", Name);
 
-            await StopResourceInformersAsync().ConfigureAwait(false);
-            ClearDynamicCustomResourceDefinitions();
-            ClearSeededResources();
-
-            if (Client is IDisposable disposableClient)
+            try
             {
-                disposableClient.Dispose();
+                StopPortForwarders();
+                StopNamespaceSubscription();
+
+                await StopResourceInformersAsync().ConfigureAwait(false);
+                ClearDynamicCustomResourceDefinitions();
+                ClearSeededResources();
+
+                if (Client is IDisposable disposableClient)
+                {
+                    disposableClient.Dispose();
+                }
+
+                Client = null;
+                Connected = false;
+                _openApiSchemaLoader.Reset();
+                lock (_discoveryRefreshGate)
+                {
+                    _discoveryClient = null;
+                    _discoveryRefreshTask = null;
+                    _discoveryRefreshRequested = false;
+                }
+
+                Status = ClusterStatus.None;
+                LastError = null;
+                ResetAuthorizationIndex();
+            }
+            finally
+            {
+                _connectionLimiter.Release();
             }
 
-            Client = null;
-            Connected = false;
-            _openApiSchemaLoader.Reset();
-            lock (_discoveryRefreshGate)
-            {
-                _discoveryClient = null;
-                _discoveryRefreshTask = null;
-                _discoveryRefreshRequested = false;
-            }
-
-            Status = ClusterStatus.None;
-            LastError = null;
-            ResetAuthorizationIndex();
+            _logger.LogInformation("Disconnected from {name}", Name);
         }
         finally
         {
-            _connectionLimiter.Release();
+            _connectionLifecycleLimiter.Release();
+        }
+    }
+
+    /// <summary>Reapplies the configured metrics backend without disconnecting the Kubernetes client.</summary>
+    public async Task ReinitializeMetricsAsync()
+    {
+        if (_metricsService is NullMetricsService || !Connected || Volatile.Read(ref _disposeStarted) != 0)
+        {
+            return;
         }
 
-        _logger.LogInformation("Disconnected from {name}", Name);
+        Task? metricsInitializationTask = null;
+        await _connectionLifecycleLimiter.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            if (!Connected || Volatile.Read(ref _disposeStarted) != 0)
+            {
+                return;
+            }
+
+            await StopMetricsInitializationAsync().ConfigureAwait(false);
+            if (!Connected || Volatile.Read(ref _disposeStarted) != 0)
+            {
+                return;
+            }
+
+            metricsInitializationTask = StartMetricsInitialization();
+        }
+        finally
+        {
+            _connectionLifecycleLimiter.Release();
+        }
+
+        if (metricsInitializationTask is not null)
+        {
+            await metricsInitializationTask.ConfigureAwait(false);
+        }
+    }
+
+    private Task StartMetricsInitialization()
+    {
+        var cancellation = new CancellationTokenSource();
+        _metricsInitializationCancellation = cancellation;
+        _metricsInitializationTask = Task.Run(() => InitializeMetricsAsync(cancellation.Token));
+        return _metricsInitializationTask;
+    }
+
+    private async Task InitializeMetricsAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _metricsService.InitializeAsync(this, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to initialize metrics for cluster {Name}.", Name);
+        }
+    }
+
+    private async Task StopMetricsInitializationAsync()
+    {
+        var cancellation = _metricsInitializationCancellation;
+        var initializationTask = _metricsInitializationTask;
+        _metricsInitializationCancellation = null;
+        _metricsInitializationTask = null;
+
+        cancellation?.Cancel();
+        if (initializationTask is not null)
+        {
+            await initializationTask.ConfigureAwait(false);
+        }
+
+        cancellation?.Dispose();
+        await _metricsService.StopAsync().ConfigureAwait(false);
     }
 
     public Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -1013,20 +1145,6 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         {
             RemovePortForward(portForwarder);
         }
-    }
-
-    private void StopMetrics()
-    {
-        _metricsRefreshCancellationTokenSource?.Cancel();
-        _metricsRefreshCancellationTokenSource?.Dispose();
-        _metricsRefreshCancellationTokenSource = null;
-
-        _metricsRefreshTimer?.Dispose();
-        _metricsRefreshTimer = null;
-
-        NodeMetrics.Clear();
-        PodMetrics.Clear();
-        IsMetricsAvailable = false;
     }
 
     private void StopNamespaceSubscription()
