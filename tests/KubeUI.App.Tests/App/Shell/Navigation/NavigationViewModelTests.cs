@@ -486,6 +486,33 @@ public class NavigationViewModelTests
     }
 
     [AvaloniaFact]
+    public async Task cilium_section_appears_when_custom_resource_access_is_denied()
+    {
+        var crd = NavigationTestCustomResourceDefinitionFactory.Create(
+            "networkpolicies.cilium.io",
+            "Network Policies",
+            "someString",
+            "cilium.io");
+        using var workspace = await Application.Current.CreateClusterAsync(config =>
+        {
+            config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
+            config.InitialYaml = KubernetesTestData.LimitedAccessWithNamespacePermissions;
+            config.InitialResources = [crd];
+        }, connect: false);
+        using var vm = CreateViewModel();
+        vm.ClusterCatalog.Clusters.Add(workspace);
+        var clusterNode = vm.Clusters.Single(node => node.Cluster == workspace);
+
+        await workspace.Connect();
+
+        var section = await WaitForValueAsync(
+            () => clusterNode.NavigationItems.SingleOrDefault(item => item.Id == $"{workspace.Runtime.Name}-section-cilium"),
+            timeoutMs: 10000);
+        section.ShouldNotBeNull();
+        workspace.GetResourceConfigs().ShouldNotContain(config => config.IsCustomResource);
+    }
+
+    [AvaloniaFact]
     public async Task crossplane_crd_appears_in_canonical_and_section_trees_and_tracks_access_updates()
     {
         var rootCrd = NavigationTestCustomResourceDefinitionFactory.Create(

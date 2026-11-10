@@ -42,6 +42,7 @@ internal sealed class CrossplaneNavigationSectionProvider : INavigationSectionPr
 
     public NavigationSection Section { get; }
 
+    /// <inheritdoc />
     public bool IsSectionAvailable(ClusterWorkspace cluster)
     {
         try

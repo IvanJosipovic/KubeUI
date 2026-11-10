@@ -8,4 +8,5 @@
 
 ## Validation
 - Preserve existing cluster connection, permission, and CRD-driven behaviors backed by tests.
+- Raise `CustomResourceDefinitionChanged` for valid CRD add, modify, and delete events independently of custom-resource list/watch access so navigation providers can recalculate CRD availability.
 - Cluster catalog Delete is scoped to the focused list and uses the selected cluster's normal delete command and confirmation flow.
