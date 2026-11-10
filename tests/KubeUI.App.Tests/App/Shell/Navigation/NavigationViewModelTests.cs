@@ -2629,7 +2629,11 @@ public class NavigationViewModelTests
         await TestApplicationExtensions.WaitForUiAsync();
 
         var crdA = NavigationTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "Tests", "someString");
-        var crdB = NavigationTestCustomResourceDefinitionFactory.Create("others.kubeui.com", "Others", "otherString");
+        var crdB = NavigationTestCustomResourceDefinitionFactory.Create(
+            "others.kubeui.com",
+            "Others",
+            "otherString",
+            kind: "Other");
 
         await workspace.Runtime.AddOrUpdateResource(crdA);
         await workspace.Runtime.AddOrUpdateResource(crdB);
@@ -2766,7 +2770,12 @@ public class NavigationViewModelTests
 
 internal static class NavigationTestCustomResourceDefinitionFactory
 {
-    public static V1CustomResourceDefinition Create(string name, string plural, string schemaProperty, string group = "kubeui.com")
+    public static V1CustomResourceDefinition Create(
+        string name,
+        string plural,
+        string schemaProperty,
+        string group = "kubeui.com",
+        string kind = "Test")
     {
         return new V1CustomResourceDefinition
         {
@@ -2781,9 +2790,9 @@ internal static class NavigationTestCustomResourceDefinitionFactory
                 Names = new()
                 {
                     Plural = plural.ToLowerInvariant().Replace(' ', '-'),
-                    Singular = "test",
-                    Kind = "Test",
-                    ListKind = "TestList"
+                    Singular = kind.ToLowerInvariant(),
+                    Kind = kind,
+                    ListKind = kind + "List"
                 },
                 Versions =
                 [
