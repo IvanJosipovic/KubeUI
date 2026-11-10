@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -8,20 +7,24 @@ namespace KubeUI.Kubernetes;
 internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
 {
     private static readonly TimeSpan s_customResourceDefinitionRefreshDebounce = TimeSpan.FromMilliseconds(350);
+    private static readonly TimeSpan s_initialDiscoveryRetryDelay = TimeSpan.FromMilliseconds(250);
+    private static readonly TimeSpan s_maximumDiscoveryRetryDelay = TimeSpan.FromSeconds(5);
 
-    private readonly Func<CancellationToken, Task> _refreshAsync;
+    private readonly Func<CancellationToken, Task<ApiDiscoverySnapshot?>> _refreshAsync;
     private readonly CancellationTokenSource _shutdownTokenSource;
     private readonly Lock _gate = new();
-    private readonly ConcurrentDictionary<string, long> _observedCustomResourceDefinitionGenerations = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, ObservedCustomResourceDefinition> _observedCustomResourceDefinitions = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, EstablishedCustomResourceDefinition> _pendingEstablishedCustomResourceDefinitions = new(StringComparer.Ordinal);
     private Task? _workerTask;
     private bool _refreshRequested;
     private bool _immediateRefreshRequested;
     private bool _stopping;
     private long _requestVersion;
+    private int _retryAttempt;
     private TaskCompletionSource _requestSignal = CreateRequestSignal();
 
     internal ApiDiscoveryRefreshCoordinator(
-        Func<CancellationToken, Task> refreshAsync,
+        Func<CancellationToken, Task<ApiDiscoverySnapshot?>> refreshAsync,
         CancellationToken connectionCancellationToken)
     {
         _refreshAsync = refreshAsync ?? throw new ArgumentNullException(nameof(refreshAsync));
@@ -35,7 +38,35 @@ internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
         WatchEventType eventType,
         V1CustomResourceDefinition definition)
     {
-        if (ShouldRefreshForCustomResourceDefinition(eventType, definition))
+        bool shouldRefresh;
+        lock (_gate)
+        {
+            if (_stopping)
+            {
+                return;
+            }
+
+            shouldRefresh = ShouldRefreshForCustomResourceDefinition(eventType, definition);
+            if (shouldRefresh)
+            {
+                var name = definition.Name() ?? string.Empty;
+                if (eventType == WatchEventType.Deleted)
+                {
+                    _pendingEstablishedCustomResourceDefinitions.Remove(name);
+                }
+                else if (IsEstablished(definition)
+                    && TryCreateEstablishedDefinition(definition, out var establishedDefinition))
+                {
+                    _pendingEstablishedCustomResourceDefinitions[name] = establishedDefinition;
+                }
+                else
+                {
+                    _pendingEstablishedCustomResourceDefinitions.Remove(name);
+                }
+            }
+        }
+
+        if (shouldRefresh)
         {
             _ = RequestRefresh(immediate: false);
         }
@@ -63,7 +94,12 @@ internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
             await workerTask.ConfigureAwait(false);
         }
 
-        _observedCustomResourceDefinitionGenerations.Clear();
+        lock (_gate)
+        {
+            _observedCustomResourceDefinitions.Clear();
+            _pendingEstablishedCustomResourceDefinitions.Clear();
+        }
+
         _shutdownTokenSource.Dispose();
     }
 
@@ -151,7 +187,11 @@ internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
                     }
                 }
 
-                await _refreshAsync(cancellationToken).ConfigureAwait(false);
+                var snapshot = await _refreshAsync(cancellationToken).ConfigureAwait(false);
+                if (HasPendingEstablishedDefinitions(snapshot))
+                {
+                    await WaitForDiscoveryRetryAsync(cancellationToken).ConfigureAwait(false);
+                }
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -178,34 +218,143 @@ internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
         var name = definition.Name() ?? string.Empty;
         if (eventType == WatchEventType.Deleted)
         {
-            _observedCustomResourceDefinitionGenerations.TryRemove(name, out _);
+            _observedCustomResourceDefinitions.Remove(name);
             return true;
         }
 
+        var generation = definition.Metadata?.Generation;
+        var hasGeneration = generation is > 0;
+        var established = IsEstablished(definition);
+        var wasObserved = _observedCustomResourceDefinitions.TryGetValue(name, out var previous);
+        var generationChanged = !hasGeneration
+            || !wasObserved
+            || previous.Generation != generation;
+        var becameEstablished = established && (!wasObserved || !previous.Established);
+        _observedCustomResourceDefinitions[name] = new ObservedCustomResourceDefinition(
+            hasGeneration ? generation : null,
+            established);
+
         if (eventType == WatchEventType.Added)
         {
-            if (definition.Metadata?.Generation is long addedGeneration && addedGeneration > 0)
+            return true;
+        }
+
+        return generationChanged || becameEstablished;
+    }
+
+    private async Task WaitForDiscoveryRetryAsync(CancellationToken cancellationToken)
+    {
+        Task requestSignalTask;
+        TimeSpan retryDelay;
+        lock (_gate)
+        {
+            if (_stopping || _refreshRequested || _pendingEstablishedCustomResourceDefinitions.Count == 0)
             {
-                _observedCustomResourceDefinitionGenerations[name] = addedGeneration;
+                return;
+            }
+
+            var multiplier = 1 << Math.Min(_retryAttempt, 5);
+            var ticks = Math.Min(
+                s_initialDiscoveryRetryDelay.Ticks * multiplier,
+                s_maximumDiscoveryRetryDelay.Ticks);
+            retryDelay = TimeSpan.FromTicks(ticks);
+            _retryAttempt = Math.Min(_retryAttempt + 1, 6);
+            requestSignalTask = _requestSignal.Task;
+        }
+
+        var delayTask = Task.Delay(retryDelay, cancellationToken);
+        await Task.WhenAny(delayTask, requestSignalTask).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        lock (_gate)
+        {
+            if (!_stopping
+                && !_refreshRequested
+                && _pendingEstablishedCustomResourceDefinitions.Count > 0
+                && delayTask.IsCompleted)
+            {
+                _refreshRequested = true;
+                _immediateRefreshRequested = true;
+                _requestVersion++;
+            }
+        }
+    }
+
+    private bool HasPendingEstablishedDefinitions(ApiDiscoverySnapshot? snapshot)
+    {
+        lock (_gate)
+        {
+            if (snapshot is not null)
+            {
+                var satisfiedNames = _pendingEstablishedCustomResourceDefinitions
+                    .Where(pair => HasAllServedVersions(snapshot, pair.Value))
+                    .Select(static pair => pair.Key)
+                    .ToArray();
+                foreach (var name in satisfiedNames)
+                {
+                    _pendingEstablishedCustomResourceDefinitions.Remove(name);
+                }
+            }
+
+            if (_pendingEstablishedCustomResourceDefinitions.Count == 0)
+            {
+                _retryAttempt = 0;
+                return false;
             }
 
             return true;
         }
+    }
 
-        if (definition.Metadata?.Generation is not long generation || generation <= 0)
-        {
-            return true;
-        }
+    private static bool HasAllServedVersions(
+        ApiDiscoverySnapshot snapshot,
+        EstablishedCustomResourceDefinition definition)
+        => definition.ServedVersions.All(version => snapshot.Resources.Any(resource =>
+            string.Equals(resource.Kind.Group, definition.Group, StringComparison.Ordinal)
+            && string.Equals(resource.Kind.Kind, definition.Kind, StringComparison.Ordinal)
+            && string.Equals(resource.Kind.PluralName, definition.PluralName, StringComparison.Ordinal)
+            && string.Equals(resource.Kind.ApiVersion, version, StringComparison.Ordinal)));
 
-        if (_observedCustomResourceDefinitionGenerations.TryGetValue(name, out var previousGeneration)
-            && previousGeneration == generation)
+    private static bool TryCreateEstablishedDefinition(
+        V1CustomResourceDefinition definition,
+        out EstablishedCustomResourceDefinition establishedDefinition)
+    {
+        var spec = definition.Spec;
+        var servedVersions = spec?.Versions?
+            .Where(static version => version.Served && !string.IsNullOrWhiteSpace(version.Name))
+            .Select(static version => version.Name)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray() ?? [];
+        if (spec is null
+            || string.IsNullOrWhiteSpace(spec.Group)
+            || string.IsNullOrWhiteSpace(spec.Names?.Kind)
+            || string.IsNullOrWhiteSpace(spec.Names?.Plural)
+            || servedVersions.Length == 0)
         {
+            establishedDefinition = default!;
             return false;
         }
 
-        _observedCustomResourceDefinitionGenerations[name] = generation;
+        establishedDefinition = new EstablishedCustomResourceDefinition(
+            spec.Group,
+            spec.Names.Kind,
+            spec.Names.Plural,
+            servedVersions);
         return true;
     }
+
+    private static bool IsEstablished(V1CustomResourceDefinition definition)
+        => definition.Status?.Conditions?.Any(static condition =>
+            string.Equals(condition.Type, "Established", StringComparison.Ordinal)
+            && string.Equals(condition.Status, "True", StringComparison.Ordinal)) == true;
+
+    private readonly record struct ObservedCustomResourceDefinition(long? Generation, bool Established);
+
+    private sealed record EstablishedCustomResourceDefinition(
+        string Group,
+        string Kind,
+        string PluralName,
+        IReadOnlyList<string> ServedVersions);
 
     private static TaskCompletionSource CreateRequestSignal()
         => new(TaskCreationOptions.RunContinuationsAsynchronously);

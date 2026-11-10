@@ -46,6 +46,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     public event Action<IClusterRuntime>? NamespaceSelectionRequired;
     public event Action<IClusterRuntime, GroupApiVersionKind>? ResourceSeeded;
     public event Action<IClusterRuntime, GroupApiVersionKind>? ResourceUnseeded;
+
+    /// <inheritdoc />
     public event Action<IClusterRuntime, ApiDiscoverySnapshot>? ApiDiscoverySnapshotRefreshed;
 
     private readonly SemaphoreSlim _connectionLimiter = new(1, 1);
@@ -584,14 +586,14 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     private Task RefreshApiGroupDiscoveryListAsync()
         => _apiDiscoveryRefreshCoordinator?.RefreshImmediatelyAsync() ?? Task.CompletedTask;
 
-    private async Task RefreshApiGroupDiscoveryListCoreAsync(CancellationToken cancellationToken)
+    private async Task<ApiDiscoverySnapshot?> RefreshApiGroupDiscoveryListCoreAsync(CancellationToken cancellationToken)
     {
         try
         {
             if (!TryGetKubernetesClient(out var kubernetesClient))
             {
                 _logger.LogDebug("Skipping API discovery refresh for disconnected cluster {name}.", Name);
-                return;
+                return null;
             }
 
             _discoveryClient ??= new KubernetesApiDiscoveryClient(kubernetesClient);
@@ -607,14 +609,17 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
             _apiDiscoverySnapshot = snapshot;
             ApiDiscoverySnapshotRefreshed?.Invoke(this, snapshot);
+            return snapshot;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+            return null;
         }
         catch (Exception ex)
         {
             Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
             _logger.LogError(ex, "Unable to refresh API discovery for cluster {name}", Name);
+            return null;
         }
     }
 

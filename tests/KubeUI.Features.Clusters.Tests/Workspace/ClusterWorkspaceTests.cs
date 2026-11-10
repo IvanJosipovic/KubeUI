@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Diagnostics;
+using System.Text;
+using System.Text.Json.Nodes;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Media;
@@ -80,9 +82,39 @@ public class ClusterWorkspaceTests
         var container = GetSeededContainer(workspace.Runtime, expectedKind);
         container.ShouldNotBeNull();
         GetInformers(container).Count.ShouldBe(1);
-        var requestPaths = testCluster.FakeApi!.RequestUris.Select(static uri => uri?.AbsolutePath).ToArray();
-        requestPaths.ShouldContain("/apis/kubeui.com/v1beta1/namespaces/my-app/widgets");
-        requestPaths.ShouldNotContain("/apis/kubeui.com/v1beta1/widgets");
+        if (backend == KubernetesBackend.Fake)
+        {
+            var requestPaths = testCluster.FakeApi.ShouldNotBeNull().RequestUris.Select(static uri => uri?.AbsolutePath).ToArray();
+            requestPaths.ShouldContain("/apis/kubeui.com/v1beta1/namespaces/my-app/widgets");
+            requestPaths.ShouldNotContain("/apis/kubeui.com/v1beta1/widgets");
+        }
+    }
+
+    [AvaloniaTheory]
+    [InlineData("list")]
+    [InlineData("watch")]
+    public async Task discovery_does_not_register_custom_resource_without_list_or_watch_verb(string missingVerb)
+    {
+        var services = Application.Current.GetTestServices();
+        var crd = TestCustomResourceDefinitionFactory.Create("widgets.kubeui.com", "widgets", "value");
+        var expectedKind = GetCustomResourceKind(crd);
+        await using var testCluster = await services.GetRequiredService<TestClusterGenerator>().CreateAsync(
+            new TestClusterConfig
+            {
+                Type = KubernetesBackend.Fake,
+                InitialResources = [crd],
+                HttpHandlerFactory = () => [new DiscoveryVerbFilterHandler(crd.Spec.Group, crd.Spec.Names.Plural, missingVerb)],
+            },
+            TestContext.Current.CancellationToken);
+        using var workspace = CreateWorkspace(testCluster, services);
+
+        await workspace.Connect();
+
+        var discoveredResource = workspace.Runtime.ApiDiscoverySnapshot!.Resources
+            .Single(resource => resource.Kind == expectedKind);
+        discoveredResource.Verbs.ShouldNotContain(missingVerb);
+        workspace.Runtime.ModelCatalog.IsCustomResource(expectedKind).ShouldBeTrue();
+        workspace.GetResourceConfigs().ShouldNotContain(config => config.Kind == expectedKind);
     }
 
     [AvaloniaFact]
@@ -1051,5 +1083,61 @@ public class ClusterWorkspaceTests
     {
         return (IList<IResourceInformerRegistration>)(container.GetType().GetProperty("InformerRegistrations")?.GetValue(container)
             ?? throw new InvalidOperationException("Container does not expose InformerRegistrations."));
+    }
+
+    private sealed class DiscoveryVerbFilterHandler(string groupName, string pluralName, string missingVerb) : DelegatingHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            if (request.RequestUri?.AbsolutePath != "/apis" || response.StatusCode != System.Net.HttpStatusCode.OK)
+            {
+                return response;
+            }
+
+            var discovery = JsonNode.Parse(await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false))!.AsObject();
+            if (discovery["items"] is JsonArray groups)
+            {
+                foreach (var group in groups.OfType<JsonObject>())
+                {
+                    if (!string.Equals(group["metadata"]?["name"]?.GetValue<string>(), groupName, StringComparison.Ordinal)
+                        || group["versions"] is not JsonArray versions)
+                    {
+                        continue;
+                    }
+
+                    foreach (var version in versions.OfType<JsonObject>())
+                    {
+                        if (version["resources"] is not JsonArray resources)
+                        {
+                            continue;
+                        }
+
+                        foreach (var resource in resources.OfType<JsonObject>())
+                        {
+                            if (!string.Equals(resource["resource"]?.GetValue<string>(), pluralName, StringComparison.Ordinal)
+                                || resource["verbs"] is not JsonArray verbs)
+                            {
+                                continue;
+                            }
+
+                            for (var index = verbs.Count - 1; index >= 0; index--)
+                            {
+                                if (string.Equals(verbs[index]?.GetValue<string>(), missingVerb, StringComparison.Ordinal))
+                                {
+                                    verbs.RemoveAt(index);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            response.Content.Dispose();
+            response.Content = new StringContent(discovery.ToJsonString(), Encoding.UTF8, "application/json");
+            return response;
+        }
     }
 }

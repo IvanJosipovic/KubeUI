@@ -39,6 +39,12 @@ public sealed class ApiDiscoverySnapshotTests
                             freshness = "Current",
                             resources = [CreateResource("widgets", "Widget", "Namespaced", "v1", "list", "watch")],
                         },
+                        new V2beta1APIGroupDiscoveryListItemVersion
+                        {
+                            version = "v2beta1",
+                            freshness = "Current",
+                            resources = [CreateResource("widgets", "Widget", "Namespaced", "v2beta1", "list", "watch")],
+                        },
                     ],
                 },
             ],
@@ -46,13 +52,134 @@ public sealed class ApiDiscoverySnapshotTests
 
         var snapshot = ApiDiscoverySnapshot.Create(core, groups);
 
-        snapshot.Resources.Count.ShouldBe(2);
+        snapshot.Resources.Count.ShouldBe(3);
         snapshot.Resources.ShouldNotContain(resource => resource.Kind.PluralName == "widgets/status");
         snapshot.PreferredResources.ShouldHaveSingleItem();
         snapshot.PreferredResources[0].Kind.ShouldBe(new GroupApiVersionKind("widgets.example.com", "v1", "Widget", "widgets"));
         snapshot.PreferredResources[0].IsNamespaced.ShouldBeTrue();
         snapshot.PreferredResources[0].Verbs.ShouldContain("list");
     }
+
+    [Fact]
+    public void Create_falls_back_to_enclosing_group_and_version_when_both_response_kind_fields_are_empty()
+    {
+        var core = new V2beta1APIGroupDiscoveryList
+        {
+            kind = "APIGroupDiscoveryList",
+            items =
+            [
+                CreateGroup(
+                    string.Empty,
+                    "v1",
+                    new V2beta1APIGroupDiscoveryListItemVersionResource
+                    {
+                        resource = "pods",
+                        responseKind = new V2beta1APIGroupDiscoveryListItemVersionResourceResponsekind
+                        {
+                            version = "v1",
+                            kind = "Pod",
+                        },
+                        scope = "Namespaced",
+                        verbs = ["list", "watch"],
+                    }),
+            ],
+        };
+        var groups = new V2beta1APIGroupDiscoveryList
+        {
+            kind = "APIGroupDiscoveryList",
+            items =
+            [
+                CreateGroup(
+                    "apps",
+                    "v1",
+                    new V2beta1APIGroupDiscoveryListItemVersionResource
+                    {
+                        resource = "deployments",
+                        responseKind = new V2beta1APIGroupDiscoveryListItemVersionResourceResponsekind
+                        {
+                            kind = "Deployment",
+                        },
+                        scope = "Namespaced",
+                        verbs = ["list", "watch"],
+                    }),
+            ],
+        };
+
+        var snapshot = ApiDiscoverySnapshot.Create(core, groups);
+
+        snapshot.Resources.ShouldContain(resource => resource.Kind == new GroupApiVersionKind(string.Empty, "v1", "Pod", "pods"));
+        snapshot.Resources.ShouldContain(resource => resource.Kind == new GroupApiVersionKind("apps", "v1", "Deployment", "deployments"));
+    }
+
+    [Fact]
+    public void PreferredResources_orders_versions_numerically_within_a_stability_stage()
+    {
+        var core = new V2beta1APIGroupDiscoveryList { kind = "APIGroupDiscoveryList", items = [] };
+        var groups = new V2beta1APIGroupDiscoveryList
+        {
+            kind = "APIGroupDiscoveryList",
+            items =
+            [
+                CreateGroup(
+                    "widgets.example.com",
+                    "v1beta2",
+                    CreateResource("widgets", "Widget", "Namespaced", "v1beta2", "list", "watch")),
+                CreateGroup(
+                    "widgets.example.com",
+                    "v1beta10",
+                    CreateResource("widgets", "Widget", "Namespaced", "v1beta10", "list", "watch")),
+            ],
+        };
+
+        var snapshot = ApiDiscoverySnapshot.Create(core, groups);
+
+        snapshot.PreferredResources.ShouldHaveSingleItem();
+        snapshot.PreferredResources[0].Kind.ApiVersion.ShouldBe("v1beta10");
+    }
+
+    [Fact]
+    public void PreferredResources_prefers_stable_version_over_newer_beta_version()
+    {
+        var core = new V2beta1APIGroupDiscoveryList { kind = "APIGroupDiscoveryList", items = [] };
+        var groups = new V2beta1APIGroupDiscoveryList
+        {
+            kind = "APIGroupDiscoveryList",
+            items =
+            [
+                CreateGroup(
+                    "widgets.example.com",
+                    "v1",
+                    CreateResource("widgets", "Widget", "Namespaced", "v1", "list", "watch")),
+                CreateGroup(
+                    "widgets.example.com",
+                    "v2beta1",
+                    CreateResource("widgets", "Widget", "Namespaced", "v2beta1", "list", "watch")),
+            ],
+        };
+
+        var snapshot = ApiDiscoverySnapshot.Create(core, groups);
+
+        snapshot.PreferredResources.ShouldHaveSingleItem();
+        snapshot.PreferredResources[0].Kind.ApiVersion.ShouldBe("v1");
+    }
+
+    private static V2beta1APIGroupDiscoveryListItem CreateGroup(
+        string group,
+        string version,
+        params V2beta1APIGroupDiscoveryListItemVersionResource[] resources)
+        => new()
+        {
+            metadata = new V2beta1APIGroupDiscoveryListItemMetadata { name = group },
+            versions =
+            [
+                new V2beta1APIGroupDiscoveryListItemVersion
+                {
+                    version = version,
+                    freshness = "Current",
+                    resources = resources,
+                },
+            ],
+        };
 
     private static V2beta1APIGroupDiscoveryListItemVersionResource CreateResource(
         string resource,

@@ -127,6 +127,8 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     /// Raised after a resource config has been permission-evaluated and registered by the workspace.
     /// </summary>
     public event Action<ClusterWorkspace, IClusterResourceConfig>? ResourceConfigProcessed;
+
+    /// <summary>Raised after a discovered custom-resource kind is removed from the workspace.</summary>
     public event Action<ClusterWorkspace, GroupApiVersionKind>? CustomResourceRemoved;
 
     private Activity? StartWorkspaceActivity(string activityName, ActivityKind activityKind = ActivityKind.Internal)
@@ -636,7 +638,9 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             }
 
             var resources = snapshot.PreferredResources
-                .Where(resource => Runtime.ModelCatalog.IsCustomResource(resource.Kind))
+                .Where(resource => Runtime.ModelCatalog.IsCustomResource(resource.Kind)
+                    && resource.Verbs.Contains("list")
+                    && resource.Verbs.Contains("watch"))
                 .ToArray();
             var targetKinds = resources
                 .Select(static resource => (resource.Kind.Group, resource.Kind.Kind))

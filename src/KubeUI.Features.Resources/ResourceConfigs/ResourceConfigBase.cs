@@ -95,7 +95,7 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
     /// <inheritdoc />
     public virtual NavigationPlacement Navigation => NavigationPlacement.Root;
 
-    /// <inheritdoc />
+    /// <summary>Raised when this resource kind's list columns change.</summary>
     public event EventHandler? ColumnsChanged;
 
     /// <summary>Notifies resource lists that their column definitions changed.</summary>

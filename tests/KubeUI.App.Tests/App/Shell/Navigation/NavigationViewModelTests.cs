@@ -468,14 +468,15 @@ public class NavigationViewModelTests
             "Tests",
             "someString",
             "crossplane.io");
+        var kind = GetCustomResourceKind(crd);
         await workspace.Runtime.AddOrUpdateResource(crd);
         var descriptor = await WaitForValueAsync(
             () => workspace.GetResourceConfigs().SingleOrDefault(config =>
-                config.IsCustomResource && config.CustomResourceDefinition!.Name() == crd.Name()),
+                config.IsCustomResource && config.Kind == kind),
             timeoutMs: 10000);
         descriptor.ShouldNotBeNull();
+        descriptor.CustomResourceDefinition.ShouldBeNull();
 
-        var kind = GetCustomResourceKind(crd);
         var node = vm.Clusters.Single(cluster => cluster.Cluster == workspace);
         await WaitForAsync(() => FindResourceLinks(node.NavigationItems, kind).Count == 2, timeoutMs: 10000);
         var links = FindResourceLinks(node.NavigationItems, kind);

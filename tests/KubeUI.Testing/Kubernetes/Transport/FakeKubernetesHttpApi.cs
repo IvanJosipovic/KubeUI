@@ -2418,15 +2418,18 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
         lock (_state.DiscoveryGate)
         {
-            var changed = !string.IsNullOrWhiteSpace(definitionName)
-                && RemoveCustomResourceDefinitionEndpoints(definitionName);
+            var previousDefinitionKeys = !string.IsNullOrWhiteSpace(definitionName)
+                && _state.CustomResourceDefinitionKeysByName.TryGetValue(definitionName, out var previousKeys)
+                ? previousKeys
+                : [];
+            HashSet<string> definitionKeys = [];
+            var changed = false;
 
             if (!string.IsNullOrWhiteSpace(group)
                 && !string.IsNullOrWhiteSpace(plural)
                 && !string.IsNullOrWhiteSpace(kind)
                 && versions is not null)
             {
-                HashSet<string> definitionKeys = [];
                 foreach (var versionNode in versions.OfType<JsonObject>())
                 {
                     var version = versionNode["name"]?.GetValue<string>();
@@ -2461,10 +2464,25 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
                     definitionKeys.Add(key);
                     changed = true;
                 }
+            }
 
-                if (!string.IsNullOrWhiteSpace(definitionName) && definitionKeys.Count > 0)
+            foreach (var previousKey in previousDefinitionKeys)
+            {
+                if (!definitionKeys.Contains(previousKey))
+                {
+                    changed |= RemoveCustomResourceDefinitionEndpoint(previousKey);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(definitionName))
+            {
+                if (definitionKeys.Count > 0)
                 {
                     _state.CustomResourceDefinitionKeysByName[definitionName] = definitionKeys;
+                }
+                else
+                {
+                    _state.CustomResourceDefinitionKeysByName.Remove(definitionName);
                 }
             }
 
@@ -2533,19 +2551,56 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         if (removed)
         {
             var api = definition.Api;
-            var prefix = $"/apis/{api.Group}/{api.ApiVersion}/{api.PluralName}/";
-            foreach (var resourceKey in _resources.Keys.Where(key => key.Contains(prefix, StringComparison.Ordinal)).ToArray())
+            foreach (var resourceKey in _resources.Keys.Where(key => IsResourceForEndpoint(key, api)).ToArray())
             {
                 _resources.TryRemove(resourceKey, out _);
             }
 
-            foreach (var collectionKey in _watchers.Keys.Where(key => key.Contains($"/{api.PluralName}", StringComparison.Ordinal)).ToArray())
+            foreach (var collectionKey in _watchers.Keys.Where(key => IsCollectionForEndpoint(key, api)).ToArray())
             {
-                _watchers.TryRemove(collectionKey, out _);
+                if (_watchers.TryRemove(collectionKey, out var watchers))
+                {
+                    foreach (var watcher in watchers)
+                    {
+                        watcher.Writer.TryComplete();
+                    }
+                }
             }
         }
 
         return removed;
+    }
+
+    private static bool IsResourceForEndpoint(string resourceKey, GroupApiVersionKind api)
+    {
+        var parts = resourceKey.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length < 5
+            || !string.Equals(parts[0], "apis", StringComparison.Ordinal)
+            || !string.Equals(parts[1], api.Group, StringComparison.Ordinal)
+            || !string.Equals(parts[2], api.ApiVersion, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var pluralIndex = parts[3] == "namespaces" ? 5 : 3;
+        return parts.Length > pluralIndex + 1
+            && string.Equals(parts[pluralIndex], api.PluralName, StringComparison.Ordinal);
+    }
+
+    private static bool IsCollectionForEndpoint(string collectionKey, GroupApiVersionKind api)
+    {
+        var parts = collectionKey.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length < 4
+            || !string.Equals(parts[0], "apis", StringComparison.Ordinal)
+            || !string.Equals(parts[1], api.Group, StringComparison.Ordinal)
+            || !string.Equals(parts[2], api.ApiVersion, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var pluralIndex = parts[3] == "namespaces" ? 5 : 3;
+        return parts.Length == pluralIndex + 1
+            && string.Equals(parts[pluralIndex], api.PluralName, StringComparison.Ordinal);
     }
 
     private void InvalidateGroupedDiscoveryETag()

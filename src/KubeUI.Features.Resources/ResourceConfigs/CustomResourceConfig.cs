@@ -329,7 +329,7 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>, ICl
         {
             Definition = null;
             _kind = resource.Kind;
-            _resourceName = _kind.PluralName.Humanize(LetterCasing.Title);
+            _resourceName = _kind.Kind.Humanize(LetterCasing.Title).Pluralize();
             _groups = NavigationGroupPath.CreateCustomResourceGroups(_kind.Group);
             _isNamespaced = resource.IsNamespaced;
             _origin = ResourceOrigin.ApiDiscovery;
@@ -404,8 +404,9 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>, ICl
     /// <param name="crd">CRD being configured.</param>
     protected virtual IEnumerable<IResourceListColumn> CreateAdditionalColumns(V1CustomResourceDefinition crd) => [];
 
-    /// <summary>Creates columns specific to a discovered resource endpoint.</summary>
-    /// <param name="resource">Discovered endpoint being configured.</param>
+    /// <summary>Creates additional columns specific to a discovered endpoint.</summary>
+    /// <param name="resource">The discovered endpoint being configured.</param>
+    /// <returns>Additional columns to display for the endpoint.</returns>
     protected virtual IEnumerable<IResourceListColumn> CreateAdditionalColumns(ApiDiscoveryResource resource) => [];
 
     private List<IResourceListColumn> CreatePrinterColumns(

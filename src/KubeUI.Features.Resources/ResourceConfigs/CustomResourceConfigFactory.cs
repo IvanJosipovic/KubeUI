@@ -5,6 +5,7 @@ namespace KubeUI.Features.Resources;
 
 internal sealed class CustomResourceConfigFactory(IServiceProvider serviceProvider) : IClusterCustomResourceConfigFactory
 {
+    /// <inheritdoc />
     public IClusterCustomResourceConfig Create(ApiDiscoveryResource resource)
     {
         ArgumentNullException.ThrowIfNull(resource);

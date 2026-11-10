@@ -96,8 +96,10 @@ public sealed class ApiDiscoverySnapshot
                         continue;
                     }
 
-                    var resourceGroup = resource.responseKind.group ?? groupName;
-                    var resourceVersion = resource.responseKind.version ?? version.version;
+                    var responseKindIsEmpty = string.IsNullOrEmpty(resource.responseKind.group)
+                        && string.IsNullOrEmpty(resource.responseKind.version);
+                    var resourceGroup = responseKindIsEmpty ? groupName : resource.responseKind.group ?? groupName;
+                    var resourceVersion = responseKindIsEmpty ? version.version : resource.responseKind.version ?? version.version;
                     if (!string.Equals(resourceGroup, groupName, StringComparison.Ordinal)
                         || !string.Equals(resourceVersion, version.version, StringComparison.Ordinal))
                     {
@@ -114,12 +116,12 @@ public sealed class ApiDiscoverySnapshot
         }
     }
 
-    private static int GetVersionRank(string version)
+    private static (int StageRank, int Major, int Minor) GetVersionRank(string version)
     {
         var match = VersionPattern.Match(version);
         if (!match.Success || !int.TryParse(match.Groups["major"].Value, out var major))
         {
-            return 0;
+            return (0, 0, 0);
         }
 
         var stageRank = match.Groups["stage"].Value switch
@@ -130,6 +132,6 @@ public sealed class ApiDiscoverySnapshot
             _ => 0,
         };
         var minor = int.TryParse(match.Groups["minor"].Value, out var parsedMinor) ? parsedMinor : 0;
-        return checked(major * 1_000_000 + stageRank * 100_000 + minor);
+        return (stageRank, major, minor);
     }
 }

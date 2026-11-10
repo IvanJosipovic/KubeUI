@@ -37,10 +37,12 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
 
     public bool CanRefreshPermissions => !IsRefreshingPermissions;
 
+    /// <summary>Gets or sets whether API discovery is refreshing.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanRefreshApiDiscovery))]
     public partial bool IsRefreshingApiDiscovery { get; set; }
 
+    /// <summary>Gets whether the API discovery refresh command can run.</summary>
     public bool CanRefreshApiDiscovery => !IsRefreshingApiDiscovery;
 
     public string ClusterTitle => string.Format(ClustersLanguageManager.Instance.ClusterSettingsView_TitleFormat.CurrentValue()!, Cluster?.Runtime.Name);

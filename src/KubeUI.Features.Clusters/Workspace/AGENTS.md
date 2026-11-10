@@ -4,7 +4,7 @@
 - Workspace state wraps an `IClusterRuntime` and exposes cluster-scoped UI state.
 - Resource configs are not initialized eagerly when a workspace is created.
 - Dynamic resource configs and model-catalog entries reconcile from complete authenticated `/api` and `/apis` discovery snapshots. Discovery identifies served capabilities only; resource permissions still come from authorization checks.
-- The runtime's CRD informer is optional. Add/delete and `metadata.generation` changes request discovery refresh; metadata/status-only changes do not. Discovery snapshots alone add/remove dynamic configs. When CRDs are readable, their cached matching served-version printer columns may supplement an existing discovery-backed config without changing its GVK or registration.
+- The runtime's CRD informer is optional. Add/delete, `metadata.generation` changes, and a transition to the `Established` condition request discovery refresh; other metadata/status-only changes do not. If an established CRD's served versions are temporarily absent from discovery, retry with backoff until they appear. Discovery snapshots alone add/remove dynamic configs. When CRDs are readable, their cached matching served-version printer columns may supplement an existing discovery-backed config without changing its GVK or registration.
 - Discovery version selection is deterministic: current freshness first, then stable over beta over alpha, then numeric version ordering. Discovery does not reveal a CRD storage version.
 - Disconnect drops discovery-backed configs and dynamic model-catalog entries. Reconnect rebuilds them from the next complete snapshot.
 - If the cluster cannot list namespaces globally, materialize settings-backed fallback namespaces into the runtime namespace set.

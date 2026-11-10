@@ -168,7 +168,7 @@ public class V1CustomResourceDefinitionConfigTests
         var services = Application.Current.GetTestServices();
         var config = ActivatorUtilities.CreateInstance<CustomResourceConfig>(services);
         var resource = new ApiDiscoveryResource(
-            new GroupApiVersionKind("kubeui.com", "v1beta1", "Test", "tests"),
+            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "HTTPRoute", "httproutes"),
             isNamespaced: true,
             freshness: "Current",
             verbs: ["list", "watch"]);
@@ -181,6 +181,7 @@ public class V1CustomResourceDefinitionConfigTests
         config.IsCustomResource.ShouldBeTrue();
         config.Definition.ShouldBeNull();
         config.CustomResourceDefinition.ShouldBeNull();
+        config.Name.ShouldBe("HTTP Routes");
         config.Columns().Select(static column => column.Name).ShouldBe(["Name", "Namespace", "Age"]);
     }
 
