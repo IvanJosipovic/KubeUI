@@ -75,10 +75,12 @@ public sealed class ResourceConfigBasePermissionTests
         var config = new TrackingResourceConfig(services);
         var pod = new V1Pod { Metadata = new V1ObjectMeta { Name = "pod-1", NamespaceProperty = "default" } };
 
-        config.GetDefaultMenuItems(new[] { pod })
+        var items = config.GetDefaultMenuItems(new[] { pod }).ToArray();
+        items
             .ShouldContain(item => item.Title == "View YAML");
+        items.ShouldContain(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_EditYaml.CurrentValue());
 
-        var edit = config.GetDefaultMenuItems(new[] { pod })
+        var edit = items
             .Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_Edit.CurrentValue());
 
         edit.Command.ShouldNotBeNull();

@@ -294,9 +294,8 @@ public sealed class ResourceEditorIntegrationTests
         var config = services.GetRequiredService<TestClusterConfig>();
         var previousHandlerFactory = config.HttpHandlerFactory;
         var writeGate = new WriteRejectionGate();
-        config.HttpHandlerFactory = () => [new RejectWriteHandler(writeGate)];
-
-        using var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync(testConfig =>
+            testConfig.HttpHandlerFactory = () => [new RejectWriteHandler(writeGate)]);
         config.HttpHandlerFactory = previousHandlerFactory;
         await cluster.Runtime.EnsureOpenApiSchemasAsync().WaitAsync(TestContext.Current.CancellationToken);
 
@@ -331,9 +330,8 @@ public sealed class ResourceEditorIntegrationTests
         var writeGate = new WriteRejectionGate();
         writeGate.RejectWrites = true;
         writeGate.RejectionStatusCode = HttpStatusCode.UnprocessableEntity;
-        config.HttpHandlerFactory = () => [new RejectWriteHandler(writeGate)];
-
-        using var cluster = await Application.Current.CreateClusterAsync();
+        using var cluster = await Application.Current.CreateClusterAsync(testConfig =>
+            testConfig.HttpHandlerFactory = () => [new RejectWriteHandler(writeGate)]);
         config.HttpHandlerFactory = previousHandlerFactory;
         await cluster.Runtime.EnsureOpenApiSchemasAsync().WaitAsync(TestContext.Current.CancellationToken);
 

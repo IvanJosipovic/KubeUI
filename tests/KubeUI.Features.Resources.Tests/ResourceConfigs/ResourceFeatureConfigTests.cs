@@ -276,7 +276,7 @@ public sealed class ResourceFeatureConfigTests
         var config = (V1PodConfig)workspace.GetResourceConfig(GroupApiVersionKind.From<V1Pod>());
         var pod = new V1Pod { Metadata = new V1ObjectMeta { Name = "edit-test", NamespaceProperty = "default" } };
         var action = config.GetDefaultMenuItems(new[] { pod })
-            .Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_Edit.CurrentValue()!);
+            .Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_EditYaml.CurrentValue()!);
         var command = action.Command.ShouldBeAssignableTo<IRelayCommand>();
         command.CanExecute(action.CommandParameter).ShouldBeTrue();
         command.CanExecute(new List<V1Pod> { pod, pod }).ShouldBeFalse();
@@ -314,9 +314,9 @@ public sealed class ResourceFeatureConfigTests
             .Single(viewModel => viewModel.Object?.Metadata?.Name == pod.Metadata.Name);
         try
         {
-            defaultActions.Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_Edit.CurrentValue()!)
+            defaultActions.Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_EditYaml.CurrentValue()!)
                 .Command.ShouldBeAssignableTo<IRelayCommand>().Execute(
-                    defaultActions.Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_Edit.CurrentValue()!).CommandParameter);
+                    defaultActions.Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_EditYaml.CurrentValue()!).CommandParameter);
 
             bottomDock.VisibleDockables!.OfType<ResourceYamlViewModel>()
                 .Count(viewModel => viewModel.Object?.Metadata?.Name == pod.Metadata.Name).ShouldBe(1);
@@ -336,7 +336,7 @@ public sealed class ResourceFeatureConfigTests
         config.Initialize(workspace);
         var pod = new V1Pod { Metadata = new V1ObjectMeta { Name = "edit-denied", NamespaceProperty = "default" } };
         var action = config.GetDefaultMenuItems(new[] { pod })
-            .Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_Edit.CurrentValue()!);
+            .Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_EditYaml.CurrentValue()!);
 
         action.Command.ShouldBeAssignableTo<IRelayCommand>().CanExecute(action.CommandParameter).ShouldBeFalse();
     }

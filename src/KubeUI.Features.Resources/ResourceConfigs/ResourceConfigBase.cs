@@ -315,7 +315,7 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
         },
         new()
         {
-            Title = ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_Edit.CurrentValue()!,
+            Title = ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_EditYaml.CurrentValue()!,
             Command = EditYamlCommand,
             CommandParameter = selectedItems?.ToList(),
             FluentIcon = Icon.DocumentEdit,

@@ -203,6 +203,7 @@
   "ReplicaSetPropertiesView_Fully_Labeled_Replicas": "Fully Labeled Replicas",
   "ResourceConfigBase_MenuItem_Delete": "Delete",
   "ResourceConfigBase_MenuItem_Edit": "Edit",
+  "ResourceConfigBase_MenuItem_EditYaml": "Edit YAML",
   "ResourceConfigBase_MenuItem_View": "View",
   "ResourceConfigBase_MenuItem_ViewYaml": "View YAML",
   "ResourceConfigBase_MenuItem_Visualize": "Visualize",
