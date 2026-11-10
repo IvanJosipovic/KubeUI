@@ -78,6 +78,7 @@
     <PackageReference Include="DynamicData" />
     <PackageReference Include="FluentAvaloniaUI" />
     <PackageReference Include="FluentIcons.Avalonia" />
+    <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" />
     <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia.Fluent" />
     <PackageReference Include="Humanizer.Core" />
     <PackageReference Include="Irihi.Ursa" />

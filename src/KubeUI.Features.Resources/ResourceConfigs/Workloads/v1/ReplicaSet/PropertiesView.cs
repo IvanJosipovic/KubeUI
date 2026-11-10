@@ -1,5 +1,6 @@
 using k8s.Models;
 using KubeUI.Controls.Presentation;
+using KubeUI.Features.Resources.Metrics.Controls;
 using KubeUI.Features.Resources.Properties;
 
 namespace KubeUI.Features.Resources.Workloads.v1.ReplicaSet;
@@ -11,7 +12,7 @@ public sealed class PropertiesView : ViewBase<V1ReplicaSet>
         ArgumentNullException.ThrowIfNull(vm);
 
         return new StackPanel()
-            .Children(
+            .Children(new MetricsControl { DataContext = vm },
                 new PropertyItem()
                     .Key(FoundationLanguageManager.Instance.Shared_Desired_Replicas.CurrentValue()!)
                     .Value(vm.Spec?.Replicas ?? 0),
