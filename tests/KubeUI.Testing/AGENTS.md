@@ -16,4 +16,4 @@ Shared helpers are organized under `Kubernetes/Bootstrap`, `Kubernetes/Scenarios
 - Wait for informer/resource state or explicit task completion, pass `TestContext.Current.CancellationToken`, and never use `Task.Delay` or `Thread.Sleep` in tests.
 - Dispose `TestCluster` when initialization succeeds; generator failure paths must clean up the generated client/cluster. Test and transport APIs must accept and forward cancellation tokens; use bounded, predicate-based waits for readiness and cleanup.
 - `SeedResource`/CRUD completion and informer observation are separate states; expose or await explicit predicates rather than treating a dispatcher flush as synchronization.
-- Kind-backed suites create isolated Docker clusters per test; run them
+- Kind-backed suites create isolated Docker clusters per test. Run them only when `KUBEUI_RUN_KIND_TESTS=1` and Docker is available; local tests use the fake backend by default.

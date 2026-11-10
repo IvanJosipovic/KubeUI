@@ -32,13 +32,13 @@ jobs:
             runs-on: windows-latest
             packParams: '--msi'
             signingParams: --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
-            icon: src/KubeUI.Avalonia/Assets/icon.ico
+            icon: src/KubeUI.Foundation/Assets/icon.ico
           - rid: win-arm64
             fileName: KubeUI.Desktop.exe
             runs-on: windows-latest
             packParams: '--msi'
             signingParams: --azureTrustedSignFile metadata.json --verbose --signExclude \.dll$
-            icon: src/KubeUI.Avalonia/Assets/icon.ico
+            icon: src/KubeUI.Foundation/Assets/icon.ico
           - rid: linux-x64
             fileName: KubeUI.Desktop
             runs-on: ubuntu-latest
@@ -54,13 +54,13 @@ jobs:
             runs-on: macos-latest
             packParams: --plist src/KubeUI.Desktop/info.plist
             signingParams: '--signAppIdentity "Developer ID Application: Ivan Josipovic" --signInstallIdentity "Developer ID Installer: Ivan Josipovic" --notaryProfile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db --signEntitlements src/KubeUI.Desktop/entitlements.entitlements'
-            icon: src/KubeUI.Avalonia/Assets/icon.icns
+            icon: src/KubeUI.Foundation/Assets/icon.icns
           - rid: osx-arm64
             fileName: KubeUI.Desktop
             runs-on: macos-latest
             packParams: --plist src/KubeUI.Desktop/info.plist
             signingParams: '--signAppIdentity "Developer ID Application: Ivan Josipovic" --signInstallIdentity "Developer ID Installer: Ivan Josipovic" --notaryProfile "velopack-profile" --keychain $RUNNER_TEMP/app-signing.keychain-db --signEntitlements src/KubeUI.Desktop/entitlements.entitlements'
-            icon: src/KubeUI.Avalonia/Assets/icon.icns
+            icon: src/KubeUI.Foundation/Assets/icon.icns
     steps:
       - uses: actions/checkout@v7
 
@@ -80,13 +80,17 @@ jobs:
       - name: Install Velopack
         shell: pwsh
         run: |
-          $csprojPath = "src/KubeUI.Avalonia/KubeUI.Avalonia.csproj"
+          $propsPath = "Directory.Packages.props"
 
-          [xml]$csprojXml = Get-Content -Path $csprojPath
+          [xml]$propsXml = Get-Content -Path $propsPath
 
-          $velopackVersion = $csprojXml.Project.ItemGroup.PackageReference |
+          $velopackVersion = $propsXml.Project.ItemGroup.PackageVersion |
              Where-Object { $_.Include -eq "Velopack" } |
              Select-Object -ExpandProperty Version
+
+          if (-not $velopackVersion) {
+            throw "Velopack PackageVersion not found in $propsPath"
+          }
 
           dotnet tool install -g vpk --version $velopackVersion
 
@@ -176,7 +180,7 @@ jobs:
         run: vpk download github --outputDir "packed" --channel ${{ matrix.rid }} --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} --pre
 
       - name: Create Package
-        run: vpk pack --outputDir "packed" --channel ${{ matrix.rid }} --packId "KubeUI" --packVersion "${{ inputs.package_version }}" --packDir "src/KubeUI.Desktop/bin/publish" --packAuthors "Ivan Josipovic" --packTitle "KubeUI" --releaseNotes "CHANGELOG.md" --mainExe "${{ matrix.fileName }}" --icon "${{ matrix.icon }}" ${{ matrix.packParams }} ${{ inputs.enable_code_signing && matrix.signingParams || '' }}
+        run: vpk pack --outputDir "packed" --channel ${{ matrix.rid }} --runtime ${{ matrix.rid }} --packId "KubeUI" --packVersion "${{ inputs.package_version }}" --packDir "src/KubeUI.Desktop/bin/publish" --packAuthors "Ivan Josipovic" --packTitle "KubeUI" --releaseNotes "CHANGELOG.md" --mainExe "${{ matrix.fileName }}" --icon "${{ matrix.icon }}" ${{ matrix.packParams }} ${{ inputs.enable_code_signing && matrix.signingParams || '' }}
 
       - name: Remove unnecessary assets
         shell: pwsh

@@ -1,0 +1,55 @@
+using k8s.Models;
+
+namespace KubeUI.Features.Resources.Configuration.v1.PodDisruptionBudget;
+
+public sealed partial class V1PodDisruptionBudgetConfig : ResourceConfig<V1PodDisruptionBudget>
+{
+    public V1PodDisruptionBudgetConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
+    public override bool IsNamespaced => true;
+    public override NavigationPlacement Navigation => NavigationPlacement.InSection(NavigationSections.ConfigurationId);
+    public override int Order => 5;
+
+    protected override IList<IResourceListColumn> CreateDefaultColumns()
+    {
+        return [
+            NameColumn(SortDirection.Ascending),
+            NamespaceColumn(),
+            new ResourceListColumn<V1PodDisruptionBudget, IntOrString>()
+            {
+                Key = "min-available",
+                Name = ResourcesLanguageManager.Instance.V1PodDisruptionBudgetConfig_Min_Available.CurrentValue()!,
+                Display = x => x.Spec.MinAvailable != null ? x.Spec.MinAvailable.Value : "",
+                Field = x => x.Spec.MinAvailable,
+                WidthMode = DynamicTableViewWidthMode.Header
+            },
+            new ResourceListColumn<V1PodDisruptionBudget, IntOrString>()
+            {
+                Key = "max-unavailable",
+                Name = ResourcesLanguageManager.Instance.V1PodDisruptionBudgetConfig_Max_Unavailable.CurrentValue()!,
+                Display = x => x.Spec.MaxUnavailable != null ? x.Spec.MaxUnavailable.Value : "",
+                Field = x => x.Spec.MaxUnavailable,
+                WidthMode = DynamicTableViewWidthMode.Header
+            },
+            new ResourceListColumn<V1PodDisruptionBudget, int?>()
+            {
+                Key = "current-healthy",
+                Name = ResourcesLanguageManager.Instance.V1PodDisruptionBudgetConfig_Current_Healthy.CurrentValue()!,
+                Field = x => x.Status.CurrentHealthy,
+                WidthMode = DynamicTableViewWidthMode.Header
+            },
+            new ResourceListColumn<V1PodDisruptionBudget, int?>()
+            {
+                Key = "desired-healthy",
+                Name = ResourcesLanguageManager.Instance.V1PodDisruptionBudgetConfig_Desired_Healthy.CurrentValue()!,
+                Field = x => x.Status.DesiredHealthy,
+                WidthMode = DynamicTableViewWidthMode.Header
+            },
+            AgeColumn(),
+        ];
+    }
+
+    public override Control[] Properties(V1PodDisruptionBudget resource) => [new PropertiesView()];
+}

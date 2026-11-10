@@ -24,19 +24,20 @@ using Helm.NET;
 using k8s;
 using k8s.Models;
 using KokoroSharp;
-using KubeUI.Avalonia.Features.Clusters.Workspace;
-using KubeUI.Avalonia.Features.Helm.Charts;
-using KubeUI.Avalonia.Features.Helm.Releases;
-using KubeUI.Avalonia.Features.Helm.Repositories;
-using KubeUI.Avalonia.Features.Resources.Common;
-using KubeUI.Avalonia.Features.Resources.List;
-using KubeUI.Avalonia.Features.Resources.Visualization;
-using KubeUI.Avalonia.Features.Resources.Yaml;
-using KubeUI.Avalonia.Features.Resources.Yaml.Behaviors;
-using KubeUI.Avalonia.Infrastructure;
-using KubeUI.Avalonia.Resources.Workloads.v1.Pod.Views;
-using KubeUI.Avalonia.Shell.Main;
-using KubeUI.Avalonia.Shell.Navigation;
+using KubeUI.App.Infrastructure;
+using KubeUI.App.Shell.Main;
+using KubeUI.App.Shell.Navigation;
+using KubeUI.Controls.Presentation;
+using KubeUI.Features.Clusters.Workspace;
+using KubeUI.Features.Helm.Charts;
+using KubeUI.Features.Helm.Releases;
+using KubeUI.Features.Helm.Repositories;
+using KubeUI.Features.Resources.Common;
+using KubeUI.Features.Resources.List;
+using KubeUI.Features.Resources.Visualization;
+using KubeUI.Features.Resources.Workloads.v1.Pod.Views;
+using KubeUI.Features.Resources.Yaml;
+using KubeUI.Features.Resources.Yaml.Behaviors;
 using KubeUI.Kubernetes;
 using KubeUI.Testing.Kubernetes.Bootstrap;
 using KubeUI.Testing.Kubernetes.Scenarios;
@@ -172,12 +173,12 @@ internal static class KubeUIWalkthroughRecorder
                 await workspace.Connect();
                 await workspace.Runtime.EnsureOpenApiSchemasAsync();
                 await WaitForConditionAsync(() =>
-                    workspace.Runtime.IsMetricsAvailable
-                    && workspace.Runtime.NodeMetrics.Count == 3
-                    && workspace.Runtime.PodMetrics.Count == expectedPodMetrics
-                    && workspace.Runtime.NodeMetrics.All(metric =>
+                    workspace.Runtime.Metrics.IsMetricsAvailable
+                    && workspace.Runtime.Metrics.KubernetesNodeMetrics.Count == 3
+                    && workspace.Runtime.Metrics.KubernetesPodMetrics.Count == expectedPodMetrics
+                    && workspace.Runtime.Metrics.KubernetesNodeMetrics.All(metric =>
                         metric.Usage.ContainsKey("cpu") && metric.Usage.ContainsKey("memory"))
-                    && workspace.Runtime.PodMetrics.All(metric =>
+                    && workspace.Runtime.Metrics.KubernetesPodMetrics.All(metric =>
                         metric.Containers.Count > 0
                         && metric.Containers.All(container =>
                             container.Usage.ContainsKey("cpu") && container.Usage.ContainsKey("memory"))));

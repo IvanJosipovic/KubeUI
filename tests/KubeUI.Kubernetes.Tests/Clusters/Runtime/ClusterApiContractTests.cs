@@ -11,6 +11,29 @@ namespace KubeUI.Kubernetes.Tests.Clusters.Runtime;
 public sealed class ClusterApiContractTests
 {
     [Theory, KubernetesBackendData]
+    public async Task ScaleSubresourcePatchesAllScalableWorkloads(KubernetesBackend backend)
+    {
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig { Type = backend },
+            TestContext.Current.CancellationToken);
+        await harness.Cluster.Connect();
+        var client = harness.Cluster.Client!.AppsV1;
+        const string ns = "default";
+
+        var deployment = await client.CreateNamespacedDeploymentAsync(CreateDeployment("scale-deployment"), ns, cancellationToken: TestContext.Current.CancellationToken);
+        var statefulSet = await client.CreateNamespacedStatefulSetAsync(CreateStatefulSet("scale-statefulset"), ns, cancellationToken: TestContext.Current.CancellationToken);
+        var replicaSet = await client.CreateNamespacedReplicaSetAsync(CreateReplicaSet("scale-replicaset"), ns, cancellationToken: TestContext.Current.CancellationToken);
+
+        await client.PatchNamespacedDeploymentScaleAsync(ScalePatch(3), deployment.Name(), ns, cancellationToken: TestContext.Current.CancellationToken);
+        await client.PatchNamespacedStatefulSetScaleAsync(ScalePatch(4), statefulSet.Name(), ns, cancellationToken: TestContext.Current.CancellationToken);
+        await client.PatchNamespacedReplicaSetScaleAsync(ScalePatch(5), replicaSet.Name(), ns, cancellationToken: TestContext.Current.CancellationToken);
+
+        (await client.ReadNamespacedDeploymentScaleAsync(deployment.Name(), ns, cancellationToken: TestContext.Current.CancellationToken)).Spec.Replicas.ShouldBe(3);
+        (await client.ReadNamespacedStatefulSetScaleAsync(statefulSet.Name(), ns, cancellationToken: TestContext.Current.CancellationToken)).Spec.Replicas.ShouldBe(4);
+        (await client.ReadNamespacedReplicaSetScaleAsync(replicaSet.Name(), ns, cancellationToken: TestContext.Current.CancellationToken)).Spec.Replicas.ShouldBe(5);
+    }
+
+    [Theory, KubernetesBackendData]
     public async Task ConfigMapMergePatchMatchesKubernetesBehavior(KubernetesBackend backend)
     {
         await using var harness = await new TestClusterGenerator().CreateAsync(
@@ -75,4 +98,57 @@ public sealed class ClusterApiContractTests
         status["details"]!["causes"]!.AsArray()
             .ShouldContain(cause => cause!["field"]!.GetValue<string>() == "spec.containers[0].image");
     }
+
+    private static V1Patch ScalePatch(int replicas)
+        => new($"{{\"spec\":{{\"replicas\":{replicas}}}}}", V1Patch.PatchType.MergePatch);
+
+    private static V1Deployment CreateDeployment(string name)
+        => new()
+        {
+            ApiVersion = "apps/v1",
+            Kind = V1Deployment.KubeKind,
+            Metadata = new V1ObjectMeta { Name = name, NamespaceProperty = "default" },
+            Spec = new V1DeploymentSpec
+            {
+                Replicas = 1,
+                Selector = new V1LabelSelector { MatchLabels = new Dictionary<string, string> { ["app"] = name } },
+                Template = CreateTemplate(name),
+            },
+        };
+
+    private static V1StatefulSet CreateStatefulSet(string name)
+        => new()
+        {
+            ApiVersion = "apps/v1",
+            Kind = V1StatefulSet.KubeKind,
+            Metadata = new V1ObjectMeta { Name = name, NamespaceProperty = "default" },
+            Spec = new V1StatefulSetSpec
+            {
+                ServiceName = name,
+                Replicas = 1,
+                Selector = new V1LabelSelector { MatchLabels = new Dictionary<string, string> { ["app"] = name } },
+                Template = CreateTemplate(name),
+            },
+        };
+
+    private static V1ReplicaSet CreateReplicaSet(string name)
+        => new()
+        {
+            ApiVersion = "apps/v1",
+            Kind = V1ReplicaSet.KubeKind,
+            Metadata = new V1ObjectMeta { Name = name, NamespaceProperty = "default" },
+            Spec = new V1ReplicaSetSpec
+            {
+                Replicas = 1,
+                Selector = new V1LabelSelector { MatchLabels = new Dictionary<string, string> { ["app"] = name } },
+                Template = CreateTemplate(name),
+            },
+        };
+
+    private static V1PodTemplateSpec CreateTemplate(string name)
+        => new()
+        {
+            Metadata = new V1ObjectMeta { Labels = new Dictionary<string, string> { ["app"] = name } },
+            Spec = new V1PodSpec { Containers = [new V1Container { Name = "app", Image = "busybox:latest" }] },
+        };
 }

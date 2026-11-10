@@ -1,0 +1,546 @@
+using System.Text;
+using AvaloniaEdit.Document;
+using FluentAvalonia.UI.Controls;
+using k8s;
+using k8s.Models;
+using KubernetesClient.Informer.Client;
+using KubeUI.Controls.Presentation;
+using KubeUI.Features.Clusters.Workspace;
+using KubeUI.Features.Resources.Infrastructure;
+using KubeUI.Kubernetes;
+using KubeUI.Kubernetes.Serialization;
+
+namespace KubeUI.Features.Resources.Yaml;
+
+public partial class ResourceYamlViewModel : ViewModelBase, IClusterWorkspaceContext, IDisposable
+{
+    public event EventHandler? CompletionRequested;
+
+    private readonly ILogger<ResourceYamlViewModel> _logger;
+    private readonly IKubernetesYamlSerializer _yamlSerializer;
+    private readonly IYamlValidationService _yamlValidationService;
+    private TextDocument? _validationDocument;
+    private bool _actionResultFromValidation;
+    private bool _serverValidationDiagnostics;
+    private CancellationTokenSource? _validationDebounceCts;
+    private GroupApiVersionKind? _resourceKind;
+    private string? _readOnlyYaml;
+
+    internal TimeSpan ValidationDebounceDelay { get; set; } = TimeSpan.FromSeconds(1);
+
+    [ObservableProperty]
+    public partial ClusterWorkspace? Cluster { get; set; }
+
+    private IKubernetesObject<V1ObjectMeta>? _object;
+
+    public IKubernetesObject<V1ObjectMeta>? Object
+    {
+        get => _object;
+        set
+        {
+            _object = value;
+            OnPropertyChanged();
+        }
+    }
+
+    internal GroupApiVersionKind ResourceKind
+    {
+        get
+        {
+            if (TryResolveResourceKind(out var kind))
+            {
+                return kind;
+            }
+
+            if (Object is null || Cluster is null)
+            {
+                throw new InvalidOperationException("YAML resource has not been initialized.");
+            }
+
+            throw new InvalidOperationException($"Unknown Kubernetes resource {Object.ApiVersion}/{Object.Kind}.");
+        }
+    }
+
+    [ObservableProperty]
+    public partial TextDocument YamlDocument { get; set; } = new();
+
+    [ObservableProperty]
+    public partial bool EditMode { get; set; }
+
+    /// <summary>Whether this document is permanently locked against editing and cluster actions.</summary>
+    [ObservableProperty]
+    public partial bool IsReadOnlyLocked { get; private set; }
+
+    partial void OnEditModeChanging(bool value)
+    {
+        if (value && IsReadOnlyLocked)
+        {
+            throw new InvalidOperationException("This YAML document is read-only.");
+        }
+    }
+
+    [ObservableProperty]
+    public partial bool HideNoisyFields { get; set; } = true;
+
+    [ObservableProperty]
+    public partial bool WordWrap { get; set; }
+
+    [ObservableProperty]
+    public partial Vector ScrollOffset { get; set; }
+
+    [ObservableProperty]
+    public partial IReadOnlyList<YamlFoldState> AllFoldings { get; set; } = [];
+
+    [ObservableProperty]
+    public partial IReadOnlyList<YamlDiagnostic> ValidationDiagnostics { get; set; } = [];
+
+    [ObservableProperty]
+    public partial string? ActionResultTitle { get; set; }
+
+    [ObservableProperty]
+    public partial string? ActionResultMessage { get; set; }
+
+    [ObservableProperty]
+    public partial bool ActionResultSuccess { get; set; }
+
+    public bool CanSaveAction => EditMode && ValidationDiagnostics.Count == 0;
+
+    public bool CanDryRunAction => EditMode && ValidationDiagnostics.Count == 0;
+
+    public bool HasActionResult => !string.IsNullOrWhiteSpace(ActionResultMessage);
+
+    public bool HasActionSuccessResult => HasActionResult && ActionResultSuccess;
+
+    public bool HasActionFailureResult => HasActionResult && !ActionResultSuccess;
+
+    public FAInfoBarSeverity ActionResultSeverity => ActionResultSuccess ? FAInfoBarSeverity.Success : FAInfoBarSeverity.Error;
+
+    public ResourceYamlViewModel(
+        ILogger<ResourceYamlViewModel> logger,
+        IKubernetesYamlSerializer yamlSerializer,
+        IYamlValidationService yamlValidationService)
+    {
+        Title = ResourcesLanguageManager.Instance.ResourceYamlView_Title.CurrentValue()!;
+        _logger = logger;
+        _yamlSerializer = yamlSerializer;
+        _yamlValidationService = yamlValidationService;
+        AttachValidationDocument(YamlDocument);
+    }
+
+    public void Initialize(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> @object)
+    {
+        Initialize(cluster, @object, resourceKind: null);
+    }
+
+    public void Initialize<T>(ClusterWorkspace cluster, T @object)
+        where T : class, IKubernetesObject<V1ObjectMeta>, new()
+    {
+        if (@object is not GenericKubernetesObject
+            && !cluster.Runtime.ModelCatalog.TryGetResourceKind(@object, out _))
+        {
+            Initialize(cluster, @object, GroupApiVersionKind.From<T>());
+            return;
+        }
+
+        Initialize(cluster, @object, resourceKind: null);
+    }
+
+    private void Initialize(
+        ClusterWorkspace cluster,
+        IKubernetesObject<V1ObjectMeta> @object,
+        GroupApiVersionKind? resourceKind)
+    {
+        _readOnlyYaml = null;
+        IsReadOnlyLocked = false;
+        Title = ResourcesLanguageManager.Instance.ResourceYamlView_Title.CurrentValue()!;
+        Cluster = cluster;
+        Cluster.Runtime.OnChange += Cluster_OnChange;
+        _resourceKind = resourceKind;
+        Object = @object;
+
+        var apiVersion = resourceKind?.GroupApiVersion ?? Object.ApiVersion;
+        var kind = resourceKind?.Kind ?? Object.Kind;
+        Id = $"{nameof(ResourceYamlViewModel)}-{Cluster.Runtime.Name}-{apiVersion}/{kind}/{Object.Metadata.NamespaceProperty}/{Object.Metadata.Name}";
+    }
+
+    /// <summary>Initializes a locked YAML text document without Kubernetes validation or live subscriptions.</summary>
+    /// <param name="title">Localized document title.</param>
+    /// <param name="id">Stable docking identity.</param>
+    /// <param name="yaml">Complete YAML text to display.</param>
+    public void InitializeReadOnly(string title, string id, string yaml)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(title);
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+        ArgumentNullException.ThrowIfNull(yaml);
+        if (Cluster is not null)
+        {
+            Cluster.Runtime.OnChange -= Cluster_OnChange;
+        }
+
+        CancelPendingValidation();
+        Cluster = null;
+        _resourceKind = null;
+        _readOnlyYaml = yaml;
+        IsReadOnlyLocked = true;
+        EditMode = false;
+        Object = null;
+        ValidationDiagnostics = [];
+        ClearActionResult();
+        Title = title;
+        Id = id;
+        SetYamlDocument();
+        SetEditModeCommand.NotifyCanExecuteChanged();
+    }
+
+    private bool TryResolveResourceKind(out GroupApiVersionKind resourceKind)
+    {
+        if (_resourceKind is { } initializedKind)
+        {
+            resourceKind = initializedKind;
+            return true;
+        }
+
+        if (Cluster is not null
+            && Object is not null
+            && Cluster.Runtime.ModelCatalog.TryGetResourceKind(Object, out resourceKind))
+        {
+            return true;
+        }
+
+        resourceKind = default;
+        return false;
+    }
+
+    private void SetYamlDocument()
+    {
+        YamlDocument.Text = _readOnlyYaml ?? _yamlSerializer.Serialize(Object!);
+    }
+
+    protected override void OnPropertyChanged(PropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+
+        if ((e.PropertyName == nameof(Object) && !EditMode)
+            || (e.PropertyName == nameof(EditMode) && !EditMode)
+            || e.PropertyName == nameof(HideNoisyFields))
+        {
+            if (e.PropertyName == nameof(EditMode) && !EditMode)
+            {
+                ClearActionResult();
+            }
+
+            SetYamlDocument();
+        }
+
+        if (e.PropertyName == nameof(YamlDocument))
+        {
+            AttachValidationDocument(YamlDocument);
+            ValidateYamlDocument();
+        }
+
+        if (e.PropertyName is nameof(EditMode) or nameof(ValidationDiagnostics))
+        {
+            OnPropertyChanged(new PropertyChangedEventArgs(nameof(CanSaveAction)));
+            OnPropertyChanged(new PropertyChangedEventArgs(nameof(CanDryRunAction)));
+            SaveCommand.NotifyCanExecuteChanged();
+            DryRunCommand.NotifyCanExecuteChanged();
+        }
+
+        if (e.PropertyName is nameof(ActionResultTitle) or nameof(ActionResultMessage) or nameof(ActionResultSuccess))
+        {
+            OnPropertyChanged(new PropertyChangedEventArgs(nameof(HasActionResult)));
+            OnPropertyChanged(new PropertyChangedEventArgs(nameof(HasActionSuccessResult)));
+            OnPropertyChanged(new PropertyChangedEventArgs(nameof(HasActionFailureResult)));
+            OnPropertyChanged(new PropertyChangedEventArgs(nameof(ActionResultSeverity)));
+            DismissActionResultCommand.NotifyCanExecuteChanged();
+        }
+    }
+
+    private void Cluster_OnChange(WatchEventType eventType, GroupApiVersionKind groupApiVersionKind, IKubernetesObject<V1ObjectMeta> resource)
+    {
+        _ = eventType;
+        _ = groupApiVersionKind;
+        if (Object != null
+            && Object.Kind == resource.Kind
+            && Object.ApiVersion == resource.ApiVersion
+            && Object.Metadata.Name == resource.Metadata.Name
+            && Object.Metadata.NamespaceProperty == resource.Metadata.NamespaceProperty)
+        {
+            Dispatcher.UIThread.Post(() => Object = resource);
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanSave))]
+    private async Task Save()
+    {
+        ValidateYamlDocumentNow();
+
+        if (ValidationDiagnostics.Count > 0)
+        {
+            var diagnostic = ValidationDiagnostics[0];
+            var message = $"{diagnostic.Message} (line {diagnostic.StartLine}, column {diagnostic.StartColumn})";
+            SetActionResult(false, ResourcesLanguageManager.Instance.ResourceYamlView_SaveFailed.CurrentValue()!, message);
+            return;
+        }
+
+        try
+        {
+            var byteArray = Encoding.UTF8.GetBytes(YamlDocument.Text);
+            await using MemoryStream stream = new(byteArray);
+            await Cluster!.Runtime.ImportYaml(stream);
+            SetActionResult(true, ResourcesLanguageManager.Instance.ResourceYamlView_SaveSucceeded.CurrentValue()!, ResourcesLanguageManager.Instance.ResourceYamlView_SaveSucceededMessage.CurrentValue()!);
+        }
+        catch (Exception ex)
+        {
+            SetServerValidationDiagnostics(ex);
+            SetActionResult(false, ResourcesLanguageManager.Instance.ResourceYamlView_SaveFailed.CurrentValue()!, ResourceUtilities.GetUserFacingErrorMessage(ex));
+            _logger.LogError(ex, "Error Saving Yaml");
+        }
+    }
+
+    private bool CanSave()
+    {
+        return EditMode && ValidationDiagnostics.Count == 0;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanDryRun))]
+    private async Task DryRun()
+    {
+        ValidateYamlDocumentNow();
+
+        if (ValidationDiagnostics.Count > 0)
+        {
+            var diagnostic = ValidationDiagnostics[0];
+            var message = $"{diagnostic.Message} (line {diagnostic.StartLine}, column {diagnostic.StartColumn})";
+            SetActionResult(false, ResourcesLanguageManager.Instance.ResourceYamlView_DryRunFailed.CurrentValue()!, message);
+            return;
+        }
+
+        try
+        {
+            var byteArray = Encoding.UTF8.GetBytes(YamlDocument.Text);
+            await using MemoryStream stream = new(byteArray);
+            await Cluster!.Runtime.DryRunYaml(stream);
+            SetActionResult(true, ResourcesLanguageManager.Instance.ResourceYamlView_DryRunSucceeded.CurrentValue()!, ResourcesLanguageManager.Instance.ResourceYamlView_DryRunSucceededMessage.CurrentValue()!);
+        }
+        catch (Exception ex)
+        {
+            SetServerValidationDiagnostics(ex);
+            SetActionResult(false, ResourcesLanguageManager.Instance.ResourceYamlView_DryRunFailed.CurrentValue()!, ResourceUtilities.GetUserFacingErrorMessage(ex));
+            _logger.LogError(ex, "Error Dry Running Yaml");
+        }
+    }
+
+    private bool CanDryRun()
+    {
+        return EditMode && ValidationDiagnostics.Count == 0;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanDismissActionResult))]
+    private void DismissActionResult()
+    {
+        ClearActionResult();
+    }
+
+    private bool CanDismissActionResult()
+    {
+        return HasActionResult;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanSetEditMode))]
+    private void SetEditMode()
+    {
+        EditMode = !EditMode;
+    }
+
+    private bool CanSetEditMode()
+    {
+        if (IsReadOnlyLocked || Cluster is null || Object is null || !TryResolveResourceKind(out var kind))
+        {
+            return false;
+        }
+
+        return Cluster.Runtime.Permissions.CanI(
+            kind,
+            Verb.Update,
+            Object.Metadata?.NamespaceProperty);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanUndo))]
+    private void Undo()
+    {
+        if (EditMode)
+        {
+            YamlDocument.UndoStack.Undo();
+        }
+    }
+
+    [RelayCommand]
+    private void RequestCompletion()
+    {
+        CompletionRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    private bool CanUndo()
+    {
+        return YamlDocument?.UndoStack.CanUndo == true;
+    }
+
+    public void Dispose()
+    {
+        CancelPendingValidation();
+        DetachValidationDocument();
+
+        if (Cluster != null)
+        {
+            Cluster.Runtime.OnChange -= Cluster_OnChange;
+        }
+    }
+
+    private void AttachValidationDocument(TextDocument? document)
+    {
+        if (ReferenceEquals(_validationDocument, document))
+        {
+            return;
+        }
+
+        DetachValidationDocument();
+        _validationDocument = document;
+
+        if (_validationDocument != null)
+        {
+            _validationDocument.Changed += YamlDocument_OnChanged;
+        }
+    }
+
+    private void DetachValidationDocument()
+    {
+        CancelPendingValidation();
+
+        if (_validationDocument != null)
+        {
+            _validationDocument.Changed -= YamlDocument_OnChanged;
+            _validationDocument = null;
+        }
+    }
+
+    private void YamlDocument_OnChanged(object? sender, DocumentChangeEventArgs e)
+    {
+        if (IsReadOnlyLocked)
+        {
+            return;
+        }
+
+        if (_serverValidationDiagnostics)
+        {
+            _serverValidationDiagnostics = false;
+            ValidationDiagnostics = [];
+        }
+
+        _ = DebounceValidationAsync();
+    }
+
+    private async Task DebounceValidationAsync()
+    {
+        CancelPendingValidation();
+
+        var cts = new CancellationTokenSource();
+        _validationDebounceCts = cts;
+
+        try
+        {
+            if (ValidationDebounceDelay > TimeSpan.Zero)
+            {
+                await Task.Delay(ValidationDebounceDelay, cts.Token);
+            }
+
+            if (!cts.IsCancellationRequested)
+            {
+                await Dispatcher.UIThread.InvokeAsync(ValidateYamlDocument);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        finally
+        {
+            if (ReferenceEquals(_validationDebounceCts, cts))
+            {
+                _validationDebounceCts = null;
+            }
+
+            cts.Dispose();
+        }
+    }
+
+    private void ValidateYamlDocumentNow()
+    {
+        CancelPendingValidation();
+        ValidateYamlDocument();
+    }
+
+    private void CancelPendingValidation()
+    {
+        if (_validationDebounceCts == null)
+        {
+            return;
+        }
+
+        _validationDebounceCts.Cancel();
+        _validationDebounceCts.Dispose();
+        _validationDebounceCts = null;
+    }
+
+    private void ValidateYamlDocument()
+    {
+        if (IsReadOnlyLocked)
+        {
+            return;
+        }
+
+        _serverValidationDiagnostics = false;
+        ValidationDiagnostics = _yamlValidationService.Validate(YamlDocument.Text, Cluster?.Runtime.ModelCatalog);
+
+        if (ValidationDiagnostics.Count > 0)
+        {
+            var diagnostic = ValidationDiagnostics[0];
+            SetActionResult(
+                false,
+                ResourcesLanguageManager.Instance.ResourceYamlView_ValidationFailed.CurrentValue()!,
+                $"{diagnostic.Message} (line {diagnostic.StartLine}, column {diagnostic.StartColumn})",
+                fromValidation: true);
+            return;
+        }
+
+        if (_actionResultFromValidation)
+        {
+            ClearActionResult();
+        }
+    }
+
+    private void SetServerValidationDiagnostics(Exception exception)
+    {
+        var diagnostics = YamlServerValidationDiagnosticFactory.Create(YamlDocument.Text, exception);
+        if (diagnostics.Count > 0)
+        {
+            _serverValidationDiagnostics = true;
+            ValidationDiagnostics = diagnostics;
+        }
+    }
+
+    private void SetActionResult(bool success, string title, string message, bool fromValidation = false)
+    {
+        _actionResultFromValidation = fromValidation;
+        ActionResultSuccess = success;
+        ActionResultTitle = title;
+        ActionResultMessage = message;
+    }
+
+    private void ClearActionResult()
+    {
+        _actionResultFromValidation = false;
+        ActionResultTitle = null;
+        ActionResultMessage = null;
+        ActionResultSuccess = false;
+    }
+}

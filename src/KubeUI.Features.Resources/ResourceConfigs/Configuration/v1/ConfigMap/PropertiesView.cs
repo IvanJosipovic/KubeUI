@@ -1,0 +1,55 @@
+using k8s.Models;
+using KubernetesClient.Informer.Client;
+using KubeUI.Controls.Presentation;
+using KubeUI.Features.Resources.Properties;
+using KubeUI.Features.Resources.Properties.Controls;
+
+namespace KubeUI.Features.Resources.Configuration.v1.ConfigMap;
+
+public sealed class PropertiesView : ViewBase<V1ConfigMap>, IResourcePropertiesRefreshable<V1ConfigMap>
+{
+    private DataDisplay<V1ConfigMap, string>? _dataDisplay;
+    private PropertyItem? _binaryDataProperty;
+    private PropertyItem? _immutableProperty;
+
+    protected override object Build(V1ConfigMap vm)
+    {
+        ArgumentNullException.ThrowIfNull(vm);
+
+        _dataDisplay = new DataDisplay<V1ConfigMap, string>(
+            vm,
+            GroupApiVersionKind.From<V1ConfigMap>(),
+            static resource => resource.Data,
+            static value => value,
+            static value => value);
+        _binaryDataProperty = new PropertyItem()
+            .Key(ResourcesLanguageManager.Instance.ConfigMapPropertiesView_Binary_Data.CurrentValue()!)
+            .Value(vm.BinaryData?.Count ?? 0);
+        _immutableProperty = new PropertyItem()
+            .Key(ResourcesLanguageManager.Instance.ConfigMapPropertiesView_Immutable.CurrentValue()!)
+            .Value(vm.Immutable);
+
+        return new StackPanel()
+            .Children(
+                _binaryDataProperty,
+                new ExpandableSection()
+                    .Header(FoundationLanguageManager.Instance.Shared_Data.ToBinding())
+                    .IsExpanded(true)
+                    .Content(_dataDisplay),
+                _immutableProperty);
+    }
+
+    public void Refresh(V1ConfigMap resource)
+    {
+        _dataDisplay?.Refresh(resource);
+        if (_binaryDataProperty is not null)
+        {
+            _binaryDataProperty.Value = resource.BinaryData?.Count ?? 0;
+        }
+
+        if (_immutableProperty is not null)
+        {
+            _immutableProperty.Value = resource.Immutable;
+        }
+    }
+}

@@ -1,0 +1,91 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <DebugType>embedded</DebugType>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="Avalonia" />
+    <Using Include="Avalonia.Controls" />
+    <Using Include="Avalonia.Controls.Primitives" />
+    <Using Include="Avalonia.Controls.Templates" />
+    <Using Include="Avalonia.Data" />
+    <Using Include="Avalonia.Layout" />
+    <Using Include="Avalonia.Markup.Declarative" />
+    <Using Include="Avalonia.Media" />
+    <Using Include="Avalonia.Styling" />
+    <Using Include="Avalonia.Threading" />
+    <Using Include="CommunityToolkit.Mvvm.ComponentModel" />
+    <Using Include="KubeUI.Features.Cilium" />
+    <Using Include="KubeUI.Foundation.Styles" />
+    <Using Include="KubeUI.Controls.Converters" />
+    <Using Include="KubeUI.Controls.DependencyInjection" />
+    <Using Include="KubeUI.Controls.Docking" />
+    <Using Include="KubeUI.Controls.Platform" />
+    <Using Include="KubeUI.Controls.Presentation" />
+    <Using Include="KubeUI.Controls.Styles" />
+    <Using Include="KubeUI.Features.Cilium.Assets" />
+    <Using Include="KubeUI.Foundation.Localization" />
+    <Using Include="KubeUI.Features.Resources" />
+    <Using Include="KubeUI.Features.Resources.Assets" />
+    <Using Include="KubeUI.Features.Resources.Contracts" />
+    <Using Include="KubeUI.Kubernetes" />
+    <Using Include="Microsoft.Extensions.DependencyInjection" />
+    <Using Include="Microsoft.Extensions.Logging" />
+    <Using Include="System.Collections" />
+    <Using Include="System.Collections.ObjectModel" />
+    <Using Include="System.Linq" />
+    <Using Include="System.Reactive.Linq" />
+    <Using Include="System.Threading" />
+    <Using Include="SvcSystems.Avalonia.DynamicTableView" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="KubeUI.Features.Cilium.Tests" />
+    <InternalsVisibleTo Include="KubeUI.App.Tests" />
+    <InternalsVisibleTo Include="KubeUI.Testing" />
+    <ProjectCapability Include="Avalonia" />
+    <ProjectReference Include="..\KubeUI.Controls\KubeUI.Controls.csproj" />
+    <ProjectReference Include="..\KubeUI.Features.Clusters\KubeUI.Features.Clusters.csproj" />
+    <ProjectReference Include="..\KubeUI.Features.Resources\KubeUI.Features.Resources.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KubeUI.Kubernetes\KubeUI.Kubernetes.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**\*.svg" />
+    <AdditionalFiles Include="Assets\Resources*.json" />
+    <Watch Include="Assets\Resources*.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Irihi.Lingua" />
+    <PackageReference Include="Avalonia.Markup.Declarative" />
+    <PackageReference Include="CommunityToolkit.Mvvm" PrivateAssets="all" />
+    <PackageReference Include="DynamicData" />
+    <PackageReference Include="Grpc.Net.Client" />
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Grpc.Tools" PrivateAssets="all" />
+    <PackageReference Include="System.Reactive" />
+    <PackageReference Include="Dock.Model.Mvvm" />
+    <PackageReference Include="FluentAvaloniaUI" />
+    <PackageReference Include="FluentIcons.Avalonia" />
+    <PackageReference Include="ServiceScan.SourceGenerator" PrivateAssets="all" />
+    <PackageReference Include="SvcSystems.Avalonia.DynamicTableView" />
+    <PackageReference Include="Westermo.GraphX.Controls.Avalonia" />
+    <PackageReference Include="Westermo.GraphX.Controls.Avalonia.Themes.Fluent" />
+    <PackageReference Include="Westermo.GraphX.Logic" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="Hubble/Models/flow.proto" GrpcServices="Client" ProtoRoot="Hubble/Models" />
+    <Protobuf Include="Hubble/Models/relay.proto" GrpcServices="Client" ProtoRoot="Hubble/Models" />
+    <Protobuf Include="Hubble/Models/observer.proto" GrpcServices="Client" ProtoRoot="Hubble/Models" />
+  </ItemGroup>
+
+</Project>

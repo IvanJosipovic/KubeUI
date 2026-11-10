@@ -1,8 +1,8 @@
-using KubeUI.Kubernetes.Serialization;
 using System.Reflection;
 using k8s;
 using k8s.KubeConfigModels;
 using k8s.Models;
+using KubeUI.Kubernetes.Serialization;
 using KubeUI.Testing.Kubernetes.Scenarios;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -191,18 +191,31 @@ public sealed class TestClusterGenerator
         var adminClient = CreateClient(
             clientConfig,
             api.CreateClient("system:admin", useRoleBasedAuthorization: false),
-            []);
-        var cluster = await CreateTestClusterAsync(client, kubeConfig, clientConfig, config, cancellationToken, _ =>
+            // Match the Kind path: the admin client carries the condition handler only, so
+            // configured handler instances are not consumed by more than one client chain.
+            CreateHttpHandlers(config, out _, includeConfiguredHandlers: false));
+        try
         {
-            api.Shutdown();
-            return Task.CompletedTask;
-        }, api, adminClient: adminClient).ConfigureAwait(false);
-        cluster.Cluster.KubernetesClientFactory = configuration =>
+            var cluster = await CreateTestClusterAsync(client, kubeConfig, clientConfig, config, cancellationToken, _ =>
+            {
+                api.Shutdown();
+                return Task.CompletedTask;
+            }, api, adminClient: adminClient).ConfigureAwait(false);
+            cluster.Cluster.KubernetesClientFactory = configuration =>
+            {
+                var reconnectHandlers = CreateHttpHandlers(config, out _);
+                return CreateClient(configuration, api, reconnectHandlers);
+            };
+            return cluster;
+        }
+        catch
         {
-            var reconnectHandlers = CreateHttpHandlers(config, out _);
-            return CreateClient(configuration, api, reconnectHandlers);
-        };
-        return cluster;
+            // Nothing owns the clients yet; dispose them so the failure path leaves no
+            // handler chains or fake transport state behind.
+            client.Dispose();
+            adminClient.Dispose();
+            throw;
+        }
     }
 
     private static void RegisterKubernetesModels(FakeKubernetesHttpApi api, KubernetesModelCatalog catalog)
@@ -402,11 +415,7 @@ public sealed class TestClusterGenerator
         cluster.KubeConfigPath = string.Empty;
         cluster.KubernetesClientFactory = clientFactory ?? (_ => client);
 
-        var finalCleanup = cleanup;
-        if (cleanup is not null)
-            finalCleanup = cleanup;
-
-        return new TestCluster(client, kubeConfig, clientConfiguration, cluster, _services, finalCleanup, fakeApi, adminClient);
+        return new TestCluster(client, kubeConfig, clientConfiguration, cluster, _services, cleanup, fakeApi, adminClient);
     }
 
     private static IKubernetes CreateClient(

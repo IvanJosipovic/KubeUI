@@ -1,0 +1,66 @@
+using Avalonia.Controls;
+using Avalonia.Headless.XUnit;
+using k8s.Models;
+
+namespace KubeUI.Features.Resources.Tests.Properties;
+
+public sealed class ResourcePropertiesViewThreadingTests
+{
+    [AvaloniaFact]
+    public async Task ClearItems_is_safe_when_invoked_from_background_thread()
+    {
+        var services = Application.Current.GetTestServices();
+        using var workspace = await Application.Current.CreateClusterAsync();
+
+        var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
+        viewModel.Initialize(workspace, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "pod-1",
+                NamespaceProperty = "default",
+            }
+        });
+
+        var view = new TestableResourcePropertiesView
+        {
+            DataContext = viewModel,
+        };
+
+        var window = new Window
+        {
+            Content = view
+        };
+
+        try
+        {
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
+            await TestApplicationExtensions.WaitForUiAsync();
+
+            // Close the window to detach the view from the visual tree
+            window.Close();
+            await TestApplicationExtensions.WaitForUiAsync();
+
+            // Invoke ClearItems via a public wrapper from a background thread to simulate the race.
+            await Task.Run(() =>
+            {
+                view.InvokeClear();
+            }, TestContext.Current.CancellationToken);
+
+            // If we reach here without throwing, the invocation was handled safely.
+        }
+        finally
+        {
+            if (window.IsVisible)
+            {
+                window.Close();
+            }
+        }
+    }
+}
+
+internal sealed class TestableResourcePropertiesView : ResourcePropertiesView<V1Pod>
+{
+    public void InvokeClear() => ClearItems();
+}

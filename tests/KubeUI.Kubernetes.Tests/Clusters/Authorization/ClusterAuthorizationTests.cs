@@ -432,13 +432,17 @@ public sealed class ClusterAuthorizationTests
         cluster.Permissions.CanI(kind, Verb.List).ShouldBeFalse();
     }
 
-    [Fact]
-    public async Task namespace_invalidation_during_rules_load_does_not_publish_stale_rules()
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task namespace_invalidation_during_rules_load_does_not_publish_stale_rules(
+        bool initiallyAllowed,
+        bool invalidateAll)
     {
         var state = new RulesReviewGateState();
-        var config = CreateRestrictedClusterConfig(
-            KubernetesBackend.Fake,
-            KubernetesRbac.InNamespace("default", new RbacRule("pods", "list")));
+        var config = CreateRestrictedClusterConfig(KubernetesBackend.Fake);
         config.HttpHandlerFactory = () => [new RulesReviewGateHandler(state)];
 
         await using var harness = await new TestClusterGenerator().CreateAsync(
@@ -446,23 +450,55 @@ public sealed class ClusterAuthorizationTests
             TestContext.Current.CancellationToken);
         var cluster = harness.Cluster;
         await cluster.Connect();
+        if (initiallyAllowed)
+        {
+            await GrantPodListAsync(harness, "default", TestContext.Current.CancellationToken);
+        }
         cluster.Permissions.InvalidatePermissions();
 
         var kind = GroupApiVersionKind.From<V1Pod>();
+        var requestsBeforeLoad = state.RequestCount;
+        state.StartBlocking();
         var staleLoad = cluster.Permissions.UpdateCanI(kind, Verb.List, "default");
-        await TestWait.UntilAsync(
-            () => state.RequestCount > 0,
-            TimeSpan.FromSeconds(10),
-            cancellationToken: TestContext.Current.CancellationToken);
+        try
+        {
+            await TestWait.UntilAsync(
+                () => state.RequestCount > requestsBeforeLoad,
+                TimeSpan.FromSeconds(10),
+                cancellationToken: TestContext.Current.CancellationToken);
 
-        cluster.Permissions.InvalidateNamespacePermissions();
-        state.Gate.SetResult();
+            if (initiallyAllowed)
+            {
+                await RevokePodListAsync(harness, "default", TestContext.Current.CancellationToken);
+            }
+            else
+            {
+                await GrantPodListAsync(harness, "default", TestContext.Current.CancellationToken);
+            }
 
-        (await staleLoad).ShouldBeTrue();
+            if (invalidateAll)
+            {
+                cluster.Permissions.InvalidatePermissions();
+            }
+            else
+            {
+                cluster.Permissions.InvalidateNamespacePermissions();
+            }
+        }
+        finally
+        {
+            state.Gate.TrySetResult();
+        }
+
+        (await staleLoad.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken))
+            .ShouldBe(initiallyAllowed);
         cluster.Permissions.CanI(kind, Verb.List, "default").ShouldBeFalse();
 
         var requestsBeforeReload = state.RequestCount;
-        (await cluster.Permissions.UpdateCanI(kind, Verb.List, "default")).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI(kind, Verb.List, "default")
+            .WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken))
+            .ShouldBe(!initiallyAllowed);
+        cluster.Permissions.CanI(kind, Verb.List, "default").ShouldBe(!initiallyAllowed);
         state.RequestCount.ShouldBeGreaterThan(requestsBeforeReload);
     }
 
@@ -751,6 +787,7 @@ public sealed class ClusterAuthorizationTests
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
+            var response = await base.SendAsync(request, cancellationToken);
             if (request.RequestUri?.AbsolutePath.EndsWith(
                     "/selfsubjectrulesreviews",
                     StringComparison.Ordinal) == true
@@ -759,7 +796,7 @@ public sealed class ClusterAuthorizationTests
                 await state.Gate.Task.WaitAsync(cancellationToken);
             }
 
-            return await base.SendAsync(request, cancellationToken);
+            return response;
         }
     }
 }

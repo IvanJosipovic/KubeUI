@@ -5,19 +5,21 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia.Headless.XUnit" Version="12.1.4" />
-    <PackageReference Include="KokoroSharp.CPU" Version="0.8.4" />
-    <PackageReference Include="xunit.v3.mtp-v2" Version="3.2.2" />
+    <PackageReference Include="Avalonia.Headless.XUnit" />
+    <PackageReference Include="KokoroSharp.CPU" />
+    <PackageReference Include="xunit.v3.mtp-v2" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\KubeUI.Avalonia.Tests\KubeUI.Avalonia.Tests.csproj" />
+    <ProjectReference Include="..\KubeUI.App.Tests\KubeUI.App.Tests.csproj" />
     <ProjectReference Include="..\KubeUI.Testing\KubeUI.Testing.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
-    <Using Include="KubeUI.Avalonia" />
+    <Using Include="KubeUI.App" />
+    <Using Include="KubeUI.Controls.DependencyInjection" />
+    <Using Include="KubeUI.Features.Resources.Assets" />
   </ItemGroup>
 
   <Target Name="DisableDeclarativeAnalyzer" BeforeTargets="CoreCompile">

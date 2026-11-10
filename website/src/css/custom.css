@@ -4,7 +4,7 @@
  * work well for content-centric websites.
  */
 
-/* Match Fluent Accent from src/KubeUI.Avalonia/Styles/Fluent.cs. */
+/* Match Fluent Accent from src/KubeUI.App/Styles/Fluent.cs. */
 :root {
   --ifm-color-primary: #0073cf;
   --ifm-color-primary-dark: #0065b8;

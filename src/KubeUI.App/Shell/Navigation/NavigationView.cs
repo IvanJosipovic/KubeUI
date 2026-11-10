@@ -1,0 +1,204 @@
+using System.Globalization;
+using System.Reactive.Linq;
+using Avalonia.Controls.Shapes;
+using Avalonia.Controls.Templates;
+using Avalonia.Data.Converters;
+using Avalonia.Input;
+using FluentIcons.Avalonia;
+using FluentIcons.Common;
+using KubeUI.App.Infrastructure;
+using KubeUI.App.Infrastructure.DependencyInjection;
+using KubeUI.App.Infrastructure.Presentation;
+using KubeUI.Features.Clusters.Presentation;
+using KubeUI.Kubernetes;
+
+
+namespace KubeUI.App.Shell.Navigation;
+
+public sealed class NavigationView : KubeUIView<NavigationViewModel>
+{
+    public NavigationView()
+    {
+        if (DesignTimePreview.IsDesignMode)
+        {
+            DataContext = DesignTimePreview.Get<NavigationViewModel>();
+        }
+    }
+
+    protected override object Build(NavigationViewModel vm)
+    {
+        ArgumentNullException.ThrowIfNull(vm);
+
+        return new NavigationTreeView()
+            .Margin(new Thickness(-5, 0, 0, 0))
+            .AutoScrollToSelectedItem(false)
+            .ItemsSource(vm, x => x.Clusters)
+            .Styles(
+                new Style<TreeViewItem>()
+                    .Setter(TreeViewItem.IsExpandedProperty, CompiledBinding.Create<IExpandableNavigationNode, bool>(x => x.IsExpanded, mode: BindingMode.TwoWay)),
+                new Style<Image>()
+                    .Setter(HeightProperty, 16.0)
+                    .Setter(WidthProperty, 16.0)
+                    .Setter(MarginProperty, new Thickness(0, 0, 4, 0)),
+                new Style<FluentIcon>()
+                    .Setter(HeightProperty, 16.0)
+                    .Setter(WidthProperty, 16.0)
+                    .Setter(MarginProperty, new Thickness(0, 0, 4, 0))
+            )
+            .DataTemplates(
+                CreateClusterTemplate(),
+                CreateNavigationLinkTemplate(),
+                CreateNavigationItemTemplate()
+            )
+            .Behaviors(
+                new NavigationTreeSelectionBehavior(vm.ActivateNavigationItemCommand),
+                new TreeViewItemContextMenuBehavior()
+            );
+    }
+
+    private static FuncTreeDataTemplate<ClusterNavigationNode> CreateClusterTemplate()
+    {
+        return new FuncTreeDataTemplate<ClusterNavigationNode>(
+            (node, _) =>
+            new Border()
+                .Margin(-5, 0, 0, 0)
+                .HorizontalAlignment(HorizontalAlignment.Stretch)
+                .Background(Brushes.Transparent)
+                .ContextMenu(new ContextMenu()
+                    .Items(
+                        new MenuItem()
+                            .Header(node, x => x.ConnectionMenuHeader)
+                            .Command(node, x => x.ToggleConnectionCommand)
+                            .CommandParameter(node)
+                            .InputGesture(new KeyGesture(Key.Enter))
+                            .Icon(new FluentIcon().Icon(node, x => x.ConnectionMenuIcon)),
+                        new MenuItem()
+                            .Header(AppLanguageManager.Instance.NavigationView_ContextMenu_Settings.ToBinding())
+                            .Command(node, x => x.OpenSettingsCommand)
+                            .CommandParameter(node)
+                            .Icon(new FluentIcon().Icon(Icon.Settings))
+                    ))
+                .Child(
+                    new StackPanel()
+                        .VerticalAlignment(VerticalAlignment.Center)
+                        .Orientation(Orientation.Horizontal)
+                        .Children(
+                            new Rectangle()
+                                .Width(10)
+                                .Height(10)
+                                .Margin(0, 0, 4, 0)
+                                .Fill(node, x => x.Cluster.ClusterColor)
+                                .Stroke(Brushes.Gray)
+                                .StrokeThickness(0.6),
+                            new TextBlock()
+                                .VerticalAlignment(VerticalAlignment.Center)
+                                .Text(node, x => x.Cluster.DisplayName))
+                )
+                .ToolTip_Tip(node, x => x.Cluster.Runtime.Status, BindingMode.OneWay, new FuncValueConverter<ClusterStatus, string>(status =>
+                {
+                    return status switch
+                    {
+                        ClusterStatus.None => AppLanguageManager.Instance.NavigationView_ToolTip_ClickToConnect.CurrentValue()!,
+                        ClusterStatus.Connecting => AppLanguageManager.Instance.NavigationView_ToolTip_Connecting.CurrentValue()!,
+                        ClusterStatus.Errored => AppLanguageManager.Instance.NavigationView_ToolTip_Errored.CurrentValue()!,
+                        ClusterStatus.Connected => AppLanguageManager.Instance.NavigationView_ToolTip_Connected.CurrentValue()!,
+                        _ => string.Empty
+                    };
+                })),
+            node => node.NavigationItems);
+    }
+
+    private static FuncTreeDataTemplate<NavigationLink> CreateNavigationLinkTemplate()
+    {
+        return new FuncTreeDataTemplate<NavigationLink>(
+            (link, _) =>
+                new Border()
+                    .Margin(-5, 0, 0, 0)
+                    .HorizontalAlignment(HorizontalAlignment.Stretch)
+                    .Background(Brushes.Transparent)
+                    .ContextMenu(link.ResourceKind is not null
+                        ? new ContextMenu()
+                            .Items([
+                                new MenuItem()
+                                    .Header(AppLanguageManager.Instance.NavigationView_ContextMenu_Open.ToBinding())
+                                    .Command(link, x => x.OpenCommand)
+                                    .CommandParameter(link)
+                                    .InputGesture(new KeyGesture(Key.Enter))
+                                    .Icon(new FluentIcon().Icon(Icon.DocumentEdit)),
+                                new MenuItem()
+                                    .Header(AppLanguageManager.Instance.NavigationView_ContextMenu_OpenNewTab.ToBinding())
+                                    .Command(link, x => x.OpenInNewTabCommand)
+                                    .CommandParameter(link)
+                                    .Icon(new FluentIcon().Icon(Icon.AddSquare))
+                            ])
+                        : null)
+                    .Child(
+                        new StackPanel()
+                            .Orientation(Orientation.Horizontal)
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .Children(
+                                new Image()
+                                    .Source(link, x => x.ResourceIcon)
+                                    .IsVisible(link, x => x.ResourceIcon, BindingMode.OneWay, Converters.NotNull),
+                                new FluentIcon()
+                                    .BindValue(FluentIcon.IconProperty, CompiledBinding.Create<NavigationLink, Icon?>(x => x.FluentIcon, link))
+                                    .IsVisible(link, x => x.FluentIcon, BindingMode.OneWay, Converters.NotNull),
+                                new TextBlock()
+                                    .VerticalAlignment(VerticalAlignment.Center)
+                                    .Text(link, x => x.Name),
+                                new TextBlock()
+                                    .VerticalAlignment(VerticalAlignment.Center)
+                                    .Margin(4, 0, 0, 0)
+                                    .Text(CompiledBinding.Create<NavigationLink, int>(x => x.Count.StreamBinding()))
+                                    .IsVisible(link, x => x.Count, BindingMode.OneWay, Converters.NotNull)
+                            )
+                    ),
+            link => link.NavigationItems);
+    }
+
+    private static FuncTreeDataTemplate<NavigationItem> CreateNavigationItemTemplate()
+    {
+        return new FuncTreeDataTemplate<NavigationItem>(
+            (item, _) =>
+                new StackPanel()
+                    .Margin(-5, 0, 0, 0)
+                    .Orientation(Orientation.Horizontal)
+                    .Children(
+                        new FluentIcon()
+                            .BindValue(FluentIcon.IconProperty, CompiledBinding.Create<NavigationItem, Icon?>(x => x.FluentIcon, item))
+                            //.Icon(item, x => x.FluentIcon, BindingMode.OneWay, Converters.NotNull)
+                            .IsVisible(item, x => x.FluentIcon, BindingMode.OneWay, Converters.NotNull),
+                        new PathIcon()
+                            .Data(item, x => x.StyleIcon, BindingMode.OneWay, new StringToGeometryConverter())
+                            .IsVisible(item, x => x.StyleIcon, BindingMode.OneWay, Converters.NotNull),
+                        new ThemedSvgImage()
+                            .Width(16)
+                            .Height(16)
+                            .BindValue(ThemedSvgImage.SourcePathProperty, CompiledBinding.Create<NavigationItem, string?>(x => x.SvgIcon, item))
+                            .BindValue(ThemedSvgImage.DarkSourcePathProperty, CompiledBinding.Create<NavigationItem, string?>(x => x.SvgIconDark, item))
+                            .IsVisible(item, x => x.SvgIcon, BindingMode.OneWay, Converters.NotNull),
+                        new TextBlock()
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .Text(item, x => x.Name)
+                    ),
+                item => item.NavigationItems);
+    }
+}
+
+internal sealed class StringToGeometryConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is string geometryText && !string.IsNullOrWhiteSpace(geometryText))
+        {
+            return Geometry.Parse(geometryText);
+        }
+
+        return null;
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        return BindingOperations.DoNothing;
+    }
+}

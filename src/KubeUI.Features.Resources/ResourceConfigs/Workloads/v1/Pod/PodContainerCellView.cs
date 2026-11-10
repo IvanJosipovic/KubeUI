@@ -1,0 +1,237 @@
+using System.Globalization;
+using Avalonia.Controls.Shapes;
+using Avalonia.Controls.Templates;
+using Avalonia.Markup.Xaml.MarkupExtensions;
+using Avalonia.Markup.Xaml.Templates;
+using k8s.Models;
+using KubeUI.Controls.Converters;
+using KubeUI.Features.Resources.Converters;
+
+namespace KubeUI.Features.Resources.Workloads.v1.Pod;
+
+public partial class PodContainerCellView : ViewBase<V1Pod>
+{
+    [GeneratedDirectProperty]
+    public partial ObservableCollection<ContainerStatusViewModel> ContainerStatuses { get; set; } = [];
+
+    public PodContainerCellView()
+    {
+#if DEBUG
+        if (Design.IsDesignMode)
+        {
+            DataContext = new V1Pod()
+            {
+                Status = new()
+                {
+                    ContainerStatuses = new ObservableCollection<V1ContainerStatus>()
+                    {
+                        new()
+                        {
+                            Name = ResourcesLanguageManager.Instance.PodContainerCellView_Stopped.CurrentValue()!,
+                            Started = false,
+                            Ready = false,
+                        },
+                        new()
+                        {
+                            Name = ResourcesLanguageManager.Instance.PodContainerCellView_Starting.CurrentValue()!,
+                            Started = true,
+                            Ready = false,
+                        },
+                        new()
+                        {
+                            Name = ResourcesLanguageManager.Instance.PodContainerCellView_Ready.CurrentValue()!,
+                            Started = true,
+                            Ready = true,
+                        },
+                    },
+                    InitContainerStatuses = new ObservableCollection<V1ContainerStatus>()
+                    {
+                        new()
+                        {
+                            Name = ResourcesLanguageManager.Instance.PodContainerCellView_InitStopped.CurrentValue()!,
+                            Started = false,
+                            Ready = false,
+                        },
+                        new()
+                        {
+                            Name = ResourcesLanguageManager.Instance.PodContainerCellView_InitStarting.CurrentValue()!,
+                            Started = true,
+                            Ready = false,
+                        },
+                        new()
+                        {
+                            Name = ResourcesLanguageManager.Instance.PodContainerCellView_InitReady.CurrentValue()!,
+                            Started = true,
+                            Ready = true,
+                        },
+                    }
+                }
+            };
+        }
+#endif
+    }
+
+    protected override object Build(V1Pod vm)
+    {
+        ArgumentNullException.ThrowIfNull(vm);
+
+        return new ItemsControl()
+            .ItemsSource(this, x => x.ContainerStatuses)
+            .ItemsPanel(new ItemsPanelTemplate()
+            {
+                Content = (IServiceProvider? _) =>
+                    new TemplateResult<Control>(
+                        new StackPanel()
+                            .Orientation(Orientation.Horizontal)
+                        , new NameScope())
+            })
+            .ItemTemplate(new FuncDataTemplate<ContainerStatusViewModel>((vm, _) =>
+                new Ellipse()
+                    .Fill(vm.Brush)
+                    .Width(10)
+                    .Height(10)
+                    .Stroke(new DynamicResourceExtension("SubtleOutlineBrush"))
+                    .StrokeThickness(1)
+                    .Margin(0, 0, 4, 0)
+                    .ToolTip_Tip(
+                        new StackPanel()
+                            .Children(
+                                new TextBlock()
+                                    .Text(string.Format(ResourcesLanguageManager.Instance.PodContainerCellView_NameFormat.CurrentValue()!, vm.Name)),
+                                new TextBlock()
+                                    .Text(string.Format(ResourcesLanguageManager.Instance.PodContainerCellView_TypeFormat.CurrentValue()!, vm.Type)),
+                                new TextBlock()
+                                    .Text(string.Format(ResourcesLanguageManager.Instance.PodContainerCellView_StatusFormat.CurrentValue()!, vm.Status)),
+                                new TextBlock()
+                                    .Text(string.Format(ResourcesLanguageManager.Instance.PodContainerCellView_RestartsFormat.CurrentValue()!, vm.Restarts)),
+                                new TextBlock()
+                                    .Text(string.Format(ResourcesLanguageManager.Instance.PodContainerCellView_ImageFormat.CurrentValue()!, vm.Image))))));
+    }
+
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+        PopulateData();
+    }
+
+    private void PopulateData()
+    {
+        ContainerStatuses.Clear();
+
+        if (DataContext is V1Pod pod)
+        {
+            if (pod.Status?.ContainerStatuses != null)
+            {
+                foreach (var status in pod.Status.ContainerStatuses)
+                {
+                    var image = pod.Spec?.Containers?.FirstOrDefault(c => c.Name == status.Name)?.Image;
+                    ContainerStatuses.Add(CreateViewModel(status, "Normal", null, image));
+                }
+            }
+
+            if (pod.Status?.InitContainerStatuses != null)
+            {
+                foreach (var status in pod.Status.InitContainerStatuses)
+                {
+                    var image = pod.Spec?.InitContainers?.FirstOrDefault(c => c.Name == status.Name)?.Image;
+                    ContainerStatuses.Add(CreateViewModel(status, "Init", "init", image));
+                }
+            }
+
+            if (pod.Status?.EphemeralContainerStatuses != null)
+            {
+                foreach (var status in pod.Status.EphemeralContainerStatuses)
+                {
+                    var image = pod.Spec?.EphemeralContainers?.FirstOrDefault(c => c.Name == status.Name)?.Image;
+                    ContainerStatuses.Add(CreateViewModel(status, "Ephemeral", "ephemeral", image));
+                }
+            }
+        }
+    }
+
+    private static ContainerStatusViewModel CreateViewModel(V1ContainerStatus status, string type, string? converterParameter, string? image)
+    {
+        ContainerStatusViewModel vm = new()
+        {
+            Name = status.Name,
+            Brush = ContainerStatusToBrushConverter.Instance().Convert(status, typeof(IBrush), converterParameter, CultureInfo.InvariantCulture) as IBrush ?? Brushes.Gray,
+            Type = type,
+            Status = GetStatusText(status),
+            Restarts = status.RestartCount,
+        };
+
+        if (!string.IsNullOrEmpty(image))
+        {
+            vm.Image = image;
+        }
+
+        return vm;
+    }
+
+    private static string GetStatusText(V1ContainerStatus status)
+    {
+        try
+        {
+            if (status.State?.Running != null)
+            {
+                return "Running";
+            }
+
+            if (status.State?.Waiting != null)
+            {
+                var waiting = status.State.Waiting;
+                var reason = !string.IsNullOrWhiteSpace(waiting.Reason) ? waiting.Reason : null;
+                var msg = !string.IsNullOrWhiteSpace(waiting.Message) ? waiting.Message : null;
+                return reason ?? msg ?? "Waiting";
+            }
+
+            var terminated = status.State?.Terminated;
+            if (terminated != null)
+            {
+                if (terminated.Reason == "Completed")
+                {
+                    return "Completed";
+                }
+
+                return !string.IsNullOrWhiteSpace(terminated.Reason) ? terminated.Reason : "Terminated";
+            }
+
+            if (status.Ready && status.Started == true)
+            {
+                return "Running";
+            }
+
+            if (status.Started == true)
+            {
+                return "Starting";
+            }
+
+            return "Stopped";
+        }
+        catch
+        {
+            return "Unknown";
+        }
+    }
+
+    public sealed partial class ContainerStatusViewModel : ObservableObject
+    {
+        [ObservableProperty]
+        public partial string Name { get; set; }
+
+        [ObservableProperty]
+        public partial IBrush Brush { get; set; }
+
+        [ObservableProperty]
+        public partial string Type { get; set; }
+
+        [ObservableProperty]
+        public partial string Status { get; set; }
+
+        [ObservableProperty]
+        public partial int Restarts { get; set; }
+
+        [ObservableProperty]
+        public partial string Image { get; set; }
+    }
+}

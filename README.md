@@ -72,12 +72,17 @@ KubeUI provides a cluster workspace for exploring and operating Kubernetes resou
 - Pod port forwarding
 - Service port forwarding
 - Pod CPU and memory usage when metrics are available
+- Deployment, StatefulSet, and ReplicaSet scaling
+- Deployment pause/resume, rollout history, and revision undo
+- CronJob suspend/resume and Pod eviction
 
 ### Resource-Specific Actions
 
 - Node cordon
 - Node uncordon
 - Node drain
+- Workload scale and rollout controls
+- CronJob suspend/resume and Pod eviction
 - Secret certificate inspection, including certificate detail views such as expiry
 
 ### Security and RBAC
@@ -118,7 +123,10 @@ Build steps:
 
 - `src/KubeUI.Kubernetes`
   Kubernetes runtime, cluster integration, serialization, and shared domain logic
-- `src/KubeUI.Avalonia`
+- `src/KubeUI.Foundation` (shared Avalonia foundation)
+- `src/KubeUI.Controls` (reusable controls)
+- `src/KubeUI.App` (main UI shell and composition)
+- `src/KubeUI.Features.*` (feature modules)
   Avalonia UI, view models, behaviors, and resource-specific features
 - `src/KubeUI.Desktop`
   Desktop host and application startup

@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="KubeUI.Foundation">
+    <type fullname="KubeUI.App.Infrastructure.DependencyInjection.DesignTimePreview">
+      <method signature="System.Boolean get_IsDesignMode()" body="stub" value="false" />
+    </type>
+  </assembly>
+</linker>

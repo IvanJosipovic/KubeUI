@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\FeatureTests.props" />
+
+  <ItemGroup>
+    <Using Include="KubeUI.Features.Resources.Assets" />
+    <PackageReference Include="Moq" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\KubeUI.Features.Resources\KubeUI.Features.Resources.csproj" />
+    <ProjectReference Include="..\..\src\KubeUI.App\KubeUI.App.csproj" />
+    <ProjectReference Include="..\..\src\KubeUI.Controls\KubeUI.Controls.csproj" />
+    <ProjectReference Include="..\..\src\KubeUI.Desktop\KubeUI.Desktop.csproj" />
+    <ProjectReference Include="..\..\src\KubeUI.Kubernetes\KubeUI.Kubernetes.csproj" />
+    <ProjectReference Include="..\KubeUI.Testing\KubeUI.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+  </ItemGroup>
+
+</Project>

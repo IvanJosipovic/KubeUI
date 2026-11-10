@@ -6,18 +6,21 @@ dependencies:
   version: unknown
   package_type: claude_skill
   deployed_files:
+  - .agents/skills/kube-ui-testing
+  - .agents/skills/kube-ui-testing/SKILL.md
   - .claude/skills/kube-ui-testing
   - .claude/skills/kube-ui-testing/SKILL.md
   deployed_file_hashes:
-    .claude/skills/kube-ui-testing/SKILL.md: sha256:55f1067c5fe5db7f2936772d7c431f6afd98561db2cd4cc544528b0c76fb73ba
+    .agents/skills/kube-ui-testing/SKILL.md: sha256:5075c11de78bb8c6c74aae49ff57b62a4174d61e56a5e365179f1b0c00986b34
+    .claude/skills/kube-ui-testing/SKILL.md: sha256:5075c11de78bb8c6c74aae49ff57b62a4174d61e56a5e365179f1b0c00986b34
   source: local
   local_path: ./skills/kube-ui-testing
-  content_hash: sha256:b12eeaaa38bad38a0e207eb36d620bcb0a48f989cdbc5d99c7d7a364e6acd3bd
+  content_hash: sha256:985da287614d7031113efd3a142f158744c411bb03d8aeab9fad3cef5fbcf080
 - repo_url: aaronontheweb/dotnet-skills
   materialization_repo_url: Aaronontheweb/dotnet-skills
   name: ilspy-decompile
   host: github.com
-  resolved_commit: ac0deb2f531ff5090718cb0069c73ba3f9f95f69
+  resolved_commit: 5ca5db8cf25566f19d2a5dc53204d4af22b23a0d
   version: unknown
   virtual_path: skills/ilspy-decompile
   is_virtual: true
@@ -34,8 +37,8 @@ dependencies:
 - repo_url: dotnet/skills
   name: dotnet
   host: github.com
-  resolved_commit: 586f13f8d898a60583a3364f146a3b6f5a763164
-  version: 0.2.5
+  resolved_commit: 96c3d68dad2855e3ab5178aa1a262789d86a1466
+  version: 0.2.6
   virtual_path: plugins/dotnet
   is_virtual: true
   package_type: marketplace_plugin
@@ -46,6 +49,12 @@ dependencies:
   - .agents/skills/csharp-refactoring
   - .agents/skills/csharp-refactoring/SKILL.md
   - .agents/skills/csharp-refactoring/references/operation-catalog.md
+  - .agents/skills/dotnet-breaking-changes
+  - .agents/skills/dotnet-breaking-changes/SKILL.md
+  - .agents/skills/dotnet-breaking-changes/references/internals-visible-to.md
+  - .agents/skills/dotnet-breaking-changes/references/multi-targeting.md
+  - .agents/skills/dotnet-breaking-changes/references/public-api.md
+  - .agents/skills/dotnet-breaking-changes/references/source-generation.md
   - .agents/skills/msbuild
   - .agents/skills/msbuild/SKILL.md
   - .agents/skills/msbuild/references/antipatterns/additional-antipatterns.md
@@ -68,6 +77,12 @@ dependencies:
   - .claude/skills/csharp-refactoring
   - .claude/skills/csharp-refactoring/SKILL.md
   - .claude/skills/csharp-refactoring/references/operation-catalog.md
+  - .claude/skills/dotnet-breaking-changes
+  - .claude/skills/dotnet-breaking-changes/SKILL.md
+  - .claude/skills/dotnet-breaking-changes/references/internals-visible-to.md
+  - .claude/skills/dotnet-breaking-changes/references/multi-targeting.md
+  - .claude/skills/dotnet-breaking-changes/references/public-api.md
+  - .claude/skills/dotnet-breaking-changes/references/source-generation.md
   - .claude/skills/msbuild
   - .claude/skills/msbuild/SKILL.md
   - .claude/skills/msbuild/references/antipatterns/additional-antipatterns.md
@@ -85,47 +100,57 @@ dependencies:
   - .claude/skills/setup-local-sdk
   - .claude/skills/setup-local-sdk/SKILL.md
   deployed_file_hashes:
-    .agents/skills/csharp-expert/SKILL.md: sha256:b3a86c6cd037996237fc3cf12de41d4938cdae92ed8be1ff132a315524dd39e9
+    .agents/skills/csharp-expert/SKILL.md: sha256:9ed04dc09f4eb894879cd568b0661d17da379c944e841d636eff48119a262ce9
     .agents/skills/csharp-expert/references/dotnet-skills-marketplace.md: sha256:e41fa64545d59b6c51fe91edcd2f5bbe20fc0e5d92edba79c792fac8540aad19
-    .agents/skills/csharp-refactoring/SKILL.md: sha256:a5516d690bc0713665870e31b7db6c6d09089c0d1a524482a156e01377ef0d72
+    .agents/skills/csharp-refactoring/SKILL.md: sha256:4d7ef3b0abc08f44940565ddc336041fbde95b116c1894ba93abd455a332488c
     .agents/skills/csharp-refactoring/references/operation-catalog.md: sha256:94311ac23ea1098c130942084ceb07969f73790d59072c90b87967cbdc3b8dfa
-    .agents/skills/msbuild/SKILL.md: sha256:671a9b2c77be4a6758dba4b013a50a29b2b3c5c6c77a10c2c81c11042f785c55
-    .agents/skills/msbuild/references/antipatterns/additional-antipatterns.md: sha256:02955e8765404cd792d6c29a6574c5261afa55bcf37766998499d5b3077a10b5
+    .agents/skills/dotnet-breaking-changes/SKILL.md: sha256:2dccf8ab440b6208557f0391bae7ac30cb5db9fcdd9c966e49541965eccdd2da
+    .agents/skills/dotnet-breaking-changes/references/internals-visible-to.md: sha256:ba039289233134c05aa1b5cc86c73dd8cf54e9281a7197b1a77cc493dda75652
+    .agents/skills/dotnet-breaking-changes/references/multi-targeting.md: sha256:d5b60d425020ce75d1cc9fc8c3138694016670eff6e0f5c5bc0ece683bb5e3d0
+    .agents/skills/dotnet-breaking-changes/references/public-api.md: sha256:38e9ba24036b69b9b19c7c50cf4a14723cd8f0968a8204a6a0a9b808693915a6
+    .agents/skills/dotnet-breaking-changes/references/source-generation.md: sha256:90cb491f2fa04d44a81f2a4f19305f602f4f1a3cb0a9cb27c72622e70944c0f5
+    .agents/skills/msbuild/SKILL.md: sha256:21a2d7feed0edbe5e1e2c9be7938f0f77f4b779a8526c0c362c9100ef8a97fe2
+    .agents/skills/msbuild/references/antipatterns/additional-antipatterns.md: sha256:e86a52ded9a846f702def7a92003460ebb1b78a769b1da720b1947abbc524057
     .agents/skills/msbuild/references/antipatterns/incremental-build-inputs-outputs.md: sha256:361f23ef4cd84da9f8bf875151b2b1df27e0a2ab3354b8b6728d88b94db131ad
     .agents/skills/msbuild/references/antipatterns/private-assets.md: sha256:76ff2c88d729494b21fe3f12078b10e10ffcbc41857161defeb79487b97d829c
     .agents/skills/msbuild/references/binlog-failure-analysis.md: sha256:11b3962a232ef18ac184be8a52c86de8b35f05e10a3bfc7d5f5b3396f707e5ca
     .agents/skills/msbuild/references/binlog-generation.md: sha256:f6fc3dfbcb895b3cf5cc4c98dcacd76c3eaaab9d3b1a6e714a3bd596557df512
-    .agents/skills/msbuild/references/build-perf-baseline.md: sha256:4be937e36d2e60eb549a50b58f1eeb1ac2f74d419d3bcee5132f97699e3c2871
+    .agents/skills/msbuild/references/build-perf-baseline.md: sha256:7e45dbf46d1912bde691c2ff2e184d0ce7f1521c30f21658a730cee815ec52fb
     .agents/skills/msbuild/references/build-perf-diagnostics.md: sha256:c715b1dfa297f898b45e893937e40d96e02f6f44c9c3f508dc4442c6dc7cc2f8
     .agents/skills/msbuild/references/copy-to-output-directory.md: sha256:01409f41fd8df30189d544d82dd20556690e5b2c0f16993625f1492d7bff09b2
     .agents/skills/msbuild/references/eval-performance.md: sha256:8a4eeb553ab4e43c9b2b19252fee41bd7a275fca4a8536920e99f9826cb00bdd
-    .agents/skills/msbuild/references/extension-points.md: sha256:d474bccb8069449ceca4fc0ecff7493a8f701b3eb189bcffd0b85c7612d9b766
-    .agents/skills/msbuild/references/incremental-build.md: sha256:8e5d4c4871c2c44fd49b7be64b040e074363b7c9bbacee7cd226d48d5ff4798d
-    .agents/skills/msbuild/references/msbuild-antipatterns.md: sha256:b470f187400c3e6a5620e75cccaf448a09a0207a0a4202b3e18d2dd65296f8f9
+    .agents/skills/msbuild/references/extension-points.md: sha256:d7f6f7068366f893eecaf43a02f6d7a4fe8e2dd4933140f789560d81c58b40a5
+    .agents/skills/msbuild/references/incremental-build.md: sha256:d5a177edfd5010837c799ec15d98930b43d28dd41b5095337a447bdef8236818
+    .agents/skills/msbuild/references/msbuild-antipatterns.md: sha256:841b9a256840ebfd822401c32ac53efdfb4e3ad5d7790863f8031a8da237924e
     .agents/skills/setup-local-sdk/SKILL.md: sha256:6b4904db9ae950da582f85dc2f4cf2adf586776d84ce805a273edb4045f1a74e
-    .claude/skills/csharp-expert/SKILL.md: sha256:b3a86c6cd037996237fc3cf12de41d4938cdae92ed8be1ff132a315524dd39e9
+    .claude/skills/csharp-expert/SKILL.md: sha256:9ed04dc09f4eb894879cd568b0661d17da379c944e841d636eff48119a262ce9
     .claude/skills/csharp-expert/references/dotnet-skills-marketplace.md: sha256:e41fa64545d59b6c51fe91edcd2f5bbe20fc0e5d92edba79c792fac8540aad19
-    .claude/skills/csharp-refactoring/SKILL.md: sha256:a5516d690bc0713665870e31b7db6c6d09089c0d1a524482a156e01377ef0d72
+    .claude/skills/csharp-refactoring/SKILL.md: sha256:4d7ef3b0abc08f44940565ddc336041fbde95b116c1894ba93abd455a332488c
     .claude/skills/csharp-refactoring/references/operation-catalog.md: sha256:94311ac23ea1098c130942084ceb07969f73790d59072c90b87967cbdc3b8dfa
-    .claude/skills/msbuild/SKILL.md: sha256:671a9b2c77be4a6758dba4b013a50a29b2b3c5c6c77a10c2c81c11042f785c55
-    .claude/skills/msbuild/references/antipatterns/additional-antipatterns.md: sha256:02955e8765404cd792d6c29a6574c5261afa55bcf37766998499d5b3077a10b5
+    .claude/skills/dotnet-breaking-changes/SKILL.md: sha256:2dccf8ab440b6208557f0391bae7ac30cb5db9fcdd9c966e49541965eccdd2da
+    .claude/skills/dotnet-breaking-changes/references/internals-visible-to.md: sha256:ba039289233134c05aa1b5cc86c73dd8cf54e9281a7197b1a77cc493dda75652
+    .claude/skills/dotnet-breaking-changes/references/multi-targeting.md: sha256:d5b60d425020ce75d1cc9fc8c3138694016670eff6e0f5c5bc0ece683bb5e3d0
+    .claude/skills/dotnet-breaking-changes/references/public-api.md: sha256:38e9ba24036b69b9b19c7c50cf4a14723cd8f0968a8204a6a0a9b808693915a6
+    .claude/skills/dotnet-breaking-changes/references/source-generation.md: sha256:90cb491f2fa04d44a81f2a4f19305f602f4f1a3cb0a9cb27c72622e70944c0f5
+    .claude/skills/msbuild/SKILL.md: sha256:21a2d7feed0edbe5e1e2c9be7938f0f77f4b779a8526c0c362c9100ef8a97fe2
+    .claude/skills/msbuild/references/antipatterns/additional-antipatterns.md: sha256:e86a52ded9a846f702def7a92003460ebb1b78a769b1da720b1947abbc524057
     .claude/skills/msbuild/references/antipatterns/incremental-build-inputs-outputs.md: sha256:361f23ef4cd84da9f8bf875151b2b1df27e0a2ab3354b8b6728d88b94db131ad
     .claude/skills/msbuild/references/antipatterns/private-assets.md: sha256:76ff2c88d729494b21fe3f12078b10e10ffcbc41857161defeb79487b97d829c
     .claude/skills/msbuild/references/binlog-failure-analysis.md: sha256:11b3962a232ef18ac184be8a52c86de8b35f05e10a3bfc7d5f5b3396f707e5ca
     .claude/skills/msbuild/references/binlog-generation.md: sha256:f6fc3dfbcb895b3cf5cc4c98dcacd76c3eaaab9d3b1a6e714a3bd596557df512
-    .claude/skills/msbuild/references/build-perf-baseline.md: sha256:4be937e36d2e60eb549a50b58f1eeb1ac2f74d419d3bcee5132f97699e3c2871
+    .claude/skills/msbuild/references/build-perf-baseline.md: sha256:7e45dbf46d1912bde691c2ff2e184d0ce7f1521c30f21658a730cee815ec52fb
     .claude/skills/msbuild/references/build-perf-diagnostics.md: sha256:c715b1dfa297f898b45e893937e40d96e02f6f44c9c3f508dc4442c6dc7cc2f8
     .claude/skills/msbuild/references/copy-to-output-directory.md: sha256:01409f41fd8df30189d544d82dd20556690e5b2c0f16993625f1492d7bff09b2
     .claude/skills/msbuild/references/eval-performance.md: sha256:8a4eeb553ab4e43c9b2b19252fee41bd7a275fca4a8536920e99f9826cb00bdd
-    .claude/skills/msbuild/references/extension-points.md: sha256:d474bccb8069449ceca4fc0ecff7493a8f701b3eb189bcffd0b85c7612d9b766
-    .claude/skills/msbuild/references/incremental-build.md: sha256:8e5d4c4871c2c44fd49b7be64b040e074363b7c9bbacee7cd226d48d5ff4798d
-    .claude/skills/msbuild/references/msbuild-antipatterns.md: sha256:b470f187400c3e6a5620e75cccaf448a09a0207a0a4202b3e18d2dd65296f8f9
+    .claude/skills/msbuild/references/extension-points.md: sha256:d7f6f7068366f893eecaf43a02f6d7a4fe8e2dd4933140f789560d81c58b40a5
+    .claude/skills/msbuild/references/incremental-build.md: sha256:d5a177edfd5010837c799ec15d98930b43d28dd41b5095337a447bdef8236818
+    .claude/skills/msbuild/references/msbuild-antipatterns.md: sha256:841b9a256840ebfd822401c32ac53efdfb4e3ad5d7790863f8031a8da237924e
     .claude/skills/setup-local-sdk/SKILL.md: sha256:6b4904db9ae950da582f85dc2f4cf2adf586776d84ce805a273edb4045f1a74e
-  content_hash: sha256:08694f2d95526be67f230f2382d3a3263fac5a740a0272b065ec6b9cb0379d32
+  content_hash: sha256:ce9920a29653a242df60f5ca13db543f3d256c086413ebadadb8e4066b5465e7
 - repo_url: dotnet/skills
   name: dotnet-diag
   host: github.com
-  resolved_commit: 586f13f8d898a60583a3364f146a3b6f5a763164
+  resolved_commit: 96c3d68dad2855e3ab5178aa1a262789d86a1466
   version: 0.1.3
   virtual_path: plugins/dotnet-diag
   is_virtual: true
@@ -290,8 +315,8 @@ dependencies:
 - repo_url: dotnet/skills
   name: dotnet11
   host: github.com
-  resolved_commit: 586f13f8d898a60583a3364f146a3b6f5a763164
-  version: 0.1.2
+  resolved_commit: 96c3d68dad2855e3ab5178aa1a262789d86a1466
+  version: 0.1.3
   virtual_path: plugins/dotnet11
   is_virtual: true
   package_type: marketplace_plugin
@@ -309,12 +334,12 @@ dependencies:
     .agents/skills/system-text-json-net11/SKILL.md: sha256:e067f1ad212f97bd11510505748f2ed87b51b3e0328b27fb8116c01a86817e7d
     .claude/skills/process-api-net11/SKILL.md: sha256:66f79536a3d80372caeff06d77940639b9677f5b4cb41c5358407b43b4cb4d59
     .claude/skills/system-text-json-net11/SKILL.md: sha256:e067f1ad212f97bd11510505748f2ed87b51b3e0328b27fb8116c01a86817e7d
-  content_hash: sha256:979105b8d6db85c948204e00b96a942a1153ecb0f99a908d50b8e9150fc98169
+  content_hash: sha256:52e120206d188a5bfbeb7a5b2de0c61b107df6d417f0e07c0531ab054d379f65
 - repo_url: juliusbrussee/caveman
   materialization_repo_url: JuliusBrussee/caveman
   name: caveman
   host: github.com
-  resolved_commit: 9b68f7ed12b05e7efaff18e65c5a3fc2849fd0a4
+  resolved_commit: 1e91f1306d602d4ca23618701b1185575ae1869b
   version: unknown
   virtual_path: skills/caveman
   is_virtual: true
@@ -402,7 +427,7 @@ dependencies:
     .agents/skills/avalonia-12-migration/agents/openai.yaml: sha256:cb3fe93e3486f67d4c4c8dd754cd5c6a089a767ad890f6c74ccc6bc8157db199
     .claude/skills/avalonia-12-migration/SKILL.md: sha256:ab7a1dbd943eed1bb12d436960d28c8dd5c35d1d5ff76ed6716b6a5b9dcf6c64
     .claude/skills/avalonia-12-migration/agents/openai.yaml: sha256:cb3fe93e3486f67d4c4c8dd754cd5c6a089a767ad890f6c74ccc6bc8157db199
-  content_hash: sha256:4dfadaaa650bc85801b991b1aacf05d55474aecb993002b3c5cb3d50007079ba
+  content_hash: sha256:c542ca0f7d87767cc0a71dd4e4501ebd493375a2c670d693ff58d43b9cc1612e
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-accessibility-and-validation
   host: github.com
@@ -423,7 +448,7 @@ dependencies:
     .agents/skills/avalonia-accessibility-and-validation/agents/openai.yaml: sha256:422f0535f733655c4b464de528f53eda2e4018d7daeb811f22030178282d0481
     .claude/skills/avalonia-accessibility-and-validation/SKILL.md: sha256:1abaa9795d71b0d987512f7e9dbf395c7c59f071f5f62caa34f239525e3b99f3
     .claude/skills/avalonia-accessibility-and-validation/agents/openai.yaml: sha256:422f0535f733655c4b464de528f53eda2e4018d7daeb811f22030178282d0481
-  content_hash: sha256:fff699d5934d5fb55320824604e7f22f7b3897649953911dabcf16afd5122065
+  content_hash: sha256:2ede7cc8508862cdc1122ad9edf8ea3d514f48acc1c5d64f765909534e71a363
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-bindings-and-xaml
   host: github.com
@@ -444,7 +469,7 @@ dependencies:
     .agents/skills/avalonia-bindings-and-xaml/agents/openai.yaml: sha256:1e166c26286315b047b10ae4a90f9dd98469af19933e8fa7c8971e7054a85134
     .claude/skills/avalonia-bindings-and-xaml/SKILL.md: sha256:2c894474a7ecefd2c67c15a5ac7738b173cb2672f6e980bbd692b53f1755d5f7
     .claude/skills/avalonia-bindings-and-xaml/agents/openai.yaml: sha256:1e166c26286315b047b10ae4a90f9dd98469af19933e8fa7c8971e7054a85134
-  content_hash: sha256:07a30020328e09dd9dc6c8446527f0b13ba46e8d4aef08e624a8d81fab679296
+  content_hash: sha256:c93d8c8232a1ca9195389296a4bcc77826a718ca1722e3b914f4a8868d228c27
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-bootstrap-and-lifetime
   host: github.com
@@ -465,7 +490,7 @@ dependencies:
     .agents/skills/avalonia-bootstrap-and-lifetime/agents/openai.yaml: sha256:e20ed37b6ee9db6bae48cc5d6e0a85be8f7628e3daa4be0ea70a94fceaa19b38
     .claude/skills/avalonia-bootstrap-and-lifetime/SKILL.md: sha256:d4963a2c6f3a466798e0122b172ad1d9b1c5eddd43e3451368970d6a06deb3f3
     .claude/skills/avalonia-bootstrap-and-lifetime/agents/openai.yaml: sha256:e20ed37b6ee9db6bae48cc5d6e0a85be8f7628e3daa4be0ea70a94fceaa19b38
-  content_hash: sha256:45dd6ad8c7e6bf6af711142f7a95e8f8e089b66181bd7e1dd470395925bf0bb6
+  content_hash: sha256:a10784b8d3d0556a9e6577a6f4c4cc1cc9e1fc2905375d4790985eaf16caed1f
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-controls-and-windowing
   host: github.com
@@ -486,7 +511,7 @@ dependencies:
     .agents/skills/avalonia-controls-and-windowing/agents/openai.yaml: sha256:9de106f0d2c409ab514364bdba86b6fb8edbcff6eaf0d9cf81e8f8deccd7b29e
     .claude/skills/avalonia-controls-and-windowing/SKILL.md: sha256:a8f38c851dcb1e17334d4713eaf8fbbe5b35f2c863546771a68f79cc8fc3d5ef
     .claude/skills/avalonia-controls-and-windowing/agents/openai.yaml: sha256:9de106f0d2c409ab514364bdba86b6fb8edbcff6eaf0d9cf81e8f8deccd7b29e
-  content_hash: sha256:7260e575303070be01f76e428f06bf87464f7d0c3a31e6bb672fd85e3c9b59e8
+  content_hash: sha256:c499346f7fd997b66018b85022837da06d8632136460811853867ad546a27be7
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-design-systems
   host: github.com
@@ -507,7 +532,7 @@ dependencies:
     .agents/skills/avalonia-design-systems/agents/openai.yaml: sha256:6a80e315ea6f368fb6e59a9b96e6041b5e593080d12aa987374cb8a4d0df5f3f
     .claude/skills/avalonia-design-systems/SKILL.md: sha256:60751542dea1b68d17142eaa2b921a48f667c464b5d5608a7abc996d0b21af8a
     .claude/skills/avalonia-design-systems/agents/openai.yaml: sha256:6a80e315ea6f368fb6e59a9b96e6041b5e593080d12aa987374cb8a4d0df5f3f
-  content_hash: sha256:ff10e33f322542ab44b4a24baa2b066dc34b9ff46ce829137acfb8286dbf9349
+  content_hash: sha256:513a945fc4a3352205668c72242447277b851244a21f3fe72e9304d0117f5199
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-fluent-design
   host: github.com
@@ -528,7 +553,7 @@ dependencies:
     .agents/skills/avalonia-fluent-design/agents/openai.yaml: sha256:280ccd20a484acb1dd9eba98762770991595c7b57ea006712c7e179df8524457
     .claude/skills/avalonia-fluent-design/SKILL.md: sha256:4e66b0db12e40997ded34a45c30741ae155d654a8057cc315a91efb918cdd996
     .claude/skills/avalonia-fluent-design/agents/openai.yaml: sha256:280ccd20a484acb1dd9eba98762770991595c7b57ea006712c7e179df8524457
-  content_hash: sha256:5779def41b49a1e59b483ac58633b06619beb5978af7913a22a9ec946f0d64ea
+  content_hash: sha256:9ed1ba1dfb10ae287b66fa99f92fdebe8638d800636f270f442fc0fe39a09ef5
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-input-and-commands
   host: github.com
@@ -549,7 +574,7 @@ dependencies:
     .agents/skills/avalonia-input-and-commands/agents/openai.yaml: sha256:140a887134036c8ff9d3089ed623dd72e250b4919551e98ba29b63b86f9e583e
     .claude/skills/avalonia-input-and-commands/SKILL.md: sha256:7285258bd59e98462863992f8853005643c58a535d5ec16b80570f50b5762b0a
     .claude/skills/avalonia-input-and-commands/agents/openai.yaml: sha256:140a887134036c8ff9d3089ed623dd72e250b4919551e98ba29b63b86f9e583e
-  content_hash: sha256:1956aa7d18054f51e6d2fa270ae96c50381b8cca8cfa2bbeccf6a610dfd85b60
+  content_hash: sha256:5aa1762e3a763171df170da4f82945266abab2ae0b6de84755f0917ac953fe15
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-layout-and-virtualization
   host: github.com
@@ -570,7 +595,7 @@ dependencies:
     .agents/skills/avalonia-layout-and-virtualization/agents/openai.yaml: sha256:a5c4fc9872ed598849f46772f9a7b03437c06bf7eba95d23daf5a99aec10b6fa
     .claude/skills/avalonia-layout-and-virtualization/SKILL.md: sha256:2fde9e65e7586c726a885d882bcd07064ab764e9140e432d33a9f2ed9216801d
     .claude/skills/avalonia-layout-and-virtualization/agents/openai.yaml: sha256:a5c4fc9872ed598849f46772f9a7b03437c06bf7eba95d23daf5a99aec10b6fa
-  content_hash: sha256:467a65db9a9a29009edc1e680f0104ae2cfd902fb967a265ab25d398e95b202d
+  content_hash: sha256:edd2427b34e88100e5651d6a6944b525377f692394a133b5724dba892c824fb8
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-platform-services
   host: github.com
@@ -591,7 +616,7 @@ dependencies:
     .agents/skills/avalonia-platform-services/agents/openai.yaml: sha256:62b735a6dfd60b0dac53b628ec3f0af281a03bd095eecee8366a396e54b28c2f
     .claude/skills/avalonia-platform-services/SKILL.md: sha256:45d5d03ef06e711ff2a38559fc8b96441a8e18118021706b1192597f6d6ea358
     .claude/skills/avalonia-platform-services/agents/openai.yaml: sha256:62b735a6dfd60b0dac53b628ec3f0af281a03bd095eecee8366a396e54b28c2f
-  content_hash: sha256:611bb69d00c170326b8c159cf8a9e323adfcccdca70f4044472c925328f9219d
+  content_hash: sha256:cd097428f17eb61e849ba9d96676cf1b8309605fa0a4301cbb274c7dc68525cb
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-rendering-and-graphics
   host: github.com
@@ -612,7 +637,7 @@ dependencies:
     .agents/skills/avalonia-rendering-and-graphics/agents/openai.yaml: sha256:a0877842df2ee6087d08ebd7e93ad4f1f234d9a0a319dcbfa038f344bf0ae60f
     .claude/skills/avalonia-rendering-and-graphics/SKILL.md: sha256:e2147cef9d3de9cad3421a5f63e7045c7b970fc39f589c837fb8f41d3b3ede25
     .claude/skills/avalonia-rendering-and-graphics/agents/openai.yaml: sha256:a0877842df2ee6087d08ebd7e93ad4f1f234d9a0a319dcbfa038f344bf0ae60f
-  content_hash: sha256:64d4c1b2bb5cc307f86ca3743cb4cc601b2ee9cd90407e05a3837916ae0ff5b0
+  content_hash: sha256:6d6f5b044819e8a97014fac5816bca49df4096a5fb57b06036f7445565ca8c33
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-styling-and-resources
   host: github.com
@@ -633,7 +658,7 @@ dependencies:
     .agents/skills/avalonia-styling-and-resources/agents/openai.yaml: sha256:244f27d211ae22b1447e14015d2e1459ed63fa1407301dc0c50c43806df4f28d
     .claude/skills/avalonia-styling-and-resources/SKILL.md: sha256:fffe7cc85d924dccb00667ea5fd0e004810b74c8d0421ea2d872479798dfe9c1
     .claude/skills/avalonia-styling-and-resources/agents/openai.yaml: sha256:244f27d211ae22b1447e14015d2e1459ed63fa1407301dc0c50c43806df4f28d
-  content_hash: sha256:8711e0b34012388d987ae08f11786b4b2a5921444d5b56747eba47bbba419282
+  content_hash: sha256:035828c3b148da76ddd42daace0015fc70791b9156017a1b2bb0a9b9cf42fecb
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-testing-diagnostics-and-performance
   host: github.com
@@ -654,7 +679,7 @@ dependencies:
     .agents/skills/avalonia-testing-diagnostics-and-performance/agents/openai.yaml: sha256:af6084c7068ac54d0a2b3a76a991feb30e6f06e0cafbaab8915406c732af6a8d
     .claude/skills/avalonia-testing-diagnostics-and-performance/SKILL.md: sha256:6854754da3f137295e805997fde05a6a03fe74bd9cdbb320161a2fcfc8d9fa6d
     .claude/skills/avalonia-testing-diagnostics-and-performance/agents/openai.yaml: sha256:af6084c7068ac54d0a2b3a76a991feb30e6f06e0cafbaab8915406c732af6a8d
-  content_hash: sha256:fe744a52b3d0b243c8acca66e117d287a501f2d755de9c3cf24e308538e9ba87
+  content_hash: sha256:c2b2e3ec3263d166a0e85fa3cf82028b9e4543102600a7e25eadc2ec98deaae4
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-threading-and-dispatcher
   host: github.com
@@ -675,7 +700,7 @@ dependencies:
     .agents/skills/avalonia-threading-and-dispatcher/agents/openai.yaml: sha256:6d093b0e63dedecfff8fbed525ae3c5e7715d59d1fec9d5b9b7a232ed587115e
     .claude/skills/avalonia-threading-and-dispatcher/SKILL.md: sha256:a2fbb7bcac0c0a3cc878781ebd0ba61536328e7a95c0bcb2eac74fc99344f388
     .claude/skills/avalonia-threading-and-dispatcher/agents/openai.yaml: sha256:6d093b0e63dedecfff8fbed525ae3c5e7715d59d1fec9d5b9b7a232ed587115e
-  content_hash: sha256:a1fb3b856ca9025d649ff92b0f6784141a3e19fd0a1968f3fe9e69c81795777c
+  content_hash: sha256:fdbe3f4b9bc61851fa4447faa87336345065df4b4257479903afa42f648929e4
 - repo_url: wieslawsoltes/development-plugin-for-avalonia
   name: avalonia-views-and-templating
   host: github.com
@@ -696,7 +721,7 @@ dependencies:
     .agents/skills/avalonia-views-and-templating/agents/openai.yaml: sha256:e4697801ee73bdc7f26124bb8c9c712edad9eb1b263b739084d25fc03e5c5d09
     .claude/skills/avalonia-views-and-templating/SKILL.md: sha256:273a869ef7e9cf89b004f20d53575728a2457609725108ae8dca51abe7a58a21
     .claude/skills/avalonia-views-and-templating/agents/openai.yaml: sha256:e4697801ee73bdc7f26124bb8c9c712edad9eb1b263b739084d25fc03e5c5d09
-  content_hash: sha256:ebcae63fd207e2dc959ab35e602411324e9f97ed7c34a1b6b1a39f8a6b4af29a
+  content_hash: sha256:c91cad272e36d64fa676e4f0dbb0cce75ed0bd93f4c9553aa2645ab899e98c4f
 deployments:
 - kind: project-relative
   target: agent-skills
@@ -1336,7 +1361,7 @@ deployments:
   owners:
   - dotnet/skills/plugins/dotnet
   active_owner: dotnet/skills/plugins/dotnet
-  content_hash: sha256:b3a86c6cd037996237fc3cf12de41d4938cdae92ed8be1ff132a315524dd39e9
+  content_hash: sha256:9ed04dc09f4eb894879cd568b0661d17da379c944e841d636eff48119a262ce9
 - kind: project-relative
   target: agent-skills
   value: .agents/skills/csharp-expert/references/dotnet-skills-marketplace.md
@@ -1363,7 +1388,7 @@ deployments:
   owners:
   - dotnet/skills/plugins/dotnet
   active_owner: dotnet/skills/plugins/dotnet
-  content_hash: sha256:a5516d690bc0713665870e31b7db6c6d09089c0d1a524482a156e01377ef0d72
+  content_hash: sha256:4d7ef3b0abc08f44940565ddc336041fbde95b116c1894ba93abd455a332488c
 - kind: project-relative
   target: agent-skills
   value: .agents/skills/csharp-refactoring/references/operation-catalog.md
@@ -1463,6 +1488,60 @@ deployments:
   - microsoft/debugmcp/skills/debug-live
   active_owner: microsoft/debugmcp/skills/debug-live
   content_hash: sha256:b9aca82ad67a6780d7114af7fdbd0b4cf3612517d53dcf6a37c4dc81161b413d
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/dotnet-breaking-changes
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/dotnet-breaking-changes/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:2dccf8ab440b6208557f0391bae7ac30cb5db9fcdd9c966e49541965eccdd2da
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/dotnet-breaking-changes/references/internals-visible-to.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:ba039289233134c05aa1b5cc86c73dd8cf54e9281a7197b1a77cc493dda75652
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/dotnet-breaking-changes/references/multi-targeting.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:d5b60d425020ce75d1cc9fc8c3138694016670eff6e0f5c5bc0ece683bb5e3d0
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/dotnet-breaking-changes/references/public-api.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:38e9ba24036b69b9b19c7c50cf4a14723cd8f0968a8204a6a0a9b808693915a6
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/dotnet-breaking-changes/references/source-generation.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:90cb491f2fa04d44a81f2a4f19305f602f4f1a3cb0a9cb27c72622e70944c0f5
 - kind: project-relative
   target: agent-skills
   value: .agents/skills/dotnet-trace-collect
@@ -1591,6 +1670,24 @@ deployments:
   content_hash: sha256:aed579dde8ab8bcfe151983ce66100d39f146061c653148fc7bb237a6a20db21
 - kind: project-relative
   target: agent-skills
+  value: .agents/skills/kube-ui-testing
+  runtime: null
+  scope: project
+  owners:
+  - ./skills/kube-ui-testing
+  active_owner: ./skills/kube-ui-testing
+  content_hash: null
+- kind: project-relative
+  target: agent-skills
+  value: .agents/skills/kube-ui-testing/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - ./skills/kube-ui-testing
+  active_owner: ./skills/kube-ui-testing
+  content_hash: sha256:5075c11de78bb8c6c74aae49ff57b62a4174d61e56a5e365179f1b0c00986b34
+- kind: project-relative
+  target: agent-skills
   value: .agents/skills/microbenchmarking
   runtime: null
   scope: project
@@ -1669,7 +1766,7 @@ deployments:
   owners:
   - dotnet/skills/plugins/dotnet
   active_owner: dotnet/skills/plugins/dotnet
-  content_hash: sha256:671a9b2c77be4a6758dba4b013a50a29b2b3c5c6c77a10c2c81c11042f785c55
+  content_hash: sha256:21a2d7feed0edbe5e1e2c9be7938f0f77f4b779a8526c0c362c9100ef8a97fe2
 - kind: project-relative
   target: agent-skills
   value: .agents/skills/msbuild/references/antipatterns/additional-antipatterns.md
@@ -1678,7 +1775,7 @@ deployments:
   owners:
   - dotnet/skills/plugins/dotnet
   active_owner: dotnet/skills/plugins/dotnet
-  content_hash: sha256:02955e8765404cd792d6c29a6574c5261afa55bcf37766998499d5b3077a10b5
+  content_hash: sha256:e86a52ded9a846f702def7a92003460ebb1b78a769b1da720b1947abbc524057
 - kind: project-relative
   target: agent-skills
   value: .agents/skills/msbuild/references/antipatterns/incremental-build-inputs-outputs.md
@@ -1723,7 +1820,7 @@ deployments:
   owners:
   - dotnet/skills/plugins/dotnet
   active_owner: dotnet/skills/plugins/dotnet
-  content_hash: sha256:4be937e36d2e60eb549a50b58f1eeb1ac2f74d419d3bcee5132f97699e3c2871
+  content_hash: sha256:7e45dbf46d1912bde691c2ff2e184d0ce7f1521c30f21658a730cee815ec52fb
 - kind: project-relative
   target: agent-skills
   value: .agents/skills/msbuild/references/build-perf-diagnostics.md
@@ -1759,7 +1856,7 @@ deployments:
   owners:
   - dotnet/skills/plugins/dotnet
   active_owner: dotnet/skills/plugins/dotnet
-  content_hash: sha256:d474bccb8069449ceca4fc0ecff7493a8f701b3eb189bcffd0b85c7612d9b766
+  content_hash: sha256:d7f6f7068366f893eecaf43a02f6d7a4fe8e2dd4933140f789560d81c58b40a5
 - kind: project-relative
   target: agent-skills
   value: .agents/skills/msbuild/references/incremental-build.md
@@ -1768,7 +1865,7 @@ deployments:
   owners:
   - dotnet/skills/plugins/dotnet
   active_owner: dotnet/skills/plugins/dotnet
-  content_hash: sha256:8e5d4c4871c2c44fd49b7be64b040e074363b7c9bbacee7cd226d48d5ff4798d
+  content_hash: sha256:d5a177edfd5010837c799ec15d98930b43d28dd41b5095337a447bdef8236818
 - kind: project-relative
   target: agent-skills
   value: .agents/skills/msbuild/references/msbuild-antipatterns.md
@@ -1777,7 +1874,7 @@ deployments:
   owners:
   - dotnet/skills/plugins/dotnet
   active_owner: dotnet/skills/plugins/dotnet
-  content_hash: sha256:b470f187400c3e6a5620e75cccaf448a09a0207a0a4202b3e18d2dd65296f8f9
+  content_hash: sha256:841b9a256840ebfd822401c32ac53efdfb4e3ad5d7790863f8031a8da237924e
 - kind: project-relative
   target: agent-skills
   value: .agents/skills/process-api-net11
@@ -2479,7 +2576,7 @@ deployments:
   owners:
   - dotnet/skills/plugins/dotnet
   active_owner: dotnet/skills/plugins/dotnet
-  content_hash: sha256:b3a86c6cd037996237fc3cf12de41d4938cdae92ed8be1ff132a315524dd39e9
+  content_hash: sha256:9ed04dc09f4eb894879cd568b0661d17da379c944e841d636eff48119a262ce9
 - kind: project-relative
   target: claude
   value: .claude/skills/csharp-expert/references/dotnet-skills-marketplace.md
@@ -2506,7 +2603,7 @@ deployments:
   owners:
   - dotnet/skills/plugins/dotnet
   active_owner: dotnet/skills/plugins/dotnet
-  content_hash: sha256:a5516d690bc0713665870e31b7db6c6d09089c0d1a524482a156e01377ef0d72
+  content_hash: sha256:4d7ef3b0abc08f44940565ddc336041fbde95b116c1894ba93abd455a332488c
 - kind: project-relative
   target: claude
   value: .claude/skills/csharp-refactoring/references/operation-catalog.md
@@ -2606,6 +2703,60 @@ deployments:
   - microsoft/debugmcp/skills/debug-live
   active_owner: microsoft/debugmcp/skills/debug-live
   content_hash: sha256:b9aca82ad67a6780d7114af7fdbd0b4cf3612517d53dcf6a37c4dc81161b413d
+- kind: project-relative
+  target: claude
+  value: .claude/skills/dotnet-breaking-changes
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/dotnet-breaking-changes/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:2dccf8ab440b6208557f0391bae7ac30cb5db9fcdd9c966e49541965eccdd2da
+- kind: project-relative
+  target: claude
+  value: .claude/skills/dotnet-breaking-changes/references/internals-visible-to.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:ba039289233134c05aa1b5cc86c73dd8cf54e9281a7197b1a77cc493dda75652
+- kind: project-relative
+  target: claude
+  value: .claude/skills/dotnet-breaking-changes/references/multi-targeting.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:d5b60d425020ce75d1cc9fc8c3138694016670eff6e0f5c5bc0ece683bb5e3d0
+- kind: project-relative
+  target: claude
+  value: .claude/skills/dotnet-breaking-changes/references/public-api.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:38e9ba24036b69b9b19c7c50cf4a14723cd8f0968a8204a6a0a9b808693915a6
+- kind: project-relative
+  target: claude
+  value: .claude/skills/dotnet-breaking-changes/references/source-generation.md
+  runtime: null
+  scope: project
+  owners:
+  - dotnet/skills/plugins/dotnet
+  active_owner: dotnet/skills/plugins/dotnet
+  content_hash: sha256:90cb491f2fa04d44a81f2a4f19305f602f4f1a3cb0a9cb27c72622e70944c0f5
 - kind: project-relative
   target: claude
   value: .claude/skills/dotnet-trace-collect
@@ -2749,7 +2900,7 @@ deployments:
   owners:
   - ./skills/kube-ui-testing
   active_owner: ./skills/kube-ui-testing
-  content_hash: sha256:55f1067c5fe5db7f2936772d7c431f6afd98561db2cd4cc544528b0c76fb73ba
+  content_hash: sha256:5075c11de78bb8c6c74aae49ff57b62a4174d61e56a5e365179f1b0c00986b34
 - kind: project-relative
   target: claude
   value: .claude/skills/microbenchmarking
@@ -2830,7 +2981,7 @@ deployments:
   owners:
   - dotnet/skills/plugins/dotnet
   active_owner: dotnet/skills/plugins/dotnet
-  content_hash: sha256:671a9b2c77be4a6758dba4b013a50a29b2b3c5c6c77a10c2c81c11042f785c55
+  content_hash: sha256:21a2d7feed0edbe5e1e2c9be7938f0f77f4b779a8526c0c362c9100ef8a97fe2
 - kind: project-relative
   target: claude
   value: .claude/skills/msbuild/references/antipatterns/additional-antipatterns.md
@@ -2839,7 +2990,7 @@ deployments:
   owners:
   - dotnet/skills/plugins/dotnet
   active_owner: dotnet/skills/plugins/dotnet
-  content_hash: sha256:02955e8765404cd792d6c29a6574c5261afa55bcf37766998499d5b3077a10b5
+  content_hash: sha256:e86a52ded9a846f702def7a92003460ebb1b78a769b1da720b1947abbc524057
 - kind: project-relative
   target: claude
   value: .claude/skills/msbuild/references/antipatterns/incremental-build-inputs-outputs.md
@@ -2884,7 +3035,7 @@ deployments:
   owners:
   - dotnet/skills/plugins/dotnet
   active_owner: dotnet/skills/plugins/dotnet
-  content_hash: sha256:4be937e36d2e60eb549a50b58f1eeb1ac2f74d419d3bcee5132f97699e3c2871
+  content_hash: sha256:7e45dbf46d1912bde691c2ff2e184d0ce7f1521c30f21658a730cee815ec52fb
 - kind: project-relative
   target: claude
   value: .claude/skills/msbuild/references/build-perf-diagnostics.md
@@ -2920,7 +3071,7 @@ deployments:
   owners:
   - dotnet/skills/plugins/dotnet
   active_owner: dotnet/skills/plugins/dotnet
-  content_hash: sha256:d474bccb8069449ceca4fc0ecff7493a8f701b3eb189bcffd0b85c7612d9b766
+  content_hash: sha256:d7f6f7068366f893eecaf43a02f6d7a4fe8e2dd4933140f789560d81c58b40a5
 - kind: project-relative
   target: claude
   value: .claude/skills/msbuild/references/incremental-build.md
@@ -2929,7 +3080,7 @@ deployments:
   owners:
   - dotnet/skills/plugins/dotnet
   active_owner: dotnet/skills/plugins/dotnet
-  content_hash: sha256:8e5d4c4871c2c44fd49b7be64b040e074363b7c9bbacee7cd226d48d5ff4798d
+  content_hash: sha256:d5a177edfd5010837c799ec15d98930b43d28dd41b5095337a447bdef8236818
 - kind: project-relative
   target: claude
   value: .claude/skills/msbuild/references/msbuild-antipatterns.md
@@ -2938,7 +3089,7 @@ deployments:
   owners:
   - dotnet/skills/plugins/dotnet
   active_owner: dotnet/skills/plugins/dotnet
-  content_hash: sha256:b470f187400c3e6a5620e75cccaf448a09a0207a0a4202b3e18d2dd65296f8f9
+  content_hash: sha256:841b9a256840ebfd822401c32ac53efdfb4e3ad5d7790863f8031a8da237924e
 - kind: project-relative
   target: claude
   value: .claude/skills/process-api-net11

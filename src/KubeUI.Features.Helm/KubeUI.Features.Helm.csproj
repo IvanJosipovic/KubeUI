@@ -1,0 +1,90 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>embedded</DebugType>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="Avalonia" />
+    <Using Include="Avalonia.Controls" />
+    <Using Include="Avalonia.Controls.Primitives" />
+    <Using Include="Avalonia.Controls.Templates" />
+    <Using Include="Avalonia.Data" />
+    <Using Include="Avalonia.Interactivity" />
+    <Using Include="Avalonia.Layout" />
+    <Using Include="Avalonia.Markup.Declarative" />
+    <Using Include="Avalonia.Media" />
+    <Using Include="Avalonia.Styling" />
+    <Using Include="Avalonia.Threading" />
+    <Using Include="Avalonia.Xaml.Interactivity" />
+    <Using Include="Avalonia.Xaml.Interactions.Core" />
+    <Using Include="AvaloniaEdit" />
+    <Using Include="CommunityToolkit.Mvvm.ComponentModel" />
+    <Using Include="CommunityToolkit.Mvvm.Input" />
+    <Using Include="FluentAvalonia.UI.Controls" />
+    <Using Include="FluentIcons.Avalonia" />
+    <Using Include="FluentIcons.Common" />
+    <Using Include="Helm.NET" />
+    <Using Include="KubeUI.Foundation.Assets" />
+    <Using Include="KubeUI.Foundation.Styles" />
+    <Using Include="KubeUI.Controls.Converters" />
+    <Using Include="KubeUI.Controls.DependencyInjection" />
+    <Using Include="KubeUI.Controls.Docking" />
+    <Using Include="KubeUI.Controls.Platform" />
+    <Using Include="KubeUI.Controls.Presentation" />
+    <Using Include="KubeUI.Controls.Editors" />
+    <Using Include="KubeUI.Controls.Threading" />
+    <Using Include="KubeUI.Controls.Styles" />
+    <Using Include="KubeUI.Features.Helm.Assets" />
+    <Using Include="KubeUI.Foundation.Localization" />
+    <Using Include="KubeUI.Features.Resources" />
+    <Using Include="KubeUI.Features.Resources.Assets" />
+    <Using Include="KubeUI.Kubernetes" />
+    <Using Include="Microsoft.Extensions.DependencyInjection" />
+    <Using Include="Microsoft.Extensions.Logging" />
+    <Using Include="NuGet.Versioning" />
+    <Using Include="System.Collections.ObjectModel" />
+    <Using Include="System.Collections" />
+    <Using Include="System.ComponentModel" />
+    <Using Include="SvcSystems.Avalonia.DynamicTableView" />
+    <Using Include="YamlDotNet.RepresentationModel" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="KubeUI.App.Tests" />
+    <InternalsVisibleTo Include="KubeUI.Features.Helm.Tests" />
+    <InternalsVisibleTo Include="KubeUI.Benchmarks" />
+    <ProjectCapability Include="Avalonia" />
+    <ProjectReference Include="..\KubeUI.Controls\KubeUI.Controls.csproj" />
+    <ProjectReference Include="..\KubeUI.Features.Clusters\KubeUI.Features.Clusters.csproj" />
+    <ProjectReference Include="..\KubeUI.Features.Resources\KubeUI.Features.Resources.csproj" />
+    <ProjectReference Include="..\KubeUI.Kubernetes\KubeUI.Kubernetes.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**\*.svg" />
+    <AdditionalFiles Include="Assets\Resources*.json" />
+    <Watch Include="Assets\Resources*.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Irihi.Lingua" />
+    <PackageReference Include="Avalonia.AvaloniaEdit" />
+    <PackageReference Include="Avalonia.Markup.Declarative" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Dock.Model.Mvvm" />
+    <PackageReference Include="DynamicData" />
+    <PackageReference Include="FluentAvaloniaUI" />
+    <PackageReference Include="FluentIcons.Avalonia" />
+    <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia.Fluent" />
+    <PackageReference Include="Helm.NET" />
+    <PackageReference Include="NuGet.Versioning" />
+    <PackageReference Include="ServiceScan.SourceGenerator" PrivateAssets="all" />
+    <PackageReference Include="System.Reactive" />
+    <PackageReference Include="SvcSystems.Avalonia.DynamicTableView" />
+    <PackageReference Include="Xaml.Behaviors.Avalonia" />
+    <PackageReference Include="YamlDotNet" />
+  </ItemGroup>
+</Project>

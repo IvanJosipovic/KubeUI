@@ -12,21 +12,20 @@
     <PublishReadyToRunComposite>false</PublishReadyToRunComposite>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <EnableCompressionInSingleFile>false</EnableCompressionInSingleFile>
-    <PackageIcon>..\KubeUI.Avalonia\Assets\icon.ico</PackageIcon>
-    <ApplicationIcon>..\KubeUI.Avalonia\Assets\icon.ico</ApplicationIcon>
+    <PackageIcon>..\KubeUI.Foundation\Assets\icon.ico</PackageIcon>
+    <ApplicationIcon>..\KubeUI.Foundation\Assets\icon.ico</ApplicationIcon>
     <DebugType>embedded</DebugType>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia.Desktop" Version="12.1.4" />
-    <PackageReference Include="ModelContextProtocol.AspNetCore" Version="2.3.0" />
-    <PackageReference Include="NReco.Logging.File" Version="1.4.0" />
-    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.20.1" />
-    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.20.1" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.20.1" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.Process" Version="1.20.1-rc.1" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.20.1" />
-    <PackageReference Include="OpenTelemetry.Resources.OperatingSystem" Version="1.20.1-beta.1" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="NReco.Logging.File" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Process" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
+    <PackageReference Include="OpenTelemetry.Resources.OperatingSystem" />
   </ItemGroup>
 
   <ItemGroup>
@@ -36,7 +35,7 @@
   <ItemGroup Condition="'$(Configuration)' == 'Release'">
     <TrimmerRootAssembly Include="KubernetesClient" /> <!-- Reflection-based YAML serialization inspects Kubernetes API models. -->
     <!-- Whole-assembly roots increase bundle size; each item retains the named reflection-based runtime feature. -->
-    <TrimmerRootAssembly Include="Xaml.Behaviors.Interactivity" /> <!-- Pod log editor EventTriggerBehavior and CallMethodAction. -->
+    <TrimmerRootAssembly Include="Xaml.Behaviors.Interactivity" /> <!-- Helm lifecycle EventTriggerBehavior resolves event members dynamically. -->
     <TrimmerRootAssembly Include="JsonPathLINQ" /> <!-- Kubernetes JSONPath resource queries. -->
     <TrimmerRootAssembly Include="HanumanInstitute.MvvmDialogs.Avalonia" /> <!-- Runtime Avalonia dialog/view resolution. -->
     <TrimmerRootAssembly Include="Dock.Avalonia" /> <!-- Docking default templates and runtime view creation. -->
@@ -44,16 +43,15 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)' == 'Debug'">
-    <PackageReference Include="Declarative.Avalonia.AgentTools" Version="12.1.1" />
+    <PackageReference Include="Declarative.Avalonia.AgentTools" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\KubeUI.Avalonia\KubeUI.Avalonia.csproj" />
-    <ProjectReference Include="..\KubeUI.Kubernetes\KubeUI.Kubernetes.csproj" />
+    <ProjectReference Include="..\KubeUI.App\KubeUI.App.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="KubeUI.Avalonia.Tests" />
+    <InternalsVisibleTo Include="KubeUI.App.Tests" />
     <InternalsVisibleTo Include="KubeUI.Benchmarks" />
   </ItemGroup>
 

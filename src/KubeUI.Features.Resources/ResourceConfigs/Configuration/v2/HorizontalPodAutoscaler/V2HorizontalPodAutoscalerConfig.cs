@@ -1,0 +1,53 @@
+using k8s.Models;
+
+namespace KubeUI.Features.Resources.Configuration.v2.HorizontalPodAutoscaler;
+
+public sealed partial class V2HorizontalPodAutoscalerConfig : ResourceConfig<V2HorizontalPodAutoscaler>
+{
+    public V2HorizontalPodAutoscalerConfig(IServiceProvider serviceProvider)
+        : base(serviceProvider)
+    {
+    }
+    public override bool IsNamespaced => true;
+    public override NavigationPlacement Navigation => NavigationPlacement.InSection(NavigationSections.ConfigurationId);
+    public override int Order => 4;
+
+    protected override IList<IResourceListColumn> CreateDefaultColumns()
+    {
+        return [
+            NameColumn(SortDirection.Ascending),
+            NamespaceColumn(),
+            new ResourceListColumn<V2HorizontalPodAutoscaler, int>()
+            {
+                Key = "min-pods",
+                Name = ResourcesLanguageManager.Instance.V2HorizontalPodAutoscalerConfig_Min_Pods.CurrentValue()!,
+                Field = x => x.Spec.MinReplicas ?? 0,
+                WidthMode = DynamicTableViewWidthMode.Header
+            },
+            new ResourceListColumn<V2HorizontalPodAutoscaler, int>()
+            {
+                Key = "max-pods",
+                Name = ResourcesLanguageManager.Instance.V2HorizontalPodAutoscalerConfig_Max_Pods.CurrentValue()!,
+                Field = x => x.Spec.MaxReplicas,
+                WidthMode = DynamicTableViewWidthMode.Header
+            },
+            new ResourceListColumn<V2HorizontalPodAutoscaler, int>()
+            {
+                Key = "replica",
+                Name = ResourcesLanguageManager.Instance.V2HorizontalPodAutoscalerConfig_Replica.CurrentValue()!,
+                Field = x => x.Status.CurrentReplicas ?? 0,
+                WidthMode = DynamicTableViewWidthMode.Header
+            },
+            AgeColumn(),
+            new ResourceListColumn<V2HorizontalPodAutoscaler, string>()
+            {
+                Key = "conditions",
+                Name = ResourcesLanguageManager.Instance.V2HorizontalPodAutoscalerConfig_Conditions.CurrentValue()!,
+                Field = x => x.Status.Conditions?.FirstOrDefault(y => y.Status == "True")?.Type ?? "",
+                WidthMode = DynamicTableViewWidthMode.Header
+            },
+        ];
+    }
+
+    public override Control[] Properties(V2HorizontalPodAutoscaler resource) => [new PropertiesView()];
+}

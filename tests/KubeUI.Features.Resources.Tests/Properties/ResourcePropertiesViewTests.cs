@@ -1,0 +1,359 @@
+using Avalonia.Controls;
+using Avalonia.Headless.XUnit;
+using Avalonia.VisualTree;
+using k8s.Models;
+using KubeUI.Features.Resources.Metrics.Controls;
+using KubeUI.Features.Resources.Properties;
+using KubeUI.Features.Resources.Properties.Controls;
+using LiveChartsCore.Defaults;
+using Shouldly;
+
+
+namespace KubeUI.Features.Resources.Tests.Properties;
+
+public sealed class ResourcePropertiesViewTests
+{
+    [AvaloniaFact]
+    public async Task reattached_view_observes_later_resource_changes()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        using var viewModel = Application.Current.GetRequiredTestService<ResourcePropertiesViewModel<V1Pod>>();
+        viewModel.Initialize(workspace, new V1Pod { Metadata = new V1ObjectMeta { Name = "first" } });
+        var view = new ResourcePropertiesView<V1Pod> { DataContext = viewModel };
+        using var window = Application.Current.CreateTestWindow(content: view);
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync();
+        window.Content = null;
+        window.Content = view;
+        await TestApplicationExtensions.WaitForUiAsync();
+        viewModel.ShowResource(workspace, new V1Pod { Metadata = new V1ObjectMeta { Name = "second" } });
+        await TestApplicationExtensions.WaitForUiAsync();
+        view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>()
+            .ShouldContain(item => item.Key == ResourcesLanguageManager.Instance.ResourcePropertiesView_Name.CurrentValue()! && Equals(item.Value, "second"));
+    }
+
+    [AvaloniaFact]
+    public async Task disposing_properties_view_model_disposes_nested_metrics_tabs()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        using var viewModel = Application.Current.GetRequiredTestService<ResourcePropertiesViewModel<V1Pod>>();
+        viewModel.Initialize(workspace, new V1Pod
+        {
+            Metadata = new V1ObjectMeta { Name = "pod-1", NamespaceProperty = "default" },
+            Spec = new V1PodSpec
+            {
+                Containers = [new V1Container { Name = "app", Image = "example/app:1" }],
+            },
+        });
+        var view = new ResourcePropertiesView<V1Pod> { DataContext = viewModel };
+        using var window = Application.Current.CreateTestWindow(content: view);
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
+
+        var metricsControls = view.GetVisualDescendants().OfType<MetricsControl>().ToArray();
+        metricsControls.Length.ShouldBeGreaterThan(1);
+        var panels = new List<MetricPanelViewModel>();
+        foreach (var metricsControl in metricsControls)
+        {
+            var panel = new MetricPanelViewModel { Title = "CPU" };
+            panel.MergeSeries([new MetricSeriesSnapshot("Usage", [new DateTimePoint(DateTime.UtcNow, 0.1)])]);
+            var tab = new MetricTabViewModel { Title = "CPU" };
+            tab.Panels.Add(panel);
+            metricsControl.Tabs.Add(tab);
+            panels.Add(panel);
+        }
+
+        viewModel.Dispose();
+        await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
+
+        foreach (var metricsControl in metricsControls)
+        {
+            metricsControl.Tabs.ShouldBeEmpty();
+        }
+
+        foreach (var panel in panels)
+        {
+            panel.Series.ShouldBeEmpty();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task namespaced_resource_shows_namespace_property_item()
+    {
+        var services = Application.Current.GetTestServices();
+        var workspace = await Application.Current.CreateClusterAsync();
+        var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
+        viewModel.Initialize(workspace, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "pod-1",
+                NamespaceProperty = "default",
+            }
+        });
+
+        var view = new ResourcePropertiesView<V1Pod>
+        {
+            DataContext = viewModel
+        };
+
+        var window = new Window
+        {
+            Content = view
+        };
+
+        try
+        {
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
+
+            var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
+
+            items.Any(x => x.Key == ResourcesLanguageManager.Instance.ResourcePropertiesView_Namespace.CurrentValue()!).ShouldBeTrue();
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task resource_properties_view_renders_leaf_actions_and_submenu_flyouts()
+    {
+        var services = Application.Current.GetTestServices();
+        var workspace = await Application.Current.CreateClusterAsync();
+        var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
+        viewModel.Initialize(workspace, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "pod-1",
+                NamespaceProperty = "default",
+            },
+            Spec = new V1PodSpec
+            {
+                Containers =
+                [
+                    new V1Container
+                    {
+                        Name = "app",
+                        Image = "example/app:1",
+                    }
+                ]
+            }
+        });
+
+        var view = new ResourcePropertiesView<V1Pod>
+        {
+            DataContext = viewModel
+        };
+
+        var window = new Window
+        {
+            Content = view
+        };
+
+        try
+        {
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
+
+            var buttons = view.FindControl<StackPanel>("PART_Actions")!.Children.OfType<Button>().ToList();
+
+            viewModel.Actions.Single(action => action.Title == "View").ShowInPropertiesView.ShouldBeFalse();
+            buttons.Any(button => Equals(ToolTip.GetTip(button), "View")).ShouldBeFalse();
+            buttons.Any(button => button.Command != null && button.Flyout == null).ShouldBeTrue();
+            var submenus = buttons.Select(button => button.Flyout).OfType<MenuFlyout>().ToList();
+            submenus.Count.ShouldBeGreaterThan(1);
+            var submenu = submenus[0];
+            var submenuItems = submenu.Items.OfType<MenuItem>().ToList();
+            submenuItems.ShouldNotBeEmpty();
+            submenuItems.Any(item => item.Items.OfType<MenuItem>().Any()).ShouldBeTrue();
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task cluster_scoped_resource_hides_namespace_property_item()
+    {
+        var services = Application.Current.GetTestServices();
+        var workspace = await Application.Current.CreateClusterAsync();
+        var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Node>>();
+        viewModel.Initialize(workspace, new V1Node
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "node-1",
+                NamespaceProperty = "default",
+            }
+        });
+
+        var view = new ResourcePropertiesView<V1Node>
+        {
+            DataContext = viewModel
+        };
+
+        var window = new Window
+        {
+            Content = view
+        };
+
+        try
+        {
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
+
+            var items = view.FindControl<StackPanel>("PART_Items")!.Children.OfType<PropertyItem>().ToList();
+
+            items.Any(x => x.Key == ResourcesLanguageManager.Instance.ResourcePropertiesView_Namespace.CurrentValue()!).ShouldBeFalse();
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task pod_properties_view_shows_ephemeral_containers_section_when_present()
+    {
+        var pod = new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "pod-1",
+                NamespaceProperty = "default",
+            },
+            Spec = new V1PodSpec
+            {
+                EphemeralContainers =
+                [
+                    new V1EphemeralContainer
+                    {
+                        Name = "debug",
+                        Image = "example.com/debug:1",
+                    }
+                ],
+            },
+        };
+
+        var view = new Resources.Workloads.v1.Pod.PropertiesView
+        {
+            DataContext = pod,
+        };
+
+        var window = new Window
+        {
+            Content = view,
+        };
+
+        try
+        {
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
+            await TestApplicationExtensions.WaitForUiAsync();
+
+            var section = view.GetVisualDescendants()
+                .OfType<ExpandableSection>()
+                .Single(x => Equals(x.Header, ResourcesLanguageManager.Instance.PodPropertiesView_EphemeralContainers.CurrentValue()!));
+
+            section.IsVisible.ShouldBeTrue();
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task resource_updates_raise_object_changed_even_for_same_instance()
+    {
+        var services = Application.Current.GetTestServices();
+        var workspace = await Application.Current.CreateClusterAsync();
+        await workspace.Runtime.SeedResource<V1Pod>(true);
+        var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
+        var pod = new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "pod-1",
+                NamespaceProperty = "default",
+            },
+            Spec = new V1PodSpec
+            {
+                Containers = [new V1Container { Name = "app", Image = "busybox:1.36" }],
+            },
+        };
+
+        viewModel.Initialize(workspace, pod);
+
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        await TestApplicationExtensions.WaitForUiAsync();
+        await TestWait.UntilAsync(
+            () => workspace.Runtime.GetResource<V1Pod>("default", "pod-1") is not null,
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        pod.Metadata.Labels = new Dictionary<string, string>
+        {
+            ["updated"] = "true",
+        };
+
+        await workspace.Runtime.AddOrUpdateResource(pod);
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        await TestWait.UntilAsync(
+            () => workspace.Runtime.GetResource<V1Pod>("default", "pod-1")?.Metadata?.Labels?.TryGetValue("updated", out var value) == true
+                && value == "true",
+            TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        workspace.Runtime.GetResource<V1Pod>("default", "pod-1")!.Metadata.Labels.ShouldContainKeyAndValue("updated", "true");
+    }
+
+    [AvaloniaFact]
+    public async Task detached_resource_properties_view_does_not_throw_when_view_model_changes()
+    {
+        var services = Application.Current.GetTestServices();
+        var workspace = await Application.Current.CreateClusterAsync();
+        var viewModel = services.GetRequiredService<ResourcePropertiesViewModel<V1Pod>>();
+        viewModel.Initialize(workspace, new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "pod-1",
+                NamespaceProperty = "default",
+            }
+        });
+
+        var view = new ResourcePropertiesView<V1Pod>
+        {
+            DataContext = viewModel,
+        };
+
+        var window = new Window
+        {
+            Content = view
+        };
+
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        window.Content = null;
+        window.Close();
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        viewModel.Object = new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = "pod-2",
+                NamespaceProperty = "default",
+            }
+        };
+
+        await TestApplicationExtensions.WaitForUiAsync();
+    }
+}

@@ -1,7 +1,7 @@
-using KubeUI.Kubernetes.Serialization;
 using System.Reactive.Concurrency;
 using k8s;
 using k8s.KubeConfigModels;
+using KubeUI.Kubernetes.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
@@ -14,7 +14,8 @@ public class ClusterManagerTests
     public async Task LoadClustersAsync_treats_a_missing_kubeconfig_collection_as_empty()
     {
         var dispatcher = new RecordingThreadDispatcher();
-        var kubeConfigPath = Path.Combine(Path.GetTempPath(), $"kubeui-{Guid.NewGuid():N}.config");
+        using var directory = new TemporaryDirectory();
+        var kubeConfigPath = Path.Combine(directory.Path, "kubeconfig");
         await using var services = KubernetesTestServiceProvider.Build(new NullKubeConfigSettingsStore(), collection =>
         {
             collection.AddSingleton<IThreadDispatcher>(dispatcher);
@@ -39,7 +40,8 @@ public class ClusterManagerTests
     public async Task LoadFromConfig_MarshalsClusterAdditionsThroughDispatcher()
     {
         var dispatcher = new RecordingThreadDispatcher();
-        var kubeConfigPath = Path.Combine(Path.GetTempPath(), $"kubeui-{Guid.NewGuid():N}.config");
+        using var directory = new TemporaryDirectory();
+        var kubeConfigPath = Path.Combine(directory.Path, "kubeconfig");
 
         await using var services = KubernetesTestServiceProvider.Build(new KubernetesTestSettingsStore(kubeConfigPath), collection =>
         {
@@ -84,7 +86,8 @@ public class ClusterManagerTests
     public async Task ImportIntoKubeConfig_merges_config_into_default_kubeconfig()
     {
         var dispatcher = new RecordingThreadDispatcher();
-        var kubeConfigPath = Path.Combine(Path.GetTempPath(), $"kubeui-{Guid.NewGuid():N}.config");
+        using var directory = new TemporaryDirectory();
+        var kubeConfigPath = Path.Combine(directory.Path, "kubeconfig");
         await using var services = KubernetesTestServiceProvider.Build(new KubernetesTestSettingsStore(kubeConfigPath), collection =>
         {
             collection.AddSingleton<IThreadDispatcher>(dispatcher);
@@ -130,7 +133,8 @@ public class ClusterManagerTests
     public async Task RemoveCluster_uses_context_name_when_cluster_name_differs()
     {
         var dispatcher = new RecordingThreadDispatcher();
-        var kubeConfigPath = Path.Combine(Path.GetTempPath(), $"kubeui-{Guid.NewGuid():N}.config");
+        using var directory = new TemporaryDirectory();
+        var kubeConfigPath = Path.Combine(directory.Path, "kubeconfig");
         await using var services = KubernetesTestServiceProvider.Build(new KubernetesTestSettingsStore(kubeConfigPath), collection =>
         {
             collection.AddSingleton<IThreadDispatcher>(dispatcher);
@@ -202,7 +206,7 @@ public class ClusterManagerTests
 
         File.Delete(discoveredPath);
 
-        await KubeUI.Testing.Utilities.TestWait.UntilAsync(
+        await TestWait.UntilAsync(
             () => scope.Manager.GetCluster("dev-context") is null,
             TimeSpan.FromSeconds(3), cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: scope.Dispatcher.Drain);

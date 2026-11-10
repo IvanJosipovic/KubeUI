@@ -1,0 +1,232 @@
+using System.Globalization;
+using Avalonia.Controls;
+using Avalonia.Controls.Shapes;
+using Avalonia.Headless.XUnit;
+using Avalonia.Media;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
+using k8s.Models;
+using KubeUI.Controls.Converters;
+using Shouldly;
+
+namespace KubeUI.Features.Resources.Tests.Workloads.v1.Pod;
+
+public sealed class PodContainerCellTests
+{
+    [AvaloniaFact]
+    public async Task container_status_items_have_no_outer_margin_and_keep_dot_spacing()
+    {
+        var view = new PodContainerCellView { DataContext = CreateContainerPod("pod", "Running") };
+        var window = new Window { Content = view };
+
+        try
+        {
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
+
+            view.GetVisualDescendants().OfType<ItemsControl>().Single().Margin.ShouldBe(default(Thickness));
+            view.GetVisualDescendants().OfType<Ellipse>().Single().Margin.ShouldBe(new Thickness(0, 0, 4, 0));
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task pod_container_cell_refreshes_when_data_context_is_replaced()
+    {
+        var pod = CreateContainerPod("same-instance-container-pod", "Running");
+
+        var cell = new PodContainerCellView { DataContext = pod };
+        var window = new Window { Content = cell };
+
+        try
+        {
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
+            cell.ContainerStatuses.Single().Status.ShouldBe("Running");
+
+            cell.DataContext = CreateContainerPod("replacement-container-pod", "ImagePullBackOff");
+
+            await TestWait.UntilAsync(
+                () => cell.ContainerStatuses.Single().Status == "ImagePullBackOff",
+                5000,
+                TestContext.Current.CancellationToken,
+                () => Dispatcher.UIThread.RunJobs());
+
+            cell.ContainerStatuses.Single().Status.ShouldBe("ImagePullBackOff");
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    private static V1Pod CreateContainerPod(string name, string status, string? uid = null)
+    {
+        return new V1Pod
+        {
+            Metadata = new V1ObjectMeta
+            {
+                Name = name,
+                NamespaceProperty = "default",
+                Uid = uid,
+            },
+            Spec = new V1PodSpec
+            {
+                Containers = [new V1Container { Name = "app", Image = "app:latest" }],
+            },
+            Status = new V1PodStatus
+            {
+                ContainerStatuses =
+                [
+                    new V1ContainerStatus
+                    {
+                        Name = "app",
+                        State = status == "Running"
+                            ? new V1ContainerState { Running = new V1ContainerStateRunning() }
+                            : new V1ContainerState { Waiting = new V1ContainerStateWaiting { Reason = status } },
+                    },
+                ],
+            },
+        };
+    }
+
+    [AvaloniaFact]
+    public void container_status_brush_resolves_from_application_theme_resources()
+    {
+        var brush = ContainerStatusToBrushConverter.Instance().Convert(
+            new V1ContainerStatus { Name = "web", Ready = true, Started = true },
+            typeof(IBrush),
+            null,
+            CultureInfo.InvariantCulture);
+
+        brush.ShouldBeAssignableTo<IBrush>();
+    }
+
+    [AvaloniaFact]
+    public async Task Tooltip_viewmodel_contains_type_status_restarts_and_image()
+    {
+        var pod = new V1Pod
+        {
+            Spec = new V1PodSpec
+            {
+                Containers = new List<V1Container>
+                {
+                    new() { Name = "normal1", Image = "normal:image" }
+                },
+                InitContainers = new List<V1Container>
+                {
+                    new() { Name = "init1", Image = "init:image" }
+                },
+                EphemeralContainers = new List<V1EphemeralContainer>
+                {
+                    new() { Name = "ephemeral1", Image = "ephemeral:image" }
+                }
+            },
+            Status = new V1PodStatus
+            {
+                ContainerStatuses = new List<V1ContainerStatus>
+                {
+                    new() { Name = "normal1", Ready = true, Started = true, RestartCount = 2 }
+                },
+                InitContainerStatuses = new List<V1ContainerStatus>
+                {
+                    new() { Name = "init1", Ready = false, Started = false, State = new V1ContainerState { Waiting = new V1ContainerStateWaiting { Reason = "InitWaiting" } }, RestartCount = 0 }
+                },
+                EphemeralContainerStatuses = new List<V1ContainerStatus>
+                {
+                    new() { Name = "ephemeral1", Ready = false, Started = false, State = new V1ContainerState { Waiting = new V1ContainerStateWaiting { Reason = "CreateContainerConfigError", Message = "image will run as root" } }, RestartCount = 0 }
+                }
+            }
+        };
+
+        var view = new PodContainerCellView
+        {
+            DataContext = pod
+        };
+
+        var window = new Window { Content = view };
+        try
+        {
+            window.Show();
+            await TestApplicationExtensions.WaitForUiAsync();
+            await TestApplicationExtensions.WaitForUiAsync();
+
+            var items = view.ContainerStatuses;
+            items.ShouldNotBeNull();
+            items.Count.ShouldBe(3);
+
+            var normal = items.First(i => i.Name == "normal1");
+            normal.Type.ShouldBe("Normal");
+            normal.Status.ShouldBe("Running");
+            normal.Restarts.ShouldBe(2);
+            normal.Image.ShouldBe("normal:image");
+
+            var init = items.First(i => i.Name == "init1");
+            init.Type.ShouldBe("Init");
+            init.Status.ShouldBe("InitWaiting");
+            init.Restarts.ShouldBe(0);
+            init.Image.ShouldBe("init:image");
+
+            var eph = items.First(i => i.Name == "ephemeral1");
+            eph.Type.ShouldBe("Ephemeral");
+            eph.Status.ShouldBe("CreateContainerConfigError");
+            eph.Restarts.ShouldBe(0);
+            eph.Image.ShouldBe("ephemeral:image");
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task refresh_keeps_a_stable_container_statuses_collection_instance()
+    {
+        var firstPod = new V1Pod
+        {
+            Status = new V1PodStatus
+            {
+                ContainerStatuses = new List<V1ContainerStatus>
+                {
+                    new() { Name = "normal1", Ready = true, Started = true, RestartCount = 1 }
+                }
+            }
+        };
+
+        var secondPod = new V1Pod
+        {
+            Status = new V1PodStatus
+            {
+                ContainerStatuses = new List<V1ContainerStatus>
+                {
+                    new() { Name = "normal2", Ready = false, Started = false, RestartCount = 0 }
+                }
+            }
+        };
+
+        var view = new PodContainerCellView
+        {
+            DataContext = firstPod
+        };
+
+        var window = new Window { Content = view };
+        window.Show();
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        var statusesBeforeRefresh = view.ContainerStatuses;
+        statusesBeforeRefresh.ShouldNotBeNull();
+
+        view.DataContext = secondPod;
+        await TestApplicationExtensions.WaitForUiAsync();
+
+        view.ContainerStatuses.ShouldBeSameAs(statusesBeforeRefresh);
+        view.ContainerStatuses.Count.ShouldBe(1);
+        view.ContainerStatuses[0].Name.ShouldBe("normal2");
+
+        window.Content = null;
+        window.Close();
+    }
+}

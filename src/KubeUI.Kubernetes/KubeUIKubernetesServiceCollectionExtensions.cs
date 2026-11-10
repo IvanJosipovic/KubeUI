@@ -3,8 +3,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using k8s;
 using KubeUI.Kubernetes.Serialization;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace KubeUI.Kubernetes;
 
@@ -32,13 +30,17 @@ public static partial class KubeUIKubernetesServiceCollectionExtensions
         services.AddSingleton<KubernetesModelCatalog>();
         services.AddTransient<ClusterModelCatalog>();
         services.AddSingleton<IKubernetesYamlSerializer>(_ => new KubernetesYamlSerializer(yamlAllowReflection));
-        services.AddSingleton<IAksClusterService, AksClusterService>();
-        services.AddSingleton<IHelmClientFactory, HelmClientFactory>();
-        services.AddSingleton<IHelmService, HelmService>();
         services.AddTransient<Cluster>();
         services.AddTransient<IClusterRuntime>(sp => sp.GetRequiredService<Cluster>());
         services.AddSingleton<ClusterManager>();
         services.AddSingleton<IClusterRuntimeCatalog>(sp => sp.GetRequiredService<ClusterManager>());
+        services.AddTransient<IMetricsService, MetricsService>();
+        services.AddTransient<IPrometheusQueryClient, PrometheusQueryClient>();
+        services.AddSingleton<IPrometheusProvider, OperatorPrometheusProvider>();
+        services.AddSingleton<IPrometheusProvider, OpenShiftPrometheusProvider>();
+        services.AddSingleton<IPrometheusProvider, ManualPrometheusProvider>();
+        services.AddSingleton<IPrometheusProvider, ExternalPrometheusProvider>();
+        services.AddSingleton<IPrometheusProvider, AzureMonitorPrometheusProvider>();
         services.AddHostedService<ClusterManagerStartupService>();
         services.AddOptions<ClusterAuthorizationOptions>();
         return services;
