@@ -28,7 +28,9 @@ public sealed class FlowListViewModelTests
         ]);
 
         await TestWait.UntilAsync(
-            () => viewModel.TableSource.Items.Cast<FlowViewModel>().Count() == 2,
+            () => viewModel.TableSource.Items.Cast<FlowViewModel>()
+                .Select(static flow => flow.Uuid)
+                .SequenceEqual(["selected-flow", "other-flow"]),
             timeoutMs: 5_000,
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
@@ -38,9 +40,13 @@ public sealed class FlowListViewModelTests
         viewModel.SelectionModel.Clear();
         viewModel.RestoreSelectionState();
 
-        viewModel.SelectionModel.SelectedItems.Cast<FlowViewModel>()
-            .Select(static flow => flow.Uuid)
-            .ShouldBe(["selected-flow"]);
+        await TestWait.UntilAsync(
+            () => viewModel.SelectionModel.SelectedItems.Cast<FlowViewModel>()
+                .Select(static flow => flow.Uuid)
+                .SequenceEqual(["selected-flow"]),
+            timeoutMs: 5_000,
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
     }
 
     [AvaloniaFact]

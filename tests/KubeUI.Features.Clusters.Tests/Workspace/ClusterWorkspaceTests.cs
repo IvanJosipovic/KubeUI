@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Diagnostics;
-using System.Text;
 using System.Text.Json.Nodes;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
@@ -103,7 +102,11 @@ public class ClusterWorkspaceTests
             {
                 Type = KubernetesBackend.Fake,
                 InitialResources = [crd],
-                HttpHandlerFactory = () => [new DiscoveryVerbFilterHandler(crd.Spec.Group, crd.Spec.Names.Plural, missingVerb)],
+                HttpHandlerFactory = () =>
+                [
+                    new DiscoveryResponseHandler(discovery =>
+                        RemoveDiscoveryVerb(discovery, crd.Spec.Group, crd.Spec.Names.Plural, missingVerb)),
+                ],
             },
             TestContext.Current.CancellationToken);
         using var workspace = CreateWorkspace(testCluster, services);
@@ -1085,59 +1088,49 @@ public class ClusterWorkspaceTests
             ?? throw new InvalidOperationException("Container does not expose InformerRegistrations."));
     }
 
-    private sealed class DiscoveryVerbFilterHandler(string groupName, string pluralName, string missingVerb) : DelegatingHandler
+    private static void RemoveDiscoveryVerb(
+        JsonObject discovery,
+        string groupName,
+        string pluralName,
+        string missingVerb)
     {
-        protected override async Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request,
-            CancellationToken cancellationToken)
+        if (discovery["items"] is not JsonArray groups)
         {
-            var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            if (request.RequestUri?.AbsolutePath != "/apis" || response.StatusCode != System.Net.HttpStatusCode.OK)
+            return;
+        }
+
+        foreach (var group in groups.OfType<JsonObject>())
+        {
+            if (!string.Equals(group["metadata"]?["name"]?.GetValue<string>(), groupName, StringComparison.Ordinal)
+                || group["versions"] is not JsonArray versions)
             {
-                return response;
+                continue;
             }
 
-            var discovery = JsonNode.Parse(await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false))!.AsObject();
-            if (discovery["items"] is JsonArray groups)
+            foreach (var version in versions.OfType<JsonObject>())
             {
-                foreach (var group in groups.OfType<JsonObject>())
+                if (version["resources"] is not JsonArray resources)
                 {
-                    if (!string.Equals(group["metadata"]?["name"]?.GetValue<string>(), groupName, StringComparison.Ordinal)
-                        || group["versions"] is not JsonArray versions)
+                    continue;
+                }
+
+                foreach (var resource in resources.OfType<JsonObject>())
+                {
+                    if (!string.Equals(resource["resource"]?.GetValue<string>(), pluralName, StringComparison.Ordinal)
+                        || resource["verbs"] is not JsonArray verbs)
                     {
                         continue;
                     }
 
-                    foreach (var version in versions.OfType<JsonObject>())
+                    for (var index = verbs.Count - 1; index >= 0; index--)
                     {
-                        if (version["resources"] is not JsonArray resources)
+                        if (string.Equals(verbs[index]?.GetValue<string>(), missingVerb, StringComparison.Ordinal))
                         {
-                            continue;
-                        }
-
-                        foreach (var resource in resources.OfType<JsonObject>())
-                        {
-                            if (!string.Equals(resource["resource"]?.GetValue<string>(), pluralName, StringComparison.Ordinal)
-                                || resource["verbs"] is not JsonArray verbs)
-                            {
-                                continue;
-                            }
-
-                            for (var index = verbs.Count - 1; index >= 0; index--)
-                            {
-                                if (string.Equals(verbs[index]?.GetValue<string>(), missingVerb, StringComparison.Ordinal))
-                                {
-                                    verbs.RemoveAt(index);
-                                }
-                            }
+                            verbs.RemoveAt(index);
                         }
                     }
                 }
             }
-
-            response.Content.Dispose();
-            response.Content = new StringContent(discovery.ToJsonString(), Encoding.UTF8, "application/json");
-            return response;
         }
     }
 }

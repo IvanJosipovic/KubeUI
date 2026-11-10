@@ -15,6 +15,7 @@ internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
     private readonly Lock _gate = new();
     private readonly Dictionary<string, ObservedCustomResourceDefinition> _observedCustomResourceDefinitions = new(StringComparer.Ordinal);
     private readonly Dictionary<string, EstablishedCustomResourceDefinition> _pendingEstablishedCustomResourceDefinitions = new(StringComparer.Ordinal);
+    private readonly List<ImmediateRefreshWaiter> _immediateRefreshWaiters = [];
     private Task? _workerTask;
     private bool _refreshRequested;
     private bool _immediateRefreshRequested;
@@ -88,6 +89,7 @@ internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
         }
 
         _shutdownTokenSource.Cancel();
+        CancelImmediateRefreshWaiters(_shutdownTokenSource.Token);
         requestSignal.TrySetResult();
         if (workerTask is not null)
         {
@@ -106,7 +108,7 @@ internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
     private Task RequestRefresh(bool immediate)
     {
         TaskCompletionSource requestSignal;
-        Task workerTask;
+        TaskCompletionSource? completionSource = null;
         lock (_gate)
         {
             if (_stopping)
@@ -116,19 +118,23 @@ internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
 
             _refreshRequested = true;
             _immediateRefreshRequested |= immediate;
-            _requestVersion++;
+            var requestVersion = ++_requestVersion;
+            if (immediate)
+            {
+                completionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                _immediateRefreshWaiters.Add(new ImmediateRefreshWaiter(requestVersion, completionSource));
+            }
+
             requestSignal = _requestSignal;
             _requestSignal = CreateRequestSignal();
             if (_workerTask is null || _workerTask.IsCompleted)
             {
                 _workerTask = Task.Run(RunWorkerAsync);
             }
-
-            workerTask = _workerTask;
         }
 
         requestSignal.TrySetResult();
-        return workerTask;
+        return completionSource?.Task ?? Task.CompletedTask;
     }
 
     private async Task RunWorkerAsync()
@@ -188,6 +194,8 @@ internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
                 }
 
                 var snapshot = await _refreshAsync(cancellationToken).ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
+                CompleteImmediateRefreshWaiters(requestVersion);
                 if (HasPendingEstablishedDefinitions(snapshot))
                 {
                     await WaitForDiscoveryRetryAsync(cancellationToken).ConfigureAwait(false);
@@ -196,6 +204,7 @@ internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+            CancelImmediateRefreshWaiters(cancellationToken);
         }
         finally
         {
@@ -306,6 +315,49 @@ internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
         }
     }
 
+    private void CompleteImmediateRefreshWaiters(long completedRequestVersion)
+    {
+        List<TaskCompletionSource> completionSources = [];
+        lock (_gate)
+        {
+            for (var index = _immediateRefreshWaiters.Count - 1; index >= 0; index--)
+            {
+                var waiter = _immediateRefreshWaiters[index];
+                if (waiter.RequestVersion > completedRequestVersion)
+                {
+                    continue;
+                }
+
+                completionSources.Add(waiter.CompletionSource);
+                _immediateRefreshWaiters.RemoveAt(index);
+            }
+        }
+
+        foreach (var completionSource in completionSources)
+        {
+            completionSource.TrySetResult();
+        }
+    }
+
+    private void CancelImmediateRefreshWaiters(CancellationToken cancellationToken)
+    {
+        List<TaskCompletionSource> completionSources = [];
+        lock (_gate)
+        {
+            foreach (var waiter in _immediateRefreshWaiters)
+            {
+                completionSources.Add(waiter.CompletionSource);
+            }
+
+            _immediateRefreshWaiters.Clear();
+        }
+
+        foreach (var completionSource in completionSources)
+        {
+            completionSource.TrySetCanceled(cancellationToken);
+        }
+    }
+
     private static bool HasAllServedVersions(
         ApiDiscoverySnapshot snapshot,
         EstablishedCustomResourceDefinition definition)
@@ -349,6 +401,8 @@ internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
             && string.Equals(condition.Status, "True", StringComparison.Ordinal)) == true;
 
     private readonly record struct ObservedCustomResourceDefinition(long? Generation, bool Established);
+
+    private readonly record struct ImmediateRefreshWaiter(long RequestVersion, TaskCompletionSource CompletionSource);
 
     private sealed record EstablishedCustomResourceDefinition(
         string Group,

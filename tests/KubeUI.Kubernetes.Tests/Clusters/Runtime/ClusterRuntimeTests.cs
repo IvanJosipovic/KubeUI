@@ -1,12 +1,13 @@
 namespace KubeUI.Kubernetes.Tests.Clusters.Runtime;
 
-using System.Text;
-using System.Text.Json.Nodes;
+using System.Collections.Concurrent;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
+using System.Text.Json.Nodes;
 using DynamicData;
 using k8s;
 using KubernetesClient.Informer.Client;
+using KubeUI.Testing.Kubernetes.Transport;
 using Shouldly;
 using V1Namespace = k8s.Models.V1Namespace;
 using V1ObjectMeta = k8s.Models.V1ObjectMeta;
@@ -240,7 +241,17 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
             {
                 Type = KubernetesBackend.Fake,
                 InitialResources = [definition],
-                HttpHandlerFactory = () => [new DiscoveryVersionFilterHandler(filterState)],
+                HttpHandlerFactory = () =>
+                [
+                    new DiscoveryResponseHandler(discovery =>
+                    {
+                        if (filterState.ShouldHideVersion())
+                        {
+                            filterState.RemoveVersion(discovery);
+                            filterState.RecordHiddenResponse();
+                        }
+                    }),
+                ],
             },
             cancellationToken);
         var cluster = harness.Cluster;
@@ -312,7 +323,7 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
                 cancellationToken);
             establishedDefinition.Metadata.Generation.ShouldBe(originalGeneration);
 
-            filterState.HideNextVersion();
+            filterState.HideVersion();
             updatedDefinition = establishedDefinition;
             updatedDefinition.Spec.Versions.Add(new k8s.Models.V1CustomResourceDefinitionVersion
             {
@@ -327,14 +338,57 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
             incompleteSnapshot.Resources.ShouldNotContain(resource =>
                 resource.Kind.Group == "kubeui.com" && resource.Kind.ApiVersion == "v2");
 
+            var immediateRefresh = cluster.RefreshApiDiscoveryAsync();
+            await immediateRefresh.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+            filterState.HiddenResponseCount.ShouldBeGreaterThan(1);
+
+            filterState.ShowVersion();
             var refreshedSnapshot = await completeSnapshot.Task.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
             refreshedSnapshot.Resources.ShouldContain(resource =>
                 resource.Kind.Group == "kubeui.com" && resource.Kind.ApiVersion == "v2");
-            filterState.HiddenResponseCount.ShouldBe(1);
         }
         finally
         {
+            filterState.ShowVersion();
             cluster.ApiDiscoverySnapshotRefreshed -= OnSnapshotRefreshed;
+        }
+    }
+
+    [Fact]
+    public async Task ImmediateDiscoveryRefreshWaitsForItsQualifyingPass()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var gateState = new DiscoveryPassGateState();
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig
+            {
+                Type = KubernetesBackend.Fake,
+                HttpHandlerFactory = () => [new DiscoveryPassGateHandler(gateState)],
+            },
+            cancellationToken);
+        var cluster = harness.Cluster;
+        await cluster.Connect();
+
+        var firstPassGate = gateState.BlockNextResponse();
+        var secondPassGate = gateState.BlockNextResponse();
+        var firstRefresh = cluster.RefreshApiDiscoveryAsync();
+        try
+        {
+            await firstPassGate.Started.Task.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+            var secondRefresh = cluster.RefreshApiDiscoveryAsync();
+
+            firstPassGate.Release();
+            await firstRefresh.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+            await secondPassGate.Started.Task.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+            secondRefresh.IsCompleted.ShouldBeFalse();
+
+            secondPassGate.Release();
+            await secondRefresh.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+        }
+        finally
+        {
+            firstPassGate.Release();
+            secondPassGate.Release();
         }
     }
 
@@ -397,14 +451,16 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
 
     private sealed class DiscoveryVersionFilterState(string groupName, string pluralName, string version)
     {
-        private int _hideNextVersion;
+        private int _hideVersion;
         private int _hiddenResponseCount;
 
         public int HiddenResponseCount => Volatile.Read(ref _hiddenResponseCount);
 
-        public void HideNextVersion() => Interlocked.Exchange(ref _hideNextVersion, 1);
+        public void HideVersion() => Volatile.Write(ref _hideVersion, 1);
 
-        public bool TryHideVersion() => Interlocked.Exchange(ref _hideNextVersion, 0) != 0;
+        public void ShowVersion() => Volatile.Write(ref _hideVersion, 0);
+
+        public bool ShouldHideVersion() => Volatile.Read(ref _hideVersion) != 0;
 
         public void RecordHiddenResponse() => Interlocked.Increment(ref _hiddenResponseCount);
 
@@ -443,27 +499,44 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
         }
     }
 
-    private sealed class DiscoveryVersionFilterHandler(DiscoveryVersionFilterState state) : DelegatingHandler
+    private sealed class DiscoveryPassGateState
+    {
+        private readonly ConcurrentQueue<DiscoveryPassGate> _gates = new();
+
+        public DiscoveryPassGate BlockNextResponse()
+        {
+            var gate = new DiscoveryPassGate();
+            _gates.Enqueue(gate);
+            return gate;
+        }
+
+        public bool TryTakeGate(out DiscoveryPassGate gate) => _gates.TryDequeue(out gate);
+    }
+
+    private sealed class DiscoveryPassGate
+    {
+        public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        private TaskCompletionSource Continue { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public void Release() => Continue.TrySetResult();
+
+        public Task WaitAsync(CancellationToken cancellationToken) => Continue.Task.WaitAsync(cancellationToken);
+    }
+
+    private sealed class DiscoveryPassGateHandler(DiscoveryPassGateState state) : DelegatingHandler
     {
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            if (request.RequestUri?.AbsolutePath != "/apis"
-                || !state.TryHideVersion())
+            if (request.RequestUri?.AbsolutePath == "/apis" && state.TryTakeGate(out var gate))
             {
-                return response;
+                gate.Started.TrySetResult();
+                await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
             }
 
-            var content = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-            var discovery = JsonNode.Parse(content)!.AsObject();
-            state.RemoveVersion(discovery);
-            response.Content.Dispose();
-            response.Content = new StringContent(discovery.ToJsonString(), Encoding.UTF8, "application/json");
-            response.Headers.Remove("ETag");
-            state.RecordHiddenResponse();
-            return response;
+            return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
     }
 
