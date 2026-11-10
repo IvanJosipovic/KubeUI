@@ -103,6 +103,11 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
         return Settings.GetClusterSettings(cluster).Namespaces ?? [];
     }
 
+    public ClusterMetricsSettings GetClusterMetricsSettings(IClusterRuntime cluster)
+    {
+        return Settings.GetClusterSettings(cluster).MetricsSettings;
+    }
+
     public virtual void SaveSettings()
     {
         _ = TrySaveSettings();

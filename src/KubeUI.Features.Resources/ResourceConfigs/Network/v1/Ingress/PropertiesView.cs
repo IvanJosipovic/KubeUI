@@ -1,4 +1,5 @@
 using k8s.Models;
+using KubeUI.Features.Resources.Metrics.Controls;
 using KubeUI.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Features.Resources.Network.v1.Ingress;
@@ -10,7 +11,7 @@ public sealed class PropertiesView : ViewBase<V1Ingress>
         ArgumentNullException.ThrowIfNull(vm);
 
         return new StackPanel()
-            .Children(
+            .Children(new MetricsControl { DataContext = vm },
                 new PropertyItem()
                     .Key(ResourcesLanguageManager.Instance.IngressPropertiesView_Ingress_Class.CurrentValue()!)
                     .Value(vm.Spec?.IngressClassName ?? ""),

@@ -1,5 +1,6 @@
 using k8s.Models;
 using KubeUI.Controls.Presentation;
+using KubeUI.Features.Resources.Metrics.Controls;
 using KubeUI.Features.Resources.Properties;
 
 namespace KubeUI.Features.Resources.Core.v1.Node;
@@ -11,7 +12,7 @@ public sealed class PropertiesView : ViewBase<V1Node>
         ArgumentNullException.ThrowIfNull(vm);
 
         return new StackPanel()
-            .Children(
+            .Children(new MetricsControl { DataContext = vm },
                 new PropertyItem()
                     .Key(ResourcesLanguageManager.Instance.NodePropertiesView_Operating_System.CurrentValue()!)
                     .Value(vm.Status?.NodeInfo?.OperatingSystem ?? ""),

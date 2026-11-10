@@ -21,6 +21,10 @@ public sealed partial class ResourcePropertiesViewModel<[DynamicallyAccessedMemb
     private Action<WatchEventType, GroupApiVersionKind, IKubernetesObject<V1ObjectMeta>>? _changeHandler;
     private object? _subscription;
     private long _selectionGeneration;
+    private int _disposeStarted;
+
+    /// <summary>Raised after this view model is permanently discarded.</summary>
+    public event EventHandler? Disposed;
 
     public T? Object
     {
@@ -127,11 +131,18 @@ public sealed partial class ResourcePropertiesViewModel<[DynamicallyAccessedMemb
 
     public void Dispose()
     {
+        if (Interlocked.Exchange(ref _disposeStarted, 1) != 0)
+        {
+            return;
+        }
+
         if (Cluster is not null && _changeHandler is not null)
             Cluster.Runtime.OnChange -= _changeHandler;
         _changeHandler = null;
         _subscription = null;
         Interlocked.Increment(ref _selectionGeneration);
         Cluster = null;
+        Disposed?.Invoke(this, EventArgs.Empty);
+        Disposed = null;
     }
 }

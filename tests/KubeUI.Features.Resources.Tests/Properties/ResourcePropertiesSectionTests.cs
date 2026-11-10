@@ -20,4 +20,41 @@ public sealed class ResourcePropertiesSectionTests
         var content = section.Content.ShouldBeOfType<StackPanel>();
         content.Children.ShouldBe(new Control[] { first, second });
     }
+
+    [AvaloniaFact]
+    public void Create_binds_observable_header_instead_of_showing_binding_adaptor_type()
+    {
+        var section = ResourcePropertiesSection.Create(new ImmediateObservable("Metadata"));
+
+        section.Header.ShouldBe("Metadata");
+    }
+
+    [AvaloniaFact]
+    public void Create_applies_binding_base_header()
+    {
+        var expectedHeader = FoundationLanguageManager.Instance.Shared_Metadata.CurrentValue();
+
+        var section = ResourcePropertiesSection.Create(
+            FoundationLanguageManager.Instance.Shared_Metadata.ToBinding());
+
+        section.Header.ShouldBe(expectedHeader);
+    }
+
+    private sealed class ImmediateObservable(string? value) : IObservable<string?>
+    {
+        public IDisposable Subscribe(IObserver<string?> observer)
+        {
+            observer.OnNext(value);
+            return EmptyDisposable.Instance;
+        }
+    }
+
+    private sealed class EmptyDisposable : IDisposable
+    {
+        public static EmptyDisposable Instance { get; } = new();
+
+        public void Dispose()
+        {
+        }
+    }
 }

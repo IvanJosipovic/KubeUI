@@ -214,6 +214,30 @@ public sealed class HubbleModelTests
 
     [Fact]
     [Obsolete]
+    public void Flow_mapper_includes_kafka_protocol_in_service_map_access_points()
+    {
+        var flow = new Flow
+        {
+            Time = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.UtcNow),
+            Source = new Endpoint { Namespace = "team-a", PodName = "client" },
+            Destination = new Endpoint { Namespace = "team-b", PodName = "broker" },
+            L4 = new Layer4 { TCP = new TCP { SourcePort = 53000, DestinationPort = 9092 } },
+            L7 = new Layer7 { Kafka = new Kafka() },
+        };
+
+        var mappedFlow = new FlowViewModel(flow);
+        mappedFlow.ApplicationProtocol.ShouldBe("Kafka");
+
+        var builder = new ServiceMapGraphBuilder();
+        builder.AddFlow(mappedFlow);
+        var graph = builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a", "team-b"]);
+
+        graph.Nodes.Single(node => node.Name == "broker").AccessPoints
+            .Single().ApplicationProtocols.ShouldBe(["Kafka"]);
+    }
+
+    [Fact]
+    [Obsolete]
     public void Service_map_access_points_use_mapped_destination_port_not_source_port()
     {
         var flow = new Flow
