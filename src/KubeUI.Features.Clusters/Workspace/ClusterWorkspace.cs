@@ -129,6 +129,10 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     /// Raised after a resource config has been permission-evaluated and registered by the workspace.
     /// </summary>
     public event Action<ClusterWorkspace, IClusterResourceConfig>? ResourceConfigProcessed;
+
+    /// <summary>Raised when a custom resource definition is added, changed, or removed.</summary>
+    public event Action<ClusterWorkspace>? CustomResourceDefinitionChanged;
+
     public event Action<ClusterWorkspace, GroupApiVersionKind>? CustomResourceDefinitionRemoved;
 
     private Activity? StartWorkspaceActivity(string activityName, ActivityKind activityKind = ActivityKind.Internal)
@@ -565,6 +569,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             RemoveCustomResourceDefinition(definitionName, crd);
             _customResourceDefinitionRevisions.TryRemove(definitionName, out _);
             _customResourceDefinitionObservedGenerations.TryRemove(definitionName, out _);
+            CustomResourceDefinitionChanged?.Invoke(this);
             return;
         }
 
@@ -581,6 +586,10 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         {
             return;
         }
+
+        // Navigation availability depends on the CRD itself, even when access to
+        // instances of the custom resource is denied.
+        CustomResourceDefinitionChanged?.Invoke(this);
 
         // The generation is recorded here, before the definition is processed, so that a
         // repeated event for the same generation does not start a second processing pass.

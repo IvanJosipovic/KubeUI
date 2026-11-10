@@ -61,6 +61,10 @@ public sealed class HubbleNavigationSectionProvider : INavigationSectionProvider
 
     public NavigationSection Section { get; }
 
+    /// <inheritdoc />
+    public bool IsSectionAvailable(ClusterWorkspace cluster)
+        => cluster.Runtime.IsCiliumInstalled();
+
     public NavigationPlacement DocumentPlacement => NavigationPlacement.InSection(
         Section.Id,
         [new NavigationGroup("hubble", CiliumLanguageManager.Instance.HubbleNavigationSectionProvider_GroupName.CurrentValue()!, 0, null, HubbleIconAssetPath, HubbleIconDarkAssetPath)]);
@@ -82,5 +86,5 @@ public sealed class HubbleNavigationSectionProvider : INavigationSectionProvider
     }
 
     private bool IsAvailable(ClusterWorkspace cluster)
-        => _enabled && cluster.Runtime.Connected;
+        => _enabled && cluster.Runtime.Connected && IsSectionAvailable(cluster);
 }
