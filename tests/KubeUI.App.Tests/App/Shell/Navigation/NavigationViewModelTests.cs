@@ -493,6 +493,7 @@ public class NavigationViewModelTests
             "Network Policies",
             "someString",
             "cilium.io");
+        crd.Spec!.Scope = "Cluster";
         using var workspace = await Application.Current.CreateClusterAsync(config =>
         {
             config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
