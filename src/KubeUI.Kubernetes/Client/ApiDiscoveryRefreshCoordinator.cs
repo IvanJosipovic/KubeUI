@@ -24,6 +24,7 @@ internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
     private int _retryAttempt;
     private TaskCompletionSource _requestSignal = CreateRequestSignal();
 
+    /// <summary>Creates a refresh coordinator tied to one runtime connection lifetime.</summary>
     internal ApiDiscoveryRefreshCoordinator(
         Func<CancellationToken, Task<ApiDiscoverySnapshot?>> refreshAsync,
         CancellationToken connectionCancellationToken)
@@ -32,9 +33,11 @@ internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
         _shutdownTokenSource = CancellationTokenSource.CreateLinkedTokenSource(connectionCancellationToken);
     }
 
+    /// <summary>Requests an immediate refresh and returns when its qualifying pass completes.</summary>
     internal Task RefreshImmediatelyAsync()
         => RequestRefresh(immediate: true);
 
+    /// <summary>Schedules discovery when a CRD is added, deleted, changed, or becomes established.</summary>
     internal void ObserveCustomResourceDefinitionEvent(
         WatchEventType eventType,
         V1CustomResourceDefinition definition)
@@ -73,6 +76,7 @@ internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
         }
     }
 
+    /// <summary>Cancels pending refreshes and waits for the background worker to stop.</summary>
     public async ValueTask DisposeAsync()
     {
         Task? workerTask;
@@ -105,6 +109,7 @@ internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
         _shutdownTokenSource.Dispose();
     }
 
+    /// <summary>Queues a debounced or immediate refresh and tracks immediate callers.</summary>
     private Task RequestRefresh(bool immediate)
     {
         TaskCompletionSource requestSignal;
@@ -137,6 +142,7 @@ internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
         return completionSource?.Task ?? Task.CompletedTask;
     }
 
+    /// <summary>Runs requested discovery passes and retries established CRDs missing from snapshots.</summary>
     private async Task RunWorkerAsync()
     {
         var cancellationToken = _shutdownTokenSource.Token;
@@ -220,6 +226,7 @@ internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
         }
     }
 
+    /// <summary>Deduplicates CRD events while detecting generation and establishment transitions.</summary>
     private bool ShouldRefreshForCustomResourceDefinition(
         WatchEventType eventType,
         V1CustomResourceDefinition definition)
@@ -251,6 +258,7 @@ internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
         return generationChanged || becameEstablished;
     }
 
+    /// <summary>Waits with bounded exponential backoff before retrying pending established CRDs.</summary>
     private async Task WaitForDiscoveryRetryAsync(CancellationToken cancellationToken)
     {
         Task requestSignalTask;
@@ -289,6 +297,7 @@ internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
         }
     }
 
+    /// <summary>Removes CRDs satisfied by a snapshot and reports whether retries remain necessary.</summary>
     private bool HasPendingEstablishedDefinitions(ApiDiscoverySnapshot? snapshot)
     {
         lock (_gate)
@@ -315,6 +324,7 @@ internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
         }
     }
 
+    /// <summary>Completes immediate callers whose requests were covered by a finished refresh pass.</summary>
     private void CompleteImmediateRefreshWaiters(long completedRequestVersion)
     {
         List<TaskCompletionSource> completionSources = [];
@@ -339,6 +349,7 @@ internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
         }
     }
 
+    /// <summary>Cancels all immediate callers when the coordinator shuts down.</summary>
     private void CancelImmediateRefreshWaiters(CancellationToken cancellationToken)
     {
         List<TaskCompletionSource> completionSources = [];
@@ -358,6 +369,7 @@ internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
         }
     }
 
+    /// <summary>Checks whether discovery contains every served version of an established CRD.</summary>
     private static bool HasAllServedVersions(
         ApiDiscoverySnapshot snapshot,
         EstablishedCustomResourceDefinition definition)
@@ -367,6 +379,7 @@ internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
             && string.Equals(resource.Kind.PluralName, definition.PluralName, StringComparison.Ordinal)
             && string.Equals(resource.Kind.ApiVersion, version, StringComparison.Ordinal)));
 
+    /// <summary>Extracts the identity and served versions needed to track an established CRD.</summary>
     private static bool TryCreateEstablishedDefinition(
         V1CustomResourceDefinition definition,
         out EstablishedCustomResourceDefinition establishedDefinition)
@@ -395,6 +408,7 @@ internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
         return true;
     }
 
+    /// <summary>Reports whether the CRD status contains an Established=True condition.</summary>
     private static bool IsEstablished(V1CustomResourceDefinition definition)
         => definition.Status?.Conditions?.Any(static condition =>
             string.Equals(condition.Type, "Established", StringComparison.Ordinal)
@@ -410,6 +424,7 @@ internal sealed class ApiDiscoveryRefreshCoordinator : IAsyncDisposable
         string PluralName,
         IReadOnlyList<string> ServedVersions);
 
+    /// <summary>Creates an asynchronously-continuing signal for refresh-worker coordination.</summary>
     private static TaskCompletionSource CreateRequestSignal()
         => new(TaskCreationOptions.RunContinuationsAsynchronously);
 }

@@ -137,6 +137,7 @@ public partial class ResourceListViewModel<[DynamicallyAccessedMembers(Dynamical
         InitializeResource(cluster, GroupApiVersionKind.From<T>());
     }
 
+    /// <summary>Initializes this list for a discovered kind and subscribes to its resource container.</summary>
     public void InitializeResource(ClusterWorkspace cluster, GroupApiVersionKind kind)
     {
         UnsubscribeFromSelectedNamespaces();
@@ -227,6 +228,7 @@ public partial class ResourceListViewModel<[DynamicallyAccessedMembers(Dynamical
             _tableSource.SearchText = SearchQuery;
     }
 
+    /// <summary>Rebuilds table columns when the associated resource configuration changes.</summary>
     private void ResourceConfigOnColumnsChanged(object? sender, EventArgs e)
     {
         Dispatcher.UIThread.Post(() =>
@@ -249,6 +251,7 @@ public partial class ResourceListViewModel<[DynamicallyAccessedMembers(Dynamical
         });
     }
 
+    /// <summary>Creates DynamicTableView columns from the resource configuration's column definitions.</summary>
     private List<DynamicTableViewColumn<T>> CreateDynamicColumns(IList<IResourceListColumn> resourceColumns)
     {
         var columns = new List<DynamicTableViewColumn<T>>(resourceColumns.Count);
@@ -334,6 +337,7 @@ public partial class ResourceListViewModel<[DynamicallyAccessedMembers(Dynamical
             item => item is T resource && namespaces.Contains(resource.Namespace() ?? string.Empty));
     }
 
+    /// <summary>Releases resource, namespace, table, and selection subscriptions owned by the view model.</summary>
     public void Dispose()
     {
         if (ResourceConfig is not null)

@@ -454,6 +454,7 @@ public class NavigationViewModelTests
         FindResourceLinks(node.NavigationItems, providerKind).ShouldContain(link => link.Name == "Restored Managed Resources");
     }
 
+    /// <summary>Verifies canonical and alias links retain shared counts and open the same resource document.</summary>
     [AvaloniaFact]
     public async Task crossplane_aliases_share_zero_counts_and_open_same_resource_document()
     {

@@ -173,6 +173,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         return activity;
     }
 
+    /// <summary>Connects to the cluster, prepares namespaces, and starts runtime discovery.</summary>
     public async Task Connect()
     {
         using var activity = StartClusterActivity(nameof(Connect));
@@ -325,6 +326,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     }
 
+    /// <summary>Stops runtime work, clears seeded resources, and disconnects the Kubernetes client.</summary>
     public async Task Disconnect()
     {
         if (Volatile.Read(ref _disposeStarted) != 0)
@@ -454,6 +456,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     public Task SeedResource<T>(bool waitForReady = false) where T : class, IKubernetesObject<V1ObjectMeta>, new()
         => SeedResource<T>(waitForReady, CancellationToken.None);
 
+    /// <summary>Seeds a typed resource container and optionally waits until its informer is ready.</summary>
     public async Task SeedResource<T>(bool waitForReady, CancellationToken cancellationToken) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         using var activity = StartClusterActivity(nameof(SeedResource) + "<" + typeof(T).Name + ">");
@@ -506,6 +509,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     public Task SeedResource(GroupApiVersionKind kind, bool waitForReady = false)
         => SeedResource(kind, waitForReady, CancellationToken.None);
 
+    /// <summary>Seeds a discovered resource kind using cluster-wide or namespace-scoped access.</summary>
     public async Task SeedResource(GroupApiVersionKind kind, bool waitForReady, CancellationToken cancellationToken)
     {
         if (!ModelCatalog.IsCustomResource(kind))
@@ -597,6 +601,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         }
     }
 
+    /// <summary>Creates and starts a generic informer for one discovered resource endpoint.</summary>
     private ResourceInformer<GenericKubernetesObject> CreateGenericResourceInformer(
         GroupApiVersionKind kind,
         ContainerClass<GenericKubernetesObject> container,
@@ -738,9 +743,11 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         });
     }
 
+    /// <summary>Requests an immediate authenticated API discovery refresh.</summary>
     private Task RefreshApiGroupDiscoveryListAsync()
         => _apiDiscoveryRefreshCoordinator?.RefreshImmediatelyAsync() ?? Task.CompletedTask;
 
+    /// <summary>Refreshes core and grouped discovery, updates the model catalog, and returns the snapshot.</summary>
     private async Task<ApiDiscoverySnapshot?> RefreshApiGroupDiscoveryListCoreAsync(CancellationToken cancellationToken)
     {
         try
@@ -1184,6 +1191,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         Interlocked.Exchange(ref _namespaceSubscription, null)?.Dispose();
     }
 
+    /// <summary>Cancels informer work and waits for all active resource informer tasks to stop.</summary>
     private async Task StopResourceInformersAsync()
     {
         CancellationTokenSource? cancellationTokenSource;
@@ -1284,6 +1292,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         }
     }
 
+    /// <summary>Creates a fresh cancellation lifetime for resource informers after reconnect.</summary>
     private void EnsureResourceInformerCancellationTokenSourceCore()
     {
         if (_resourceInformerCancellationTokenSource is null || _resourceInformerCancellationTokenSource.IsCancellationRequested)

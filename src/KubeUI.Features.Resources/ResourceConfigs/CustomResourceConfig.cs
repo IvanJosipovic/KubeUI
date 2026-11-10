@@ -14,6 +14,7 @@ namespace KubeUI.Features.Resources;
 /// <summary>Configures a dynamically discovered Kubernetes resource from its CRD definition.</summary>
 public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>, IClusterCustomResourceConfig, IClusterCustomResourcePrinterColumnConsumer
 {
+    /// <summary>Stores validated OpenAPI printer-column metadata for later column construction.</summary>
     private readonly record struct PrinterColumnSpec(string Name, string JsonPath, string Type, string? Format);
 
     private readonly Lock _configureLock = new();
@@ -159,6 +160,7 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>, ICl
         };
     }
 
+    /// <summary>Selects the specialized config matching a discovered resource, or the generic fallback.</summary>
     internal static CustomResourceConfig Select(
         ApiDiscoveryResource resource,
         IEnumerable<CustomResourceConfig> configurations)
@@ -409,6 +411,7 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>, ICl
     /// <returns>Additional columns to display for the endpoint.</returns>
     protected virtual IEnumerable<IResourceListColumn> CreateAdditionalColumns(ApiDiscoveryResource resource) => [];
 
+    /// <summary>Builds table columns from CRD and discovery printer-column definitions.</summary>
     private List<IResourceListColumn> CreatePrinterColumns(
         V1CustomResourceDefinition crd,
         IEnumerable<V1CustomResourceColumnDefinition>? definitions)

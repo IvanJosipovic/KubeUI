@@ -40,16 +40,18 @@ public sealed class ApiDiscoverySnapshot
     /// <summary>Builds a complete snapshot from core and grouped discovery responses.</summary>
     /// <param name="core">Core `/api` discovery response.</param>
     /// <param name="groups">Grouped `/apis` discovery response.</param>
+    /// <param name="previousSnapshot">Previous complete snapshot used to retain stale API versions.</param>
     public static ApiDiscoverySnapshot Create(
         V2beta1APIGroupDiscoveryList core,
-        V2beta1APIGroupDiscoveryList groups)
+        V2beta1APIGroupDiscoveryList groups,
+        ApiDiscoverySnapshot? previousSnapshot = null)
     {
         ArgumentNullException.ThrowIfNull(core);
         ArgumentNullException.ThrowIfNull(groups);
 
         var resources = new List<ApiDiscoveryResource>();
-        AddResources(core, resources, requireCoreGroup: true);
-        AddResources(groups, resources, requireCoreGroup: false);
+        AddResources(core, resources, requireCoreGroup: true, previousSnapshot);
+        AddResources(groups, resources, requireCoreGroup: false, previousSnapshot);
 
         var unique = resources
             .DistinctBy(static resource => resource.Kind)
@@ -61,10 +63,12 @@ public sealed class ApiDiscoverySnapshot
         return new ApiDiscoverySnapshot(new ReadOnlyCollection<ApiDiscoveryResource>(unique));
     }
 
+    /// <summary>Adds resources from one discovery response and retains prior entries for stale versions.</summary>
     private static void AddResources(
         V2beta1APIGroupDiscoveryList list,
         ICollection<ApiDiscoveryResource> resources,
-        bool requireCoreGroup)
+        bool requireCoreGroup,
+        ApiDiscoverySnapshot? previousSnapshot)
     {
         foreach (var group in list.items)
         {
@@ -79,6 +83,29 @@ public sealed class ApiDiscoverySnapshot
                 if (string.IsNullOrWhiteSpace(version.version))
                 {
                     continue;
+                }
+
+                if (string.Equals(version.freshness, "Stale", StringComparison.Ordinal)
+                    && previousSnapshot is not null)
+                {
+                    var previousVersionResources = previousSnapshot.Resources
+                        .Where(resource =>
+                            string.Equals(resource.Kind.Group, groupName, StringComparison.Ordinal)
+                            && string.Equals(resource.Kind.ApiVersion, version.version, StringComparison.Ordinal))
+                        .ToArray();
+                    foreach (var previousResource in previousVersionResources)
+                    {
+                        resources.Add(new ApiDiscoveryResource(
+                            previousResource.Kind,
+                            previousResource.IsNamespaced,
+                            "Stale",
+                            previousResource.Verbs));
+                    }
+
+                    if (previousVersionResources.Length > 0)
+                    {
+                        continue;
+                    }
                 }
 
                 foreach (var resource in version.resources)
@@ -116,6 +143,7 @@ public sealed class ApiDiscoverySnapshot
         }
     }
 
+    /// <summary>Ranks a Kubernetes API version by stability, major version, then minor version.</summary>
     private static (int StageRank, int Major, int Minor) GetVersionRank(string version)
     {
         var match = VersionPattern.Match(version);

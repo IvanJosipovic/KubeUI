@@ -228,6 +228,7 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
         }
     }
 
+    /// <summary>Verifies established CRDs trigger retries until all served versions appear.</summary>
     [Fact]
     public async Task EstablishedCrdRetriesDiscoveryWhenServedVersionIsTemporarilyMissing()
     {
@@ -368,6 +369,7 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
             cancellationToken);
         var cluster = harness.Cluster;
         await cluster.Connect();
+        await cluster.RefreshApiDiscoveryAsync().WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
 
         var firstPassGate = gateState.BlockNextResponse();
         var secondPassGate = gateState.BlockNextResponse();
@@ -483,6 +485,7 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
         }
     }
 
+    /// <summary>Tracks a temporarily hidden discovery version and its retry observations.</summary>
     private sealed class DiscoveryVersionFilterState(string groupName, string pluralName, string version)
     {
         private int _hideVersion;
@@ -558,6 +561,7 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
         public Task WaitAsync(CancellationToken cancellationToken) => Continue.Task.WaitAsync(cancellationToken);
     }
 
+    /// <summary>Blocks selected discovery responses so refresh request ordering can be tested.</summary>
     private sealed class DiscoveryPassGateHandler(DiscoveryPassGateState state) : DelegatingHandler
     {
         protected override async Task<HttpResponseMessage> SendAsync(

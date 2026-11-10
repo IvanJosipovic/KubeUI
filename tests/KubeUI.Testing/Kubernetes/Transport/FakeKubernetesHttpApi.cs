@@ -370,6 +370,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         // test harness after the final client has disconnected.
     }
 
+    /// <inheritdoc />
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         _requestUris.Enqueue(request.RequestUri);
@@ -2398,6 +2399,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         return true;
     }
 
+    /// <summary>Registers served API endpoints and resources described by a fake CRD.</summary>
     private void RegisterCustomResourceDefinition(JsonObject resource)
     {
         var definitionName = resource["metadata"]?["name"]?.GetValue<string>();
@@ -2493,6 +2495,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         }
     }
 
+    /// <summary>Removes fake endpoints previously registered for a CRD resource.</summary>
     private void UnregisterCustomResourceDefinition(JsonObject resource)
     {
         var definitionName = resource["metadata"]?["name"]?.GetValue<string>();
@@ -2529,6 +2532,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         }
     }
 
+    /// <summary>Removes endpoint keys associated with one CRD definition name.</summary>
     private bool RemoveCustomResourceDefinitionEndpoints(string definitionName)
     {
         if (!_state.CustomResourceDefinitionKeysByName.Remove(definitionName, out var definitionKeys))
@@ -2545,6 +2549,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         return removed;
     }
 
+    /// <summary>Removes one obsolete endpoint and completes its watchers.</summary>
     private bool RemoveCustomResourceDefinitionEndpoint(string definitionKey)
     {
         var removed = _definitions.TryRemove(definitionKey, out var definition);
@@ -2571,6 +2576,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         return removed;
     }
 
+    /// <summary>Checks whether a stored resource key belongs to the supplied API endpoint.</summary>
     private static bool IsResourceForEndpoint(string resourceKey, GroupApiVersionKind api)
     {
         var parts = resourceKey.Split('/', StringSplitOptions.RemoveEmptyEntries);
@@ -2587,6 +2593,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
             && string.Equals(parts[pluralIndex], api.PluralName, StringComparison.Ordinal);
     }
 
+    /// <summary>Checks whether a watcher collection key belongs to the supplied API endpoint.</summary>
     private static bool IsCollectionForEndpoint(string collectionKey, GroupApiVersionKind api)
     {
         var parts = collectionKey.Split('/', StringSplitOptions.RemoveEmptyEntries);

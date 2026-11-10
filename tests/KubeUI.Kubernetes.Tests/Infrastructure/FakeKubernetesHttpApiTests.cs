@@ -8,6 +8,7 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
 using k8s;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.Kubernetes.Serialization;
 using Shouldly;
 
@@ -131,6 +132,72 @@ public sealed class FakeKubernetesHttpApiTests
         discovery.Snapshot.ShouldBeSameAs(snapshot);
         discovery.Core.ShouldBeSameAs(core);
         discovery.Groups.ShouldBeSameAs(groups);
+    }
+
+    [Fact]
+    public async Task DiscoveryClient_reads_legacy_core_and_grouped_discovery_responses()
+    {
+        using var api = new FakeKubernetesHttpApi();
+        var definition = TestCustomResourceDefinitionFactory.Create("widgets.kubeui.com", "widgets", "value");
+        api.Add(definition);
+        using var handler = new LegacyDiscoveryHandler { InnerHandler = api };
+        using var client = KubernetesClientMaterializer.Create(
+            new KubernetesClientConfiguration { Host = "http://fake-kubernetes" },
+            handler);
+        var discovery = new KubernetesApiDiscoveryClient(client);
+
+        await discovery.RefreshAsync(TestContext.Current.CancellationToken);
+
+        discovery.Snapshot.ShouldNotBeNull().Resources.ShouldContain(resource =>
+            resource.Kind == new GroupApiVersionKind("kubeui.com", "v1beta1", "Test", "widgets"));
+        var requestPaths = api.RequestUris.Select(static uri => uri?.AbsolutePath).ToArray();
+        requestPaths.ShouldContain("/api/v1");
+        requestPaths.ShouldContain("/apis/kubeui.com/v1beta1");
+    }
+
+    /// <summary>Verifies discovery retains cached resources while an API version is reported stale.</summary>
+    [Fact]
+    public async Task DiscoveryClient_retains_resources_when_a_version_becomes_stale()
+    {
+        using var api = new FakeKubernetesHttpApi();
+        var definition = TestCustomResourceDefinitionFactory.Create("widgets.kubeui.com", "widgets", "value");
+        api.Add(definition);
+        var groupedRefreshCount = 0;
+        using var handler = new DiscoveryResponseHandler(discovery =>
+        {
+            if (Interlocked.Increment(ref groupedRefreshCount) != 2
+                || discovery["items"] is not JsonArray groups)
+            {
+                return;
+            }
+
+            var group = groups
+                .OfType<JsonObject>()
+                .FirstOrDefault(item => item["metadata"]?["name"]?.GetValue<string>() == "kubeui.com");
+            var version = group?["versions"]?.AsArray()
+                .OfType<JsonObject>()
+                .FirstOrDefault(item => item["version"]?.GetValue<string>() == "v1beta1");
+            if (version is not null)
+            {
+                version["freshness"] = "Stale";
+                version["resources"] = new JsonArray();
+            }
+        })
+        {
+            InnerHandler = api,
+        };
+        using var client = KubernetesClientMaterializer.Create(
+            new KubernetesClientConfiguration { Host = "http://fake-kubernetes" },
+            handler);
+        var discoveryClient = new KubernetesApiDiscoveryClient(client);
+        var kind = new GroupApiVersionKind("kubeui.com", "v1beta1", "Test", "widgets");
+
+        await discoveryClient.RefreshAsync(TestContext.Current.CancellationToken);
+        await discoveryClient.RefreshAsync(TestContext.Current.CancellationToken);
+
+        discoveryClient.Snapshot.ShouldNotBeNull().Resources
+            .Single(resource => resource.Kind == kind)
+            .Freshness.ShouldBe("Stale");
     }
 
     [Fact]
@@ -1170,6 +1237,7 @@ public sealed class FakeKubernetesHttpApiTests
             TestContext.Current.CancellationToken)).StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
+    /// <summary>Verifies CRD replacement preserves served-version watches and removes obsolete endpoints.</summary>
     [Theory]
     [InlineData("Cluster")]
     [InlineData("Namespaced")]

@@ -163,6 +163,50 @@ public sealed class ApiDiscoverySnapshotTests
         snapshot.PreferredResources[0].Kind.ApiVersion.ShouldBe("v1");
     }
 
+    [Fact]
+    public void Create_retains_previous_resources_for_stale_versions_until_discovery_is_current()
+    {
+        var kind = new GroupApiVersionKind("widgets.example.com", "v1", "Widget", "widgets");
+        var previous = ApiDiscoverySnapshot.Create(
+            new V2beta1APIGroupDiscoveryList { kind = "APIGroupDiscoveryList", items = [] },
+            new V2beta1APIGroupDiscoveryList
+            {
+                kind = "APIGroupDiscoveryList",
+                items = [CreateGroup("widgets.example.com", "v1", CreateResource("widgets", "Widget", "Namespaced", "v1", "list", "watch"))],
+            });
+        var core = new V2beta1APIGroupDiscoveryList { kind = "APIGroupDiscoveryList", items = [] };
+        var staleGroups = new V2beta1APIGroupDiscoveryList
+        {
+            kind = "APIGroupDiscoveryList",
+            items =
+            [
+                new V2beta1APIGroupDiscoveryListItem
+                {
+                    metadata = new V2beta1APIGroupDiscoveryListItemMetadata { name = "widgets.example.com" },
+                    versions =
+                    [
+                        new V2beta1APIGroupDiscoveryListItemVersion
+                        {
+                            version = "v1",
+                            freshness = "Stale",
+                            resources = [],
+                        },
+                    ],
+                },
+            ],
+        };
+
+        var staleSnapshot = ApiDiscoverySnapshot.Create(core, staleGroups, previous);
+
+        staleSnapshot.Resources.ShouldContain(resource => resource.Kind == kind);
+        staleSnapshot.Resources.Single(resource => resource.Kind == kind).Freshness.ShouldBe("Stale");
+
+        staleGroups.items[0].versions[0].freshness = "Current";
+        var currentSnapshot = ApiDiscoverySnapshot.Create(core, staleGroups, staleSnapshot);
+
+        currentSnapshot.Resources.ShouldNotContain(resource => resource.Kind == kind);
+    }
+
     private static V2beta1APIGroupDiscoveryListItem CreateGroup(
         string group,
         string version,

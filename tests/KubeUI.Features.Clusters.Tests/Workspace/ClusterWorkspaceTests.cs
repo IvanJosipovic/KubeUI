@@ -73,6 +73,52 @@ public class ClusterWorkspaceTests
         }
     }
 
+    [AvaloniaFact]
+    public async Task connect_after_disconnect_queues_new_work_after_stale_connect_finishes()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var services = Application.Current.GetTestServices();
+        await using var testCluster = await services.GetRequiredService<TestClusterGenerator>().CreateAsync(
+            new TestClusterConfig
+            {
+                Type = KubernetesBackend.Fake,
+            },
+            cancellationToken);
+        using var workspace = CreateWorkspace(testCluster, services);
+        var blockedConnectStepStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseBlockedConnectStep = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var blockedConnectStep = 0;
+        workspace.ResourceConfigProcessed += (_, _) =>
+        {
+            if (Interlocked.Exchange(ref blockedConnectStep, 1) == 0)
+            {
+                blockedConnectStepStarted.TrySetResult();
+                releaseBlockedConnectStep.Task.GetAwaiter().GetResult();
+            }
+        };
+
+        var firstConnect = workspace.Connect();
+        try
+        {
+            await blockedConnectStepStarted.Task.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+            await workspace.Disconnect().WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+            var reconnect = workspace.Connect();
+            reconnect.ShouldNotBeSameAs(firstConnect);
+
+            releaseBlockedConnectStep.TrySetResult();
+            await firstConnect.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+            await reconnect.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+
+            workspace.Runtime.Connected.ShouldBeTrue();
+            workspace.Runtime.Status.ShouldBe(ClusterStatus.Connected);
+            workspace.Runtime.LastError.ShouldBeNull();
+        }
+        finally
+        {
+            releaseBlockedConnectStep.TrySetResult();
+        }
+    }
+
     [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task discovery_registers_custom_resource_without_crd_list_or_watch_access(KubernetesBackend backend)
@@ -607,6 +653,7 @@ public class ClusterWorkspaceTests
             beforePoll: () => Dispatcher.UIThread.RunJobs());
     }
 
+    /// <summary>Verifies deleting an invalid CRD still removes its discovery-backed workspace config.</summary>
     [AvaloniaFact]
     public async Task deleted_crd_with_invalid_spec_still_removes_resource_config()
     {
@@ -1140,6 +1187,7 @@ public class ClusterWorkspaceTests
             ?? throw new InvalidOperationException("Container does not expose InformerRegistrations."));
     }
 
+    /// <summary>Removes one advertised verb from a matching resource in a discovery document.</summary>
     private static void RemoveDiscoveryVerb(
         JsonObject discovery,
         string groupName,
@@ -1200,6 +1248,7 @@ public class ClusterWorkspaceTests
         public void Release() => _release.TrySetResult();
     }
 
+    /// <summary>Blocks one grouped discovery response until the test releases its gate.</summary>
     private sealed class WorkspaceDiscoveryGateHandler(WorkspaceDiscoveryGate gate) : DelegatingHandler
     {
         protected override async Task<HttpResponseMessage> SendAsync(

@@ -422,6 +422,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
         }
     }
 
+    /// <summary>Refreshes cluster API discovery and reports any failure through the settings UI.</summary>
     [RelayCommand]
     private async Task RefreshApiDiscoveryAsync()
     {

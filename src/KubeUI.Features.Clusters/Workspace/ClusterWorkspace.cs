@@ -33,6 +33,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     private volatile bool _disposed;
     private volatile bool _workspaceStateInitialized;
     private long _connectGeneration;
+    private long _connectTaskGeneration;
     private Task? _connectTask;
     private INotifyCollectionChanged? _namespaces;
 
@@ -139,22 +140,43 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         return activity;
     }
 
+    /// <summary>Connects the runtime and initializes workspace resources for the current connection generation.</summary>
     public Task Connect()
     {
         lock (_connectLock)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-            if (_connectTask is { IsCompleted: false })
+            if (_connectTask is { IsCompleted: false } && _connectTaskGeneration == _connectGeneration)
             {
                 return _connectTask;
             }
 
+            var previousConnect = _connectTask;
             var connectGeneration = ++_connectGeneration;
-            _connectTask = Task.Run(() => ConnectCoreAsync(connectGeneration));
+            _connectTaskGeneration = connectGeneration;
+            _connectTask = previousConnect is { IsCompleted: false }
+                ? Task.Run(() => ConnectAfterPreviousAsync(previousConnect, connectGeneration))
+                : Task.Run(() => ConnectCoreAsync(connectGeneration));
             return _connectTask;
         }
     }
 
+    /// <summary>Waits for a stale connection attempt before initializing its replacement.</summary>
+    private async Task ConnectAfterPreviousAsync(Task previousConnect, long connectGeneration)
+    {
+        try
+        {
+            await previousConnect.ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Prior cluster connection ended before a replacement connection started for {ClusterName}", Runtime.Name);
+        }
+
+        await ConnectCoreAsync(connectGeneration).ConfigureAwait(false);
+    }
+
+    /// <summary>Runs connection initialization while the supplied generation remains current.</summary>
     private async Task ConnectCoreAsync(long connectGeneration)
     {
         using var activity = StartWorkspaceActivity(nameof(Connect), ActivityKind.Client);
@@ -384,6 +406,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         NotifyResourceConfigProcessed(resourceConfig);
     }
 
+    /// <summary>Unsubscribes workspace handlers and cancels pending workspace operations.</summary>
     public void Dispose()
     {
         lock (_connectLock)
@@ -475,6 +498,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>Marks initialization complete only when the supplied connection generation is current.</summary>
     private bool TryMarkWorkspaceInitialized(long generation)
     {
         lock (_connectLock)
@@ -553,6 +577,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         ResourceConfigProcessed?.Invoke(this, resourceConfig);
     }
 
+    /// <summary>Subscribes workspace state handlers to the current runtime and permission cache.</summary>
     private void SubscribeRuntime()
     {
         Runtime.OnChange += OnRuntimeChange;
@@ -606,6 +631,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>Removes discovery-backed resource configs when the runtime disconnects.</summary>
     private void ResetWorkspaceState()
     {
         var removedCustomResourceKinds = _resourceConfigs
@@ -635,6 +661,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>Reconciles refreshed discovery snapshots for the active connected runtime.</summary>
     private void OnApiDiscoverySnapshotRefreshed(IClusterRuntime runtime, ApiDiscoverySnapshot snapshot)
     {
         if (ReferenceEquals(runtime, Runtime) && _workspaceStateInitialized && !_disposed)
@@ -643,6 +670,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>Applies matching cached CRD printer columns to discovery-backed resource configs.</summary>
     private void ApplyCachedCustomResourcePrinterColumns()
     {
         if (!Runtime.Objects.ContainsKey(GroupApiVersionKind.From<V1CustomResourceDefinition>()))
@@ -669,6 +697,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>Runs snapshot reconciliation for a refresh event and logs failures outside shutdown.</summary>
     private async Task ReconcileApiDiscoverySnapshotFromRefreshAsync(ApiDiscoverySnapshot snapshot)
     {
         try
@@ -684,6 +713,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>Replaces discovery-backed configs with resources in the supplied complete snapshot.</summary>
     private async Task ReconcileApiDiscoverySnapshotAsync(
         ApiDiscoverySnapshot snapshot,
         bool evaluatePermissions)
@@ -764,6 +794,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>Removes older served-version configs for the same discovered custom-resource kind.</summary>
     private void RemoveOtherCustomResourceVersions(GroupApiVersionKind currentKind)
     {
         var previousKinds = _resourceConfigs
