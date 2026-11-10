@@ -3,10 +3,10 @@
 ## Current Behavior
 - Workspace state wraps an `IClusterRuntime` and exposes cluster-scoped UI state.
 - Resource configs are not initialized eagerly when a workspace is created.
-- CRD add, update, and delete events update workspace resource configs, GVK catalog entries, and seeded informers.
-- A CRD `Modified` event reprocesses the resource configuration only when `metadata.generation` changes; metadata-only and status-only updates are ignored. Events without a generation fall back to reprocessing.
-- A CRD `Deleted` event removes matching custom-resource configurations even when the tombstone spec cannot resolve a served version. Match by definition name first, then by spec group and kind.
-- Disconnect clears queued CRD revisions and observed generations so reconnect relist events re-register configurations.
+- Dynamic resource configs and model-catalog entries reconcile from complete authenticated `/api` and `/apis` discovery snapshots. Discovery identifies served capabilities only; resource permissions still come from authorization checks.
+- The runtime's CRD informer is optional. Add/delete, `metadata.generation` changes, and a transition to the `Established` condition request discovery refresh; other metadata/status-only changes do not. If an established CRD's served versions are temporarily absent from discovery, retry with backoff until they appear. Discovery snapshots alone add/remove dynamic configs. When CRDs are readable, their cached matching served-version printer columns may supplement an existing discovery-backed config without changing its GVK or registration.
+- Discovery version selection is deterministic: current freshness first, then stable over beta over alpha, then numeric version ordering. Discovery does not reveal a CRD storage version.
+- Disconnect drops discovery-backed configs and dynamic model-catalog entries. Reconnect rebuilds them from the next complete snapshot.
 - If the cluster cannot list namespaces globally, materialize settings-backed fallback namespaces into the runtime namespace set.
 - Use that namespace preparation from both workspace initialization and namespaced resource seeding.
 - If the cluster cannot list/watch a namespaced resource globally, the runtime should create informers for every known namespace where that resource has both list and watch access.
@@ -26,7 +26,7 @@
 - Removing a workspace disconnects its runtime, including a connection already in progress, without changing stored cluster preferences.
 - `Alias`/`DisplayName`/`IsEnabled` are user preferences applied and persisted by `ClusterWorkspacePreferences`, attached by `ClusterWorkspaceCatalog` before the workspace is added to the catalog.
 - Raise `ResourceConfigProcessed` per config as soon as its permission evaluation completes; do not batch at the source, so ready resources are not blocked by unrelated slow permission checks.
-- Custom resource configs are dropped on disconnect and re-registered when the CRD informer lists resources again.
+- Discovery-backed custom resource configs are dropped on disconnect and re-registered after a complete discovery refresh; CRD list/watch access is not required for discovery.
 - The workspace remains responsible for materializing settings-backed namespaces before permission-dependent UI relies on namespace-scoped access checks.
 
 ## Constraints

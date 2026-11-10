@@ -8,6 +8,7 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
 using k8s;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.Kubernetes.Serialization;
 using Shouldly;
 
@@ -108,6 +109,95 @@ public sealed class FakeKubernetesHttpApiTests
         discovery.Groups.ShouldBeSameAs(groups);
         api.RequestUris.Count(uri => uri?.AbsolutePath == "/api").ShouldBe(2);
         api.RequestUris.Count(uri => uri?.AbsolutePath == "/apis").ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task AggregatedDiscoveryClient_keeps_last_snapshot_when_group_refresh_fails()
+    {
+        using var api = new FakeKubernetesHttpApi();
+        using var client = KubernetesClientMaterializer.Create(
+            new KubernetesClientConfiguration { Host = "http://fake-kubernetes" },
+            api);
+        var discovery = new KubernetesApiDiscoveryClient(client);
+
+        await discovery.RefreshAsync(TestContext.Current.CancellationToken);
+        var snapshot = discovery.Snapshot.ShouldNotBeNull();
+        var core = discovery.Core;
+        var groups = discovery.Groups;
+        api.GroupedDiscoveryStatusCode = HttpStatusCode.ServiceUnavailable;
+
+        await Should.ThrowAsync<HttpRequestException>(
+            () => discovery.RefreshAsync(TestContext.Current.CancellationToken));
+
+        discovery.Snapshot.ShouldBeSameAs(snapshot);
+        discovery.Core.ShouldBeSameAs(core);
+        discovery.Groups.ShouldBeSameAs(groups);
+    }
+
+    [Fact]
+    public async Task DiscoveryClient_reads_legacy_core_and_grouped_discovery_responses()
+    {
+        using var api = new FakeKubernetesHttpApi();
+        var definition = TestCustomResourceDefinitionFactory.Create("widgets.kubeui.com", "widgets", "value");
+        api.Add(definition);
+        using var handler = new LegacyDiscoveryHandler { InnerHandler = api };
+        using var client = KubernetesClientMaterializer.Create(
+            new KubernetesClientConfiguration { Host = "http://fake-kubernetes" },
+            handler);
+        var discovery = new KubernetesApiDiscoveryClient(client);
+
+        await discovery.RefreshAsync(TestContext.Current.CancellationToken);
+
+        discovery.Snapshot.ShouldNotBeNull().Resources.ShouldContain(resource =>
+            resource.Kind == new GroupApiVersionKind("kubeui.com", "v1beta1", "Test", "widgets"));
+        var requestPaths = api.RequestUris.Select(static uri => uri?.AbsolutePath).ToArray();
+        requestPaths.ShouldContain("/api/v1");
+        requestPaths.ShouldContain("/apis/kubeui.com/v1beta1");
+    }
+
+    /// <summary>Verifies discovery retains cached resources while an API version is reported stale.</summary>
+    [Fact]
+    public async Task DiscoveryClient_retains_resources_when_a_version_becomes_stale()
+    {
+        using var api = new FakeKubernetesHttpApi();
+        var definition = TestCustomResourceDefinitionFactory.Create("widgets.kubeui.com", "widgets", "value");
+        api.Add(definition);
+        var groupedRefreshCount = 0;
+        using var handler = new DiscoveryResponseHandler(discovery =>
+        {
+            if (Interlocked.Increment(ref groupedRefreshCount) != 2
+                || discovery["items"] is not JsonArray groups)
+            {
+                return;
+            }
+
+            var group = groups
+                .OfType<JsonObject>()
+                .FirstOrDefault(item => item["metadata"]?["name"]?.GetValue<string>() == "kubeui.com");
+            var version = group?["versions"]?.AsArray()
+                .OfType<JsonObject>()
+                .FirstOrDefault(item => item["version"]?.GetValue<string>() == "v1beta1");
+            if (version is not null)
+            {
+                version["freshness"] = "Stale";
+                version["resources"] = new JsonArray();
+            }
+        })
+        {
+            InnerHandler = api,
+        };
+        using var client = KubernetesClientMaterializer.Create(
+            new KubernetesClientConfiguration { Host = "http://fake-kubernetes" },
+            handler);
+        var discoveryClient = new KubernetesApiDiscoveryClient(client);
+        var kind = new GroupApiVersionKind("kubeui.com", "v1beta1", "Test", "widgets");
+
+        await discoveryClient.RefreshAsync(TestContext.Current.CancellationToken);
+        await discoveryClient.RefreshAsync(TestContext.Current.CancellationToken);
+
+        discoveryClient.Snapshot.ShouldNotBeNull().Resources
+            .Single(resource => resource.Kind == kind)
+            .Freshness.ShouldBe("Stale");
     }
 
     [Fact]
@@ -1145,6 +1235,110 @@ public sealed class FakeKubernetesHttpApiTests
         (await client.GetAsync(
             "/apis/example.test/v1/widgets",
             TestContext.Current.CancellationToken)).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    /// <summary>Verifies CRD replacement preserves served-version watches and removes obsolete endpoints.</summary>
+    [Theory]
+    [InlineData("Cluster")]
+    [InlineData("Namespaced")]
+    public async Task ReplacingCustomResourceDefinitionPreservesServedVersionWatchAndRemovesObsoleteVersion(string scope)
+    {
+        using var api = new FakeKubernetesHttpApi();
+        api.Register<V1CustomResourceDefinition>();
+        using var client = CreateHttpClient(api);
+        var cancellationToken = TestContext.Current.CancellationToken;
+        using var createDefinitionResponse = await client.PostAsync(
+            "/apis/apiextensions.k8s.io/v1/customresourcedefinitions",
+            CreateJsonContent(new
+            {
+                apiVersion = "apiextensions.k8s.io/v1",
+                kind = "CustomResourceDefinition",
+                metadata = new { name = "widgets.example.test" },
+                spec = new
+                {
+                    group = "example.test",
+                    scope,
+                    names = new { plural = "widgets", singular = "widget", kind = "Widget", listKind = "WidgetList" },
+                    versions = new[]
+                    {
+                        new { name = "v1", served = true, storage = true },
+                        new { name = "v2", served = true, storage = false },
+                    },
+                },
+            }),
+            cancellationToken);
+        createDefinitionResponse.StatusCode.ShouldBe(HttpStatusCode.Created);
+        var definition = JsonNode.Parse(await createDefinitionResponse.Content.ReadAsStringAsync(cancellationToken))!.AsObject();
+
+        string ResourcePath(string version)
+            => scope == "Namespaced"
+                ? $"/apis/example.test/{version}/namespaces/default/widgets"
+                : $"/apis/example.test/{version}/widgets";
+
+        using var watchResponse = await client.GetAsync(
+            ResourcePath("v1") + "?watch=true&allowWatchBookmarks=true",
+            HttpCompletionOption.ResponseHeadersRead,
+            cancellationToken);
+        using var watchStream = await watchResponse.Content.ReadAsStreamAsync(cancellationToken);
+        var initialEvent = await ReadWatchEventAsync(watchStream, cancellationToken)
+            .WaitAsync(TimeSpan.FromSeconds(5), cancellationToken);
+        initialEvent["type"]!.GetValue<string>().ShouldBe("BOOKMARK");
+
+        using var obsoleteWatchResponse = await client.GetAsync(
+            ResourcePath("v2") + "?watch=true&allowWatchBookmarks=true",
+            HttpCompletionOption.ResponseHeadersRead,
+            cancellationToken);
+        using var obsoleteWatchStream = await obsoleteWatchResponse.Content.ReadAsStreamAsync(cancellationToken);
+        var obsoleteInitialEvent = await ReadWatchEventAsync(obsoleteWatchStream, cancellationToken)
+            .WaitAsync(TimeSpan.FromSeconds(5), cancellationToken);
+        obsoleteInitialEvent["type"]!.GetValue<string>().ShouldBe("BOOKMARK");
+
+        definition["spec"]!["versions"]!.AsArray().RemoveAt(1);
+        using var replaceDefinitionResponse = await client.PutAsync(
+            "/apis/apiextensions.k8s.io/v1/customresourcedefinitions/widgets.example.test",
+            CreateJsonContent(definition),
+            cancellationToken);
+        replaceDefinitionResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        using var obsoleteVersionResponse = await client.GetAsync(
+            ResourcePath("v2"),
+            cancellationToken);
+        obsoleteVersionResponse.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+
+        var obsoleteWatchBuffer = new byte[1];
+        var obsoleteWatchReadCount = await obsoleteWatchStream.ReadAsync(obsoleteWatchBuffer, cancellationToken)
+            .AsTask()
+            .WaitAsync(TimeSpan.FromSeconds(5), cancellationToken);
+        obsoleteWatchReadCount.ShouldBe(0);
+
+        using var createWidgetResponse = await client.PostAsync(
+            ResourcePath("v1"),
+            CreateJsonContent(new JsonObject
+            {
+                ["apiVersion"] = "example.test/v1",
+                ["kind"] = "Widget",
+                ["metadata"] = new JsonObject
+                {
+                    ["name"] = "sample",
+                    ["namespace"] = scope == "Namespaced" ? "default" : null,
+                },
+            }),
+            cancellationToken);
+        createWidgetResponse.StatusCode.ShouldBe(HttpStatusCode.Created);
+
+        var addedEvent = await ReadWatchEventAsync(watchStream, cancellationToken)
+            .WaitAsync(TimeSpan.FromSeconds(5), cancellationToken);
+        addedEvent["type"]!.GetValue<string>().ShouldBe("ADDED");
+        addedEvent["object"]!["metadata"]!["name"]!.GetValue<string>().ShouldBe("sample");
+    }
+
+    private static async Task<JsonObject> ReadWatchEventAsync(Stream stream, CancellationToken cancellationToken)
+    {
+        var buffer = new byte[4096];
+        var count = await stream.ReadAsync(buffer, cancellationToken);
+        var lineEnd = Array.IndexOf(buffer, (byte)'\n', 0, count);
+        (lineEnd >= 0).ShouldBeTrue("watch stream should return one complete JSON event line");
+        return JsonNode.Parse(Encoding.UTF8.GetString(buffer, 0, lineEnd))!.AsObject();
     }
 
     private static HttpClient CreateHttpClient(FakeKubernetesHttpApi api)

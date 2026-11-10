@@ -83,7 +83,7 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
     public virtual ResourceOrigin Origin => ResourceOrigin.BuiltIn;
 
     /// <inheritdoc />
-    public bool IsCustomResource => Origin == ResourceOrigin.CustomResourceDefinition;
+    public bool IsCustomResource => Origin is ResourceOrigin.CustomResourceDefinition or ResourceOrigin.ApiDiscovery;
 
     /// <inheritdoc />
     public virtual V1CustomResourceDefinition? CustomResourceDefinition => null;
@@ -94,6 +94,12 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
 
     /// <inheritdoc />
     public virtual NavigationPlacement Navigation => NavigationPlacement.Root;
+
+    /// <summary>Raised when this resource kind's list columns change.</summary>
+    public event EventHandler? ColumnsChanged;
+
+    /// <summary>Notifies resource lists that their column definitions changed.</summary>
+    protected void NotifyColumnsChanged() => ColumnsChanged?.Invoke(this, EventArgs.Empty);
 
     public virtual bool ShowNewResource { get; } = true;
 

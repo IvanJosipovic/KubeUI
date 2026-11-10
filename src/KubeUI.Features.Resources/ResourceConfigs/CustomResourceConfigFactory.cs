@@ -1,13 +1,14 @@
-﻿using k8s.Models;
-using KubeUI.Features.Clusters.Workspace;
+﻿using KubeUI.Features.Clusters.Workspace;
+using KubeUI.Kubernetes;
 
 namespace KubeUI.Features.Resources;
 
 internal sealed class CustomResourceConfigFactory(IServiceProvider serviceProvider) : IClusterCustomResourceConfigFactory
 {
-    public IClusterCustomResourceConfig Create(V1CustomResourceDefinition definition)
+    /// <inheritdoc />
+    public IClusterCustomResourceConfig Create(ApiDiscoveryResource resource)
     {
-        ArgumentNullException.ThrowIfNull(definition);
-        return CustomResourceConfig.Select(definition, serviceProvider.GetServices<CustomResourceConfig>());
+        ArgumentNullException.ThrowIfNull(resource);
+        return CustomResourceConfig.Select(resource, serviceProvider.GetServices<CustomResourceConfig>());
     }
 }

@@ -27,6 +27,7 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
                             .Text(vm, x => x.ClusterTitle, BindingMode.OneWay),
                         CreateNamespacesRow(vm),
                         CreatePermissionsRow(vm),
+                        CreateApiDiscoveryRow(vm),
                         CreateDebugContainerImageRow(vm),
                         CreateMetricsSettings(vm)));
     }
@@ -96,6 +97,23 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
                     .Content(ClustersLanguageManager.Instance.ClusterSettingsView_RefreshPermissions.ToBinding())
                     .IsEnabled(vm, x => x.CanRefreshPermissions, BindingMode.OneWay)
                     .Command(vm, x => x.RefreshPermissionsCommand));
+    }
+
+    private static Grid CreateApiDiscoveryRow(ClusterSettingsViewModel vm)
+    {
+        return new Grid()
+            .Cols("*,2*")
+            .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_RefreshApiDiscoveryTooltip.ToBinding())
+            .Children(
+                new Label()
+                    .Content(ClustersLanguageManager.Instance.ClusterSettingsView_ApiDiscoveryLabel.ToBinding())
+                    .Col(0),
+                new Button()
+                    .Col(1)
+                    .HorizontalAlignment(HorizontalAlignment.Left)
+                    .Content(ClustersLanguageManager.Instance.ClusterSettingsView_RefreshApiDiscovery.ToBinding())
+                    .IsEnabled(vm, x => x.CanRefreshApiDiscovery, BindingMode.OneWay)
+                    .Command(vm, x => x.RefreshApiDiscoveryCommand));
     }
 
     private static Grid CreateDebugContainerImageRow(ClusterSettingsViewModel vm)

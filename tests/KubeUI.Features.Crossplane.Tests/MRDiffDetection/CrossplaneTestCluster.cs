@@ -38,6 +38,7 @@ internal static class CrossplaneTestCluster
         [
             new V1Namespace { Metadata = new() { Name = "default" } },
             new V1Namespace { Metadata = new() { Name = "crossplane-system" } },
+            .. pods,
         ];
 
         var cluster = await new TestClusterGenerator().CreateAsync(config, cancellationToken);
@@ -46,11 +47,6 @@ internal static class CrossplaneTestCluster
             await cluster.Cluster.Connect().WaitAsync(cancellationToken);
             await WarmPermissionsAsync(cluster, cancellationToken, GroupApiVersionKind.From<V1Pod>());
             await cluster.Cluster.SeedResource<V1Pod>(true, cancellationToken);
-            foreach (var pod in pods)
-            {
-                await cluster.Cluster.CreateAsync(pod, cancellationToken);
-            }
-
             await WaitForResourcesAsync(cluster, cancellationToken, GroupApiVersionKind.From<V1Pod>(), pods.Select(pod => pod.Name()));
             return new CrossplaneClusterFixture(cluster);
         }

@@ -128,6 +128,13 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         }
     }
 
+    /// <summary>Gets or sets a non-success status returned by grouped API discovery.</summary>
+    public HttpStatusCode GroupedDiscoveryStatusCode
+    {
+        get => (HttpStatusCode)Volatile.Read(ref _state.GroupedDiscoveryStatusCode);
+        set => Volatile.Write(ref _state.GroupedDiscoveryStatusCode, (int)value);
+    }
+
     public string AuthenticatedUser { get; set; } = "system:admin";
 
     public bool FailConnection
@@ -363,6 +370,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         // test harness after the final client has disconnected.
     }
 
+    /// <inheritdoc />
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         _requestUris.Enqueue(request.RequestUri);
@@ -406,6 +414,12 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
             if (path == "/api")
             {
                 return SetRequest(request, aggregated ? DiscoveryResponse(request, true) : Json(ApiVersions()));
+            }
+
+            var groupedDiscoveryStatusCode = Volatile.Read(ref _state.GroupedDiscoveryStatusCode);
+            if (aggregated && groupedDiscoveryStatusCode != 0)
+            {
+                return SetRequest(request, Error((HttpStatusCode)groupedDiscoveryStatusCode, "simulated grouped discovery failure"));
             }
 
             return SetRequest(request, aggregated ? DiscoveryResponse(request, false) : Json(ApiGroupList()));
@@ -2385,8 +2399,10 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         return true;
     }
 
+    /// <summary>Registers served API endpoints and resources described by a fake CRD.</summary>
     private void RegisterCustomResourceDefinition(JsonObject resource)
     {
+        var definitionName = resource["metadata"]?["name"]?.GetValue<string>();
         var spec = resource["spec"]?.AsObject();
         var group = spec?["group"]?.GetValue<string>();
         var names = spec?["names"]?.AsObject();
@@ -2402,86 +2418,110 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         var scope = spec?["scope"]?.GetValue<string>();
         var versions = spec?["versions"]?.AsArray();
 
-        if (string.IsNullOrWhiteSpace(group)
-            || string.IsNullOrWhiteSpace(plural)
-            || string.IsNullOrWhiteSpace(kind)
-            || versions is null)
-        {
-            return;
-        }
-
         lock (_state.DiscoveryGate)
         {
-            foreach (var versionNode in versions.OfType<JsonObject>())
+            var previousDefinitionKeys = !string.IsNullOrWhiteSpace(definitionName)
+                && _state.CustomResourceDefinitionKeysByName.TryGetValue(definitionName, out var previousKeys)
+                ? previousKeys
+                : [];
+            HashSet<string> definitionKeys = [];
+            var changed = false;
+
+            if (!string.IsNullOrWhiteSpace(group)
+                && !string.IsNullOrWhiteSpace(plural)
+                && !string.IsNullOrWhiteSpace(kind)
+                && versions is not null)
             {
-                var version = versionNode["name"]?.GetValue<string>();
-                var served = versionNode["served"]?.GetValue<bool>() ?? true;
-                if (string.IsNullOrWhiteSpace(version) || !served)
+                foreach (var versionNode in versions.OfType<JsonObject>())
                 {
-                    continue;
-                }
+                    var version = versionNode["name"]?.GetValue<string>();
+                    var served = versionNode["served"]?.GetValue<bool>() ?? true;
+                    if (string.IsNullOrWhiteSpace(version) || !served)
+                    {
+                        continue;
+                    }
 
-                var subresources = new List<ResourceSubresource>();
-                var statusEnabled = versionNode["subresources"]?["status"] is not null;
-                var scaleNode = versionNode["subresources"]?["scale"];
-                if (statusEnabled)
-                {
-                    subresources.Add(StatusSubresource);
-                }
+                    var subresources = new List<ResourceSubresource>();
+                    var statusEnabled = versionNode["subresources"]?["status"] is not null;
+                    var scaleNode = versionNode["subresources"]?["scale"];
+                    if (statusEnabled)
+                    {
+                        subresources.Add(StatusSubresource);
+                    }
 
-                if (scaleNode is not null)
-                {
-                    subresources.Add(ScaleSubresource);
-                }
+                    if (scaleNode is not null)
+                    {
+                        subresources.Add(ScaleSubresource);
+                    }
 
-                _definitions[DefinitionKey(group, version, plural)] = new ResourceDefinition(
-                    new GroupApiVersionKind(group, version, kind, plural),
-                    string.Equals(scope, "Namespaced", StringComparison.Ordinal),
-                    listKind ?? kind + "List",
-                    singular ?? InferSingular(plural),
-                    shortNames,
-                    subresources,
-                    statusEnabled);
+                    var key = DefinitionKey(group, version, plural);
+                    _definitions[key] = new ResourceDefinition(
+                        new GroupApiVersionKind(group, version, kind, plural),
+                        string.Equals(scope, "Namespaced", StringComparison.Ordinal),
+                        listKind ?? kind + "List",
+                        singular ?? InferSingular(plural),
+                        shortNames,
+                        subresources,
+                        statusEnabled);
+                    definitionKeys.Add(key);
+                    changed = true;
+                }
             }
 
-            InvalidateGroupedDiscoveryETag();
+            foreach (var previousKey in previousDefinitionKeys)
+            {
+                if (!definitionKeys.Contains(previousKey))
+                {
+                    changed |= RemoveCustomResourceDefinitionEndpoint(previousKey);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(definitionName))
+            {
+                if (definitionKeys.Count > 0)
+                {
+                    _state.CustomResourceDefinitionKeysByName[definitionName] = definitionKeys;
+                }
+                else
+                {
+                    _state.CustomResourceDefinitionKeysByName.Remove(definitionName);
+                }
+            }
+
+            if (changed)
+            {
+                InvalidateGroupedDiscoveryETag();
+            }
         }
     }
 
+    /// <summary>Removes fake endpoints previously registered for a CRD resource.</summary>
     private void UnregisterCustomResourceDefinition(JsonObject resource)
     {
+        var definitionName = resource["metadata"]?["name"]?.GetValue<string>();
         var spec = resource["spec"]?.AsObject();
         var group = spec?["group"]?.GetValue<string>();
         var plural = spec?["names"]?["plural"]?.GetValue<string>();
         var versions = spec?["versions"]?.AsArray();
-        if (string.IsNullOrWhiteSpace(group) || string.IsNullOrWhiteSpace(plural) || versions is null)
-        {
-            return;
-        }
-
         lock (_state.DiscoveryGate)
         {
-            var removed = false;
-            foreach (var versionNode in versions.OfType<JsonObject>())
+            var removed = !string.IsNullOrWhiteSpace(definitionName)
+                && RemoveCustomResourceDefinitionEndpoints(definitionName);
+
+            if (!removed
+                && !string.IsNullOrWhiteSpace(group)
+                && !string.IsNullOrWhiteSpace(plural)
+                && versions is not null)
             {
-                var version = versionNode["name"]?.GetValue<string>();
-                if (string.IsNullOrWhiteSpace(version))
+                foreach (var versionNode in versions.OfType<JsonObject>())
                 {
-                    continue;
-                }
+                    var version = versionNode["name"]?.GetValue<string>();
+                    if (string.IsNullOrWhiteSpace(version))
+                    {
+                        continue;
+                    }
 
-                var key = DefinitionKey(group, version, plural);
-                removed |= _definitions.TryRemove(key, out _);
-
-                var prefix = $"/apis/{group}/{version}/{plural}/";
-                foreach (var resourceKey in _resources.Keys.Where(key => key.Contains(prefix, StringComparison.Ordinal)).ToArray())
-                {
-                    _resources.TryRemove(resourceKey, out _);
-                }
-
-                foreach (var collectionKey in _watchers.Keys.Where(key => key.Contains($"/{plural}", StringComparison.Ordinal)).ToArray())
-                {
-                    _watchers.TryRemove(collectionKey, out _);
+                    removed |= RemoveCustomResourceDefinitionEndpoint(DefinitionKey(group, version, plural));
                 }
             }
 
@@ -2490,6 +2530,84 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
                 InvalidateGroupedDiscoveryETag();
             }
         }
+    }
+
+    /// <summary>Removes endpoint keys associated with one CRD definition name.</summary>
+    private bool RemoveCustomResourceDefinitionEndpoints(string definitionName)
+    {
+        if (!_state.CustomResourceDefinitionKeysByName.Remove(definitionName, out var definitionKeys))
+        {
+            return false;
+        }
+
+        var removed = false;
+        foreach (var definitionKey in definitionKeys)
+        {
+            removed |= RemoveCustomResourceDefinitionEndpoint(definitionKey);
+        }
+
+        return removed;
+    }
+
+    /// <summary>Removes one obsolete endpoint and completes its watchers.</summary>
+    private bool RemoveCustomResourceDefinitionEndpoint(string definitionKey)
+    {
+        var removed = _definitions.TryRemove(definitionKey, out var definition);
+        if (removed)
+        {
+            var api = definition.Api;
+            foreach (var resourceKey in _resources.Keys.Where(key => IsResourceForEndpoint(key, api)).ToArray())
+            {
+                _resources.TryRemove(resourceKey, out _);
+            }
+
+            foreach (var collectionKey in _watchers.Keys.Where(key => IsCollectionForEndpoint(key, api)).ToArray())
+            {
+                if (_watchers.TryRemove(collectionKey, out var watchers))
+                {
+                    foreach (var watcher in watchers)
+                    {
+                        watcher.Writer.TryComplete();
+                    }
+                }
+            }
+        }
+
+        return removed;
+    }
+
+    /// <summary>Checks whether a stored resource key belongs to the supplied API endpoint.</summary>
+    private static bool IsResourceForEndpoint(string resourceKey, GroupApiVersionKind api)
+    {
+        var parts = resourceKey.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length < 5
+            || !string.Equals(parts[0], "apis", StringComparison.Ordinal)
+            || !string.Equals(parts[1], api.Group, StringComparison.Ordinal)
+            || !string.Equals(parts[2], api.ApiVersion, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var pluralIndex = parts[3] == "namespaces" ? 5 : 3;
+        return parts.Length > pluralIndex + 1
+            && string.Equals(parts[pluralIndex], api.PluralName, StringComparison.Ordinal);
+    }
+
+    /// <summary>Checks whether a watcher collection key belongs to the supplied API endpoint.</summary>
+    private static bool IsCollectionForEndpoint(string collectionKey, GroupApiVersionKind api)
+    {
+        var parts = collectionKey.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length < 4
+            || !string.Equals(parts[0], "apis", StringComparison.Ordinal)
+            || !string.Equals(parts[1], api.Group, StringComparison.Ordinal)
+            || !string.Equals(parts[2], api.ApiVersion, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var pluralIndex = parts[3] == "namespaces" ? 5 : 3;
+        return parts.Length == pluralIndex + 1
+            && string.Equals(parts[pluralIndex], api.PluralName, StringComparison.Ordinal);
     }
 
     private void InvalidateGroupedDiscoveryETag()
@@ -3486,6 +3604,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         public object DiscoveryGate { get; } = new();
         public object WatchHistoryGate { get; } = new();
         public ConcurrentDictionary<string, ResourceDefinition> Definitions { get; } = new(StringComparer.Ordinal);
+        public Dictionary<string, HashSet<string>> CustomResourceDefinitionKeysByName { get; } = new(StringComparer.Ordinal);
         public ConcurrentDictionary<string, JsonObject> Resources { get; } = new(StringComparer.Ordinal);
         public ConcurrentDictionary<string, ConcurrentBag<Channel<byte[]>>> Watchers { get; } = new(StringComparer.Ordinal);
         public List<WatchEventRecord> WatchHistory { get; } = [];
@@ -3497,6 +3616,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         public int OpenApiV3DocumentStatusCode;
         public string OpenApiV3DocumentHash = "fake-v1";
         public int RequireAuthorizationForDiscovery;
+        public int GroupedDiscoveryStatusCode;
         public string CoreDiscoveryETag = "\"fake-discovery-core-v1\"";
         public string GroupedDiscoveryETag = "\"fake-discovery-groups-v1\"";
         public long GroupedDiscoveryRevision = 1;

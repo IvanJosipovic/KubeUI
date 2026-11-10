@@ -454,6 +454,7 @@ public class NavigationViewModelTests
         FindResourceLinks(node.NavigationItems, providerKind).ShouldContain(link => link.Name == "Restored Managed Resources");
     }
 
+    /// <summary>Verifies canonical and alias links retain shared counts and open the same resource document.</summary>
     [AvaloniaFact]
     public async Task crossplane_aliases_share_zero_counts_and_open_same_resource_document()
     {
@@ -468,14 +469,15 @@ public class NavigationViewModelTests
             "Tests",
             "someString",
             "crossplane.io");
+        var kind = GetCustomResourceKind(crd);
         await workspace.Runtime.AddOrUpdateResource(crd);
         var descriptor = await WaitForValueAsync(
             () => workspace.GetResourceConfigs().SingleOrDefault(config =>
-                config.IsCustomResource && config.CustomResourceDefinition!.Name() == crd.Name()),
+                config.IsCustomResource && config.Kind == kind),
             timeoutMs: 10000);
         descriptor.ShouldNotBeNull();
+        descriptor.CustomResourceDefinition.ShouldBeNull();
 
-        var kind = GetCustomResourceKind(crd);
         var node = vm.Clusters.Single(cluster => cluster.Cluster == workspace);
         await WaitForAsync(() => FindResourceLinks(node.NavigationItems, kind).Count == 2, timeoutMs: 10000);
         var links = FindResourceLinks(node.NavigationItems, kind);
@@ -2628,7 +2630,11 @@ public class NavigationViewModelTests
         await TestApplicationExtensions.WaitForUiAsync();
 
         var crdA = NavigationTestCustomResourceDefinitionFactory.Create("tests.kubeui.com", "Tests", "someString");
-        var crdB = NavigationTestCustomResourceDefinitionFactory.Create("others.kubeui.com", "Others", "otherString");
+        var crdB = NavigationTestCustomResourceDefinitionFactory.Create(
+            "others.kubeui.com",
+            "Others",
+            "otherString",
+            kind: "Other");
 
         await workspace.Runtime.AddOrUpdateResource(crdA);
         await workspace.Runtime.AddOrUpdateResource(crdB);
@@ -2765,7 +2771,12 @@ public class NavigationViewModelTests
 
 internal static class NavigationTestCustomResourceDefinitionFactory
 {
-    public static V1CustomResourceDefinition Create(string name, string plural, string schemaProperty, string group = "kubeui.com")
+    public static V1CustomResourceDefinition Create(
+        string name,
+        string plural,
+        string schemaProperty,
+        string group = "kubeui.com",
+        string kind = "Test")
     {
         return new V1CustomResourceDefinition
         {
@@ -2780,9 +2791,9 @@ internal static class NavigationTestCustomResourceDefinitionFactory
                 Names = new()
                 {
                     Plural = plural.ToLowerInvariant().Replace(' ', '-'),
-                    Singular = "test",
-                    Kind = "Test",
-                    ListKind = "TestList"
+                    Singular = kind.ToLowerInvariant(),
+                    Kind = kind,
+                    ListKind = kind + "List"
                 },
                 Versions =
                 [

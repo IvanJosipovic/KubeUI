@@ -100,7 +100,6 @@ internal sealed class NavigationTreeBuilder
 
     private void AddResourceLinks(ReconcileContext context, ClusterWorkspace cluster)
     {
-        var canListDefinitions = CanListCustomResourceDefinitions(cluster);
         foreach (var clusterResource in cluster.GetResourceConfigs())
         {
             if (clusterResource is not IResourceConfig resource)
@@ -109,11 +108,6 @@ internal sealed class NavigationTreeBuilder
             }
 
             if (!resource.PermissionsLoaded || !resource.CanListAndWatch)
-            {
-                continue;
-            }
-
-            if (resource.IsCustomResource && !canListDefinitions)
             {
                 continue;
             }
@@ -399,14 +393,6 @@ internal sealed class NavigationTreeBuilder
         IResourceConfig resource,
         NavigationPlacement placement)
         => $"{cluster.Runtime.Name}-section-resource-{placement.SectionId ?? "root"}-{slot}-{ResourceKey(resource.Kind)}";
-
-    private static bool CanListCustomResourceDefinitions(ClusterWorkspace cluster)
-    {
-        return cluster.TryGetResourceConfig(
-                   GroupApiVersionKind.From<V1CustomResourceDefinition>(),
-                   out var definitionConfig)
-               && definitionConfig is { PermissionsLoaded: true, CanListAndWatch: true };
-    }
 
     private bool CanCreatePortForward(ClusterWorkspace cluster, GroupApiVersionKind podKind)
     {
