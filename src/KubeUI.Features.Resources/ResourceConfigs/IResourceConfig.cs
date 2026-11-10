@@ -28,6 +28,7 @@ namespace KubeUI.Features.Resources
         new string Name { get; }
         Style[] ListStyle();
         IRelayCommand NewResourceCommand { get; }
+        IRelayCommand NewResourceUiEditorCommand => NewResourceCommand;
         IRelayCommand<IList> ViewCommand { get; }
         IAsyncRelayCommand<IList> DeleteCommand { get; }
     }

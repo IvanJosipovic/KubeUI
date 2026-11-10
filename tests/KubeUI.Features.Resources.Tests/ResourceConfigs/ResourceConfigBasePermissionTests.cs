@@ -1,7 +1,13 @@
 using Avalonia.Headless.XUnit;
+using CommunityToolkit.Mvvm.Input;
+using Dock.Model.Controls;
+using Dock.Model.Core;
 using k8s.Models;
+using KubeUI.Features.Resources.Editor;
+using KubeUI.Controls.Presentation;
 using KubernetesClient.Informer.Client;
 using KubeUI.App.Shell.Navigation;
+using KubeUI.App.Infrastructure.Presentation;
 using KubeUI.Features.Resources;
 using KubeUI.Features.Resources.Common;
 using KubeUI.Kubernetes;
@@ -60,6 +66,86 @@ public sealed class ResourceConfigBasePermissionTests
             (Verb.Watch, null),
             (Verb.Get, "status")
         ]);
+    }
+
+    [AvaloniaFact]
+    public void default_context_menu_includes_resource_editor_for_a_single_resource()
+    {
+        var services = Application.Current.GetTestServices();
+        var config = new TrackingResourceConfig(services);
+        var pod = new V1Pod { Metadata = new V1ObjectMeta { Name = "pod-1", NamespaceProperty = "default" } };
+
+        var items = config.GetDefaultMenuItems(new[] { pod }).ToArray();
+        items
+            .ShouldContain(item => item.Title == "View YAML");
+        items.ShouldContain(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_EditYaml.CurrentValue());
+
+        var edit = items
+            .Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_Edit.CurrentValue());
+
+        edit.Command.ShouldNotBeNull();
+        edit.CommandParameter.ShouldBeAssignableTo<IList<V1Pod>>().ShouldBe([pod]);
+    }
+
+    [AvaloniaFact]
+    public async Task new_yaml_resource_is_opened_in_the_documents_dock()
+    {
+        using var cluster = await Application.Current.CreateClusterAsync();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var layout = factory.CreateLayout();
+        factory.InitLayout(layout);
+        var documents = factory.GetDockable<IDocumentDock>("Documents").ShouldNotBeNull();
+        var config = new TrackingResourceConfig(Application.Current.GetTestServices());
+        config.Initialize(cluster);
+
+        config.NewResourceCommand.Execute(null);
+
+        var yamlEditor = documents.VisibleDockables!.OfType<ResourceYamlViewModel>().Single();
+        try
+        {
+            documents.VisibleDockables.ShouldContain(yamlEditor);
+        }
+        finally
+        {
+            factory.RemoveDockable(yamlEditor, collapse: false);
+            yamlEditor.Dispose();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task new_ui_editor_command_opens_resource_editor_not_yaml_view()
+    {
+        using var cluster = await Application.Current.CreateClusterAsync();
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var layout = factory.CreateLayout();
+        factory.InitLayout(layout);
+        var documents = factory.GetDockable<IDocumentDock>("Documents").ShouldNotBeNull();
+        var config = new TrackingResourceConfig(Application.Current.GetTestServices());
+        config.Initialize(cluster);
+        IResourceConfig resourceConfig = config;
+
+        resourceConfig.NewResourceUiEditorCommand
+            .ShouldBeAssignableTo<IAsyncRelayCommand>()
+            .CanExecute(null)
+            .ShouldBeTrue();
+        await resourceConfig.NewResourceUiEditorCommand
+            .ShouldBeAssignableTo<IAsyncRelayCommand>()
+            .ExecuteAsync(null);
+
+        var editor = documents.VisibleDockables!.OfType<ResourceEditorViewModel>().Single();
+        try
+        {
+            documents.VisibleDockables.OfType<ResourceYamlViewModel>().ShouldBeEmpty();
+            editor.IsCreateMode.ShouldBeTrue();
+            Application.Current.GetRequiredTestService<ViewLocator>()
+                .Build(editor)
+                .ShouldBeOfType<ResourceEditorView>();
+        }
+        finally
+        {
+            factory.RemoveDockable(editor, collapse: false);
+            editor.Dispose();
+        }
     }
 
     private sealed class TrackingResourceConfig : ResourceConfigBase<V1Pod>

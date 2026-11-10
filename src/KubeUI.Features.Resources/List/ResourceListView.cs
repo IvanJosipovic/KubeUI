@@ -1,6 +1,8 @@
 using System.Windows.Input;
 using Avalonia.Input;
 using Avalonia.VisualTree;
+using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Templates;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using k8s.Models;
@@ -149,7 +151,7 @@ public partial class ResourceListView : KubeUIView<IResourceListViewModel>
         return new CompactToolbar
         {
             Leading = new Button()
-                .Command(CompiledBinding.Create<IResourceListViewModel, ICommand?>(x => x.ResourceConfig.NewResourceCommand))
+                .Flyout(CreateNewResourceFlyout())
                 .IsVisible(CompiledBinding.Create<IResourceListViewModel, bool>(x => x.ResourceConfig.ShowNewResource))
                 .ToolTip_Tip(ResourcesLanguageManager.Instance.ResourceListView_NewResource.ToBinding())
                 .Content(new FluentIcon().Icon(Icon.AddSquare)),
@@ -181,4 +183,19 @@ public partial class ResourceListView : KubeUIView<IResourceListViewModel>
     {
         DataContext = await DesignTimePreview.CreateClusterBoundViewModelAsync<ResourceListViewModel<V1Pod>, V1Pod>();
     }
+
+    internal static MenuFlyout CreateNewResourceFlyout()
+    {
+        MenuFlyout flyout = new();
+        flyout.Items.Add(new MenuItem()
+            .Header(ResourcesLanguageManager.Instance.ResourceListView_NewResourceYaml.CurrentValue()!)
+            .Icon(new FluentIcon().Icon(Icon.DocumentEdit))
+            .Command(CompiledBinding.Create<IResourceListViewModel, ICommand?>(x => x.ResourceConfig.NewResourceCommand)));
+        flyout.Items.Add(new MenuItem()
+            .Header(ResourcesLanguageManager.Instance.ResourceListView_NewResourceUiEditor.CurrentValue()!)
+            .Icon(new FluentIcon().Icon(Icon.Edit))
+            .Command(CompiledBinding.Create<IResourceListViewModel, ICommand?>(x => x.ResourceConfig.NewResourceUiEditorCommand)));
+        return flyout;
+    }
+
 }

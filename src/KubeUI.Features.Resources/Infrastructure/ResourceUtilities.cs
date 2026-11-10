@@ -79,6 +79,33 @@ public static class ResourceUtilities
         logger.LogError(exception, message);
     }
 
+    /// <summary>Returns Kubernetes field validation causes, when present.</summary>
+    public static IReadOnlyList<(string Path, string Message)> GetKubernetesStatusCauses(Exception exception)
+    {
+        var meaningfulException = GetMeaningfulException(exception);
+        if (meaningfulException is not HttpOperationException operationException)
+            return [];
+
+        try
+        {
+            var status = JsonSerializer.Deserialize(operationException.Response.Content, KubernetesJsonStaticContext.Default.V1Status);
+            return status?.Details?.Causes?
+                .Where(static cause => !string.IsNullOrWhiteSpace(cause.Field) && !string.IsNullOrWhiteSpace(cause.Message))
+                .Select(static cause => (cause.Field!, cause.Message!))
+                .ToArray() ?? [];
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
+
+    /// <summary>Returns the Kubernetes API status code, when present.</summary>
+    public static int? GetKubernetesStatusCode(Exception exception)
+        => GetMeaningfulException(exception) is HttpOperationException operationException
+            ? (int?)operationException.Response.StatusCode
+            : null;
+
     /// <summary>Gets the innermost useful message from a wrapped exception.</summary>
     public static string GetMeaningfulExceptionMessage(Exception exception)
         => GetMeaningfulException(exception).Message;
