@@ -1,3 +1,5 @@
+using KubeUI.Kubernetes;
+
 namespace KubeUI.Features.Clusters.Settings;
 
 public sealed partial class ClusterSettings : ObservableObject
@@ -17,4 +19,7 @@ public sealed partial class ClusterSettings : ObservableObject
     /// <summary>Gets or sets the KubeUI-only display name. The kubeconfig context name is used when empty.</summary>
     [ObservableProperty]
     public partial string? Alias { get; set; }
+
+    [ObservableProperty]
+    public partial ClusterMetricsSettings MetricsSettings { get; set; } = new();
 }

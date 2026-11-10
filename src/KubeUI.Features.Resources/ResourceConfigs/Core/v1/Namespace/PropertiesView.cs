@@ -1,4 +1,5 @@
 using k8s.Models;
+using KubeUI.Features.Resources.Metrics.Controls;
 using KubeUI.Features.Resources.Properties.Controls;
 
 namespace KubeUI.Features.Resources.Core.v1.Namespace;
@@ -10,7 +11,7 @@ public sealed class PropertiesView : ViewBase<V1Namespace>
         ArgumentNullException.ThrowIfNull(vm);
 
         return new StackPanel()
-            .Children(
+            .Children(new MetricsControl { DataContext = vm },
                 new PropertyItem()
                     .Key(FoundationLanguageManager.Instance.Shared_Phase.CurrentValue()!)
                     .Value(vm.Status?.Phase ?? ""),

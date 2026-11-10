@@ -2,6 +2,7 @@ using Avalonia.Controls.Templates;
 using k8s.Models;
 using KubeUI.Controls.Converters;
 using KubeUI.Controls.Presentation;
+using KubeUI.Features.Resources.Metrics.Controls;
 using KubeUI.Features.Resources.Properties;
 using KubeUI.Features.Resources.Properties.Controls;
 
@@ -30,6 +31,7 @@ public sealed class PropertiesView : ViewBase<V1Pod>
                 new PropertyItem()
                     .Key(ResourcesLanguageManager.Instance.PodPropertiesView_Service_Account.CurrentValue()!)
                     .Value(vm.Spec?.ServiceAccountName ?? ""),
+                new MetricsControl { DataContext = vm, Pod = vm },
                 ResourcePropertiesSection.Create(
                     FoundationLanguageManager.Instance.Shared_Metadata.ToBinding(),
                     new CollectionItem()
@@ -64,7 +66,7 @@ public sealed class PropertiesView : ViewBase<V1Pod>
                     .Header(ResourcesLanguageManager.Instance.PodPropertiesView_InitContainers.ToBinding())
                     .IsExpanded(true)
                     .IsVisible(vm, x => x.Spec.InitContainers, BindingMode.OneWay, NotEmptyCollectionConverter.Instance)
-                    .Content(CreateContainers(vm.Spec?.InitContainers ?? [])),
+                    .Content(CreateContainers(vm, vm.Spec?.InitContainers ?? [], includeMetrics: false)),
                 new ExpandableSection()
                     .Header(ResourcesLanguageManager.Instance.PodPropertiesView_EphemeralContainers.ToBinding())
                     .IsExpanded(true)
@@ -73,7 +75,7 @@ public sealed class PropertiesView : ViewBase<V1Pod>
                 new ExpandableSection()
                     .Header(ResourcesLanguageManager.Instance.PodPropertiesView_Containers.ToBinding())
                     .IsExpanded(true)
-                    .Content(CreateContainers(vm.Spec?.Containers ?? [])));
+                    .Content(CreateContainers(vm, vm.Spec?.Containers ?? [], includeMetrics: true)));
     }
 
     private static IDataTemplate CreateKeyValueTemplate()
@@ -83,11 +85,11 @@ public sealed class PropertiesView : ViewBase<V1Pod>
                 .Text($"{entry.Key}={entry.Value}"));
     }
 
-    private static ItemsControl CreateContainers(IEnumerable<V1Container> containers)
+    private static ItemsControl CreateContainers(V1Pod pod, IEnumerable<V1Container> containers, bool includeMetrics)
     {
         return new ItemsControl()
             .ItemsSource(containers)
-            .ItemTemplate(new FuncDataTemplate<V1Container>((container, _) => CreateContainerTemplate(container)));
+            .ItemTemplate(new FuncDataTemplate<V1Container>((container, _) => CreateContainerTemplate(pod, container, includeMetrics)));
     }
 
     private static ItemsControl CreateEphemeralContainers(IEnumerable<V1EphemeralContainer> containers)
@@ -97,10 +99,11 @@ public sealed class PropertiesView : ViewBase<V1Pod>
             .ItemTemplate(new FuncDataTemplate<V1EphemeralContainer>((container, _) => CreateEphemeralContainerTemplate(container)));
     }
 
-    private static StackPanel CreateContainerTemplate(V1Container container)
+    private static StackPanel CreateContainerTemplate(V1Pod pod, V1Container container, bool includeMetrics)
     {
         return new StackPanel()
             .Children(
+                includeMetrics ? new MetricsControl { DataContext = pod, Pod = pod, Container = container } : new StackPanel(),
                 new PropertyItem()
                     .Key(FoundationLanguageManager.Instance.Shared_Name.CurrentValue()!)
                     .Value(container.Name ?? ""),
