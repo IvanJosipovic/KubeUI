@@ -37,6 +37,42 @@ public class ClusterWorkspaceTests
         workspace.GetResourceConfigs().ShouldNotContain(config => config is CustomResourceConfig);
     }
 
+    [AvaloniaFact]
+    public async Task disconnect_during_discovery_refresh_stops_workspace_initialization()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var discoveryGate = new WorkspaceDiscoveryGate();
+        var services = Application.Current.GetTestServices();
+        await using var testCluster = await services.GetRequiredService<TestClusterGenerator>().CreateAsync(
+            new TestClusterConfig
+            {
+                Type = KubernetesBackend.Fake,
+                HttpHandlerFactory = () => [new WorkspaceDiscoveryGateHandler(discoveryGate)],
+            },
+            cancellationToken);
+        using var workspace = CreateWorkspace(testCluster, services);
+        var processedConfigCount = 0;
+        workspace.ResourceConfigProcessed += (_, _) => Interlocked.Increment(ref processedConfigCount);
+
+        var connectTask = workspace.Connect();
+        try
+        {
+            await discoveryGate.Started.Task.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+            await workspace.Disconnect().WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+            await connectTask.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+
+            workspace.Runtime.Connected.ShouldBeFalse();
+            workspace.Runtime.Status.ShouldBe(ClusterStatus.None);
+            workspace.Runtime.LastError.ShouldBeNull();
+            Volatile.Read(ref processedConfigCount).ShouldBe(0);
+            workspace.Runtime.Objects.ShouldBeEmpty();
+        }
+        finally
+        {
+            discoveryGate.Release();
+        }
+    }
+
     [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task discovery_registers_custom_resource_without_crd_list_or_watch_access(KubernetesBackend backend)
@@ -381,18 +417,34 @@ public class ClusterWorkspaceTests
         updatedCrd.Metadata.Uid = currentCrd.Metadata.Uid;
         updatedCrd.Metadata.ResourceVersion = currentCrd.Metadata.ResourceVersion;
         updatedCrd.Metadata.Generation = 2;
-        await workspace.Runtime.ReplaceAsync(updatedCrd, TestContext.Current.CancellationToken);
+        var discoveryRefresh = new TaskCompletionSource<ApiDiscoverySnapshot>(TaskCreationOptions.RunContinuationsAsynchronously);
+        void OnDiscoverySnapshotRefreshed(IClusterRuntime runtime, ApiDiscoverySnapshot snapshot)
+            => discoveryRefresh.TrySetResult(snapshot);
 
-        var updatedKind = await WaitForRegisteredCustomResourceKindAsync(workspace.Runtime, updatedCrd);
-        updatedKind.ShouldBe(originalKind);
+        workspace.Runtime.ApiDiscoverySnapshotRefreshed += OnDiscoverySnapshotRefreshed;
+        try
+        {
+            await workspace.Runtime.ReplaceAsync(updatedCrd, TestContext.Current.CancellationToken);
+            var refreshedSnapshot = await discoveryRefresh.Task.WaitAsync(
+                TimeSpan.FromSeconds(10),
+                TestContext.Current.CancellationToken);
+            refreshedSnapshot.Resources.ShouldContain(resource => resource.Kind == originalKind);
 
-        await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
-        var updatedResourceConfig = GetCustomResourceConfig(workspace, updatedCrd);
-        updatedResourceConfig.ShouldBeSameAs(originalResourceConfig);
-        updatedResourceConfig.Kind.ShouldBe(updatedKind);
+            var updatedResourceConfig = await TestWait.UntilValueAsync(
+                () => GetCustomResourceConfig(workspace, updatedCrd),
+                TimeSpan.FromSeconds(10),
+                cancellationToken: TestContext.Current.CancellationToken,
+                beforePoll: () => Dispatcher.UIThread.RunJobs());
+            updatedResourceConfig.ShouldBeSameAs(originalResourceConfig);
+            updatedResourceConfig.Kind.ShouldBe(originalKind);
+        }
+        finally
+        {
+            workspace.Runtime.ApiDiscoverySnapshotRefreshed -= OnDiscoverySnapshotRefreshed;
+        }
 
         var updatedContainer = await TestWait.UntilValueAsync(
-            () => GetSeededContainer(workspace.Runtime, updatedKind),
+            () => GetSeededContainer(workspace.Runtime, originalKind),
             TimeSpan.FromSeconds(10),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
@@ -1131,6 +1183,36 @@ public class ClusterWorkspaceTests
                     }
                 }
             }
+        }
+    }
+
+    private sealed class WorkspaceDiscoveryGate
+    {
+        private int _used;
+        private readonly TaskCompletionSource _release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public bool TryEnter() => Interlocked.Exchange(ref _used, 1) == 0;
+
+        public Task WaitAsync(CancellationToken cancellationToken) => _release.Task.WaitAsync(cancellationToken);
+
+        public void Release() => _release.TrySetResult();
+    }
+
+    private sealed class WorkspaceDiscoveryGateHandler(WorkspaceDiscoveryGate gate) : DelegatingHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            if (request.RequestUri?.AbsolutePath == "/apis" && gate.TryEnter())
+            {
+                gate.Started.TrySetResult();
+                await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
     }
 }

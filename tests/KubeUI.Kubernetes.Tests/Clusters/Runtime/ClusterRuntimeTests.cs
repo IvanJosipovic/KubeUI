@@ -199,7 +199,7 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
 
         var cluster = harness.Cluster;
         await cluster.Connect();
-        await cluster.RefreshApiDiscoveryAsync();
+        await cluster.RefreshApiDiscoveryAsync().WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
         await WaitForStableDiscoveryRequestCountAsync(requestState, cancellationToken);
         var startingRequestCount = requestState.RequestCount;
         var customResourceDefinitionKind = GroupApiVersionKind.From<V1CustomResourceDefinition>();
@@ -260,7 +260,7 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
         await cluster.Permissions.UpdatePermissionsAllNamespaceAsync(customResourceDefinitionKind, true, Verb.List);
         await cluster.Permissions.UpdatePermissionsAllNamespaceAsync(customResourceDefinitionKind, true, Verb.Watch);
         await cluster.SeedResource<V1CustomResourceDefinition>(waitForReady: true, cancellationToken);
-        await cluster.RefreshApiDiscoveryAsync();
+        await cluster.RefreshApiDiscoveryAsync().WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
         cluster.ApiDiscoverySnapshot!.Resources.ShouldContain(resource =>
             resource.Kind.Group == "kubeui.com" && resource.Kind.ApiVersion == "v1beta1");
 
@@ -389,6 +389,40 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
         {
             firstPassGate.Release();
             secondPassGate.Release();
+        }
+    }
+
+    [Fact]
+    public async Task DisconnectDoesNotCancelPendingManualDiscoveryRefresh()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var gateState = new DiscoveryPassGateState();
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig
+            {
+                Type = KubernetesBackend.Fake,
+                HttpHandlerFactory = () => [new DiscoveryPassGateHandler(gateState)],
+            },
+            cancellationToken);
+        var cluster = harness.Cluster;
+        await cluster.Connect();
+        await cluster.RefreshApiDiscoveryAsync().WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+
+        var gate = gateState.BlockNextResponse();
+        var refreshTask = cluster.RefreshApiDiscoveryAsync();
+        try
+        {
+            await gate.Started.Task.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+            await cluster.Disconnect().WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+            await refreshTask.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+
+            cluster.Connected.ShouldBeFalse();
+            cluster.Status.ShouldBe(ClusterStatus.None);
+            cluster.LastError.ShouldBeNull();
+        }
+        finally
+        {
+            gate.Release();
         }
     }
 

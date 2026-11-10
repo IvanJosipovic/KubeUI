@@ -32,6 +32,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     private readonly PermissionRefreshCoordinator _permissionRefreshCoordinator;
     private volatile bool _disposed;
     private volatile bool _workspaceStateInitialized;
+    private long _connectGeneration;
     private Task? _connectTask;
     private INotifyCollectionChanged? _namespaces;
 
@@ -148,24 +149,34 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
                 return _connectTask;
             }
 
-            _connectTask = Task.Run(ConnectCoreAsync);
+            var connectGeneration = ++_connectGeneration;
+            _connectTask = Task.Run(() => ConnectCoreAsync(connectGeneration));
             return _connectTask;
         }
     }
 
-    private async Task ConnectCoreAsync()
+    private async Task ConnectCoreAsync(long connectGeneration)
     {
         using var activity = StartWorkspaceActivity(nameof(Connect), ActivityKind.Client);
         try
         {
+            if (!IsConnectGenerationCurrent(connectGeneration))
+            {
+                return;
+            }
+
             EnsureBuiltInResourceConfigs();
             await Runtime.Connect().ConfigureAwait(false);
-            if (!Runtime.Connected)
+            if (!IsConnectGenerationCurrent(connectGeneration) || !Runtime.Connected)
             {
                 return;
             }
 
             await Runtime.RefreshApiDiscoveryAsync().ConfigureAwait(false);
+            if (!IsConnectGenerationCurrent(connectGeneration) || !Runtime.Connected)
+            {
+                return;
+            }
 
             if (!IsEnabled || _disposed)
             {
@@ -176,6 +187,10 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             if (Runtime.ApiDiscoverySnapshot is { } discoverySnapshot)
             {
                 await ReconcileApiDiscoverySnapshotAsync(discoverySnapshot, evaluatePermissions: false).ConfigureAwait(false);
+                if (!IsConnectGenerationCurrent(connectGeneration) || !Runtime.Connected)
+                {
+                    return;
+                }
             }
 
             if (_workspaceStateInitialized)
@@ -184,14 +199,38 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             }
 
             await UpdateResourceConfigsPermissionsAndEvaluateAsync().ConfigureAwait(false);
+            if (!IsConnectGenerationCurrent(connectGeneration) || !Runtime.Connected)
+            {
+                return;
+            }
+
             await SeedResourcesConfiguredForConnectAsync().ConfigureAwait(false);
+            if (!IsConnectGenerationCurrent(connectGeneration) || !Runtime.Connected)
+            {
+                return;
+            }
+
             await SeedPermissionWatchersAsync().ConfigureAwait(false);
-            _workspaceStateInitialized = true;
+            if (!IsConnectGenerationCurrent(connectGeneration) || !Runtime.Connected)
+            {
+                return;
+            }
+
+            if (!TryMarkWorkspaceInitialized(connectGeneration))
+            {
+                return;
+            }
 
             if (Runtime.ApiDiscoverySnapshot is { } completedSnapshot)
             {
                 await ReconcileApiDiscoverySnapshotAsync(completedSnapshot, evaluatePermissions: true).ConfigureAwait(false);
             }
+        }
+        catch (OperationCanceledException) when (!IsConnectGenerationCurrent(connectGeneration)
+            || _disposed
+            || !IsEnabled
+            || !Runtime.Connected)
+        {
         }
         catch (Exception ex)
         {
@@ -285,7 +324,12 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
     public async Task Disconnect()
     {
-        _workspaceStateInitialized = false;
+        lock (_connectLock)
+        {
+            _connectGeneration++;
+            _workspaceStateInitialized = false;
+        }
+
         await Runtime.Disconnect().ConfigureAwait(false);
         ResetWorkspaceState();
     }
@@ -349,6 +393,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
                 return;
             }
             _disposed = true;
+            _connectGeneration++;
         }
 
         Runtime.OnChange -= OnRuntimeChange;
@@ -419,6 +464,28 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
             resourceConfig.Initialize(this);
             _resourceConfigs[resourceConfig.Kind] = resourceConfig;
+        }
+    }
+
+    private bool IsConnectGenerationCurrent(long generation)
+    {
+        lock (_connectLock)
+        {
+            return !_disposed && _connectGeneration == generation;
+        }
+    }
+
+    private bool TryMarkWorkspaceInitialized(long generation)
+    {
+        lock (_connectLock)
+        {
+            if (_disposed || _connectGeneration != generation)
+            {
+                return false;
+            }
+
+            _workspaceStateInitialized = true;
+            return true;
         }
     }
 

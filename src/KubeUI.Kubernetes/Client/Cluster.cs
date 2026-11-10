@@ -56,11 +56,13 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     private readonly SemaphoreSlim _connectionLimiter = new(1, 1);
     private readonly SemaphoreSlim _connectionLifecycleLimiter = new(1, 1);
+    private readonly Lock _resourceInformerCancellationGate = new();
     private CancellationTokenSource? _metricsInitializationCancellation;
     private Task? _metricsInitializationTask;
     private int _disposeStarted;
 
     private CancellationTokenSource? _resourceInformerCancellationTokenSource = new();
+    private bool _resourceInformerStopping;
     private ConcurrentBag<Task> _resourceInformerTasks = [];
     private IDisposable? _namespaceSubscription;
 
@@ -235,7 +237,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                             Client = KubernetesClientFactory(config);
                         }
 
-                        EnsureResourceInformerCancellationTokenSource();
+                        StartResourceInformerLifetime();
                         _apiDiscoveryRefreshCoordinator ??= new ApiDiscoveryRefreshCoordinator(
                             RefreshApiGroupDiscoveryListCoreAsync,
                             GetResourceInformerCancellationToken());
@@ -283,6 +285,12 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
                         _ = RefreshApiGroupDiscoveryListAsync();
                         _ = EnsureOpenApiSchemasAsync();
+                    }
+                    catch (OperationCanceledException) when (IsResourceInformerShutdownRequested())
+                    {
+                        Connected = false;
+                        Status = ClusterStatus.None;
+                        LastError = null;
                     }
                     catch (Exception ex)
                     {
@@ -457,6 +465,11 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             (waitForReady, token) => SeedResource<T>(waitForReady, token));
         var container = (ContainerClass<T>)Objects.GetOrAdd(kind, _ => new ContainerClass<T>());
         var informerCancellationToken = GetResourceInformerCancellationToken();
+        if (informerCancellationToken.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
+
         var seedTask = container.GetOrCreateSeedTask(() =>
             Task.Run(() => SeedResourceCoreAsync<T>(informerCancellationToken)));
 
@@ -465,20 +478,23 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         try
         {
             await seedTask.Value.WaitAsync(cancellationToken).ConfigureAwait(false);
+            if (waitForReady)
+            {
+                _logger.LogDebug("Waiting for resource readiness for {type}.", typeof(T));
+                using var readinessCancellation = CreateReadinessToken(informerCancellationToken, cancellationToken);
+                await IsResourceReady<T>(readinessCancellation?.Token ?? informerCancellationToken).ConfigureAwait(false);
+                _logger.LogDebug("Resource readiness reached for {type}.", typeof(T));
+            }
+        }
+        catch (OperationCanceledException) when (informerCancellationToken.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            container.RemoveSeedTask(seedTask);
+            return;
         }
         catch
         {
             container.RemoveSeedTask(seedTask);
-
             throw;
-        }
-
-        if (waitForReady)
-        {
-            _logger.LogDebug("Waiting for resource readiness for {type}.", typeof(T));
-            using var readinessCancellation = CreateReadinessToken(informerCancellationToken, cancellationToken);
-            await IsResourceReady<T>(readinessCancellation?.Token ?? informerCancellationToken).ConfigureAwait(false);
-            _logger.LogDebug("Resource readiness reached for {type}.", typeof(T));
         }
 
         if (!container.IsSeeded)
@@ -506,10 +522,14 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         var container = (ContainerClass<GenericKubernetesObject>)Objects.GetOrAdd(
             kind,
             _ => new ContainerClass<GenericKubernetesObject>());
+        var informerCancellationToken = GetResourceInformerCancellationToken();
+        if (informerCancellationToken.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
 
         var seedTask = container.GetOrCreateSeedTask(async () =>
         {
-            var informerCancellationToken = GetResourceInformerCancellationToken();
             var informers = new List<ResourceInformer<GenericKubernetesObject>>();
             if (CanI(kind, Verb.List) && CanI(kind, Verb.Watch))
             {
@@ -554,18 +574,21 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         try
         {
             await seedTask.Value.WaitAsync(cancellationToken).ConfigureAwait(false);
+            if (waitForReady)
+            {
+                using var readinessCancellation = CreateReadinessToken(informerCancellationToken, cancellationToken);
+                await IsResourceReady<GenericKubernetesObject>(kind, readinessCancellation?.Token ?? informerCancellationToken).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException) when (informerCancellationToken.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            container.RemoveSeedTask(seedTask);
+            return;
         }
         catch
         {
             container.RemoveSeedTask(seedTask);
             throw;
-        }
-
-        if (waitForReady)
-        {
-            var informerCancellationToken = GetResourceInformerCancellationToken();
-            using var readinessCancellation = CreateReadinessToken(informerCancellationToken, cancellationToken);
-            await IsResourceReady<GenericKubernetesObject>(kind, readinessCancellation?.Token ?? informerCancellationToken).ConfigureAwait(false);
         }
 
         if (!container.IsSeeded)
@@ -756,8 +779,17 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     }
 
     /// <inheritdoc />
-    public Task RefreshApiDiscoveryAsync()
-        => RefreshApiGroupDiscoveryListAsync();
+    public async Task RefreshApiDiscoveryAsync()
+    {
+        var shutdownToken = GetResourceInformerCancellationToken();
+        try
+        {
+            await RefreshApiGroupDiscoveryListAsync().ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (shutdownToken.IsCancellationRequested)
+        {
+        }
+    }
 
     private bool TryGetKubernetesClient(out k8s.Kubernetes client)
     {
@@ -1154,14 +1186,21 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     private async Task StopResourceInformersAsync()
     {
+        CancellationTokenSource? cancellationTokenSource;
+        lock (_resourceInformerCancellationGate)
+        {
+            _resourceInformerStopping = true;
+            cancellationTokenSource = _resourceInformerCancellationTokenSource;
+            _resourceInformerCancellationTokenSource = null;
+        }
+
+        cancellationTokenSource?.Cancel();
+
         var apiDiscoveryRefreshCoordinator = Interlocked.Exchange(ref _apiDiscoveryRefreshCoordinator, null);
         if (apiDiscoveryRefreshCoordinator is not null)
         {
             await apiDiscoveryRefreshCoordinator.DisposeAsync().ConfigureAwait(false);
         }
-
-        var cancellationTokenSource = Interlocked.Exchange(ref _resourceInformerCancellationTokenSource, null);
-        cancellationTokenSource?.Cancel();
 
         if (Client is IDisposable disposableClient)
         {
@@ -1215,8 +1254,16 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     private CancellationToken GetResourceInformerCancellationToken()
     {
-        EnsureResourceInformerCancellationTokenSource();
-        return _resourceInformerCancellationTokenSource!.Token;
+        lock (_resourceInformerCancellationGate)
+        {
+            if (_resourceInformerStopping)
+            {
+                return new CancellationToken(canceled: true);
+            }
+
+            EnsureResourceInformerCancellationTokenSourceCore();
+            return _resourceInformerCancellationTokenSource!.Token;
+        }
     }
 
     private static CancellationTokenSource? CreateReadinessToken(
@@ -1228,12 +1275,29 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             : null;
     }
 
-    private void EnsureResourceInformerCancellationTokenSource()
+    private void StartResourceInformerLifetime()
     {
-        if (_resourceInformerCancellationTokenSource == null || _resourceInformerCancellationTokenSource.IsCancellationRequested)
+        lock (_resourceInformerCancellationGate)
+        {
+            _resourceInformerStopping = false;
+            EnsureResourceInformerCancellationTokenSourceCore();
+        }
+    }
+
+    private void EnsureResourceInformerCancellationTokenSourceCore()
+    {
+        if (_resourceInformerCancellationTokenSource is null || _resourceInformerCancellationTokenSource.IsCancellationRequested)
         {
             _resourceInformerCancellationTokenSource?.Dispose();
             _resourceInformerCancellationTokenSource = new CancellationTokenSource();
+        }
+    }
+
+    private bool IsResourceInformerShutdownRequested()
+    {
+        lock (_resourceInformerCancellationGate)
+        {
+            return _resourceInformerStopping || _resourceInformerCancellationTokenSource?.IsCancellationRequested == true;
         }
     }
 
