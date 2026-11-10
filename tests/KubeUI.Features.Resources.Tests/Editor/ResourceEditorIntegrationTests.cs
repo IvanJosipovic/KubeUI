@@ -642,7 +642,6 @@ public sealed class ResourceEditorIntegrationTests
         var config = services.GetRequiredService<TestClusterConfig>();
         var previousHandlerFactory = config.HttpHandlerFactory;
         var schemaGate = new OpenApiSchemaRequestGate();
-        config.HttpHandlerFactory = () => [new OpenApiSchemaRequestGateHandler(schemaGate)];
 
         ClusterWorkspace? cluster = null;
         ResourceEditorViewModel? editor = null;
@@ -653,9 +652,12 @@ public sealed class ResourceEditorIntegrationTests
         var documents = factory.GetDockable<IDocumentDock>("Documents").ShouldNotBeNull();
         try
         {
-            cluster = await Application.Current.CreateClusterAsync();
+            cluster = await Application.Current.CreateClusterAsync(testConfig =>
+                testConfig.HttpHandlerFactory = () => [new OpenApiSchemaRequestGateHandler(schemaGate)]);
             config.HttpHandlerFactory = previousHandlerFactory;
-            await schemaGate.RequestStarted.WaitAsync(TestContext.Current.CancellationToken);
+            await schemaGate.RequestStarted.WaitAsync(
+                TimeSpan.FromSeconds(30),
+                TestContext.Current.CancellationToken);
             cluster.Runtime.ModelCatalog.OpenApiSchemas.Count.ShouldBe(0);
 
             var launcher = services.GetRequiredService<IResourceEditorLauncher>();
