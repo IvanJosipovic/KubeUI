@@ -277,6 +277,7 @@ public sealed class NavigationSectionTests
     [InlineData("crossplane.io.example", false)]
     [InlineData("notcrossplane.io", false)]
     [InlineData("Crossplane.io", false)]
+    [InlineData(null, false)]
     public void crossplane_section_matches_exact_group_and_dot_boundary_subgroups(string group, bool expected)
     {
         var provider = new CrossplaneNavigationSectionProvider();
@@ -298,19 +299,42 @@ public sealed class NavigationSectionTests
     }
 
     [AvaloniaFact]
-    public async Task crossplane_subgroup_crd_does_not_create_section_without_exact_group_crd()
+    public async Task crossplane_section_appears_when_provider_crd_group_is_installed()
     {
-        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
+        using var workspace = await Application.Current.CreateClusterAsync(
+            config => config.InitialResources = [CreateCrossplaneCrd("pkg.crossplane.io")],
+            connect: false);
         await workspace.Connect();
         workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
         var subgroupConfig = new FakeCustomResourceConfig(typeof(TestCrossplaneSubgroupResource), "Provider Resources");
         workspace.AddResourceConfigForTest(subgroupConfig);
         workspace.GetResourceConfigs().ShouldContain(config => config.Kind == subgroupConfig.Kind);
+        workspace.Runtime.GetResourceList<V1CustomResourceDefinition>()
+            .ShouldContain(definition => definition.Spec != null && definition.Spec.Group == "pkg.crossplane.io");
 
         using var node = new ClusterNavigationNode(workspace);
         var provider = new CrossplaneNavigationSectionProvider();
         var builder = CreateBuilder(new NavigationSectionCatalog([provider]));
         provider.Place(subgroupConfig).ShouldNotBeNull();
+
+        builder.Reconcile(node);
+
+        var crossplane = node.NavigationItems.Single(item => item.Id == $"{workspace.Runtime.Name}-section-crossplane");
+        FindResourceLink(crossplane, subgroupConfig.Kind).ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task crossplane_section_stays_hidden_for_unrelated_crd_groups()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(
+            config => config.InitialResources = [CreateCrossplaneCrd("example.com"), CreateCrossplaneCrdWithoutGroup()],
+            connect: false);
+        await workspace.Connect();
+        workspace.AddResourceConfigForTest(new FakeResourceConfig(typeof(V1CustomResourceDefinition), "Definitions"));
+        workspace.AddResourceConfigForTest(new FakeCustomResourceConfig(typeof(TestCrossplaneSubgroupResource), "Provider Resources"));
+
+        using var node = new ClusterNavigationNode(workspace);
+        var builder = CreateBuilder(new NavigationSectionCatalog([new CrossplaneNavigationSectionProvider()]));
 
         builder.Reconcile(node);
 
@@ -663,7 +687,7 @@ public sealed class NavigationSectionTests
         }
     }
 
-    private static IResourceConfig CreateResourceConfig(string group, string apiVersion = "v1")
+    private static IResourceConfig CreateResourceConfig(string? group, string apiVersion = "v1")
     {
         var config = new Mock<IResourceConfig>();
         config.SetupGet(resource => resource.Kind)
@@ -678,12 +702,20 @@ public sealed class NavigationSectionTests
             "someString",
             group);
 
-    private static V1CustomResourceDefinition CreateCrossplaneCrd()
+    private static V1CustomResourceDefinition CreateCrossplaneCrd(string group = "crossplane.io")
         => NavigationTestCustomResourceDefinitionFactory.Create(
-            "roots.crossplane.io",
+            $"roots.{group}",
             "Root Resources",
             "someString",
-            "crossplane.io");
+            group);
+
+    private static V1CustomResourceDefinition CreateCrossplaneCrdWithoutGroup()
+    {
+        var definition = CreateCrossplaneCrd("example.com");
+        definition.Metadata.Name = "roots.ungrouped.example.com";
+        definition.Spec.Group = null!;
+        return definition;
+    }
 }
 
 [KubernetesEntity(Group = "versions.crossplane.io", ApiVersion = "v1", Kind = "VersionedResource")]
