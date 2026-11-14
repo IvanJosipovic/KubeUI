@@ -48,13 +48,17 @@ internal sealed class CrossplaneNavigationSectionProvider : INavigationSectionPr
         try
         {
             return cluster.Runtime.GetResourceList<V1CustomResourceDefinition>()
-                .Any(definition => string.Equals(definition.Spec?.Group, "crossplane.io", StringComparison.OrdinalIgnoreCase));
+                .Any(definition => IsCrossplaneApiGroup(definition.Spec?.Group));
         }
         catch
         {
             return false;
         }
     }
+
+    private static bool IsCrossplaneApiGroup(string? group)
+        => string.Equals(group, "crossplane.io", StringComparison.Ordinal)
+           || group?.EndsWith(".crossplane.io", StringComparison.Ordinal) == true;
 
     public IReadOnlyList<NavigationDocument> Documents { get; }
 
