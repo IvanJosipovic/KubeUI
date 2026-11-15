@@ -110,24 +110,21 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
                 CrossplaneLanguageManager.Instance.MRDiffDetectionView_DiffField.CurrentValue()!,
                 typeof(string),
                 static row => row.DiffField,
-                widthMode: DynamicTableViewWidthMode.Star,
-                width: 1),
+                width: new GridLength(1, GridUnitType.Star)),
             CreateColumn(
                 "oldValue",
                 CrossplaneLanguageManager.Instance.MRDiffDetectionView_OldValue.CurrentValue()!,
                 typeof(string),
                 static row => row.OldValue,
                 static row => row.Sensitive ? CrossplaneLanguageManager.Instance.MRDiffDetectionView_Sensitive.CurrentValue()! : row.OldValue,
-                DynamicTableViewWidthMode.Star,
-                2),
+                new GridLength(2, GridUnitType.Star)),
             CreateColumn(
                 "newValue",
                 CrossplaneLanguageManager.Instance.MRDiffDetectionView_NewValue.CurrentValue()!,
                 typeof(string),
                 static row => row.NewValue,
                 static row => row.Sensitive ? CrossplaneLanguageManager.Instance.MRDiffDetectionView_Sensitive.CurrentValue()! : row.NewValue,
-                DynamicTableViewWidthMode.Star,
-                2),
+                new GridLength(2, GridUnitType.Star)),
             CreateColumn("newComputed", CrossplaneLanguageManager.Instance.MRDiffDetectionView_NewComputed.CurrentValue()!, typeof(bool), static row => row.NewComputed),
             CreateColumn("newRemoved", CrossplaneLanguageManager.Instance.MRDiffDetectionView_NewRemoved.CurrentValue()!, typeof(bool), static row => row.NewRemoved),
             CreateColumn("requiresNew", CrossplaneLanguageManager.Instance.MRDiffDetectionView_RequiresNew.CurrentValue()!, typeof(bool), static row => row.RequiresNew),
@@ -142,8 +139,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         Type valueType,
         Func<CrossplaneDiffRow, object?> valueSelector,
         Func<CrossplaneDiffRow, string>? displaySelector = null,
-        DynamicTableViewWidthMode widthMode = DynamicTableViewWidthMode.Auto,
-        double width = 1)
+        GridLength? width = null)
     {
         return new DynamicTableViewColumn<CrossplaneDiffRow>(
             key,
@@ -153,8 +149,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
             displaySelector ?? (row => valueSelector(row)?.ToString() ?? string.Empty),
             cellTemplate: null)
         {
-            WidthMode = widthMode,
-            Width = width
+            Width = width ?? GridLength.Auto
         };
     }
 

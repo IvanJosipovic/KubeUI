@@ -1,7 +1,7 @@
+using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using KubeUI.Features.Clusters.Catalog;
 using Shouldly;
-using SvcSystems.Avalonia.DynamicTableView;
 
 namespace KubeUI.Features.Clusters.Tests.Catalog;
 
@@ -13,11 +13,9 @@ public sealed class ClusterListColumnsTests
         var columns = ClusterListViewModel.CreateColumns();
 
         var nameColumn = columns.Single(column => column.Key == "name");
-        nameColumn.WidthMode.ShouldBe(DynamicTableViewWidthMode.Star);
-        nameColumn.Width.ShouldBe(1);
+        nameColumn.Width.ShouldBe(new GridLength(1, GridUnitType.Star));
 
         var kubeconfigColumn = columns.Single(column => column.Key == "kubeconfig");
-        kubeconfigColumn.WidthMode.ShouldBe(DynamicTableViewWidthMode.Star);
-        kubeconfigColumn.Width.ShouldBe(2);
+        kubeconfigColumn.Width.ShouldBe(new GridLength(2, GridUnitType.Star));
     }
 }

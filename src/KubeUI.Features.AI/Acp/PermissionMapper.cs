@@ -36,10 +36,10 @@ internal sealed class PermissionMapper
             RequiresApproval: !trustedMcp);
     }
 
-    private static bool IsDestructive(string? kind) => kind?.ToLowerInvariant() switch
+    private static bool IsDestructive(ToolKind? kind) => kind switch
     {
-        "read" or "search" or "fetch" or "think" => false,
-        "edit" or "delete" or "move" or "execute" => true,
+        ToolKind.Read or ToolKind.Search or ToolKind.Fetch or ToolKind.Think => false,
+        ToolKind.Edit or ToolKind.Delete or ToolKind.Move or ToolKind.Execute => true,
         _ => true
     };
 

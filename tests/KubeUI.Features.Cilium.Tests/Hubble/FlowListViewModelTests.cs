@@ -9,7 +9,7 @@ using KubeUI.Testing.Utilities;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Shouldly;
-using SvcSystems.Avalonia.DynamicTableView;
+using Avalonia.Controls;
 
 namespace KubeUI.Features.Cilium.Tests.Hubble;
 
@@ -183,13 +183,12 @@ public sealed class FlowListViewModelTests
         var source = columns.Single(static column => column.Key == "Source");
         var destination = columns.Single(static column => column.Key == "Destination");
 
-        source.WidthMode.ShouldBe(DynamicTableViewWidthMode.Star);
-        source.Width.ShouldBe(1.0);
-        destination.WidthMode.ShouldBe(DynamicTableViewWidthMode.Star);
+        source.Width.ShouldBe(new GridLength(1, GridUnitType.Star));
+        destination.Width.ShouldBe(new GridLength(1, GridUnitType.Star));
         destination.Width.ShouldBe(source.Width);
-        columns.Single(static column => column.Key == "Protocol").WidthMode.ShouldBe(DynamicTableViewWidthMode.Auto);
-        columns.Single(static column => column.Key == "Latency").WidthMode.ShouldBe(DynamicTableViewWidthMode.Auto);
-        columns.Single(static column => column.Key == "PolicyName").WidthMode.ShouldBe(DynamicTableViewWidthMode.Auto);
+        columns.Single(static column => column.Key == "Protocol").Width.ShouldBe(GridLength.Auto);
+        columns.Single(static column => column.Key == "Latency").Width.ShouldBe(GridLength.Auto);
+        columns.Single(static column => column.Key == "PolicyName").Width.ShouldBe(GridLength.Auto);
     }
 
     [AvaloniaFact]

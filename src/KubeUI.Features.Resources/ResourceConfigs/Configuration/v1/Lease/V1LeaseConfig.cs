@@ -22,7 +22,7 @@ public sealed partial class V1LeaseConfig : ResourceConfig<V1Lease>
                 Key = "holder",
                 Name = ResourcesLanguageManager.Instance.V1LeaseConfig_Holder.CurrentValue()!,
                 Field = x => x.Spec.HolderIdentity ?? "",
-                WidthMode = DynamicTableViewWidthMode.Cells
+                Width = GridLength.Auto
             },
             AgeColumn(),
         ];

@@ -27,14 +27,14 @@ public sealed partial class V1DaemonSetConfig : ResourceConfig<V1DaemonSet>
                 Key = "pods",
                 Name = ResourcesLanguageManager.Instance.V1DaemonSetConfig_Pods.CurrentValue()!,
                 Field = x => x.Status.NumberReady,
-                WidthMode = DynamicTableViewWidthMode.Header
+                Width = GridLength.Auto
             },
             new ResourceListColumn<V1DaemonSet, string>()
             {
                 Key = "node-selector",
                 Name = ResourcesLanguageManager.Instance.V1DaemonSetConfig_Node_Selector.CurrentValue()!,
                 Field = x => x.Spec?.Selector?.MatchLabels is { Count: > 0 } matchLabels ? string.Join(", ", matchLabels.Select(x => x.Key + "=" + x.Value)) : "",
-                WidthMode = DynamicTableViewWidthMode.Header
+                Width = GridLength.Auto
             },
             AgeColumn(),
             ];

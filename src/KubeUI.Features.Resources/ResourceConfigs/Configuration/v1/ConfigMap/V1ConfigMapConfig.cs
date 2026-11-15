@@ -22,7 +22,7 @@ public sealed partial class V1ConfigMapConfig : ResourceConfig<V1ConfigMap>
                 Key = "keys",
                 Name = ResourcesLanguageManager.Instance.V1ConfigMapConfig_Keys.CurrentValue()!,
                 Field = x => x.Data is { Count: > 0 } data ? string.Join(", ", data.Keys) : "",
-                WidthMode = DynamicTableViewWidthMode.Header
+                Width = GridLength.Auto
             },
             AgeColumn(),
         ];

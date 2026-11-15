@@ -20,7 +20,7 @@ public sealed partial class V1RuntimeClassConfig : ResourceConfig<V1RuntimeClass
                 Key = "handler",
                 Name = ResourcesLanguageManager.Instance.V1RuntimeClassConfig_Handler.CurrentValue()!,
                 Field = x => x.Handler,
-                WidthMode = DynamicTableViewWidthMode.Cells
+                Width = GridLength.Auto
             },
             AgeColumn(),
         ];

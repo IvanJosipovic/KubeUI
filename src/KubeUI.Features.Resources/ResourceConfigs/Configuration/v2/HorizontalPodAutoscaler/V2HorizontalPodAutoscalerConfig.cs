@@ -22,21 +22,21 @@ public sealed partial class V2HorizontalPodAutoscalerConfig : ResourceConfig<V2H
                 Key = "min-pods",
                 Name = ResourcesLanguageManager.Instance.V2HorizontalPodAutoscalerConfig_Min_Pods.CurrentValue()!,
                 Field = x => x.Spec.MinReplicas ?? 0,
-                WidthMode = DynamicTableViewWidthMode.Header
+                Width = GridLength.Auto
             },
             new ResourceListColumn<V2HorizontalPodAutoscaler, int>()
             {
                 Key = "max-pods",
                 Name = ResourcesLanguageManager.Instance.V2HorizontalPodAutoscalerConfig_Max_Pods.CurrentValue()!,
                 Field = x => x.Spec.MaxReplicas,
-                WidthMode = DynamicTableViewWidthMode.Header
+                Width = GridLength.Auto
             },
             new ResourceListColumn<V2HorizontalPodAutoscaler, int>()
             {
                 Key = "replica",
                 Name = ResourcesLanguageManager.Instance.V2HorizontalPodAutoscalerConfig_Replica.CurrentValue()!,
                 Field = x => x.Status.CurrentReplicas ?? 0,
-                WidthMode = DynamicTableViewWidthMode.Header
+                Width = GridLength.Auto
             },
             AgeColumn(),
             new ResourceListColumn<V2HorizontalPodAutoscaler, string>()
@@ -44,7 +44,7 @@ public sealed partial class V2HorizontalPodAutoscalerConfig : ResourceConfig<V2H
                 Key = "conditions",
                 Name = ResourcesLanguageManager.Instance.V2HorizontalPodAutoscalerConfig_Conditions.CurrentValue()!,
                 Field = x => x.Status.Conditions?.FirstOrDefault(y => y.Status == "True")?.Type ?? "",
-                WidthMode = DynamicTableViewWidthMode.Header
+                Width = GridLength.Auto
             },
         ];
     }

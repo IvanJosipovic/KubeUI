@@ -23,7 +23,7 @@ public sealed partial class V1PodDisruptionBudgetConfig : ResourceConfig<V1PodDi
                 Name = ResourcesLanguageManager.Instance.V1PodDisruptionBudgetConfig_Min_Available.CurrentValue()!,
                 Display = x => x.Spec.MinAvailable != null ? x.Spec.MinAvailable.Value : "",
                 Field = x => x.Spec.MinAvailable,
-                WidthMode = DynamicTableViewWidthMode.Header
+                Width = GridLength.Auto
             },
             new ResourceListColumn<V1PodDisruptionBudget, IntOrString>()
             {
@@ -31,21 +31,21 @@ public sealed partial class V1PodDisruptionBudgetConfig : ResourceConfig<V1PodDi
                 Name = ResourcesLanguageManager.Instance.V1PodDisruptionBudgetConfig_Max_Unavailable.CurrentValue()!,
                 Display = x => x.Spec.MaxUnavailable != null ? x.Spec.MaxUnavailable.Value : "",
                 Field = x => x.Spec.MaxUnavailable,
-                WidthMode = DynamicTableViewWidthMode.Header
+                Width = GridLength.Auto
             },
             new ResourceListColumn<V1PodDisruptionBudget, int?>()
             {
                 Key = "current-healthy",
                 Name = ResourcesLanguageManager.Instance.V1PodDisruptionBudgetConfig_Current_Healthy.CurrentValue()!,
                 Field = x => x.Status.CurrentHealthy,
-                WidthMode = DynamicTableViewWidthMode.Header
+                Width = GridLength.Auto
             },
             new ResourceListColumn<V1PodDisruptionBudget, int?>()
             {
                 Key = "desired-healthy",
                 Name = ResourcesLanguageManager.Instance.V1PodDisruptionBudgetConfig_Desired_Healthy.CurrentValue()!,
                 Field = x => x.Status.DesiredHealthy,
-                WidthMode = DynamicTableViewWidthMode.Header
+                Width = GridLength.Auto
             },
             AgeColumn(),
         ];

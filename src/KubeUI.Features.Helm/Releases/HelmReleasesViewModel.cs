@@ -96,10 +96,10 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
             _releases,
             static release => $"{release.Namespace}\u001f{release.Name}",
             [
-                CreateColumn("name", HelmLanguageManager.Instance.HelmReleasesView_Name.CurrentValue()!, static release => release.Name, DynamicTableViewWidthMode.Star, 1.5),
-                CreateColumn("namespace", HelmLanguageManager.Instance.HelmReleasesView_Namespace.CurrentValue()!, static release => release.Namespace, DynamicTableViewWidthMode.Star, 1.2),
-                CreateColumn("app-version", HelmLanguageManager.Instance.HelmReleasesView_AppVersion.CurrentValue()!, static release => release.AppVersion, DynamicTableViewWidthMode.Star, 1),
-                CreateColumn("status", HelmLanguageManager.Instance.HelmReleasesView_Status.CurrentValue()!, static release => release.Status, DynamicTableViewWidthMode.Star, 1),
+                CreateColumn("name", HelmLanguageManager.Instance.HelmReleasesView_Name.CurrentValue()!, static release => release.Name, 1.5),
+                CreateColumn("namespace", HelmLanguageManager.Instance.HelmReleasesView_Namespace.CurrentValue()!, static release => release.Namespace, 1.2),
+                CreateColumn("app-version", HelmLanguageManager.Instance.HelmReleasesView_AppVersion.CurrentValue()!, static release => release.AppVersion, 1),
+                CreateColumn("status", HelmLanguageManager.Instance.HelmReleasesView_Status.CurrentValue()!, static release => release.Status, 1),
                 CreateUpdatedColumn(_refreshClock)
             ],
             options: new DynamicTableViewSourceOptions { SelectionIdentityMode = DynamicTableViewSelectionIdentityMode.Key });
@@ -404,12 +404,10 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
         string key,
         string header,
         Func<HelmRelease, TValue> selector,
-        DynamicTableViewWidthMode widthMode,
         double width)
     {
         var column = DynamicTableViewColumn<HelmRelease>.Create(key, header, selector);
-        column.WidthMode = widthMode;
-        column.Width = width;
+        column.Width = new GridLength(width, GridUnitType.Star);
         return column;
     }
 
@@ -417,8 +415,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
     {
         var column = DynamicTableViewColumn<HelmRelease>.Create(
             "updated", HelmLanguageManager.Instance.HelmReleasesView_Updated.CurrentValue()!, static release => release.Updated);
-        column.WidthMode = DynamicTableViewWidthMode.Star;
-        column.Width = 1;
+        column.Width = new GridLength(1, GridUnitType.Star);
         column.CellTemplate = new FuncDataTemplate<HelmRelease>(
             (release, _) => new HelmReleaseUpdatedCell(refreshClock) { DataContext = release.Updated },
             supportsRecycling: true);

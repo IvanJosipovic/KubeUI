@@ -238,14 +238,12 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
         ];
 
         var sourceColumn = columns.Single(static column => column.Key == "Source");
-        sourceColumn.WidthMode = DynamicTableViewWidthMode.Star;
-        sourceColumn.Width = 1.0;
+        sourceColumn.Width = new GridLength(1, GridUnitType.Star);
         var destinationColumn = columns.Single(static column => column.Key == "Destination");
-        destinationColumn.WidthMode = DynamicTableViewWidthMode.Star;
-        destinationColumn.Width = 1.0;
-        columns.Single(static column => column.Key == "Protocol").WidthMode = DynamicTableViewWidthMode.Auto;
-        columns.Single(static column => column.Key == "Latency").WidthMode = DynamicTableViewWidthMode.Auto;
-        columns.Single(static column => column.Key == "PolicyName").WidthMode = DynamicTableViewWidthMode.Auto;
+        destinationColumn.Width = new GridLength(1, GridUnitType.Star);
+        columns.Single(static column => column.Key == "Protocol").Width = GridLength.Auto;
+        columns.Single(static column => column.Key == "Latency").Width = GridLength.Auto;
+        columns.Single(static column => column.Key == "PolicyName").Width = GridLength.Auto;
 
         return columns;
     }

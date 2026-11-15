@@ -28,7 +28,7 @@ public sealed partial class V1NodeConfig : ResourceConfig<V1Node>
                 Key = "instance-type",
                 Name = ResourcesLanguageManager.Instance.V1NodeConfig_Instance_Type.CurrentValue()!,
                 Field = x => x?.Metadata?.Labels?.TryGetValue("node.kubernetes.io/instance-type", out var value) == true ? value : string.Empty,
-                WidthMode = DynamicTableViewWidthMode.Cells
+                Width = GridLength.Auto
             },
             new ResourceListColumn<V1Node, decimal>()
             {
@@ -37,7 +37,7 @@ public sealed partial class V1NodeConfig : ResourceConfig<V1Node>
                 CustomControl = typeof(MetricsHistoryCPUCellView),
                 Field = x => x?.Status ?.Capacity ?.TryGetValue("cpu", out var value) == true && value != null ? value.ToDecimal() : 0,
                 Display = x => x?.Status?.Capacity?.TryGetValue("cpu", out var value) == true && value != null ? value.ToDecimal().ToString("0.##") + "c" : "0c",
-                WidthMode = DynamicTableViewWidthMode.Header
+                Width = GridLength.Auto
             },
             new ResourceListColumn<V1Node, decimal>()
             {
@@ -46,7 +46,7 @@ public sealed partial class V1NodeConfig : ResourceConfig<V1Node>
                 CustomControl = typeof(MetricsHistoryMemoryCellView),
                 Field = x => x?.Status ?.Capacity ?.TryGetValue("memory", out var value) == true && value != null ? value.ToDecimal() : 0,
                 Display = x => x?.Status?.Capacity?.TryGetValue("memory", out var value) == true && value != null ? (value.ToDecimal() / 1048576 / 1024).ToString("0.##") + "Gi" : "0Gi",
-                WidthMode = DynamicTableViewWidthMode.Header
+                Width = GridLength.Auto
             },
             new ResourceListColumn<V1Node, decimal>()
             {
@@ -54,28 +54,28 @@ public sealed partial class V1NodeConfig : ResourceConfig<V1Node>
                 Name = ResourcesLanguageManager.Instance.V1NodeConfig_Disk.CurrentValue()!,
                 Field = x => x?.Status ?.Capacity ?.TryGetValue("ephemeral-storage", out var value) == true && value != null ? value.ToDecimal() : 0,
                 Display = x => x?.Status?.Capacity?.TryGetValue("ephemeral-storage", out var value) == true && value != null ? (value.ToDecimal() / 1048576 / 1024).ToString("0.##") + "Gi" : "0Gi",
-                WidthMode = DynamicTableViewWidthMode.Cells
+                Width = GridLength.Auto
             },
             new ResourceListColumn<V1Node, string>()
             {
                 Key = "taints",
                 Name = ResourcesLanguageManager.Instance.V1NodeConfig_Taints.CurrentValue()!,
                 Field = x => x?.Spec?.Taints is { Count: > 0 } taints ? string.Join(", ", taints.Select(x => $"{x.Key}={x.Effect}")) : "",
-                WidthMode = DynamicTableViewWidthMode.Header
+                Width = GridLength.Auto
             },
             new ResourceListColumn<V1Node, string>()
             {
                 Key = "version",
                 Name = ResourcesLanguageManager.Instance.V1NodeConfig_Version.CurrentValue()!,
                 Field = x => x?.Status?.NodeInfo?.KubeletVersion ?? string.Empty,
-                WidthMode = DynamicTableViewWidthMode.Header
+                Width = GridLength.Auto
             },
             new ResourceListColumn<V1Node, string>()
             {
                 Key = "status",
                 Name = ResourcesLanguageManager.Instance.V1NodeConfig_Status.CurrentValue()!,
                 Field = x => x?.Status?.Conditions?.FirstOrDefault(x => x.Type == "Ready")?.Reason ?? string.Empty,
-                WidthMode = DynamicTableViewWidthMode.Cells
+                Width = GridLength.Auto
             },
             AgeColumn(),
         ];

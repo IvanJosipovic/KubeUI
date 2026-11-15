@@ -35,21 +35,21 @@ public sealed partial class V1ReplicaSetConfig : ScalableWorkloadConfig<V1Replic
                 Key = "desired",
                 Name = ResourcesLanguageManager.Instance.V1ReplicaSetConfig_Desired.CurrentValue()!,
                 Field = x => x.Spec.Replicas ?? 0,
-                WidthMode = DynamicTableViewWidthMode.Header
+                Width = GridLength.Auto
             },
             new ResourceListColumn<V1ReplicaSet, int>()
             {
                 Key = "current",
                 Name = ResourcesLanguageManager.Instance.V1ReplicaSetConfig_Current.CurrentValue()!,
                 Field = x => x.Status.AvailableReplicas ?? 0,
-                WidthMode = DynamicTableViewWidthMode.Header
+                Width = GridLength.Auto
             },
             new ResourceListColumn<V1ReplicaSet, int>()
             {
                 Key = "ready",
                 Name = ResourcesLanguageManager.Instance.V1ReplicaSetConfig_Ready.CurrentValue()!,
                 Field = x => x.Status.ReadyReplicas ?? 0,
-                WidthMode = DynamicTableViewWidthMode.Header
+                Width = GridLength.Auto
             },
             AgeColumn(),
         ];

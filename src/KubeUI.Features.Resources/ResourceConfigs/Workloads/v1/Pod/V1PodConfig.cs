@@ -43,7 +43,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
                     Name = ResourcesLanguageManager.Instance.V1PodConfig_Containers.CurrentValue()!,
                     CustomControl = typeof(PodContainerCellView),
                     Field = x => (x.Spec?.Containers?.Count ?? 0) + (x.Spec?.InitContainers?.Count ?? 0),
-                    WidthMode = DynamicTableViewWidthMode.Cells
+                    Width = GridLength.Auto
                 },
                 NamespaceColumn(),
                 new ResourceListColumn<V1Pod, int>()
@@ -51,28 +51,28 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
                     Key = "restarts",
                     Name = ResourcesLanguageManager.Instance.V1PodConfig_Restarts.CurrentValue()!,
                     Field = x => x?.Status?.ContainerStatuses?.Sum(x => x.RestartCount) ?? 0,
-                    WidthMode = DynamicTableViewWidthMode.Header
+                    Width = GridLength.Auto
                 },
                 new ResourceListColumn<V1Pod, string>()
                 {
                     Key = "controlled-by",
                     Name = ResourcesLanguageManager.Instance.V1PodConfig_Controlled_By.CurrentValue()!,
                     Field = x => x?.Metadata?.OwnerReferences?.FirstOrDefault()?.Name ?? "",
-                    WidthMode = DynamicTableViewWidthMode.Header
+                    Width = GridLength.Auto
                 },
                 new ResourceListColumn<V1Pod, string>()
                 {
                     Key = "node",
                     Name = ResourcesLanguageManager.Instance.V1PodConfig_Node.CurrentValue()!,
                     Field = x => x?.Spec?.NodeName ?? "",
-                    WidthMode = DynamicTableViewWidthMode.Header
+                    Width = GridLength.Auto
                 },
                 new ResourceListColumn<V1Pod, string>()
                 {
                     Key = "qos",
                     Name = ResourcesLanguageManager.Instance.V1PodConfig_QoS.CurrentValue()!,
                     Field = x => x?.Status?.QosClass ?? "",
-                    WidthMode = DynamicTableViewWidthMode.Cells
+                    Width = GridLength.Auto
                 },
                 AgeColumn(),
                 new ResourceListColumn<V1Pod, string>()
@@ -81,7 +81,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
                     Name = ResourcesLanguageManager.Instance.V1PodConfig_Status.CurrentValue()!,
                     Field = x => x.Status?.Conditions?.FirstOrDefault(x => x.Type == "Ready")?.Status == "True" ? "Running" : x.Status?.Conditions?.FirstOrDefault(x => x.Type == "Ready")?.Reason ?? "Unknown",
                     CustomControl = typeof(PodStatusCellView),
-                    WidthMode = DynamicTableViewWidthMode.Header
+                    Width = GridLength.Auto
                 },
             ];
 
@@ -93,8 +93,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
                 Name = ResourcesLanguageManager.Instance.V1PodConfig_CPU.CurrentValue()!,
                 CustomControl = typeof(MetricsHistoryCPUCellView),
                 Field = x => GetLatestPodMetricUsage(Cluster, x, "cpu"),
-                Width = 80,
-                WidthMode = DynamicTableViewWidthMode.Pixel
+                Width = new GridLength(80)
             });
             cols.Insert(4, new ResourceListColumn<V1Pod, decimal>()
             {
@@ -102,8 +101,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
                 Name = ResourcesLanguageManager.Instance.V1PodConfig_Memory.CurrentValue()!,
                 CustomControl = typeof(MetricsHistoryMemoryCellView),
                 Field = x => GetLatestPodMetricUsage(Cluster, x, "memory"),
-                Width = 80,
-                WidthMode = DynamicTableViewWidthMode.Pixel
+                Width = new GridLength(80)
             });
         }
 

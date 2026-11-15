@@ -25,9 +25,7 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
     /// </summary>
     public Type? CustomControl { get; set; }
 
-    public DynamicTableViewWidthMode WidthMode { get; set; } = DynamicTableViewWidthMode.Auto;
-
-    public double Width { get; set; } = 1;
+    public GridLength Width { get; set; } = GridLength.Auto;
 
     public double MinWidth { get; set; } = 90;
 
@@ -47,7 +45,6 @@ public class ResourceListColumn<T, TValue> : IResourceListColumn where T : class
             item => DisplayValue(item),
             cellTemplate)
         {
-            WidthMode = WidthMode,
             Width = Width,
             MinWidth = MinWidth,
             FilterChoices = FilterChoices

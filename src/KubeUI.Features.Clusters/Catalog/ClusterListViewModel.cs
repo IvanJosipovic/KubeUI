@@ -1,4 +1,5 @@
 using System.Collections.Specialized;
+using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
 using Avalonia.Controls.Selection;
 using Avalonia.Controls.Templates;
@@ -80,21 +81,18 @@ public sealed partial class ClusterListViewModel : ViewModelBase, IDisposable
             "name",
             ClustersLanguageManager.Instance.ClusterListView_Name.CurrentValue()!,
             static cluster => cluster.Runtime.Name);
-        nameColumn.WidthMode = DynamicTableViewWidthMode.Star;
-        nameColumn.Width = 1;
+        nameColumn.Width = new GridLength(1, GridUnitType.Star);
 
         var aliasColumn = DynamicTableViewColumn<ClusterWorkspace>.Create("alias", ClustersLanguageManager.Instance.ClusterListView_Alias.CurrentValue()!,
             static cluster => cluster.Alias ?? string.Empty,
             cellTemplate: CreateAliasCellTemplate());
-        aliasColumn.WidthMode = DynamicTableViewWidthMode.Star;
-        aliasColumn.Width = 1;
+        aliasColumn.Width = new GridLength(1, GridUnitType.Star);
 
         var kubeconfigColumn = DynamicTableViewColumn<ClusterWorkspace>.Create(
             "kubeconfig",
             ClustersLanguageManager.Instance.ClusterListView_KubeConfig.CurrentValue()!,
             static cluster => cluster.Runtime.KubeConfigPath);
-        kubeconfigColumn.WidthMode = DynamicTableViewWidthMode.Star;
-        kubeconfigColumn.Width = 2;
+        kubeconfigColumn.Width = new GridLength(2, GridUnitType.Star);
 
         return [
             DynamicTableViewColumn<ClusterWorkspace>.Create("enabled", ClustersLanguageManager.Instance.ClusterListView_Enabled.CurrentValue()!,
