@@ -13,9 +13,9 @@ targets:
 - copilot
 - gemini
 - opencode
-- vscode
 dependencies:
   apm:
+    - github.com/cloudflare/security-audit-skill/skills/security-audit
     - github.com/JuliusBrussee/caveman/skills/caveman
     - github.com/Aaronontheweb/dotnet-skills/skills/ilspy-decompile
     - github.com/microsoft/DebugMCP/skills/debug-live
@@ -56,11 +56,6 @@ dependencies:
       registry: false
       transport: http
       url: http://127.0.0.1:5599
-    - name: roslyn-mcp
-      registry: false
-      transport: stdio
-      command: dnx
-      args: ["RoslynMcp.Server"]
     - name: mcp-debugger
       registry: false
       transport: stdio
@@ -70,7 +65,7 @@ dependencies:
       registry: false
       transport: stdio
       command: dnx
-      args: ["Aspire.Cli dashboard run --allow-anonymous"]
+      args: ["Aspire.Cli", "--", "agent", "mcp", "--dashboard-url", "http://localhost:18888", "--nologo", "--non-interactive"]
   lsp: []
 includes: auto
 scripts: {}
