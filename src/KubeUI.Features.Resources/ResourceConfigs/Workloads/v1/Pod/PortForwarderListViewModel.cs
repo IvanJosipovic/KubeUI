@@ -87,7 +87,7 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
             static item => $"{item.Namespace}\u001f{item.Type}\u001f{item.Name}\u001f{item.Port}",
             [
                 CreateColumn("type", static item => item.Type, ResourcesLanguageManager.Instance.PortForwarderListView_Type.CurrentValue()!, new GridLength(80)),
-                CreateColumn("name", static item => item.Name, ResourcesLanguageManager.Instance.PortForwarderListView_Name.CurrentValue()!, new GridLength(1, GridUnitType.Star)),
+                CreateColumn("name", static item => item.Name, ResourcesLanguageManager.Instance.PortForwarderListView_Name.CurrentValue()!),
                 CreateColumn("namespace", static item => item.Namespace, ResourcesLanguageManager.Instance.PortForwarderListView_Namespace.CurrentValue()!, new GridLength(120)),
                 CreateColumn("port", static item => item.Port, ResourcesLanguageManager.Instance.PortForwarderListView_Port.CurrentValue()!, new GridLength(80)),
                 CreateColumn("local-port", static item => item.LocalPort, ResourcesLanguageManager.Instance.PortForwarderListView_LocalPort.CurrentValue()!, new GridLength(100)),
@@ -127,10 +127,12 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
         string key,
         Func<PortForwarder, TValue> selector,
         string header,
-        GridLength width)
+        GridLength? width = null)
     {
         var column = DynamicTableViewColumn<PortForwarder>.Create(key, header, selector);
-        column.Width = width;
+        if (width.HasValue)
+            column.Width = width.Value;
+
         return column;
     }
 }

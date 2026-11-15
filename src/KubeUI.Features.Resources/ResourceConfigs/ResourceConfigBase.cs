@@ -268,7 +268,6 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
             Key = "namespace",
             Name = ResourcesLanguageManager.Instance.ResourceListView_Namespace.CurrentValue()!,
             Field = x => x?.Metadata?.NamespaceProperty ?? string.Empty,
-            Width = new GridLength(1, GridUnitType.Star),
         };
     }
 

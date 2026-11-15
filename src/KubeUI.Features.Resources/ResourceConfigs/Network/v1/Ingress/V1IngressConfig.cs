@@ -22,14 +22,12 @@ public sealed partial class V1IngressConfig : ResourceConfig<V1Ingress>
                 Key = "load-balancers",
                 Name = ResourcesLanguageManager.Instance.V1IngressConfig_Load_Balancers.CurrentValue()!,
                 Field = x => x.Status?.LoadBalancer?.Ingress is { Count: > 0 } ingress ? string.Join(", ", ingress.Select(x => x.Ip ?? x.Hostname).Where(x => !string.IsNullOrEmpty(x))) : "",
-                Width = new GridLength(1, GridUnitType.Star),
             },
             new ResourceListColumn<V1Ingress, string>()
             {
                 Key = "rules",
                 Name = ResourcesLanguageManager.Instance.V1IngressConfig_Rules.CurrentValue()!,
                 Field = x => x.Spec?.Rules is { Count: > 0 } rules ? string.Join(", ", rules.Select(x => x.Http?.Paths is { Count: > 0 } paths ? $"http://{x.Host}{paths[0].Path}" : $"http://{x.Host}")) : "",
-                Width = GridLength.Auto
             },
             AgeColumn(),
         ];

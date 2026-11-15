@@ -415,7 +415,6 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
     {
         var column = DynamicTableViewColumn<HelmRelease>.Create(
             "updated", HelmLanguageManager.Instance.HelmReleasesView_Updated.CurrentValue()!, static release => release.Updated);
-        column.Width = new GridLength(1, GridUnitType.Star);
         column.CellTemplate = new FuncDataTemplate<HelmRelease>(
             (release, _) => new HelmReleaseUpdatedCell(refreshClock) { DataContext = release.Updated },
             supportsRecycling: true);

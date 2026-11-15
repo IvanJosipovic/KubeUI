@@ -41,21 +41,18 @@ public sealed partial class V1CronJobConfig : ResourceConfig<V1CronJob>
                 Key = "schedule",
                 Name = ResourcesLanguageManager.Instance.V1CronJobConfig_Schedule.CurrentValue()!,
                 Field = x => x.Spec.Schedule,
-                Width = GridLength.Auto
             },
             new ResourceListColumn<V1CronJob, bool>()
             {
                 Key = "suspend",
                 Name = ResourcesLanguageManager.Instance.V1CronJobConfig_Suspend.CurrentValue()!,
                 Field = x => x.Spec.Suspend ?? false,
-                Width = GridLength.Auto
             },
             new ResourceListColumn<V1CronJob, int>()
             {
                 Key = "active",
                 Name = ResourcesLanguageManager.Instance.V1CronJobConfig_Active.CurrentValue()!,
                 Field = x => x.Status?.Active?.Count ?? 0,
-                Width = GridLength.Auto
             },
             new ResourceListColumn<V1CronJob, DateTime?>()
             {
@@ -63,7 +60,6 @@ public sealed partial class V1CronJobConfig : ResourceConfig<V1CronJob>
                 Name = ResourcesLanguageManager.Instance.V1CronJobConfig_Last_Schedule.CurrentValue()!,
                 Display = x => x.Status?.LastScheduleTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
                 Field = x => x.Status.LastScheduleTime,
-                Width = GridLength.Auto
             },
             AgeColumn(),
         ];

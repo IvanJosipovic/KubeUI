@@ -81,12 +81,10 @@ public sealed partial class ClusterListViewModel : ViewModelBase, IDisposable
             "name",
             ClustersLanguageManager.Instance.ClusterListView_Name.CurrentValue()!,
             static cluster => cluster.Runtime.Name);
-        nameColumn.Width = new GridLength(1, GridUnitType.Star);
 
         var aliasColumn = DynamicTableViewColumn<ClusterWorkspace>.Create("alias", ClustersLanguageManager.Instance.ClusterListView_Alias.CurrentValue()!,
             static cluster => cluster.Alias ?? string.Empty,
             cellTemplate: CreateAliasCellTemplate());
-        aliasColumn.Width = new GridLength(1, GridUnitType.Star);
 
         var kubeconfigColumn = DynamicTableViewColumn<ClusterWorkspace>.Create(
             "kubeconfig",

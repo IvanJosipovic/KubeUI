@@ -26,7 +26,6 @@ public sealed partial class V1JobConfig : ResourceConfig<V1Job>
                 Name = ResourcesLanguageManager.Instance.V1JobConfig_Completions.CurrentValue()!,
                 Display = x => $"{x.Status.Succeeded ?? 0}/{x.Spec.Completions ?? 0}",
                 Field = x => x.Spec.Completions ?? 0,
-                Width = GridLength.Auto
             },
             AgeColumn(),
             new ResourceListColumn<V1Job, string>()
@@ -34,7 +33,6 @@ public sealed partial class V1JobConfig : ResourceConfig<V1Job>
                 Key = "conditions",
                 Name = ResourcesLanguageManager.Instance.V1JobConfig_Conditions.CurrentValue()!,
                 Field = x => x.Status?.Conditions?.FirstOrDefault(y => y.Status == "True")?.Type ?? "",
-                Width = GridLength.Auto
             },
         ];
     }

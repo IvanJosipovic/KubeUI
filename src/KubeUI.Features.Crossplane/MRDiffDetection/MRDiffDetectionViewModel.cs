@@ -109,8 +109,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
                 "diffField",
                 CrossplaneLanguageManager.Instance.MRDiffDetectionView_DiffField.CurrentValue()!,
                 typeof(string),
-                static row => row.DiffField,
-                width: new GridLength(1, GridUnitType.Star)),
+                static row => row.DiffField),
             CreateColumn(
                 "oldValue",
                 CrossplaneLanguageManager.Instance.MRDiffDetectionView_OldValue.CurrentValue()!,
@@ -141,16 +140,18 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
         Func<CrossplaneDiffRow, string>? displaySelector = null,
         GridLength? width = null)
     {
-        return new DynamicTableViewColumn<CrossplaneDiffRow>(
+        var column = new DynamicTableViewColumn<CrossplaneDiffRow>(
             key,
             name,
             valueType,
             valueSelector,
             displaySelector ?? (row => valueSelector(row)?.ToString() ?? string.Empty),
-            cellTemplate: null)
-        {
-            Width = width ?? GridLength.Auto
-        };
+            cellTemplate: null);
+
+        if (width.HasValue)
+            column.Width = width.Value;
+
+        return column;
     }
 
     public static bool IsAvailable(ClusterWorkspace cluster)

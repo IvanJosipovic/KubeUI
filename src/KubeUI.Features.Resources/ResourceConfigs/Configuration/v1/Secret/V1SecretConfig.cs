@@ -20,21 +20,18 @@ public sealed partial class V1SecretConfig : ResourceConfig<k8s.Models.V1Secret>
                 Key = "labels",
                 Name = ResourcesLanguageManager.Instance.V1SecretConfig_Labels.CurrentValue()!,
                 Field = x => x.Metadata?.Labels is { Count: > 0 } labels ? string.Join(", ", labels.Keys) : "",
-                Width = GridLength.Auto
             },
             new ResourceListColumn<k8s.Models.V1Secret, string>()
             {
                 Key = "keys",
                 Name = ResourcesLanguageManager.Instance.V1SecretConfig_Keys.CurrentValue()!,
                 Field = x => x.Data is { Count: > 0 } data ? string.Join(", ", data.Keys) : "",
-                Width = GridLength.Auto
             },
             new ResourceListColumn<k8s.Models.V1Secret, string>()
             {
                 Key = "type",
                 Name = ResourcesLanguageManager.Instance.V1SecretConfig_Type.CurrentValue()!,
                 Field = x => x.Type,
-                Width = GridLength.Auto
             },
             AgeColumn(),
         ];

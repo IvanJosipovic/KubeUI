@@ -21,7 +21,6 @@ public sealed partial class V1ValidatingWebhookConfigurationConfig : ResourceCon
                 Key = "webhooks",
                 Name = ResourcesLanguageManager.Instance.V1ValidatingWebhookConfigurationConfig_Webhooks.CurrentValue()!,
                 Field = x => x.Webhooks.Count,
-                Width = GridLength.Auto
             },
             AgeColumn(),
         ];

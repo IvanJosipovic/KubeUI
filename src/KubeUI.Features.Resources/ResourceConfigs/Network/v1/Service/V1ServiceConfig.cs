@@ -41,14 +41,12 @@ public sealed partial class V1ServiceConfig : ResourceConfig<V1Service>
                 Key = "type",
                 Name = ResourcesLanguageManager.Instance.V1ServiceConfig_Type.CurrentValue()!,
                 Field = x => x.Spec.Type,
-                Width = GridLength.Auto
             },
             new ResourceListColumn<V1Service, string>()
             {
                 Key = "cluster-ip",
                 Name = ResourcesLanguageManager.Instance.V1ServiceConfig_Cluster_IP.CurrentValue()!,
                 Field = x => x.Spec.ClusterIP,
-                Width = GridLength.Auto
             },
             new ResourceListColumn<V1Service, int>()
             {
@@ -56,7 +54,6 @@ public sealed partial class V1ServiceConfig : ResourceConfig<V1Service>
                 Name = ResourcesLanguageManager.Instance.V1ServiceConfig_Ports.CurrentValue()!,
                 Display = x => x.Spec?.Ports is { Count: > 0 } ports ? string.Join(", ", ports.Select(x => $"{x.Port}{(string.IsNullOrEmpty(x.Name) ? "" : ":" + x.Name)}/{x.Protocol}")) : "",
                 Field = x => x.Spec?.Ports?.FirstOrDefault()?.Port ?? 0,
-                Width = GridLength.Auto
             },
             AgeColumn(),
         ];

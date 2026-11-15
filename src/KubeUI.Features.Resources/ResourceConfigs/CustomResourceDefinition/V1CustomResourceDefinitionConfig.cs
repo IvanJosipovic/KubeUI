@@ -38,21 +38,18 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfig<V1
                 Key = "group",
                 Name = ResourcesLanguageManager.Instance.V1CustomResourceDefinitionConfig_Group.CurrentValue()!,
                 Field = x => x.Spec.Group,
-                Width = new GridLength(1, GridUnitType.Star),
             },
             new ResourceListColumn<V1CustomResourceDefinition, string>()
             {
                 Key = "version",
                 Name = ResourcesLanguageManager.Instance.V1CustomResourceDefinitionConfig_Version.CurrentValue()!,
                 Field = x => x.Spec.Versions.First(x => x.Storage).Name,
-                Width = GridLength.Auto
             },
             new ResourceListColumn<V1CustomResourceDefinition, string>()
             {
                 Key = "scope",
                 Name = ResourcesLanguageManager.Instance.V1CustomResourceDefinitionConfig_Scope.CurrentValue()!,
                 Field = x => x.Spec.Scope,
-                Width = GridLength.Auto
             },
             AgeColumn(),
         ];

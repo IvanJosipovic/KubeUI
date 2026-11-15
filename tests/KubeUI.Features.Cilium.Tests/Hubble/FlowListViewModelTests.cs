@@ -176,15 +176,15 @@ public sealed class FlowListViewModelTests
     }
 
     [Fact]
-    public void Endpoint_columns_use_equal_star_widths_and_basic_string_columns_use_auto_width()
+    public void Endpoint_columns_use_default_width_and_basic_string_columns_use_auto_width()
     {
         var columns = FlowListViewModel.CreateColumns();
 
         var source = columns.Single(static column => column.Key == "Source");
         var destination = columns.Single(static column => column.Key == "Destination");
 
-        source.Width.ShouldBe(new GridLength(1, GridUnitType.Star));
-        destination.Width.ShouldBe(new GridLength(1, GridUnitType.Star));
+        source.Width.ShouldBe(GridLength.Auto);
+        destination.Width.ShouldBe(GridLength.Auto);
         destination.Width.ShouldBe(source.Width);
         columns.Single(static column => column.Key == "Protocol").Width.ShouldBe(GridLength.Auto);
         columns.Single(static column => column.Key == "Latency").Width.ShouldBe(GridLength.Auto);

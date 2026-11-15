@@ -23,7 +23,6 @@ public sealed partial class V1NamespaceConfig(IServiceProvider serviceProvider) 
                 Key = "status",
                 Name = ResourcesLanguageManager.Instance.V1NamespaceConfig_Status.CurrentValue()!,
                 Field = x => x?.Status?.Phase ?? "",
-                Width = GridLength.Auto
             },
             AgeColumn(),
         ];

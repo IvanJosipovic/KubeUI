@@ -23,7 +23,6 @@ public sealed partial class V1RoleBindingConfig : ResourceConfig<V1RoleBinding>
                 Key = "bindings",
                 Name = ResourcesLanguageManager.Instance.V1RoleBindingConfig_Bindings.CurrentValue()!,
                 Field = x => x.Subjects is { Count: > 0 } subjects ? string.Join(", ", subjects.Select(y => y.Name)) : "",
-                Width = new GridLength(1, GridUnitType.Star),
             },
             AgeColumn(),
         ];

@@ -35,7 +35,7 @@ public sealed class MRDiffDetectionViewModelTests
         newValue.Width.ShouldBe(new GridLength(2, GridUnitType.Star));
 
         var diffField = columns.Single(column => column.Key == "diffField");
-        diffField.Width.ShouldBe(new GridLength(1, GridUnitType.Star));
+        diffField.Width.ShouldBe(GridLength.Auto);
         columns.Single(column => column.Key == "newComputed").Width.ShouldBe(GridLength.Auto);
         columns.Single(column => column.Key == "occurrences").Width.ShouldBe(GridLength.Auto);
     }
