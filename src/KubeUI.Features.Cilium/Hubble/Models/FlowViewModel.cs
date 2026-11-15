@@ -38,7 +38,7 @@ public sealed partial class FlowViewModel : ObservableObject
     [ObservableProperty] public partial string Uuid { get; set; } = string.Empty;
     [ObservableProperty] public partial FlowVerdict Verdict { get; set; }
     [ObservableProperty] public partial FlowDirection Direction { get; set; }
-    [ObservableProperty] public partial global::KubeUI.Features.Cilium.Hubble.Models.FlowType FlowType { get; set; }
+    [ObservableProperty] public partial HubbleModels.FlowType FlowType { get; set; }
     [ObservableProperty] public partial string NodeName { get; set; } = string.Empty;
 
     // Source
@@ -82,7 +82,7 @@ public sealed partial class FlowViewModel : ObservableObject
     // Policy
     [ObservableProperty] public partial string? MatchedPolicyName { get; set; }
     [ObservableProperty] public partial string? PolicyNamespace { get; set; }
-    [ObservableProperty] public partial global::KubeUI.Features.Cilium.Hubble.Models.DropReason? DropReason { get; set; }
+    [ObservableProperty] public partial HubbleModels.DropReason? DropReason { get; set; }
     [ObservableProperty] public partial string? DropReasonDescription { get; set; }
     [ObservableProperty] public partial string? ExtDropReasonDescription { get; set; }
 
@@ -91,7 +91,7 @@ public sealed partial class FlowViewModel : ObservableObject
     [ObservableProperty] public partial string? HttpMethod { get; set; }
     [ObservableProperty] public partial string? HttpPath { get; set; }
     [ObservableProperty] public partial int? HttpStatusCode { get; set; }
-    [ObservableProperty] public partial global::KubeUI.Features.Cilium.Hubble.Models.L7FlowType L7Type { get; set; }
+    [ObservableProperty] public partial HubbleModels.L7FlowType L7Type { get; set; }
 
     // Computed
     public string LatencyHumanReadable => Latency is { } latency
