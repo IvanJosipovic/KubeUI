@@ -104,8 +104,8 @@ public sealed class AgentChatViewModelTests
     {
         await using var session = new TestSession("session-activity", [
             new SessionUpdateEvent(new SessionUpdate(new ToolCall { ToolCallId = "call-1", Title = "kubernetes.get" })),
-            new SessionUpdateEvent(new SessionUpdate(new ToolCallUpdate { ToolCallId = "call-1", Status = "completed", Title = "kubernetes.get" })),
-            new SessionUpdateEvent(new SessionUpdate(new Plan { Entries = [new PlanEntry { Content = "Inspect pod", Priority = "high", Status = "pending" }] })),
+            new SessionUpdateEvent(new SessionUpdate(new ToolCallUpdate { ToolCallId = "call-1", Status = ToolCallStatus.Completed, Title = "kubernetes.get" })),
+            new SessionUpdateEvent(new SessionUpdate(new Plan { Entries = [new PlanEntry { Content = "Inspect pod", Priority = PlanEntryPriority.High, Status = PlanEntryStatus.Pending }] })),
             TurnCompleted()
         ]);
         var vm = CreateViewModel(new TestRegistry(new TestAgent(session)), prompt: "Inspect");
@@ -536,5 +536,5 @@ public sealed class AgentChatViewModelTests
         }));
 
     private static SessionEvent TurnCompleted()
-        => new Completed(new PromptResponse { StopReason = "end_turn" });
+        => new Completed(new PromptResponse { StopReason = StopReason.EndTurn });
 }

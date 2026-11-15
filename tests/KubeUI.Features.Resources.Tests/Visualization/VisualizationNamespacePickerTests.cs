@@ -16,6 +16,36 @@ namespace KubeUI.Features.Resources.Tests.Visualization;
 public sealed class VisualizationNamespacePickerTests
 {
     [AvaloniaFact]
+    public async Task Resource_type_picker_stays_compact_with_many_selected_types()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        using var viewModel = new VisualizationViewModel(new ResourceRelationshipBuilder());
+        viewModel.Initialize(workspace);
+        var view = new VisualizationView { DataContext = viewModel };
+        using var window = Application.Current.CreateTestWindow(content: view);
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        var picker = view.GetVisualDescendants().OfType<MultiComboBox>()
+            .Single(control => ReferenceEquals(control.ItemsSource, viewModel.ResourceTypes));
+        var namespacePicker = view.GetVisualDescendants().OfType<NamespaceScopePicker>().Single()
+            .GetVisualDescendants().OfType<MultiComboBox>().Single();
+        for (var i = 0; i < 20; i++)
+        {
+            var type = $"ResourceType{i}";
+            viewModel.ResourceTypes.Add(type);
+            viewModel.SelectedResourceTypes.Add(type);
+        }
+
+        Dispatcher.UIThread.RunJobs();
+        window.UpdateLayout();
+
+        picker.SelectedItems!.Count.ShouldBe(20);
+        picker.MaxHeight.ShouldBe(namespacePicker.MaxHeight);
+        picker.Bounds.Height.ShouldBeLessThanOrEqualTo(namespacePicker.Bounds.Height);
+    }
+
+    [AvaloniaFact]
     public async Task Readonly_named_scope_disables_selection_and_link_without_changing_workspace_selection()
     {
         using var workspace = await Application.Current.CreateClusterAsync();

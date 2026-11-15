@@ -237,16 +237,6 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
                     }))
         ];
 
-        var sourceColumn = columns.Single(static column => column.Key == "Source");
-        sourceColumn.WidthMode = DynamicTableViewWidthMode.Star;
-        sourceColumn.Width = 1.0;
-        var destinationColumn = columns.Single(static column => column.Key == "Destination");
-        destinationColumn.WidthMode = DynamicTableViewWidthMode.Star;
-        destinationColumn.Width = 1.0;
-        columns.Single(static column => column.Key == "Protocol").WidthMode = DynamicTableViewWidthMode.Auto;
-        columns.Single(static column => column.Key == "Latency").WidthMode = DynamicTableViewWidthMode.Auto;
-        columns.Single(static column => column.Key == "PolicyName").WidthMode = DynamicTableViewWidthMode.Auto;
-
         return columns;
     }
 

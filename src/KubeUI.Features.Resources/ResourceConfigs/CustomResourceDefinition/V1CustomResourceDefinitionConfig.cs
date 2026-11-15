@@ -31,28 +31,25 @@ public sealed partial class V1CustomResourceDefinitionConfig : ResourceConfig<V1
                 Name = ResourcesLanguageManager.Instance.V1CustomResourceDefinitionConfig_Name.CurrentValue()!,
                 Field = x => x.Spec.Names.Kind,
                 Sort = SortDirection.Ascending,
-                Width = 2, WidthMode = DynamicTableViewWidthMode.Star,
+                Width = new GridLength(2, GridUnitType.Star),
             },
             new ResourceListColumn<V1CustomResourceDefinition, string>()
             {
                 Key = "group",
                 Name = ResourcesLanguageManager.Instance.V1CustomResourceDefinitionConfig_Group.CurrentValue()!,
                 Field = x => x.Spec.Group,
-                Width = 1, WidthMode = DynamicTableViewWidthMode.Star,
             },
             new ResourceListColumn<V1CustomResourceDefinition, string>()
             {
                 Key = "version",
                 Name = ResourcesLanguageManager.Instance.V1CustomResourceDefinitionConfig_Version.CurrentValue()!,
                 Field = x => x.Spec.Versions.First(x => x.Storage).Name,
-                WidthMode = DynamicTableViewWidthMode.Cells
             },
             new ResourceListColumn<V1CustomResourceDefinition, string>()
             {
                 Key = "scope",
                 Name = ResourcesLanguageManager.Instance.V1CustomResourceDefinitionConfig_Scope.CurrentValue()!,
                 Field = x => x.Spec.Scope,
-                WidthMode = DynamicTableViewWidthMode.Cells
             },
             AgeColumn(),
         ];

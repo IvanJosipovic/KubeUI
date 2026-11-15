@@ -256,8 +256,7 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
             Key = "name",
             Name = ResourcesLanguageManager.Instance.ResourceListView_Name.CurrentValue()!,
             Field = x => x?.Metadata?.Name ?? string.Empty,
-            Width = 2,
-            WidthMode = DynamicTableViewWidthMode.Star,
+            Width = new GridLength(2, GridUnitType.Star),
             Sort = sort,
         };
     }
@@ -269,8 +268,6 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
             Key = "namespace",
             Name = ResourcesLanguageManager.Instance.ResourceListView_Namespace.CurrentValue()!,
             Field = x => x?.Metadata?.NamespaceProperty ?? string.Empty,
-            Width = 1,
-            WidthMode = DynamicTableViewWidthMode.Star,
         };
     }
 
@@ -282,8 +279,7 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
             Name = ResourcesLanguageManager.Instance.ResourceListView_Age.CurrentValue()!,
             CustomControl = typeof(AgeCell),
             Field = x => x.Metadata.CreationTimestamp,
-            Width = 80,
-            WidthMode = DynamicTableViewWidthMode.Pixel
+            Width = new GridLength(80)
         };
     }
 

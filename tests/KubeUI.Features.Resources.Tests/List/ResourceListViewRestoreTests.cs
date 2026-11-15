@@ -30,7 +30,7 @@ public sealed class ResourceListViewRestoreTests
         secondViewModel.SelectionModel.Select(0);
         secondViewModel.CaptureSelectionState();
         var staleColumns = firstViewModel.TableSource.Columns
-            .Select((column, index) => new DynamicTableViewColumnState(column.Key, index, 140))
+            .Select((column, index) => new DynamicTableViewColumnState(column.Key, index, new GridLength(140)))
             .ToArray();
         (staleColumns[0], staleColumns[1]) = (staleColumns[1] with { Order = 0 }, staleColumns[0] with { Order = 1 });
         firstViewModel.TableViewRuntimeState = new(staleColumns, [], [], default);
@@ -39,7 +39,7 @@ public sealed class ResourceListViewRestoreTests
             .ToArray();
         secondViewModel.TableViewRuntimeState = new(
             secondViewModel.TableSource.Columns
-                .Select((column, index) => new DynamicTableViewColumnState(column.Key, index, 220))
+                .Select((column, index) => new DynamicTableViewColumnState(column.Key, index, new GridLength(220)))
                 .ToArray(),
             [], [], default);
 
@@ -82,7 +82,7 @@ public sealed class ResourceListViewRestoreTests
         var originalHeaders = viewModel.TableSource.Columns.Select(static column => column.Header.ToString() ?? string.Empty).ToArray();
         var expectedHeaders = originalHeaders.ToArray();
         var savedColumns = viewModel.TableSource.Columns
-            .Select((column, index) => new DynamicTableViewColumnState(column.Key, index, 140))
+            .Select((column, index) => new DynamicTableViewColumnState(column.Key, index, new GridLength(140)))
             .ToArray();
         savedColumns[0] = savedColumns[0] with { Order = 1 };
         savedColumns[1] = savedColumns[1] with { Order = 0 };

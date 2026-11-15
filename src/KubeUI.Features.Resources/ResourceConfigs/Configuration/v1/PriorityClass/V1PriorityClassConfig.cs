@@ -20,14 +20,12 @@ public sealed partial class V1PriorityClassConfig : ResourceConfig<V1PriorityCla
                 Key = "value",
                 Name = ResourcesLanguageManager.Instance.V1PriorityClassConfig_Value.CurrentValue()!,
                 Field = x => x.Value,
-                WidthMode = DynamicTableViewWidthMode.Cells
             },
             new ResourceListColumn<V1PriorityClass, bool?>()
             {
                 Key = "global-default",
                 Name = ResourcesLanguageManager.Instance.V1PriorityClassConfig_Global_Default.CurrentValue()!,
                 Field = x => x.GlobalDefault ?? false,
-                WidthMode = DynamicTableViewWidthMode.Header
             },
             AgeColumn(),
         ];

@@ -1560,6 +1560,7 @@ public sealed class ResourceGraphControlTests
         var cluster = await Application.Current.CreateClusterAsync(config => config.Type = backend);
         cluster.SelectedNamespaces.Add(new V1Namespace { Metadata = new() { Name = "default" } });
         await cluster.Runtime.AddOrUpdateResource(new V1Namespace { Metadata = new() { Name = "other" } });
+        await WaitForAsync(() => cluster.Runtime.Namespaces.Any(item => item.Name() == "other"));
         var builder = new BuildCaptureRelationshipBuilder();
         using VisualizationViewModel viewModel = new(builder);
 

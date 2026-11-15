@@ -6,8 +6,7 @@ public interface IResourceListColumn
 {
     string Key { get; }
     string Name { get; }
-    DynamicTableViewWidthMode WidthMode { get; }
-    double Width { get; }
+    GridLength Width { get; }
     double MinWidth { get; }
     SortDirection Sort { get; set; }
     /// <summary>
