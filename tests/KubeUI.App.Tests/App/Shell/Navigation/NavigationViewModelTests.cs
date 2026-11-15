@@ -3014,6 +3014,7 @@ internal class FakeCustomResourceConfig : IResourceConfig
     public Type Type { get; }
 
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
+    public IRelayCommand NewResourceUiEditorCommand => throw new NotImplementedException();
 
     public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
     public IAsyncRelayCommand<IList> DeleteCommand => throw new NotImplementedException();
@@ -3055,6 +3056,7 @@ internal class FakeResourceConfig : IResourceConfig
     public Type Type { get; }
 
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
+    public IRelayCommand NewResourceUiEditorCommand => throw new NotImplementedException();
 
     public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
     public IAsyncRelayCommand<IList> DeleteCommand => throw new NotImplementedException();
@@ -3105,6 +3107,7 @@ internal sealed class DeferredPermissionResourceConfig : IResourceConfig
     public Task SeedResource(bool waitForReady, CancellationToken cancellationToken) => SeedResource(waitForReady);
 
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
+    public IRelayCommand NewResourceUiEditorCommand => throw new NotImplementedException();
 
     public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
     public IAsyncRelayCommand<IList> DeleteCommand => throw new NotImplementedException();
@@ -3178,6 +3181,7 @@ internal sealed class SlowPermissionResourceConfig : IResourceConfig
     public Task SeedResource(bool waitForReady, CancellationToken cancellationToken) => SeedResource(waitForReady);
 
     public IRelayCommand NewResourceCommand => throw new NotImplementedException();
+    public IRelayCommand NewResourceUiEditorCommand => throw new NotImplementedException();
 
     public IRelayCommand<IList> ViewCommand => throw new NotImplementedException();
     public IAsyncRelayCommand<IList> DeleteCommand => throw new NotImplementedException();

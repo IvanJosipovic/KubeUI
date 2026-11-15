@@ -13,6 +13,7 @@ using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.Controls.Docking;
+using KubeUI.Features.Resources.Editor;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources.Common;
 using KubeUI.Features.Resources.Infrastructure;
@@ -314,7 +315,7 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
         },
         new()
         {
-            Title = ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_Edit.CurrentValue()!,
+            Title = ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_EditYaml.CurrentValue()!,
             Command = EditYamlCommand,
             CommandParameter = selectedItems?.ToList(),
             FluentIcon = Icon.DocumentEdit,
@@ -335,6 +336,13 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
         },
         new()
         {
+            Title = ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_Edit.CurrentValue()!,
+            Command = EditResourceCommand,
+            CommandParameter = selectedItems?.ToList(),
+            FluentIcon = Icon.Edit,
+        },
+        new()
+        {
             Title = ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_Delete.CurrentValue()!,
             Command = DeleteCommand,
             CommandParameter = selectedItems?.ToList(),
@@ -342,6 +350,23 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
             FluentIcon = Icon.Delete,
         }
     ];
+
+    [RelayCommand(CanExecute = nameof(CanEditResource))]
+    private async Task EditResource(IList items)
+    {
+        if (items.Count != 1 || items[0] is not T resource)
+            return;
+
+        await ServiceProvider.GetRequiredService<IResourceEditorLauncher>().Open(Cluster, resource);
+    }
+
+    private bool CanEditResource(IList? items)
+    {
+        if (items is null || items.Count != 1 || items[0] is not T resource)
+            return false;
+
+        return Cluster.Runtime.Permissions.CanI(Kind, Verb.Update, resource.Namespace());
+    }
 
     public IList<(Verb verb, string? subResource)> DefaultPermissions() => [
         (Verb.Create, null),
@@ -417,8 +442,16 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
         vm.Initialize(Cluster, resource);
         vm.EditMode = true;
 
-        _factory.AddToBottom(vm);
+        _factory.AddToDocuments(vm);
     }
+
+    [RelayCommand(CanExecute = nameof(CanNewResource))]
+    public async Task NewResourceUiEditor()
+    {
+        await ServiceProvider.GetRequiredService<IResourceEditorLauncher>().OpenForCreate(Cluster, CreateNewResource());
+    }
+
+    IRelayCommand IResourceConfig.NewResourceUiEditorCommand => NewResourceUiEditorCommand;
 
     internal virtual T CreateNewResource()
     {

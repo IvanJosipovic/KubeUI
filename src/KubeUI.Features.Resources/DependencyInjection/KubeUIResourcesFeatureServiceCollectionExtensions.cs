@@ -1,6 +1,8 @@
-﻿using KubeUI.Features.Clusters.Workspace;
+using Dock.Model.Core;
+using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources;
 using KubeUI.Features.Resources.Icons;
+using KubeUI.Features.Resources.Editor;
 using KubeUI.Features.Resources.List;
 using KubeUI.Features.Resources.Properties;
 using KubeUI.Features.Resources.ResourceConfigs.Workloads.v1.Pod;
@@ -19,6 +21,10 @@ public static partial class KubeUIResourcesFeatureServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddSingleton<IClusterCustomResourceConfigFactory, CustomResourceConfigFactory>();
+        services.AddTransient<ResourceEditorViewModel>();
+        services.AddSingleton<IResourceEditorLauncher>(sp => new ResourceEditorLauncher(
+            sp,
+            () => sp.GetRequiredService<IFactory>()));
         services.AddSingleton<ResourceIconService>();
         services.AddSingleton<IResourceIconService>(sp => sp.GetRequiredService<ResourceIconService>());
         services.AddSingleton<IResourceVisualizationService, ResourceVisualizationService>();

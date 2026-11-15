@@ -29,7 +29,12 @@ public sealed class ResourceListToolbarTests
 
         var add = view.GetVisualDescendants().OfType<Button>()
             .Single(button => Equals(ToolTip.GetTip(button), ResourcesLanguageManager.Instance.ResourceListView_NewResource.CurrentValue()));
-        add.Command.ShouldBeSameAs(viewModel.ResourceConfig.NewResourceCommand);
+        add.Command.ShouldBeNull();
+        add.Flyout.ShouldBeOfType<MenuFlyout>().Items.OfType<MenuItem>()
+            .Select(item => item.Header?.ToString())
+            .ShouldBe([
+                ResourcesLanguageManager.Instance.ResourceListView_NewResourceYaml.CurrentValue(),
+                ResourcesLanguageManager.Instance.ResourceListView_NewResourceUiEditor.CurrentValue()]);
         add.IsVisible.ShouldBe(viewModel.ResourceConfig.ShowNewResource);
         var search = view.GetVisualDescendants().OfType<TextBox>()
             .Single(text => text.PlaceholderText == ResourcesLanguageManager.Instance.ResourceListView_SearchWatermark.CurrentValue());
