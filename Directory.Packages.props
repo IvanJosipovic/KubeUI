@@ -90,7 +90,7 @@
     <!-- AI/MCP -->
     <PackageVersion Include="ModelContextProtocol" Version="2.4.0" />
     <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="2.4.0" />
-    <PackageVersion Include="SvcSystems.AI.AgentClientProtocol" Version="1.0.0-alpha.11" />
+    <PackageVersion Include="SvcSystems.AI.AgentClientProtocol" Version="1.0.0-alpha.12" />
     
     <!-- TextMate -->
     <PackageVersion Include="TextMateSharp" Version="2.0.5" />
