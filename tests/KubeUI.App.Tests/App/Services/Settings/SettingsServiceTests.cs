@@ -22,16 +22,15 @@ public sealed class SettingsServiceTests
     }
 
     [Fact]
-    public void changing_nested_source_generation_flags_saves_settings()
+    public void changing_nested_json_serialization_flag_saves_settings()
     {
         var settings = new AppSettings();
         var service = CreateService(settings);
         _ = service.Settings;
 
         settings.PreviewFeatures.DisableJsonSerializationReflection = true;
-        settings.PreviewFeatures.DisableYamlSerializationReflection = true;
 
-        service.SaveCount.ShouldBe(2);
+        service.SaveCount.ShouldBe(1);
     }
 
     [Fact]

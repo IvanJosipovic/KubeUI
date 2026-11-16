@@ -15,7 +15,4 @@ public sealed partial class FeatureSettings : ObservableObject
     [ObservableProperty]
     public partial bool DisableJsonSerializationReflection { get; set; }
 
-    /// <summary>Gets or sets whether Kubernetes YAML serialization must disable reflection.</summary>
-    [ObservableProperty]
-    public partial bool DisableYamlSerializationReflection { get; set; }
 }

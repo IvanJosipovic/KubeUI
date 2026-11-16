@@ -64,9 +64,9 @@ public sealed class TestClusterGenerator
         K8SConfiguration kubeConfig;
         try
         {
-            kubeConfig = KubernetesClientConfiguration.LoadKubeConfig(
-                kubeconfigPath: null,
-                useRelativePaths: true);
+            kubeConfig = KubeConfigFileLoader.Load(
+                KubernetesClientConfiguration.KubeConfigDefaultLocation,
+                _services.GetRequiredService<IKubernetesYamlSerializer>());
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or k8s.Exceptions.KubeConfigException)
         {
@@ -178,7 +178,10 @@ public sealed class TestClusterGenerator
 
         if (!string.IsNullOrWhiteSpace(config.InitialYaml))
         {
-            api.AddYaml(config.InitialYaml, _services.GetRequiredService<KubernetesModelCatalog>().GetYamlTypeMap());
+            api.AddYaml(
+                config.InitialYaml,
+                _services.GetRequiredService<KubernetesModelCatalog>().GetYamlTypeMap(),
+                _services.GetRequiredService<IKubernetesYamlSerializer>());
         }
 
         var kubeConfig = CreateFakeKubeConfig(config.Name ?? "fake");
@@ -325,7 +328,10 @@ public sealed class TestClusterGenerator
             await Kind.DownloadClient(cancellationToken).ConfigureAwait(false);
             await Kind.CreateCluster(name, kubeConfigPath: kubeConfigPath, cancellationToken: cancellationToken).ConfigureAwait(false);
 
-            var kubeConfig = await Kind.GetK8SConfiguration(name, cancellationToken).ConfigureAwait(false);
+            var kubeConfig = await Kind.GetK8SConfiguration(
+                name,
+                _services.GetRequiredService<IKubernetesYamlSerializer>(),
+                cancellationToken).ConfigureAwait(false);
             var clientConfig = KubernetesClientConfiguration.BuildConfigFromConfigObject(kubeConfig, null, null);
             clientConfig.FirstMessageHandlerSetup = config.FirstMessageHandlerSetup;
             var handlers = CreateHttpHandlers(
@@ -477,7 +483,7 @@ public sealed class TestClusterGenerator
 
         await ApplyResourcesAsync(
             client,
-            _services.GetRequiredService<IKubernetesYamlSerializer>().LoadAllFromString(yaml, key => typeMap[key]).Cast<IKubernetesObject>(),
+            _services.GetRequiredService<IKubernetesYamlSerializer>().LoadAllFromString(yaml, key => typeMap[key]),
             cancellationToken).ConfigureAwait(false);
     }
 

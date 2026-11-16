@@ -34,9 +34,9 @@ internal static class HelmWalkthroughService
                 realHelm.GetChartValuesAsync(connection, chart, version, cancellationToken));
         service.Setup(helm => helm.TemplateVersionAsync(
                 It.IsAny<HelmConnection>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<IReadOnlyDictionary<string, object?>?>(), It.IsAny<CancellationToken>()))
+                 It.IsAny<JsonElement?>(), It.IsAny<CancellationToken>()))
             .Returns((HelmConnection connection, string releaseName, string chart, string version,
-                IReadOnlyDictionary<string, object?>? values, CancellationToken cancellationToken) =>
+                JsonElement? values, CancellationToken cancellationToken) =>
                 realHelm.TemplateVersionAsync(connection, releaseName, chart, version, values, cancellationToken));
         service.Setup(helm => helm.AddRepositoryAsync(
                 It.IsAny<HelmConnection>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(),
@@ -55,10 +55,10 @@ internal static class HelmWalkthroughService
 
         service.Setup(helm => helm.InstallAsync(
                 It.IsAny<HelmConnection>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<IReadOnlyDictionary<string, object?>?>(), It.IsAny<bool>(), It.IsAny<bool>(),
+                 It.IsAny<JsonElement?>(), It.IsAny<bool>(), It.IsAny<bool>(),
                 It.IsAny<TimeSpan?>(), It.IsAny<CancellationToken>(), It.IsAny<string?>()))
             .Returns((HelmConnection connection, string name, string chart,
-                IReadOnlyDictionary<string, object?>? values, bool createNamespace, bool wait,
+                JsonElement? values, bool createNamespace, bool wait,
                 TimeSpan? timeout, CancellationToken cancellationToken, string? version) =>
             {
                 var key = GetContext(connection);
@@ -92,10 +92,10 @@ internal static class HelmWalkthroughService
                 Task.FromResult(releases[GetContext(connection)]));
         service.Setup(helm => helm.UpgradeAsync(
                 It.IsAny<HelmConnection>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<IReadOnlyDictionary<string, object?>?>(), It.IsAny<bool>(), It.IsAny<bool>(),
+                 It.IsAny<JsonElement?>(), It.IsAny<bool>(), It.IsAny<bool>(),
                 It.IsAny<bool>(), It.IsAny<TimeSpan?>(), It.IsAny<CancellationToken>(), It.IsAny<string?>()))
             .Returns((HelmConnection connection, string name, string chart,
-                IReadOnlyDictionary<string, object?>? values, bool installIfMissing, bool createNamespace,
+                JsonElement? values, bool installIfMissing, bool createNamespace,
                 bool wait, TimeSpan? timeout, CancellationToken cancellationToken, string? version) =>
             {
                 var key = GetContext(connection);
@@ -130,10 +130,16 @@ internal static class HelmWalkthroughService
 
     private static string GetContext(HelmConnection connection) => connection.Context ?? "default";
 
-    private static JsonElement SerializeValues(IReadOnlyDictionary<string, object?>? values)
-        => values is null
-            ? JsonSerializer.SerializeToElement(new Dictionary<string, object?>())
-            : JsonSerializer.SerializeToElement(values);
+    private static JsonElement SerializeValues(JsonElement? values)
+    {
+        if (values.HasValue)
+        {
+            return values.Value.Clone();
+        }
+
+        using var emptyValues = JsonDocument.Parse("{}");
+        return emptyValues.RootElement.Clone();
+    }
 
     private static HelmRelease CreateRelease(string name, string releaseNamespace, int revision, string version)
         => new(

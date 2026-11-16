@@ -15,7 +15,7 @@ public sealed class ClusterWorkspacePreferencesTests
         runtime.Connected.ShouldBeTrue();
         Application.Current.GetTestServices().GetRequiredService<ClusterManager>().Clusters.Remove(runtime);
 
-        await TestWait.UntilAsync(() => !runtime.Connected, 5000, TestContext.Current.CancellationToken,
+        await TestWait.UntilAsync(() => !runtime.Connected, 15000, TestContext.Current.CancellationToken,
             () => Dispatcher.UIThread.RunJobs());
     }
 

@@ -71,7 +71,7 @@ public static class KubernetesTestServiceProvider
         services.AddLogging(builder => builder.AddDebug().SetMinimumLevel(LogLevel.Information));
         services.AddSingleton<IHostApplicationLifetime, KubernetesTestHostApplicationLifetime>();
         services.AddSingleton(settings);
-        services.AddKubeUIKubernetesServices(jsonAllowReflection: false, yamlAllowReflection: true);
+        services.AddKubeUIKubernetesServices(jsonAllowReflection: false);
         configure?.Invoke(services);
         var provider = services.BuildServiceProvider();
         RegisterYamlModels(provider.GetRequiredService<KubernetesModelCatalog>());

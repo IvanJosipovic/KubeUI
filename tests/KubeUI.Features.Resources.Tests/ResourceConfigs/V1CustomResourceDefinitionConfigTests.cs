@@ -178,7 +178,7 @@ public class V1CustomResourceDefinitionConfigTests
         protected override GenericKubernetesObject CreateInitialResourceTemplate()
             => string.IsNullOrWhiteSpace(template)
                 ? new GenericKubernetesObject()
-                : Kubernetes.Serialization.KubernetesYaml.Deserialize<GenericKubernetesObject>(template);
+                : serviceProvider.GetRequiredService<IKubernetesYamlSerializer>().Deserialize<GenericKubernetesObject>(template);
 
         protected override IEnumerable<MenuItemViewModel> CreateCustomMenuItems(IEnumerable<GenericKubernetesObject>? selectedItems)
             => configurePresentation ? [new MenuItemViewModel { Title = "Configured action" }] : [];

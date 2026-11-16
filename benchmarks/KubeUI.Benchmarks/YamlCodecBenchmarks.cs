@@ -30,7 +30,7 @@ public class YamlCodecBenchmarks : IDisposable
     {
         _services = new ServiceCollection()
             .AddLogging()
-            .AddKubeUIKubernetesServices(jsonAllowReflection: false, yamlAllowReflection: true)
+            .AddKubeUIKubernetesServices(jsonAllowReflection: false)
             .BuildServiceProvider();
         _serializer = _services.GetRequiredService<IKubernetesYamlSerializer>();
         var modelCatalog = _services.GetRequiredService<KubernetesModelCatalog>();

@@ -12,6 +12,4 @@ public static class FeatureFlagKeys
     /// <summary>The Kubernetes JSON serialization disable-reflection flag key.</summary>
     public const string DisableJsonSerializationReflection = "kubeui.disable-json-serialization-reflection";
 
-    /// <summary>The Kubernetes YAML serialization disable-reflection flag key.</summary>
-    public const string DisableYamlSerializationReflection = "kubeui.disable-yaml-serialization-reflection";
 }

@@ -28,7 +28,7 @@ public sealed class KubeUIKubernetesServiceCollectionExtensionsTests
     public void generated_json_metadata_covers_protocol_payload_types(Type payloadType)
     {
         using var services = new ServiceCollection()
-            .AddKubeUIKubernetesServices(jsonAllowReflection: false, yamlAllowReflection: false)
+            .AddKubeUIKubernetesServices(jsonAllowReflection: false)
             .BuildServiceProvider();
         var serializer = services.GetRequiredService<IKubernetesJsonSerializer>();
         KubernetesClientConfiguration configuration = new();
@@ -41,7 +41,7 @@ public sealed class KubeUIKubernetesServiceCollectionExtensionsTests
     public void json_resolver_uses_reflection_fallback_only_when_allowed()
     {
         using var services = new ServiceCollection()
-            .AddKubeUIKubernetesServices(jsonAllowReflection: false, yamlAllowReflection: false)
+            .AddKubeUIKubernetesServices(jsonAllowReflection: false)
             .BuildServiceProvider();
         var serializer = services.GetRequiredService<IKubernetesJsonSerializer>();
         Should.Throw<NotSupportedException>(() =>
@@ -50,7 +50,7 @@ public sealed class KubeUIKubernetesServiceCollectionExtensionsTests
         if (System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault)
         {
             using var reflectionServices = new ServiceCollection()
-                .AddKubeUIKubernetesServices(jsonAllowReflection: true, yamlAllowReflection: false)
+                .AddKubeUIKubernetesServices(jsonAllowReflection: true)
                 .BuildServiceProvider();
             reflectionServices.GetRequiredService<IKubernetesJsonSerializer>().Serialize(new Uri("https://example.com"))
                 .ShouldBe("\"https://example.com/\"");
@@ -58,7 +58,7 @@ public sealed class KubeUIKubernetesServiceCollectionExtensionsTests
         }
 
         Should.Throw<InvalidOperationException>(() =>
-            new ServiceCollection().AddKubeUIKubernetesServices(jsonAllowReflection: true, yamlAllowReflection: false))
+            new ServiceCollection().AddKubeUIKubernetesServices(jsonAllowReflection: true))
             .Message.ShouldContain("reflection-based JSON serialization is unavailable");
     }
 

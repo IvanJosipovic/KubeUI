@@ -19,9 +19,12 @@ namespace KubeUI.Features.Helm.Tests.Repositories;
 
 public sealed class HelmRepositoriesViewModelTests : IDisposable
 {
-    private readonly KubernetesYamlSerializer _yamlSerializer = new(allowReflection: true);
+    private readonly ServiceProvider _serializationServices = new ServiceCollection()
+        .AddKubeUIKubernetesServices(jsonAllowReflection: false)
+        .BuildServiceProvider();
+    private IKubernetesYamlSerializer _yamlSerializer => _serializationServices.GetRequiredService<IKubernetesYamlSerializer>();
 
-    public void Dispose() => _yamlSerializer.Dispose();
+    public void Dispose() => _serializationServices.Dispose();
 
     [AvaloniaFact]
     public async Task Repository_header_matches_release_header_spacing_count_and_action_alignment()

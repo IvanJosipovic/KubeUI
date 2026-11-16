@@ -38,9 +38,7 @@ public static class KubeUIAvaloniaServiceCollectionExtensions
         Action<IServiceCollection>? configureOverrides = null)
     {
         services.AddKubeUIAvaloniaServices();
-        services.AddKubeUIKubernetesServices(
-            jsonAllowReflection: !features.DisableJsonSerializationReflection,
-            yamlAllowReflection: !features.DisableYamlSerializationReflection);
+        services.AddKubeUIKubernetesServices(jsonAllowReflection: !features.DisableJsonSerializationReflection);
         services.AddKubeUICiliumFeature();
         services.Replace(ServiceDescriptor.Singleton<IThreadDispatcher>(AvaloniaScheduler.Instance));
         services.AddKubeUIDialogServices();

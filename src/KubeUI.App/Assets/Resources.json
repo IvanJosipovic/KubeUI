@@ -74,8 +74,6 @@
   "SettingsView_ConsoleFontSize_ToolTip": "Console/Logs/Yaml Font Size",
   "SettingsView_DisableJsonSerializationReflection_Label": "Disable JSON Serialization Reflection (Restart Required)",
   "SettingsView_DisableJsonSerializationReflection_ToolTip": "Disables reflection fallback for Kubernetes JSON serialization. When enabled, missing generated metadata will fail instead of using reflection. Reflection is enabled by default and requires runtime support.",
-  "SettingsView_DisableYamlSerializationReflection_Label": "Disable YAML Serialization Reflection (Restart Required)",
-  "SettingsView_DisableYamlSerializationReflection_ToolTip": "Disables reflection-based Kubernetes YAML builders and uses generated metadata instead. Reflection is enabled by default. This setting does not change the separate Kubernetes JSON reflection setting.",
   "SettingsView_FeaturesHeading": "Preview Features",
   "SettingsView_FontSize_Label": "Font Size",
   "SettingsView_FontSize_ToolTip": "Font Size",

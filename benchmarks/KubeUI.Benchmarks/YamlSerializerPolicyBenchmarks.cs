@@ -23,15 +23,15 @@ public class YamlSerializerPolicyBenchmarks : IDisposable
     public int YamlLineCount { get; set; }
 
     [Params(true, false)]
-    public bool YamlAllowReflection { get; set; }
+    public bool JsonAllowReflection { get; set; }
 
-    /// <summary>Creates a Pod fixture and serializer using the selected reflection policy.</summary>
+    /// <summary>Creates a Pod fixture and serializer using the selected JSON metadata policy.</summary>
     [GlobalSetup]
     public void Setup()
     {
         _services = new ServiceCollection()
             .AddLogging()
-            .AddKubeUIKubernetesServices(jsonAllowReflection: false, yamlAllowReflection: YamlAllowReflection)
+            .AddKubeUIKubernetesServices(jsonAllowReflection: JsonAllowReflection)
             .BuildServiceProvider();
         _serializer = _services.GetRequiredService<IKubernetesYamlSerializer>();
         var modelCatalog = _services.GetRequiredService<KubernetesModelCatalog>();
@@ -56,11 +56,11 @@ public class YamlSerializerPolicyBenchmarks : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    /// <summary>Serializes the Pod fixture with the selected YAML metadata policy.</summary>
+    /// <summary>Serializes the Pod fixture with the selected JSON metadata policy.</summary>
     [Benchmark]
     public string SerializeResource() => _serializer.Serialize(_resource);
 
-    /// <summary>Deserializes the Pod fixture with the selected YAML metadata policy.</summary>
+    /// <summary>Deserializes the Pod fixture with the selected JSON metadata policy.</summary>
     [Benchmark]
     public V1Pod DeserializeResource() => _serializer.Deserialize<V1Pod>(_yaml);
 

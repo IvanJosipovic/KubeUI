@@ -19,9 +19,12 @@ namespace KubeUI.Features.Helm.Tests.Visualization;
 
 public sealed class LiveHelmVisualizationTests : IDisposable
 {
-    private readonly KubernetesYamlSerializer _yamlSerializer = new(allowReflection: true);
+    private readonly ServiceProvider _serializationServices = new ServiceCollection()
+        .AddKubeUIKubernetesServices(jsonAllowReflection: false)
+        .BuildServiceProvider();
+    private IKubernetesYamlSerializer _yamlSerializer => _serializationServices.GetRequiredService<IKubernetesYamlSerializer>();
 
-    public void Dispose() => _yamlSerializer.Dispose();
+    public void Dispose() => _serializationServices.Dispose();
 
     [LiveClusterFact]
     public async Task Alpha10_lists_releases_across_namespaces_and_reads_release_metadata()

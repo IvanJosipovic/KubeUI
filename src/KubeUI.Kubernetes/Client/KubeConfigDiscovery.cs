@@ -1,5 +1,6 @@
 using k8s;
 using k8s.KubeConfigModels;
+using KubeUI.Kubernetes.Serialization;
 
 namespace KubeUI.Kubernetes;
 
@@ -11,14 +12,17 @@ public sealed class KubeConfigDiscovery : IKubeConfigDiscovery
     private const long MaxKubeConfigSize = 10 * 1024 * 1024;
 
     private readonly ILogger<KubeConfigDiscovery> _logger;
+    private readonly IKubernetesYamlSerializer _yamlSerializer;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="KubeConfigDiscovery"/> class.
     /// </summary>
     /// <param name="logger">The logger.</param>
-    public KubeConfigDiscovery(ILogger<KubeConfigDiscovery> logger)
+    /// <param name="yamlSerializer">The application-owned YAML serializer.</param>
+    public KubeConfigDiscovery(ILogger<KubeConfigDiscovery> logger, IKubernetesYamlSerializer yamlSerializer)
     {
         _logger = logger;
+        _yamlSerializer = yamlSerializer;
     }
 
     /// <inheritdoc />
@@ -70,7 +74,7 @@ public sealed class KubeConfigDiscovery : IKubeConfigDiscovery
                 return false;
             }
 
-            var config = KubernetesYaml.Deserialize<K8SConfiguration>(File.ReadAllText(path));
+            var config = _yamlSerializer.Deserialize<K8SConfiguration>(File.ReadAllText(path));
             if (config is null)
             {
                 return false;

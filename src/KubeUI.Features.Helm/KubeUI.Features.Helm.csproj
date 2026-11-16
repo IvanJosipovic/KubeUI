@@ -48,7 +48,6 @@
     <Using Include="System.Collections" />
     <Using Include="System.ComponentModel" />
     <Using Include="SvcSystems.Avalonia.DynamicTableView" />
-    <Using Include="YamlDotNet.RepresentationModel" />
   </ItemGroup>
 
   <ItemGroup>
