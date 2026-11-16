@@ -55,7 +55,6 @@ public sealed class HubbleConnection : IHubbleConnection
     }
 
     /// <inheritdoc />
-    [Obsolete]
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
         if (Interlocked.CompareExchange(ref _startState, 1, 0) != 0)
@@ -109,7 +108,6 @@ public sealed class HubbleConnection : IHubbleConnection
     }
 
     /// <inheritdoc />
-    [Obsolete]
     public IObservable<FlowViewModel> ObserveFlows(IReadOnlyCollection<string> namespaces)
     {
         ArgumentNullException.ThrowIfNull(namespaces);
@@ -130,11 +128,9 @@ public sealed class HubbleConnection : IHubbleConnection
         return CreateFlowObservable(namespaceSnapshot);
     }
 
-    [Obsolete]
     private IObservable<FlowViewModel> CreateFlowObservable(IReadOnlyList<string>? namespaces)
         => Observable.Create<FlowViewModel>((observer, token) => ReadFlowsAsync(observer, token, namespaces));
 
-    [Obsolete]
     private async Task ReadFlowsAsync(
         IObserver<FlowViewModel> observer,
         CancellationToken subscriptionToken,

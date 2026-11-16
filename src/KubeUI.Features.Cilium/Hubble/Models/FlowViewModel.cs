@@ -28,7 +28,6 @@ public sealed partial class FlowViewModel : ObservableObject
 
     public FlowViewModel() { }
 
-    [Obsolete]
     public FlowViewModel(HubbleModels.Flow flow)
     {
         UpdateFrom(flow);
@@ -118,7 +117,6 @@ public sealed partial class FlowViewModel : ObservableObject
 
     public FlowCacheKey CacheKey => new(string.IsNullOrWhiteSpace(Uuid) ? _fallbackCacheIdentity : Uuid);
 
-    [Obsolete]
     public void UpdateFrom(HubbleModels.Flow flow)
     {
         if (flow.Time != null)
@@ -241,13 +239,10 @@ public sealed partial class FlowViewModel : ObservableObject
         DropReasonDescription = flow.DropReasonDesc.ToString();
         ExtDropReasonDescription = flow.ExtDropReasonDesc;
 
+        ApplicationProtocol = null;
         if (flow.L7 != null)
         {
             L7Type = flow.L7.Type;
-            if (flow.L7.Kafka != null)
-            {
-                ApplicationProtocol = "Kafka";
-            }
             if (flow.L7.Dns != null)
             {
                 ApplicationProtocol = "DNS";
@@ -260,10 +255,6 @@ public sealed partial class FlowViewModel : ObservableObject
                 HttpPath = flow.L7.Http.Url;
                 HttpStatusCode = flow.L7.Http.Code > 0 ? (int?)flow.L7.Http.Code : null;
             }
-        }
-        else
-        {
-            ApplicationProtocol = null;
         }
     }
 
