@@ -232,7 +232,23 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
                 return;
             }
 
-            _workspaceStateInitialized = true;
+            var initialized = false;
+            lock (_connectLock)
+            {
+                if (IsConnectGenerationCurrent(generation)
+                    && Runtime.Connected
+                    && IsEnabled
+                    && !_disposed)
+                {
+                    _workspaceStateInitialized = true;
+                    initialized = true;
+                }
+            }
+
+            if (!initialized)
+            {
+                await WaitForDisabledDisconnectAsync().ConfigureAwait(false);
+            }
         }
         catch (Exception ex)
         {
@@ -367,7 +383,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
     private async Task WaitForDisabledDisconnectAsync()
     {
-        if (!IsEnabled)
+        if (!IsEnabled || _disposed)
         {
             await Disconnect().ConfigureAwait(false);
         }

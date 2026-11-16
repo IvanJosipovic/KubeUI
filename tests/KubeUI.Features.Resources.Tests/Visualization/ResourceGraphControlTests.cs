@@ -1892,10 +1892,14 @@ public sealed class ResourceGraphControlTests
         await cluster.Runtime.SeedResource<V1Pod>(true);
         viewModel.Initialize(cluster);
         await builder.WaitForBuildAsync(1);
+        await WaitForAsync(() => !viewModel.IsRebuildPendingOrRunning);
+        var fullBuildCount = builder.BuildCount;
 
         var background = CreatePod("background");
         background.Metadata.Uid = null;
         await cluster.Runtime.AddOrUpdateResource(background);
+        await builder.WaitForAdditionAsync();
+        builder.BuildCount.ShouldBe(fullBuildCount);
         await TestWait.UntilAsync(
             () => cluster.Runtime.GetResource<V1Pod>("default", "background") is not null,
             TimeSpan.FromSeconds(5),
@@ -1920,9 +1924,6 @@ public sealed class ResourceGraphControlTests
             () => cluster.Runtime.GetResource<V1Pod>("default", "background")?.Metadata.Labels?.ContainsKey("updated") == true,
             TimeSpan.FromSeconds(15),
             cancellationToken: TestContext.Current.CancellationToken);
-
-        var fullBuildCount = builder.BuildCount;
-        await builder.WaitForAdditionAsync();
 
         builder.BuildCount.ShouldBe(fullBuildCount);
     }

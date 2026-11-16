@@ -1187,6 +1187,11 @@ public sealed partial class MetricPanelViewModel : ObservableObject, IDisposable
             }
         }
 
+        for (var index = 0; index < Series.Count; index++)
+        {
+            Series[index].ZIndex = index + 1;
+        }
+
         UpdateYAxisLimits(Series);
         UpdateXAxisLimits(Series);
     }
