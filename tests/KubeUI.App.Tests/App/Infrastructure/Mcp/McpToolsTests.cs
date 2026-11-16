@@ -79,6 +79,26 @@ public sealed class McpToolsTests
     }
 
     [Fact]
+    public async Task list_events_rejects_oversized_serialized_output()
+    {
+        var session = new Mock<IMcpClusterSession>(MockBehavior.Strict);
+        session.Setup(x => x.ListEventsAsync(
+                null,
+                null,
+                100,
+                It.IsAny<CancellationToken>(),
+                null))
+            .ReturnsAsync(new McpEventPage(
+                [new Corev1Event { Message = new string('x', 1024 * 1024 + 1) }],
+                null));
+        var tools = CreateTools(session);
+
+        await Should.ThrowAsync<InvalidOperationException>(() => tools.ListEvents());
+
+        session.VerifyAll();
+    }
+
+    [Fact]
     public async Task list_resources_accepts_a_cursor_for_the_granted_default_cluster()
     {
         await using var clusters = await NamedClusterCatalogFactory.CreateAsync("dev");
@@ -581,6 +601,143 @@ public sealed class McpToolsTests
             It.Is<AgentPermissionRequest>(request => request.Action == "read_kubernetes_secret"
                 && request.Resource == "default/credentials"),
             It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [AvaloniaFact]
+    public async Task resource_yaml_streaming_stops_at_the_output_limit()
+    {
+        var configMap = new V1ConfigMap
+        {
+            Metadata = new V1ObjectMeta { Name = "large-config", NamespaceProperty = "default" },
+            Data = new Dictionary<string, string> { ["value"] = "small" }
+        };
+        using var workspace = await Application.Current.CreateClusterAsync(
+            config => config.Resources = [configMap]);
+        var services = Application.Current.GetTestServices();
+        var serializer = new Mock<IKubernetesYamlSerializer>(MockBehavior.Strict);
+        serializer.Setup(value => value.Serialize(It.IsAny<object>(), It.IsAny<TextWriter>()))
+            .Callback((object _, TextWriter writer) =>
+            {
+                var chunk = new string('x', 4096);
+                for (var index = 0; index < 256; index++)
+                {
+                    writer.Write(chunk);
+                }
+
+                writer.Write('x');
+            });
+        var identityAccessor = services.GetRequiredService<McpRequestIdentityAccessor>();
+        var tools = new McpTools(
+            services.GetRequiredService<IClusterRuntimeCatalog>(),
+            services.GetRequiredService<IMcpClusterSession>(),
+            serializer.Object,
+            services.GetRequiredService<ISettingsService>(),
+            identityAccessor: identityAccessor);
+        using var identity = identityAccessor.Enter(new McpClientIdentity(
+            "test", "MCP bounded YAML test", true, new HashSet<string>(StringComparer.Ordinal)));
+
+        await Should.ThrowAsync<McpToolOutputLimitExceededException>(() => tools.GetResourceYaml(
+            workspace.Runtime.Name, "v1", "ConfigMap", "large-config", "default"));
+
+        serializer.Verify(value => value.Serialize(It.IsAny<object>(), It.IsAny<TextWriter>()), Times.Once);
+        serializer.Verify(value => value.Serialize(It.IsAny<object>()), Times.Never);
+    }
+
+    [AvaloniaFact]
+    public async Task resource_yaml_streaming_counts_utf8_bytes_at_and_over_the_output_limit()
+    {
+        const int outputLimit = 1024 * 1024;
+        var configMap = new V1ConfigMap
+        {
+            Metadata = new V1ObjectMeta { Name = "utf8-config", NamespaceProperty = "default" },
+            Data = new Dictionary<string, string> { ["value"] = "small" }
+        };
+        using var workspace = await Application.Current.CreateClusterAsync(
+            config => config.Resources = [configMap]);
+        var services = Application.Current.GetTestServices();
+        var serializer = new Mock<IKubernetesYamlSerializer>(MockBehavior.Strict);
+        Action<TextWriter> writeOutput = _ => { };
+        serializer.Setup(value => value.Serialize(It.IsAny<object>(), It.IsAny<TextWriter>()))
+            .Callback((object _, TextWriter writer) => writeOutput(writer));
+        var identityAccessor = services.GetRequiredService<McpRequestIdentityAccessor>();
+        var tools = new McpTools(
+            services.GetRequiredService<IClusterRuntimeCatalog>(),
+            services.GetRequiredService<IMcpClusterSession>(),
+            serializer.Object,
+            services.GetRequiredService<ISettingsService>(),
+            identityAccessor: identityAccessor);
+        using var identity = identityAccessor.Enter(new McpClientIdentity(
+            "test", "MCP UTF-8 boundary test", true, new HashSet<string>(StringComparer.Ordinal)));
+
+        var cases = new (string Name, Action<TextWriter> ExactLimit, Action<TextWriter> OverLimit)[]
+        {
+            (
+                "two-byte character",
+                writer =>
+                {
+                    writer.Write(new string('x', outputLimit - 2));
+                    writer.Write('\u00E9');
+                },
+                writer =>
+                {
+                    writer.Write(new string('x', outputLimit - 2));
+                    writer.Write('\u00E9');
+                    writer.Write('x');
+                }),
+            (
+                "three-byte character",
+                writer =>
+                {
+                    writer.Write(new string('x', outputLimit - 3));
+                    writer.Write('\u20AC');
+                },
+                writer =>
+                {
+                    writer.Write(new string('x', outputLimit - 3));
+                    writer.Write('\u20AC');
+                    writer.Write('x');
+                }),
+            (
+                "surrogate pair split across writes",
+                writer =>
+                {
+                    writer.Write(new string('x', outputLimit - 4));
+                    writer.Write('\uD83D');
+                    writer.Write('\uDE00');
+                },
+                writer =>
+                {
+                    writer.Write(new string('x', outputLimit - 4));
+                    writer.Write('\uD83D');
+                    writer.Write('\uDE00');
+                    writer.Write('x');
+                }),
+            (
+                "unmatched trailing high surrogate",
+                writer =>
+                {
+                    writer.Write(new string('x', outputLimit - 3));
+                    writer.Write('\uD83D');
+                },
+                writer =>
+                {
+                    writer.Write(new string('x', outputLimit - 2));
+                    writer.Write('\uD83D');
+                })
+        };
+
+        foreach (var testCase in cases)
+        {
+            writeOutput = testCase.ExactLimit;
+            var result = await tools.GetResourceYaml(
+                workspace.Runtime.Name, "v1", "ConfigMap", "utf8-config", "default");
+
+            Encoding.UTF8.GetByteCount(result).ShouldBe(outputLimit, testCase.Name);
+
+            writeOutput = testCase.OverLimit;
+            await Should.ThrowAsync<McpToolOutputLimitExceededException>(() => tools.GetResourceYaml(
+                workspace.Runtime.Name, "v1", "ConfigMap", "utf8-config", "default"));
+        }
     }
 
     [Fact]

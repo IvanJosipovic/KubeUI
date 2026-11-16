@@ -248,6 +248,25 @@ public sealed class SerializationFeatureTests
         secondYaml.ShouldContain("enabled: true");
     }
 
+    [Fact]
+    public void yaml_writer_serialization_matches_string_serialization()
+    {
+        using var host = CreateHost(disableJsonReflection: false, disableYamlReflection: false);
+        var serializer = host.Services.GetRequiredService<IKubernetesYamlSerializer>();
+        var resource = new V1Pod
+        {
+            ApiVersion = V1Pod.KubeApiVersion,
+            Kind = V1Pod.KubeKind,
+            Metadata = new V1ObjectMeta { Name = "streamed-pod", NamespaceProperty = "default" },
+        };
+        var expected = serializer.Serialize(resource);
+        using var writer = new StringWriter();
+
+        serializer.Serialize(resource, writer);
+
+        writer.ToString().ShouldBe(expected);
+    }
+
     private static IHost CreateHost(bool disableJsonReflection, bool disableYamlReflection)
     {
         SettingsPersistenceData settings = new();

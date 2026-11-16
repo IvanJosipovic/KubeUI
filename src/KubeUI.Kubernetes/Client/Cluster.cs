@@ -247,6 +247,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                                 Connected = false;
                                 Status = ClusterStatus.Errored;
                                 LastError = "Unable to connect because the cluster cannot list namespaces and no fallback namespaces are configured.";
+                                await CleanupFailedConnectionAsync().ConfigureAwait(false);
                                 NamespaceSelectionRequired?.Invoke(this);
                                 _logger.LogWarning(
                                     "Cluster {Name} cannot list namespaces and has no configured namespace fallback.",
@@ -285,6 +286,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
                         Status = ClusterStatus.Errored;
                         LastError = ex.Message;
+                        await CleanupFailedConnectionAsync().ConfigureAwait(false);
                     }
                 }
             }
@@ -307,6 +309,24 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             _connectionLifecycleLimiter.Release();
         }
 
+    }
+
+    private async Task CleanupFailedConnectionAsync()
+    {
+        StopPortForwarders();
+        StopNamespaceSubscription();
+        await StopResourceInformersAsync().ConfigureAwait(false);
+        ClearDynamicCustomResourceDefinitions();
+        ClearSeededResources();
+        Client = null;
+        _openApiSchemaLoader.Reset();
+        lock (_discoveryRefreshGate)
+        {
+            _discoveryClient = null;
+            _discoveryRefreshTask = null;
+            _discoveryRefreshRequested = false;
+        }
+        ResetAuthorizationIndex();
     }
 
     public async Task Disconnect()
