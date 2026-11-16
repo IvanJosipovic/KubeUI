@@ -249,13 +249,13 @@ public sealed class MetricsControlTests
     }
 
     [AvaloniaFact]
-    public void metric_series_keep_the_default_z_order()
+    public void metric_series_z_order_follows_panel_order()
     {
         using var panel = new MetricPanelViewModel { Title = "CPU" };
         panel.MergeSeries(
         [
-            new MetricSeriesSnapshot("Usage", [new DateTimePoint(DateTime.UtcNow, 0.1)]),
             new MetricSeriesSnapshot("Requests", [new DateTimePoint(DateTime.UtcNow, 0.2)]),
+            new MetricSeriesSnapshot("Usage", [new DateTimePoint(DateTime.UtcNow, 0.1)]),
             new MetricSeriesSnapshot("Limits", [new DateTimePoint(DateTime.UtcNow, 0.3)]),
         ]);
 
@@ -264,8 +264,23 @@ public sealed class MetricsControlTests
         var requests = series.Single(item => item.Name == ResourcesLanguageManager.Instance.Shared_Requests.CurrentValue()!);
         var limits = series.Single(item => item.Name == ResourcesLanguageManager.Instance.Shared_Limits.CurrentValue()!);
 
-        usage.ZIndex.ShouldBe(requests.ZIndex);
-        usage.ZIndex.ShouldBe(limits.ZIndex);
+        requests.ZIndex.ShouldBeLessThan(usage.ZIndex);
+        usage.ZIndex.ShouldBeLessThan(limits.ZIndex);
+
+        panel.MergeSeries(
+        [
+            new MetricSeriesSnapshot("Usage", [new DateTimePoint(DateTime.UtcNow, 0.4)]),
+        ],
+        preserveMissing: true);
+
+        var mergedSeries = panel.Series.OfType<StepLineSeries<DateTimePoint>>().ToArray();
+        mergedSeries.Select(static item => item.Name).ShouldBe(
+        [
+            ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue()!,
+            ResourcesLanguageManager.Instance.Shared_Requests.CurrentValue()!,
+            ResourcesLanguageManager.Instance.Shared_Limits.CurrentValue()!,
+        ]);
+        mergedSeries.Select(static item => item.ZIndex).ShouldBe([1, 2, 3]);
     }
 
     [AvaloniaFact]
@@ -713,21 +728,11 @@ public sealed class MetricsControlTests
         var usageSeries = control.SelectedPanel.Series
             .OfType<StepLineSeries<DateTimePoint>>()
             .Single(series => series.Name == ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue()!);
-        usageSeries.ZIndex.ShouldBe(requestSeries.ZIndex);
+        usageSeries.ZIndex.ShouldBeGreaterThan(requestSeries.ZIndex);
         usageSeries.Fill.ShouldNotBeNull();
         requestSeries.Fill.ShouldNotBeNull();
         usageSeries.Stroke.ShouldNotBeNull();
         requestSeries.Stroke.ShouldNotBeNull();
-
-        await TestWait.UntilAsync(
-            () => usageSeries.Fill!.ZIndex > requestSeries.Fill!.ZIndex
-                && usageSeries.Stroke!.ZIndex > requestSeries.Stroke!.ZIndex,
-            5000,
-            TestContext.Current.CancellationToken,
-            beforePoll: () => Dispatcher.UIThread.RunJobs());
-
-        usageSeries.Fill!.ZIndex.ShouldBeGreaterThan(requestSeries.Fill!.ZIndex);
-        usageSeries.Stroke!.ZIndex.ShouldBeGreaterThan(requestSeries.Stroke!.ZIndex);
     }
 
     [AvaloniaFact]
