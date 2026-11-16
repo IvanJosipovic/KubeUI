@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Headless;
+using Avalonia.Media.Imaging;
 
 namespace KubeUI.App.Tests.Infra;
 
@@ -13,7 +14,6 @@ public static class TestScreenshot
     /// <param name="topLevel">The rendered window or other top-level to capture.</param>
     /// <param name="name">A descriptive filename component; invalid filename characters are replaced.</param>
     /// <returns>The absolute image path when captured, or <see langword="null"/> when capture is disabled.</returns>
-    [Obsolete]
     public static string? CaptureIfEnabled(TopLevel topLevel, string name)
     {
         ArgumentNullException.ThrowIfNull(topLevel);
@@ -33,7 +33,7 @@ public static class TestScreenshot
         var fileName = string.Concat(name.Select(character =>
             Path.GetInvalidFileNameChars().Contains(character) ? '_' : character));
         var path = Path.Combine(outputDirectory, $"{fileName}.png");
-        bitmap.Save(path);
+        bitmap.Save(path, PngBitmapEncoderOptions.Default);
         Console.WriteLine($"Screenshot captured: {path}");
         return path;
     }

@@ -73,7 +73,6 @@ public sealed partial class VisualizationView : KubeUIView<VisualizationViewMode
                     .BindValue(NamespaceScopePicker.IsSelectionEnabledProperty, CompiledBinding.Create<VisualizationViewModel, bool>(x => x.IsNamespaceSelectionEnabled, source: vm))
                     .BindValue(NamespaceScopePicker.IsLinkEnabledProperty, CompiledBinding.Create<VisualizationViewModel, bool>(x => x.IsNamespaceSelectionEnabled, source: vm))
                     .IsVisible(vm, x => x.IsNamespaceSelectorVisible))
-                .MaxWidth(420)
         };
     }
 

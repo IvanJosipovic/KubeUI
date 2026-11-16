@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using k8s.Models;
@@ -9,7 +10,6 @@ using KubeUI.Testing.Utilities;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Shouldly;
-using Avalonia.Controls;
 
 namespace KubeUI.Features.Cilium.Tests.Hubble;
 

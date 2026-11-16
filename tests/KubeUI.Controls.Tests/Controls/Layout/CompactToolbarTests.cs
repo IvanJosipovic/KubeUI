@@ -15,7 +15,6 @@ namespace KubeUI.Controls.Tests.Controls.Layout;
 public sealed class CompactToolbarTests
 {
     [AvaloniaFact]
-    [Obsolete]
     public void Slots_keep_compact_spacing_and_right_align_trailing_content()
     {
         var leading = new Button { Width = 24, Content = "+" };
