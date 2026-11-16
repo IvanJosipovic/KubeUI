@@ -13,6 +13,7 @@ internal sealed class FakeHelmClient : IHelmClient
     private int _maxConcurrent;
     private int _blockingEntries;
     private bool _repositoryIndexesAvailable;
+    private bool _repositoryIndexUpdateFailed;
 
     public List<HelmRepository> Repositories { get; } = [];
     public List<HelmRelease> Releases { get; } = [];
@@ -25,6 +26,7 @@ internal sealed class FakeHelmClient : IHelmClient
     public List<(string Chart, string? Version)> ShowValuesCalls { get; } = [];
     public List<HelmChartSearchResult> Charts { get; } = [];
     public IReadOnlyList<HelmChartSearchResult>? ChartsAfterIndexUpdate { get; init; }
+    public IReadOnlyList<HelmChartSearchResult>? ChartsAfterFailedIndexUpdate { get; init; }
     public bool ThrowOnRepositoryUpdate { get; set; }
     public List<string?> ListChartsCalls { get; } = [];
     public List<string> SearchCalls { get; } = [];
@@ -311,7 +313,17 @@ internal sealed class FakeHelmClient : IHelmClient
             SearchCalls.Add(keyword);
         }
 
-        return _repositoryIndexesAvailable ? ChartsAfterIndexUpdate ?? Charts : Charts;
+        if (Repositories.Count == 0)
+        {
+            throw new HelmActionException("no repositories configured");
+        }
+
+        if (_repositoryIndexesAvailable)
+        {
+            return ChartsAfterIndexUpdate ?? Charts;
+        }
+
+        return _repositoryIndexUpdateFailed ? ChartsAfterFailedIndexUpdate ?? Charts : Charts;
     }
 
     public void RepoAdd(string name, string url, string? username = null, string? password = null, bool forceUpdate = false)
@@ -328,9 +340,11 @@ internal sealed class FakeHelmClient : IHelmClient
         UpdateRepositoriesCalls++;
         if (ThrowOnRepositoryUpdate)
         {
+            _repositoryIndexUpdateFailed = true;
             throw new HelmActionException("repository index update failed");
         }
 
+        _repositoryIndexUpdateFailed = false;
         _repositoryIndexesAvailable = true;
     }
 

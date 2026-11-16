@@ -18,6 +18,7 @@ public sealed class HelmService : IHelmService, IDisposable
     private readonly CancellationTokenSource _disposeCancellation = new();
     private int _disposed;
     private bool _repositoryIndexesInitialized;
+    private bool _repositoryIndexUpdateFailed;
 
     // Timeout for waiting on the native gate during disposal
     private static readonly TimeSpan DisposeGateTimeout = TimeSpan.FromSeconds(30);
@@ -48,10 +49,11 @@ public sealed class HelmService : IHelmService, IDisposable
             client =>
             {
                 var charts = client.SearchRepo(keyword: string.Empty, versions: true, devel: true);
-                if (charts.Count == 0 && !_repositoryIndexesInitialized && client.RepoList().Count != 0)
+                if (!_repositoryIndexesInitialized
+                    && (charts.Count == 0 || _repositoryIndexUpdateFailed)
+                    && client.RepoList().Count != 0)
                 {
-                    client.RepoUpdate();
-                    _repositoryIndexesInitialized = true;
+                    UpdateRepositoryIndexes(client);
                     charts = client.SearchRepo(keyword: string.Empty, versions: true, devel: true);
                 }
 
@@ -134,15 +136,24 @@ public sealed class HelmService : IHelmService, IDisposable
 
     /// <inheritdoc />
     public Task UpdateRepositoriesAsync(HelmConnection connection, CancellationToken cancellationToken = default)
-        => InvokeVoidAsync(
-            connection,
-            client =>
-            {
-                client.RepoUpdate();
-                _repositoryIndexesInitialized = true;
-            },
-            cancellationToken,
-            isWriteOperation: true);
+        => InvokeVoidAsync(connection, UpdateRepositoryIndexes, cancellationToken, isWriteOperation: true);
+
+    private void UpdateRepositoryIndexes(IHelmClient client)
+    {
+        try
+        {
+            client.RepoUpdate();
+        }
+        catch
+        {
+            _repositoryIndexesInitialized = false;
+            _repositoryIndexUpdateFailed = true;
+            throw;
+        }
+
+        _repositoryIndexesInitialized = true;
+        _repositoryIndexUpdateFailed = false;
+    }
 
     /// <inheritdoc />
     public Task<IReadOnlyList<HelmRelease>> ListReleasesAsync(HelmConnection connection, bool allNamespaces = true, string? filter = null, CancellationToken cancellationToken = default)
