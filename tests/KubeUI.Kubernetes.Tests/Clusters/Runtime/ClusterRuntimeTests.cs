@@ -16,6 +16,32 @@ using V1ServiceAccount = k8s.Models.V1ServiceAccount;
 public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
 {
     [Fact]
+    public async Task FailedConnectionDisposesClientAndClearsPartialState()
+    {
+        var config = new TestClusterConfig { ThrowOnConnect = true };
+        await using var clusterScope = await new TestClusterGenerator().CreateAsync(
+            config,
+            TestContext.Current.CancellationToken);
+        var cluster = clusterScope.Cluster;
+
+        await cluster.Connect();
+
+        cluster.Client.ShouldBeNull();
+        cluster.Connected.ShouldBeFalse();
+        cluster.Status.ShouldBe(ClusterStatus.Errored);
+        cluster.LastError.ShouldNotBeNullOrEmpty();
+        cluster.Objects.ShouldBeEmpty();
+        cluster.ActiveResourceInformerTaskCount.ShouldBe(0);
+
+        config.ThrowOnConnect = false;
+        await cluster.Connect();
+
+        cluster.Client.ShouldNotBeNull();
+        cluster.Connected.ShouldBeTrue();
+        cluster.LastError.ShouldBeNull();
+    }
+
+    [Fact]
     public async Task DisconnectStopsAllResourceInformerTasks()
     {
         await using var clusterScope = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);

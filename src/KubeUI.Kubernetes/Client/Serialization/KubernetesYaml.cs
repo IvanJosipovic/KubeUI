@@ -1214,4 +1214,18 @@ internal static class KubernetesYaml
         return stringBuilder.ToString();
     }
 
+    internal static void Serialize(object value, TextWriter writer, IValueSerializer serializer)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        if (value == null)
+        {
+            return;
+        }
+
+        var emitter = new Emitter(writer);
+        emitter.Emit(new StreamStart());
+        emitter.Emit(new DocumentStart());
+        serializer.SerializeValue(emitter, value, value.GetType());
+    }
+
 }

@@ -21,7 +21,7 @@ internal sealed record McpToolAuditOutcome(McpToolOutcome Outcome, CallToolResul
 
 internal static partial class McpToolAuditFilter
 {
-    private const int MaximumOutputBytes = 1024 * 1024;
+    private const int MaximumOutputBytes = McpToolOutputLimiter.MaximumOutputBytes;
 
     internal static void Configure(IMcpRequestFilterBuilder filters)
     {
@@ -81,14 +81,7 @@ internal static partial class McpToolAuditFilter
             if (ExceedsOutputLimit(result))
             {
                 outcome = McpToolOutcome.Oversized;
-                return new McpToolAuditOutcome(outcome, new CallToolResult
-                {
-                    IsError = true,
-                    Content = [new TextContentBlock
-                    {
-                        Text = AiLanguageManager.Instance.McpToolAuditFilter_OutputLimitMessage.CurrentValue()!
-                    }]
-                });
+                return CreateOutputLimitOutcome();
             }
 
             outcome = result.IsError == true
@@ -97,10 +90,15 @@ internal static partial class McpToolAuditFilter
 
             return new McpToolAuditOutcome(outcome, result);
         }
-        catch (OperationCanceledException exception)
+        catch (McpToolOutputLimitExceededException)
+        {
+            outcome = McpToolOutcome.Oversized;
+            return CreateOutputLimitOutcome();
+        }
+        catch (OperationCanceledException)
         {
             outcome = McpToolOutcome.Cancelled;
-            LogToolCancelled(logger, exception, toolName, clientId);
+            LogToolCancelled(logger, toolName, clientId);
             throw;
         }
         catch (UnauthorizedAccessException)
@@ -113,14 +111,14 @@ internal static partial class McpToolAuditFilter
                 Content = [new TextContentBlock { Text = AiLanguageManager.Instance.McpToolAuditFilter_RequestDeniedMessage.CurrentValue()! }]
             });
         }
-        catch (ArgumentException exception)
+        catch (ArgumentException)
         {
-            LogToolInvalidRequest(logger, exception, toolName, clientId);
+            LogToolInvalidRequest(logger, toolName, clientId);
             throw;
         }
         catch (Exception exception)
         {
-            LogToolFailed(logger, exception, toolName, clientId);
+            LogToolFailed(logger, toolName, clientId);
             throw new InvalidOperationException("MCP tool request could not be completed.", exception);
         }
         finally
@@ -128,6 +126,16 @@ internal static partial class McpToolAuditFilter
             LogToolCompleted(logger, toolName, clientId, outcome, timeProvider.GetElapsedTime(started).TotalMilliseconds);
         }
     }
+
+    private static McpToolAuditOutcome CreateOutputLimitOutcome()
+        => new(McpToolOutcome.Oversized, new CallToolResult
+        {
+            IsError = true,
+            Content = [new TextContentBlock
+            {
+                Text = AiLanguageManager.Instance.McpToolAuditFilter_OutputLimitMessage.CurrentValue()!
+            }]
+        });
 
     internal static bool ExceedsOutputLimit(CallToolResult result)
     {
@@ -148,7 +156,7 @@ internal static partial class McpToolAuditFilter
     [LoggerMessage(
         Level = LogLevel.Information,
         Message = "MCP tool {ToolName} for client {ClientId} was cancelled")]
-    private static partial void LogToolCancelled(ILogger logger, Exception exception, string toolName, string clientId);
+    private static partial void LogToolCancelled(ILogger logger, string toolName, string clientId);
 
     [LoggerMessage(
         Level = LogLevel.Warning,
@@ -158,12 +166,12 @@ internal static partial class McpToolAuditFilter
     [LoggerMessage(
         Level = LogLevel.Warning,
         Message = "MCP tool {ToolName} for client {ClientId} rejected an invalid request")]
-    private static partial void LogToolInvalidRequest(ILogger logger, Exception exception, string toolName, string clientId);
+    private static partial void LogToolInvalidRequest(ILogger logger, string toolName, string clientId);
 
     [LoggerMessage(
         Level = LogLevel.Error,
         Message = "MCP tool {ToolName} for client {ClientId} failed")]
-    private static partial void LogToolFailed(ILogger logger, Exception exception, string toolName, string clientId);
+    private static partial void LogToolFailed(ILogger logger, string toolName, string clientId);
 
     [LoggerMessage(
         Level = LogLevel.Information,
