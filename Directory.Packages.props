@@ -56,7 +56,7 @@
     
     <!-- Kubernetes -->
     <PackageVersion Include="KubernetesClient" Version="21.0.8" />
-    <PackageVersion Include="KubernetesClient.Informer" Version="1.4.1" />
+    <PackageVersion Include="KubernetesClient.Informer" Version="2.0.0-beta.2" />
     <PackageVersion Include="KokoroSharp.CPU" Version="0.8.4" />
     
     <!-- YAML/Serialization -->
