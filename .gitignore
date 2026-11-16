@@ -409,17 +409,18 @@ packed
 
 
 # APM dependencies
+apm.lock.yaml
 apm_modules/
-
 .claude/
-
+.github/agents/
 .github/lsp.json
+.github/instructions
 .github/mcp.json
 .agents/
 .opencode/
 .cursor/
-.codex
-.github/agents
+.codex/
 .gemini/
 .mcp.json
 opencode.json
+AGENTS.md

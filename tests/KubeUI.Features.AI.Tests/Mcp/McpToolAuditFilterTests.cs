@@ -1,10 +1,10 @@
+using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using KubeUI.Features.AI.Mcp;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using ModelContextProtocol.Protocol;
 using Shouldly;
-using System.Text.Json;
-using System.Text.Json.Serialization.Metadata;
 
 namespace KubeUI.Features.AI.Tests.Mcp;
 
