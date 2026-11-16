@@ -15,9 +15,9 @@ using KubeUI.App.Infrastructure.Platform;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources;
 using KubeUI.Testing.Kubernetes.Transport;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Shouldly;
 
@@ -733,7 +733,7 @@ public class ClusterWorkspaceTests
         });
 
         using var serviceProvider = new ServiceCollection()
-            .AddSingleton<IClusterResourceConfig>(resourceConfig.Object)
+            .AddSingleton(resourceConfig.Object)
             .BuildServiceProvider();
         using var instrumentationSource = new ActivitySource("ClusterWorkspaceTests");
         var instrumentation = new Mock<IClusterInstrumentation>();

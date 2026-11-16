@@ -1,0 +1,11 @@
+name: kubeui
+version: 1.0.0
+
+targets:
+  - opencode
+  - codex
+  - copilot
+
+dependencies:
+  apm:
+    - ../KubeUI-eng
