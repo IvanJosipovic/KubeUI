@@ -167,7 +167,7 @@ public sealed class JsonResourcesContractTests
         files.ShouldBeEmpty("resx files must be replaced by Assets/Resources*.json");
     }
 
-    private static string GetSourceRoot([CallerFilePath] string? callerFilePath = null)
+    internal static string GetSourceRoot([CallerFilePath] string? callerFilePath = null)
     {
         callerFilePath.ShouldNotBeNull();
 
