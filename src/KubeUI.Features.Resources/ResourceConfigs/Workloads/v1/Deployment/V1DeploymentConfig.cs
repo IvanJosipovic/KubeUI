@@ -41,21 +41,18 @@ public sealed partial class V1DeploymentConfig : ScalableWorkloadConfig<V1Deploy
                 Name = ResourcesLanguageManager.Instance.V1DeploymentConfig_Pods.CurrentValue()!,
                 Display = x => $"{x.Status?.AvailableReplicas ?? 0}/{x.Spec?.Replicas ?? 0}",
                 Field = x => x.Status?.AvailableReplicas ?? 0,
-                WidthMode = DynamicTableViewWidthMode.Header
             },
             new ResourceListColumn<V1Deployment, int>()
             {
                 Key = "replicas",
                 Name = ResourcesLanguageManager.Instance.V1DeploymentConfig_Replicas.CurrentValue()!,
                 Field = x => x.Spec.Replicas ?? 0,
-                WidthMode = DynamicTableViewWidthMode.Header
             },
             new ResourceListColumn<V1Deployment, string>()
             {
                 Key = "available",
                 Name = ResourcesLanguageManager.Instance.V1DeploymentConfig_Available.CurrentValue()!,
                 Field = x => x.Status?.Conditions?.FirstOrDefault(x => x.Type == "Available")?.Status ?? "",
-                WidthMode = DynamicTableViewWidthMode.Header
             },
             AgeColumn(),
         ];

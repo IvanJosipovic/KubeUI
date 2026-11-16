@@ -73,6 +73,9 @@ public sealed class CompactToolbar : Panel
             .Setter(MinWidthProperty, 32d));
         Styles.Add(new Style<ContentControl>(style => style.Class(CompactControlClass))
             .Setter(ContentControl.VerticalContentAlignmentProperty, VerticalAlignment.Center));
+        Styles.Add(new Style<Label>(style => style.Class(CompactControlClass))
+            .Setter(VerticalAlignmentProperty, VerticalAlignment.Center)
+            .Setter(ContentControl.VerticalContentAlignmentProperty, VerticalAlignment.Center));
     }
 
     /// <summary>

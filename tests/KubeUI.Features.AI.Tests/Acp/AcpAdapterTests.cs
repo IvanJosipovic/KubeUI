@@ -29,7 +29,7 @@ public sealed class AcpAdapterTests
             ToolCallId = "call-1",
             Name = "cua_repl.js",
             Title = "Run JavaScript",
-            Kind = "execute",
+            Kind = ToolKind.Execute,
             RawInput = input.RootElement.Clone()
         });
 
@@ -37,7 +37,7 @@ public sealed class AcpAdapterTests
 
         diagnostics.Name.ShouldBe("cua_repl.js");
         diagnostics.Title.ShouldBe("Run JavaScript");
-        diagnostics.Kind.ShouldBe("execute");
+        diagnostics.Kind.ShouldBe(ToolKind.Execute);
         diagnostics.RawInputPresent.ShouldBeTrue();
         diagnostics.RawInputKind.ShouldBe("Object");
         diagnostics.RawInputLength.ShouldBe(input.RootElement.GetRawText().Length);
@@ -79,16 +79,15 @@ public sealed class AcpAdapterTests
     }
 
     [Theory]
-    [InlineData("read", false)]
-    [InlineData("search", false)]
-    [InlineData("fetch", false)]
-    [InlineData("think", false)]
-    [InlineData("edit", true)]
-    [InlineData("delete", true)]
-    [InlineData("move", true)]
-    [InlineData("execute", true)]
-    [InlineData("unknown-kind", true)]
-    public void permission_mapper_classifies_tool_kinds(string kind, bool expectedDestructive)
+    [InlineData(ToolKind.Read, false)]
+    [InlineData(ToolKind.Search, false)]
+    [InlineData(ToolKind.Fetch, false)]
+    [InlineData(ToolKind.Think, false)]
+    [InlineData(ToolKind.Edit, true)]
+    [InlineData(ToolKind.Delete, true)]
+    [InlineData(ToolKind.Move, true)]
+    [InlineData(ToolKind.Execute, true)]
+    public void permission_mapper_classifies_tool_kinds(ToolKind kind, bool expectedDestructive)
     {
         var request = CreateRequest(
             toolCall: new ToolCallUpdate { ToolCallId = "call-1", Title = "Tool", Kind = kind });
@@ -232,7 +231,7 @@ public sealed class AcpAdapterTests
         {
             SessionId = "session-1",
             ToolCall = new ToolCallUpdate { ToolCallId = "call-1", Title = "Read pod logs" },
-            Options = [new PermissionOption { OptionId = "other", Name = "Other", Kind = "other" }]
+            Options = [new PermissionOption { OptionId = "reject", Name = "Reject", Kind = PermissionOptionKind.RejectOnce }]
         };
 
         var decision = await handler.RequestPermissionAsync(request, TestContext.Current.CancellationToken);
@@ -300,7 +299,7 @@ public sealed class AcpAdapterTests
         var update = new SessionUpdateEvent(new SessionUpdate(new ToolCallUpdate
         {
             ToolCallId = "call-1",
-            Status = "completed",
+            Status = ToolCallStatus.Completed,
             Title = "Read pod"
         }));
 
@@ -315,7 +314,7 @@ public sealed class AcpAdapterTests
         var update = new SessionUpdateEvent(new SessionUpdate(new ToolCallUpdate
         {
             ToolCallId = "call-1",
-            Status = "failed",
+            Status = ToolCallStatus.Failed,
             Title = "Read pod"
         }));
 
@@ -331,13 +330,13 @@ public sealed class AcpAdapterTests
         tracker.ShouldForward(new SessionUpdateEvent(new SessionUpdate(new ToolCallUpdate
         {
             ToolCallId = "call-1",
-            Status = "pending"
+            Status = ToolCallStatus.Pending
         }))).ShouldBeTrue();
 
         tracker.ShouldForward(new SessionUpdateEvent(new SessionUpdate(new ToolCallUpdate
         {
             ToolCallId = "call-1",
-            Status = "in_progress"
+            Status = ToolCallStatus.InProgress
         }))).ShouldBeTrue();
     }
 
@@ -355,7 +354,7 @@ public sealed class AcpAdapterTests
         tracker.ShouldForward(new SessionUpdateEvent(new SessionUpdate(new ToolCallUpdate
         {
             ToolCallId = "call-1",
-            Status = "completed"
+            Status = ToolCallStatus.Completed
         }))).ShouldBeTrue();
 
         tracker.ShouldForward(new SessionUpdateEvent(new SessionUpdate(new ToolCall
@@ -367,7 +366,7 @@ public sealed class AcpAdapterTests
         tracker.ShouldForward(new SessionUpdateEvent(new SessionUpdate(new ToolCallUpdate
         {
             ToolCallId = "call-1",
-            Status = "completed"
+            Status = ToolCallStatus.Completed
         }))).ShouldBeTrue("the restarted tool call must report its own completion");
     }
 
@@ -393,7 +392,7 @@ public sealed class AcpAdapterTests
 
         tracker.ShouldForward(new SessionUpdateEvent(new SessionUpdate(new Plan
         {
-            Entries = [new PlanEntry { Content = "Inspect pod", Priority = "high", Status = "pending" }]
+            Entries = [new PlanEntry { Content = "Inspect pod", Priority = PlanEntryPriority.High, Status = PlanEntryStatus.Pending }]
         }))).ShouldBeTrue();
 
         tracker.ShouldForward(new SessionUpdateEvent(new SessionUpdate(new UsageUpdate
@@ -414,7 +413,7 @@ public sealed class AcpAdapterTests
     {
         var tracker = new AcpToolCallTracker();
 
-        tracker.ShouldForward(new Completed(new PromptResponse { StopReason = "end_turn" })).ShouldBeTrue();
+        tracker.ShouldForward(new Completed(new PromptResponse { StopReason = StopReason.EndTurn })).ShouldBeTrue();
     }
 
     private static RequestPermissionRequest CreateRequest(ToolCallUpdate toolCall) => new()
@@ -423,10 +422,10 @@ public sealed class AcpAdapterTests
         ToolCall = toolCall,
         Options =
         [
-            new PermissionOption { OptionId = "allow-once", Name = "Allow", Kind = "allow_once" },
-            new PermissionOption { OptionId = "allow-always", Name = "Always", Kind = "allow_always" },
-            new PermissionOption { OptionId = "reject-once", Name = "Reject", Kind = "reject_once" },
-            new PermissionOption { OptionId = "reject-always", Name = "Never", Kind = "reject_always" }
+            new PermissionOption { OptionId = "allow-once", Name = "Allow", Kind = PermissionOptionKind.AllowOnce },
+            new PermissionOption { OptionId = "allow-always", Name = "Always", Kind = PermissionOptionKind.AllowAlways },
+            new PermissionOption { OptionId = "reject-once", Name = "Reject", Kind = PermissionOptionKind.RejectOnce },
+            new PermissionOption { OptionId = "reject-always", Name = "Never", Kind = PermissionOptionKind.RejectAlways }
         ]
     };
 

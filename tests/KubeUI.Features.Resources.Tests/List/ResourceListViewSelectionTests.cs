@@ -114,6 +114,15 @@ public sealed class ResourceListViewSelectionTests
             beforePoll: () => Dispatcher.UIThread.RunJobs())
             ?? throw new TimeoutException("Docked resource list table did not attach.");
         await WaitForAsync(() => table.GetVisualDescendants().OfType<TableViewRow>().Count() == 10);
+        var detachCount = 0;
+        var observedTables = new HashSet<DynamicTableView>(ReferenceEqualityComparer.Instance);
+        void ObserveDetach(DynamicTableView observedTable)
+        {
+            if (observedTables.Add(observedTable))
+                observedTable.DetachedFromVisualTree += (_, _) => detachCount++;
+        }
+
+        ObserveDetach(table);
 
         SelectRowsByName(window, table, "dock-pod-00", "dock-pod-09");
         viewModel.SelectionModel.SelectedItems.Count.ShouldBe(10);
@@ -121,11 +130,13 @@ public sealed class ResourceListViewSelectionTests
         factory.SetActiveDockable(otherDocument);
         factory.SetFocusedDockable(documents, otherDocument);
         await WaitForAsync(() => ReferenceEquals(documents.ActiveDockable, otherDocument));
+        await WaitForAsync(() => detachCount == 1);
         viewModel.SelectionModel.SelectedItems.Count.ShouldBe(10);
         factory.SetActiveDockable(viewModel);
         factory.SetFocusedDockable(documents, viewModel);
         await WaitForAsync(() => ReferenceEquals(documents.ActiveDockable, viewModel));
-        table = await WaitForDockTableAsync(window, table);
+        table = await WaitForDockTableAsync(window);
+        ObserveDetach(table);
         await WaitForAsync(() => viewModel.SelectionModel.SelectedItems.Count == 10);
         viewModel.SelectionModel.SelectedItems.Count.ShouldBe(10);
 
@@ -141,12 +152,13 @@ public sealed class ResourceListViewSelectionTests
         factory.SetActiveDockable(otherDocument);
         factory.SetFocusedDockable(documents, otherDocument);
         await WaitForAsync(() => ReferenceEquals(documents.ActiveDockable, otherDocument));
+        await WaitForAsync(() => detachCount == 2);
         viewModel.TableSource.SortDescriptors.ShouldBe(viewModel.TableViewRuntimeState!.Sorts);
         viewModel.TableSource.FilterDescriptors.ShouldBe(viewModel.TableViewRuntimeState.Filters);
         factory.SetActiveDockable(viewModel);
         factory.SetFocusedDockable(documents, viewModel);
         await WaitForAsync(() => ReferenceEquals(documents.ActiveDockable, viewModel));
-        table = await WaitForDockTableAsync(window, table);
+        table = await WaitForDockTableAsync(window);
         await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
         viewModel.SelectionModel.SelectedItems.Cast<V1Pod>().Select(static pod => pod.Metadata.Name).ShouldBe(["dock-pod-05"]);
         selectionChangesDuringRestore.ShouldBeEmpty();
@@ -154,15 +166,16 @@ public sealed class ResourceListViewSelectionTests
         viewModel.TableSource.Changed -= sourceChanged;
     }
 
-    private static async Task<DynamicTableView> WaitForDockTableAsync(Window window, DynamicTableView previousTable)
-        => await TestWait.UntilValueAsync(
+    private static async Task<DynamicTableView> WaitForDockTableAsync(Window window)
+    {
+        return await TestWait.UntilValueAsync(
             () => window.GetVisualDescendants().OfType<DynamicTableView>()
-                .FirstOrDefault(table => !ReferenceEquals(table, previousTable) &&
-                    table.GetVisualDescendants().OfType<TableViewRow>().Count() == 10),
+                .FirstOrDefault(table => table.GetVisualDescendants().OfType<TableViewRow>().Count() == 10),
             TimeSpan.FromSeconds(5),
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs())
-            ?? throw new TimeoutException("A new docked resource list table did not attach.");
+            ?? throw new TimeoutException("Docked resource list table did not reattach with ten rows.");
+    }
 
     private static void SelectTenRows(Window window, DynamicTableView table)
     {

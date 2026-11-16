@@ -28,7 +28,6 @@ public sealed class HubbleModelTests
     }
 
     [Fact]
-    [Obsolete]
     public void Flow_mapper_reads_layer_seven_latency()
     {
         var flow = new Flow
@@ -40,7 +39,6 @@ public sealed class HubbleModelTests
     }
 
     [Fact]
-    [Obsolete]
     public void Flow_mapper_reads_source_and_destination_services()
     {
         var flow = new Flow
@@ -197,7 +195,6 @@ public sealed class HubbleModelTests
     }
 
     [Fact]
-    [Obsolete]
     public void Flow_mapper_keeps_endpoint_dns_names_and_world_identity_for_service_map()
     {
         var flow = new Flow
@@ -213,8 +210,7 @@ public sealed class HubbleModelTests
     }
 
     [Fact]
-    [Obsolete]
-    public void Flow_mapper_includes_kafka_protocol_in_service_map_access_points()
+    public void Flow_mapper_ignores_deprecated_kafka_protocol_in_service_map_access_points()
     {
         var flow = new Flow
         {
@@ -222,22 +218,60 @@ public sealed class HubbleModelTests
             Source = new Endpoint { Namespace = "team-a", PodName = "client" },
             Destination = new Endpoint { Namespace = "team-b", PodName = "broker" },
             L4 = new Layer4 { TCP = new TCP { SourcePort = 53000, DestinationPort = 9092 } },
-            L7 = new Layer7 { Kafka = new Kafka() },
+            // Layer7 field 102 is the deprecated Kafka message.
+            L7 = Layer7.Parser.ParseFrom(new byte[] { 0xb2, 0x06, 0x00 }),
         };
 
         var mappedFlow = new FlowViewModel(flow);
-        mappedFlow.ApplicationProtocol.ShouldBe("Kafka");
+        mappedFlow.ApplicationProtocol.ShouldBeNull();
 
         var builder = new ServiceMapGraphBuilder();
         builder.AddFlow(mappedFlow);
         var graph = builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a", "team-b"]);
 
         graph.Nodes.Single(node => node.Name == "broker").AccessPoints
-            .Single().ApplicationProtocols.ShouldBe(["Kafka"]);
+            .Single().ApplicationProtocols.ShouldBeEmpty();
     }
 
     [Fact]
-    [Obsolete]
+    public void Flow_mapper_clears_previous_protocol_for_unrecognized_layer_seven_record()
+    {
+        var viewModel = new FlowViewModel(new Flow { L7 = new Layer7 { Http = new HTTP() } });
+        viewModel.ApplicationProtocol.ShouldBe("HTTP");
+
+        viewModel.UpdateFrom(new Flow { L7 = Layer7.Parser.ParseFrom(new byte[] { 0xb2, 0x06, 0x00 }) });
+
+        viewModel.ApplicationProtocol.ShouldBeNull();
+    }
+
+    [Theory]
+    [InlineData("DNS")]
+    [InlineData("HTTP")]
+    public void Flow_mapper_includes_supported_protocol_in_service_map_access_points(string protocol)
+    {
+        var layer7 = protocol == "DNS"
+            ? new Layer7 { Dns = new DNS() }
+            : new Layer7 { Http = new HTTP() };
+        var flow = new Flow
+        {
+            Time = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.UtcNow),
+            Source = new Endpoint { Namespace = "team-a", PodName = "client" },
+            Destination = new Endpoint { Namespace = "team-b", PodName = "server" },
+            L4 = new Layer4 { TCP = new TCP { DestinationPort = 8080 } },
+            L7 = layer7
+        };
+        var mappedFlow = new FlowViewModel(flow);
+        mappedFlow.ApplicationProtocol.ShouldBe(protocol);
+
+        var builder = new ServiceMapGraphBuilder();
+        builder.AddFlow(mappedFlow);
+        var graph = builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a", "team-b"]);
+
+        graph.Nodes.Single(node => node.Name == "server").AccessPoints
+            .Single().ApplicationProtocols.ShouldBe([protocol]);
+    }
+
+    [Fact]
     public void Service_map_access_points_use_mapped_destination_port_not_source_port()
     {
         var flow = new Flow

@@ -76,8 +76,11 @@ internal sealed class NavigationTreeBuilder
 
         if (cluster.Runtime.Status == ClusterStatus.Connected)
         {
-            AddResourceLinks(context, cluster);
-            AddDocuments(context, cluster);
+            var availableProviders = _sections.Providers
+                .Where(provider => provider.IsSectionAvailable(cluster))
+                .ToArray();
+            AddResourceLinks(context, cluster, availableProviders);
+            AddDocuments(context, cluster, availableProviders);
             AddPortForwarders(context, cluster);
         }
 
@@ -98,7 +101,10 @@ internal sealed class NavigationTreeBuilder
         }
     }
 
-    private void AddResourceLinks(ReconcileContext context, ClusterWorkspace cluster)
+    private void AddResourceLinks(
+        ReconcileContext context,
+        ClusterWorkspace cluster,
+        IReadOnlyList<INavigationSectionProvider> availableProviders)
     {
         var canListDefinitions = CanListCustomResourceDefinitions(cluster);
         foreach (var clusterResource in cluster.GetResourceConfigs())
@@ -141,7 +147,7 @@ internal sealed class NavigationTreeBuilder
                 }
             }
 
-            foreach (var provider in _sections.Providers)
+            foreach (var provider in availableProviders)
             {
                 if (provider.Place(resource) is { } alias && !SameLocation(alias, resource.Navigation))
                 {
@@ -178,9 +184,12 @@ internal sealed class NavigationTreeBuilder
             viewModelKey: null);
     }
 
-    private void AddDocuments(ReconcileContext context, ClusterWorkspace cluster)
+    private void AddDocuments(
+        ReconcileContext context,
+        ClusterWorkspace cluster,
+        IReadOnlyList<INavigationSectionProvider> availableProviders)
     {
-        foreach (var provider in _sections.Providers)
+        foreach (var provider in availableProviders)
         {
             foreach (var document in provider.Documents)
             {

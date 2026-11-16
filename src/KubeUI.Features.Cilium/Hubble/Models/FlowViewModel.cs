@@ -1,5 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using Pb = KubeUI.Features.Cilium.Hubble.Models;
+using HubbleModels = KubeUI.Features.Cilium.Hubble.Models;
 
 namespace KubeUI.Features.Cilium.Hubble;
 
@@ -28,8 +28,7 @@ public sealed partial class FlowViewModel : ObservableObject
 
     public FlowViewModel() { }
 
-    [Obsolete]
-    public FlowViewModel(Pb.Flow flow)
+    public FlowViewModel(HubbleModels.Flow flow)
     {
         UpdateFrom(flow);
     }
@@ -38,7 +37,7 @@ public sealed partial class FlowViewModel : ObservableObject
     [ObservableProperty] public partial string Uuid { get; set; } = string.Empty;
     [ObservableProperty] public partial FlowVerdict Verdict { get; set; }
     [ObservableProperty] public partial FlowDirection Direction { get; set; }
-    [ObservableProperty] public partial Pb.FlowType FlowType { get; set; }
+    [ObservableProperty] public partial HubbleModels.FlowType FlowType { get; set; }
     [ObservableProperty] public partial string NodeName { get; set; } = string.Empty;
 
     // Source
@@ -82,7 +81,7 @@ public sealed partial class FlowViewModel : ObservableObject
     // Policy
     [ObservableProperty] public partial string? MatchedPolicyName { get; set; }
     [ObservableProperty] public partial string? PolicyNamespace { get; set; }
-    [ObservableProperty] public partial Pb.DropReason? DropReason { get; set; }
+    [ObservableProperty] public partial HubbleModels.DropReason? DropReason { get; set; }
     [ObservableProperty] public partial string? DropReasonDescription { get; set; }
     [ObservableProperty] public partial string? ExtDropReasonDescription { get; set; }
 
@@ -91,7 +90,7 @@ public sealed partial class FlowViewModel : ObservableObject
     [ObservableProperty] public partial string? HttpMethod { get; set; }
     [ObservableProperty] public partial string? HttpPath { get; set; }
     [ObservableProperty] public partial int? HttpStatusCode { get; set; }
-    [ObservableProperty] public partial Pb.L7FlowType L7Type { get; set; }
+    [ObservableProperty] public partial HubbleModels.L7FlowType L7Type { get; set; }
 
     // Computed
     public string LatencyHumanReadable => Latency is { } latency
@@ -118,8 +117,7 @@ public sealed partial class FlowViewModel : ObservableObject
 
     public FlowCacheKey CacheKey => new(string.IsNullOrWhiteSpace(Uuid) ? _fallbackCacheIdentity : Uuid);
 
-    [Obsolete]
-    public void UpdateFrom(Pb.Flow flow)
+    public void UpdateFrom(HubbleModels.Flow flow)
     {
         if (flow.Time != null)
             Timestamp = flow.Time.ToDateTime();
@@ -127,8 +125,8 @@ public sealed partial class FlowViewModel : ObservableObject
         Verdict = (FlowVerdict)flow.Verdict;
         Direction = flow.TrafficDirection switch
         {
-            Pb.TrafficDirection.Ingress => FlowDirection.Ingress,
-            Pb.TrafficDirection.Egress => FlowDirection.Egress,
+            HubbleModels.TrafficDirection.Ingress => FlowDirection.Ingress,
+            HubbleModels.TrafficDirection.Egress => FlowDirection.Egress,
             _ => FlowDirection.Unknown
         };
         FlowType = flow.Type;
@@ -237,17 +235,14 @@ public sealed partial class FlowViewModel : ObservableObject
             PolicyNamespace = flow.IngressAllowedBy[0].Namespace;
         }
 
-        DropReason = flow.DropReasonDesc != Pb.DropReason.Unknown ? flow.DropReasonDesc : null;
+        DropReason = flow.DropReasonDesc != HubbleModels.DropReason.Unknown ? flow.DropReasonDesc : null;
         DropReasonDescription = flow.DropReasonDesc.ToString();
         ExtDropReasonDescription = flow.ExtDropReasonDesc;
 
+        ApplicationProtocol = null;
         if (flow.L7 != null)
         {
             L7Type = flow.L7.Type;
-            if (flow.L7.Kafka != null)
-            {
-                ApplicationProtocol = "Kafka";
-            }
             if (flow.L7.Dns != null)
             {
                 ApplicationProtocol = "DNS";
@@ -261,13 +256,9 @@ public sealed partial class FlowViewModel : ObservableObject
                 HttpStatusCode = flow.L7.Http.Code > 0 ? (int?)flow.L7.Http.Code : null;
             }
         }
-        else
-        {
-            ApplicationProtocol = null;
-        }
     }
 
-    private static bool IsWorldEndpoint(Pb.Endpoint endpoint)
+    private static bool IsWorldEndpoint(HubbleModels.Endpoint endpoint)
         => endpoint.Labels.Contains("reserved:world")
             || endpoint.Labels.Contains("reserved:world-ipv4")
             || endpoint.Labels.Contains("reserved:world-ipv6");

@@ -59,8 +59,8 @@ public sealed partial class HelmRepositoriesViewModel : ViewModelBase, IInitiali
             _repositories,
             static repository => repository.Name,
             [
-                CreateColumn("name", HelmLanguageManager.Instance.HelmRepositoriesView_Name.CurrentValue()!, static repository => repository.Name, DynamicTableViewWidthMode.Star, 1),
-                CreateColumn("url", HelmLanguageManager.Instance.HelmRepositoriesView_Url.CurrentValue()!, static repository => repository.Url, DynamicTableViewWidthMode.Star, 2)
+                CreateColumn("name", HelmLanguageManager.Instance.HelmRepositoriesView_Name.CurrentValue()!, static repository => repository.Name, 1),
+                CreateColumn("url", HelmLanguageManager.Instance.HelmRepositoriesView_Url.CurrentValue()!, static repository => repository.Url, 2)
             ],
             options: new DynamicTableViewSourceOptions { SelectionIdentityMode = DynamicTableViewSelectionIdentityMode.Key });
         _tableSource.SelectionModel.SingleSelect = true;
@@ -219,12 +219,10 @@ public sealed partial class HelmRepositoriesViewModel : ViewModelBase, IInitiali
         string key,
         string header,
         Func<HelmRepository, TValue> selector,
-        DynamicTableViewWidthMode widthMode,
         double width)
     {
         var column = DynamicTableViewColumn<HelmRepository>.Create(key, header, selector);
-        column.WidthMode = widthMode;
-        column.Width = width;
+        column.Width = new GridLength(width, GridUnitType.Star);
         return column;
     }
 

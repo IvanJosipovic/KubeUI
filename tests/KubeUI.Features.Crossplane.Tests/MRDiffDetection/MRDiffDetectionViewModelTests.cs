@@ -1,4 +1,5 @@
 using System.Text;
+using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Dock.Model.Controls;
@@ -23,23 +24,20 @@ namespace KubeUI.Features.Crossplane.Tests.MRDiffDetection;
 public sealed class MRDiffDetectionViewModelTests
 {
     [Fact]
-    public void Long_diff_values_use_proportional_width_while_short_fields_fit_content()
+    public void Long_diff_values_use_proportional_width_while_short_fields_use_auto_width()
     {
         var columns = MRDiffDetectionViewModel.CreateColumns();
 
         var oldValue = columns.Single(column => column.Key == "oldValue");
-        oldValue.WidthMode.ShouldBe(DynamicTableViewWidthMode.Star);
-        oldValue.Width.ShouldBe(2);
+        oldValue.Width.ShouldBe(new GridLength(2, GridUnitType.Star));
 
         var newValue = columns.Single(column => column.Key == "newValue");
-        newValue.WidthMode.ShouldBe(DynamicTableViewWidthMode.Star);
-        newValue.Width.ShouldBe(2);
+        newValue.Width.ShouldBe(new GridLength(2, GridUnitType.Star));
 
         var diffField = columns.Single(column => column.Key == "diffField");
-        diffField.WidthMode.ShouldBe(DynamicTableViewWidthMode.Star);
-        diffField.Width.ShouldBe(1);
-        columns.Single(column => column.Key == "newComputed").WidthMode.ShouldBe(DynamicTableViewWidthMode.Auto);
-        columns.Single(column => column.Key == "occurrences").WidthMode.ShouldBe(DynamicTableViewWidthMode.Auto);
+        diffField.Width.ShouldBe(GridLength.Auto);
+        columns.Single(column => column.Key == "newComputed").Width.ShouldBe(GridLength.Auto);
+        columns.Single(column => column.Key == "occurrences").Width.ShouldBe(GridLength.Auto);
     }
 
     [AvaloniaFact]

@@ -81,8 +81,8 @@ internal sealed class PermissionHandler(
     private static PermissionDecision SelectResponse(RequestPermissionRequest request, bool allowed)
     {
         var option = request.Options.FirstOrDefault(item => allowed
-                ? item.Kind is "allow_once" or "allow_always"
-                : item.Kind is "reject_once" or "reject_always");
+            ? item.Kind is PermissionOptionKind.AllowOnce or PermissionOptionKind.AllowAlways
+            : item.Kind is PermissionOptionKind.RejectOnce or PermissionOptionKind.RejectAlways);
         return option is null ? PermissionDecision.Cancel() : PermissionDecision.Select(option.OptionId);
     }
 }
@@ -91,7 +91,7 @@ internal sealed record AcpPermissionDiagnostics(
     bool ToolCallIdPresent,
     string? Name,
     string? Title,
-    string? Kind,
+    ToolKind? Kind,
     bool RawInputPresent,
     string? RawInputKind,
     int? RawInputLength,

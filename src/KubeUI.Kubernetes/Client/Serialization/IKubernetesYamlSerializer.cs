@@ -12,6 +12,13 @@ public interface IKubernetesYamlSerializer
     /// <summary>Serializes Kubernetes resources as a multi-document YAML stream.</summary>
     string SerializeAll(IEnumerable<object> values);
 
+    /// <summary>Serializes a resource directly to a writer using this application's reflection policy.</summary>
+    /// <remarks>Implementations can override this method to stream output without creating an intermediate string.</remarks>
+    void Serialize(object value, TextWriter writer)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(Serialize(value));
+    }
     /// <summary>Deserializes a resource using this application's reflection policy.</summary>
     T Deserialize<T>(string yaml, bool strict = false);
 

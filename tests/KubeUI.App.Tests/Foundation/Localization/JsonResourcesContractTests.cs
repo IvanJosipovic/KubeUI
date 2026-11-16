@@ -77,7 +77,7 @@ public sealed class JsonResourcesContractTests
                 if (owner.EndsWith("PropertiesView", StringComparison.Ordinal) && owner.Length > "PropertiesView".Length)
                 {
                     // Codified pattern: per-kind generated views named `<Kind>PropertiesView`
-                    // whose class is always `PropertiesView` (see AGENTS.md).
+                    // whose class is always `PropertiesView` (see KubeUI-eng localization guidance).
                     continue;
                 }
 
@@ -167,7 +167,7 @@ public sealed class JsonResourcesContractTests
         files.ShouldBeEmpty("resx files must be replaced by Assets/Resources*.json");
     }
 
-    private static string GetSourceRoot([CallerFilePath] string? callerFilePath = null)
+    internal static string GetSourceRoot([CallerFilePath] string? callerFilePath = null)
     {
         callerFilePath.ShouldNotBeNull();
 

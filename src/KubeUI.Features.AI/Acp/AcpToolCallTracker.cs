@@ -28,7 +28,7 @@ internal sealed class AcpToolCallTracker
         }
 
         if (update is SessionUpdateEvent { Update.Value: ToolCallUpdate toolUpdate }
-            && toolUpdate.Status is "completed" or "failed")
+            && toolUpdate.Status is ToolCallStatus.Completed or ToolCallStatus.Failed)
         {
             if (!_completedToolCalls.Add(toolUpdate.ToolCallId))
                 return false;

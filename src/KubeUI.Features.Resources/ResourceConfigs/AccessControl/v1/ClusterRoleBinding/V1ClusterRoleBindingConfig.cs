@@ -21,7 +21,6 @@ public sealed partial class V1ClusterRoleBindingConfig : ResourceConfig<V1Cluste
                 Key = "bindings",
                 Name = ResourcesLanguageManager.Instance.V1ClusterRoleBindingConfig_Bindings.CurrentValue()!,
                 Field = x => x.Subjects is { Count: > 0 } subjects ? string.Join(", ", subjects.Select(y => y.Name)) : "",
-                Width = 1, WidthMode = DynamicTableViewWidthMode.Star,
             },
             AgeColumn(),
         ];

@@ -256,7 +256,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             runtime.PropertyChanged += OnClusterRuntimePropertyChanged;
         }
         cluster.Runtime.NamespaceSelectionRequired += OnNamespaceSelectionRequired;
-        cluster.CustomResourceDefinitionRemoved += OnClusterCustomResourceDefinitionRemoved;
+        cluster.CustomResourceDefinitionChanged += OnClusterCustomResourceDefinitionChanged;
     }
 
     private void UnsubscribeCluster(ClusterWorkspace cluster)
@@ -268,7 +268,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             runtime.PropertyChanged -= OnClusterRuntimePropertyChanged;
         }
         cluster.Runtime.NamespaceSelectionRequired -= OnNamespaceSelectionRequired;
-        cluster.CustomResourceDefinitionRemoved -= OnClusterCustomResourceDefinitionRemoved;
+        cluster.CustomResourceDefinitionChanged -= OnClusterCustomResourceDefinitionChanged;
     }
 
     private void OnClusterRuntimePropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -419,13 +419,8 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             node.NavigationItems.Count);
     }
 
-    private void OnClusterCustomResourceDefinitionRemoved(ClusterWorkspace cluster, GroupApiVersionKind removedKind)
+    private void OnClusterCustomResourceDefinitionChanged(ClusterWorkspace cluster)
     {
-        _logger.LogDebug(
-            "Navigation custom resource definition removal received for {ClusterName}: {ResourceKind}",
-            cluster.Runtime.Name,
-            removedKind);
-
         ApplyOnUiThread(cluster);
     }
 

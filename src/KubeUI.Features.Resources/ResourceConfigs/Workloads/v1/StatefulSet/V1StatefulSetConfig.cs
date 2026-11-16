@@ -35,7 +35,6 @@ public sealed partial class V1StatefulSetConfig : ScalableWorkloadConfig<V1State
                 Key = "replicas",
                 Name = ResourcesLanguageManager.Instance.V1StatefulSetConfig_Replicas.CurrentValue()!,
                 Field = x => x.Status.Replicas,
-                WidthMode = DynamicTableViewWidthMode.Header
             },
             AgeColumn(),
         ];

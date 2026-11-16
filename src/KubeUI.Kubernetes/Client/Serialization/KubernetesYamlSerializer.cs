@@ -60,6 +60,12 @@ internal sealed class KubernetesYamlSerializer : IKubernetesYamlSerializer
         return YamlSerializer.SerializeDocuments(documents);
     }
 
+    public void Serialize(object value, TextWriter writer)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        KubernetesYaml.Serialize(value, writer, _serializer.Value!);
+    }
+
     public T Deserialize<T>(string yaml, bool strict = false)
     {
         ArgumentNullException.ThrowIfNull(yaml);

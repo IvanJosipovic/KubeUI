@@ -1,4 +1,6 @@
-﻿namespace KubeUI.Features.Resources;
+﻿using KubeUI.Features.Clusters.Workspace;
+
+namespace KubeUI.Features.Resources;
 
 /// <summary>One canonical or alias location in the navigation tree.</summary>
 /// <param name="SectionId">Stable owning section id, or null for the cluster root.</param>
@@ -32,6 +34,10 @@ public interface INavigationSectionProvider
 {
     /// <summary>Gets the section this provider owns.</summary>
     NavigationSection Section { get; }
+
+    /// <summary>Gets whether this section is available for a cluster.</summary>
+    /// <param name="cluster">Cluster whose navigation is being built.</param>
+    bool IsSectionAvailable(ClusterWorkspace cluster) => true;
 
     /// <summary>Gets the location for this section's documents, defaulting to the section root.</summary>
     NavigationPlacement DocumentPlacement => NavigationPlacement.InSection(Section.Id);

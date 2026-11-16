@@ -2961,9 +2961,15 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
         if (allowBookmarks)
         {
+            var metadata = new JsonObject { ["resourceVersion"] = currentVersion };
+            if (sendInitialEvents)
+            {
+                metadata["annotations"] = new JsonObject { ["k8s.io/initial-events-end"] = "true" };
+            }
+
             PublishWatch(channel, "BOOKMARK", new JsonObject
             {
-                ["metadata"] = new JsonObject { ["resourceVersion"] = currentVersion },
+                ["metadata"] = metadata,
             });
         }
 
