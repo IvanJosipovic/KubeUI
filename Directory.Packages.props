@@ -52,7 +52,7 @@
     <PackageVersion Include="Westermo.GraphX.Logic" Version="4.4.8" />
     
     <!-- Helm -->
-    <PackageVersion Include="Helm.NET" Version="1.0.0-alpha.12" />
+    <PackageVersion Include="Helm.NET" Version="1.0.0-alpha.14" />
     
     <!-- Kubernetes -->
     <PackageVersion Include="KubernetesClient" Version="21.0.8" />
