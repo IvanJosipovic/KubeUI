@@ -31,13 +31,6 @@ jobs:
         env:
           DOTNET_CreateDumpDiagnostics: "1"
         run: |
-          mkdir -p TestResults
-          test -w TestResults
-          ulimit -c unlimited
-          sudo sysctl -w "kernel.core_pattern=$GITHUB_WORKSPACE/TestResults/core-%e-%p-%t.dmp"
-          ulimit -c
-          cat /proc/sys/kernel/core_pattern
-
           dotnet test \
             --configuration Release \
             --no-build
