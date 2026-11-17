@@ -34,7 +34,7 @@ jobs:
           mkdir -p TestResults
           test -w TestResults
           ulimit -c unlimited
-          sudo sysctl -w "kernel.core_pattern=$GITHUB_WORKSPACE/TestResults/core-%e-%p-%t"
+          sudo sysctl -w "kernel.core_pattern=$GITHUB_WORKSPACE/TestResults/core-%e-%p-%t.dmp"
           ulimit -c
           cat /proc/sys/kernel/core_pattern
 
