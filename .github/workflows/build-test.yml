@@ -28,20 +28,28 @@ jobs:
         run: dotnet build --configuration Release --tl:off -clp:ErrorsOnly
 
       - name: Test
+        env:
+          DOTNET_CreateDumpDiagnostics: "1"
         run: |
+          mkdir -p TestResults
+          test -w TestResults
+          ulimit -c unlimited
+          sudo sysctl -w "kernel.core_pattern=$GITHUB_WORKSPACE/TestResults/core-%e-%p-%t"
+          ulimit -c
+          cat /proc/sys/kernel/core_pattern
+
           dotnet test \
             --configuration Release \
-            --no-build \
-            --hangdump \
-            --hangdump-timeout 5m \
-            --timeout 60m
+            --no-build
 
-      - name: Upload test dump
-        if: failure()
+      - name: Upload test diagnostics
+        if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@v7
         with:
           name: test-diagnostics
           path: TestResults/
+          retention-days: 3
+          compression-level: 1
 
       - name: Test Report
         uses: dorny/test-reporter@v3
