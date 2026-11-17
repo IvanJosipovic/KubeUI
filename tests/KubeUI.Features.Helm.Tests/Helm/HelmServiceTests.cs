@@ -59,7 +59,7 @@ public sealed class HelmServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task Native_SearchRepo_throws_when_no_repositories_are_configured()
+    public async Task ListChartsAsync_propagates_native_no_repository_error()
     {
         var directory = Directory.CreateTempSubdirectory("kubeui-helm-empty-repository-");
         try
@@ -76,8 +76,10 @@ public sealed class HelmServiceTests : IDisposable
                 RepositoryCache = cache.FullName
             });
 
-            var exception = Should.Throw<HelmActionException>(() =>
-                client.SearchRepo(keyword: string.Empty, versions: true, devel: true));
+            using var factory = new FakeHelmClientFactory(client);
+            using var service = CreateService(factory);
+            var exception = await Should.ThrowAsync<HelmActionException>(() =>
+                service.ListChartsAsync(CreateConnection(), cancellationToken: TestContext.Current.CancellationToken));
 
             exception.Message.ShouldContain("no repositories configured");
         }
