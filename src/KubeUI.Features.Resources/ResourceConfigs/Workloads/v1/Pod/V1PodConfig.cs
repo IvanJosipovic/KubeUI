@@ -12,6 +12,7 @@ using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources.Common;
 using KubeUI.Features.Resources.Infrastructure;
 using KubeUI.Features.Resources.ResourceConfigs.Workloads.v1.Pod;
+using KubeUI.Features.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Features.Resources.Workloads.v1.Pod;
@@ -183,6 +184,33 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
                         {
                             Title = c.Name,
                             Command = ViewConsoleCommand,
+                            CommandParameter = new ArrayList { selectedItem, c },
+                        }).ToList()],
+                    },
+                ]),
+            },
+            new()
+            {
+                Title = ResourcesLanguageManager.Instance.V1PodConfig_MenuItem_BrowseFiles.CurrentValue()!,
+                FluentIcon = Icon.Folder,
+                Items = selectedItem == null ? null : new AvaloniaList<MenuItemViewModel>([
+                    new()
+                    {
+                        Title = ResourcesLanguageManager.Instance.V1PodConfig_MenuItem_Init.CurrentValue()!,
+                        Items = [.. initContainers.Select(c => new MenuItemViewModel()
+                        {
+                            Title = c.Name,
+                            Command = BrowseFilesCommand,
+                            CommandParameter = new ArrayList { selectedItem, c },
+                        }).ToList()],
+                    },
+                    new()
+                    {
+                        Title = ResourcesLanguageManager.Instance.V1PodConfig_MenuItem_Normal.CurrentValue()!,
+                        Items = [.. containers.Select(c => new MenuItemViewModel()
+                        {
+                            Title = c.Name,
+                            Command = BrowseFilesCommand,
                             CommandParameter = new ArrayList { selectedItem, c },
                         }).ToList()],
                     },
@@ -458,6 +486,29 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
     }
 
     private bool CanViewConsole(IList? parameters)
+    {
+        return CanOpenConsole(parameters, "exec");
+    }
+
+    [RelayCommand(CanExecute = nameof(CanBrowseFiles))]
+    private async Task BrowseFiles(IList parameters)
+    {
+        if (parameters?.Count != 2 || parameters[0] is not V1Pod pod || parameters[1] is not V1Container container)
+        {
+            return;
+        }
+
+        var vm = ServiceProvider.GetRequiredService<ContainerFileBrowserViewModel>();
+        vm.Cluster = Cluster;
+        vm.Object = pod;
+        vm.ContainerName = container.Name;
+        vm.Id = $"{nameof(BrowseFiles)}-{Cluster.Runtime.Name}-{pod.Namespace()}-{pod.Name()}-{container.Name}";
+
+        _factory.AddToDocuments(vm);
+        await vm.InitializeAsync();
+    }
+
+    private bool CanBrowseFiles(IList? parameters)
     {
         return CanOpenConsole(parameters, "exec");
     }
