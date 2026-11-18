@@ -12,6 +12,83 @@ public sealed class HelmServiceTests : IDisposable
     private readonly ServiceProvider _services = new ServiceCollection().AddKubeUIKubernetesServices(jsonAllowReflection: false, yamlAllowReflection: true).BuildServiceProvider();
 
     public void Dispose() => _services.Dispose();
+
+    [Fact]
+    public async Task ListChartsAsync_reads_native_cached_catalog_without_network()
+    {
+        var directory = Directory.CreateTempSubdirectory("kubeui-helm-catalog-");
+        try
+        {
+            var repositoryConfig = Path.Combine(directory.FullName, "repositories.yaml");
+            var cache = Directory.CreateDirectory(Path.Combine(directory.FullName, "cache"));
+            await File.WriteAllTextAsync(repositoryConfig, """
+                apiVersion: v1
+                repositories:
+                - name: stable
+                  url: https://example.invalid/charts
+                """, TestContext.Current.CancellationToken);
+            await File.WriteAllTextAsync(Path.Combine(cache.FullName, "stable-index.yaml"), """
+                apiVersion: v1
+                entries:
+                  web:
+                  - apiVersion: v2
+                    name: web
+                    version: 1.2.3
+                    description: Test chart
+                    urls:
+                    - https://example.invalid/web-1.2.3.tgz
+                """, TestContext.Current.CancellationToken);
+            var client = new HelmClient(new HelmClientOptions
+            {
+                RepositoryConfig = repositoryConfig,
+                RepositoryCache = cache.FullName
+            });
+            using var factory = new FakeHelmClientFactory(client);
+            using var service = CreateService(factory);
+
+            var charts = await service.ListChartsAsync(
+                CreateConnection(), cancellationToken: TestContext.Current.CancellationToken);
+
+            charts.ShouldContain(chart => chart.Reference == "stable/web"
+                && chart.ChartName == "web" && chart.Version == "1.2.3");
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ListChartsAsync_propagates_native_no_repository_error()
+    {
+        var directory = Directory.CreateTempSubdirectory("kubeui-helm-empty-repository-");
+        try
+        {
+            var repositoryConfig = Path.Combine(directory.FullName, "repositories.yaml");
+            var cache = Directory.CreateDirectory(Path.Combine(directory.FullName, "cache"));
+            await File.WriteAllTextAsync(repositoryConfig, """
+                apiVersion: v1
+                repositories: []
+                """, TestContext.Current.CancellationToken);
+            var client = new HelmClient(new HelmClientOptions
+            {
+                RepositoryConfig = repositoryConfig,
+                RepositoryCache = cache.FullName
+            });
+
+            using var factory = new FakeHelmClientFactory(client);
+            using var service = CreateService(factory);
+            var exception = await Should.ThrowAsync<HelmActionException>(() =>
+                service.ListChartsAsync(CreateConnection(), cancellationToken: TestContext.Current.CancellationToken));
+
+            exception.Message.ShouldContain("no repositories configured");
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
     [Fact]
     public async Task GetChartValues_returns_default_yaml_for_chart_and_selected_version()
     {
@@ -30,6 +107,7 @@ public sealed class HelmServiceTests : IDisposable
     {
         var client = new FakeHelmClient { TemplateResult = "kind: ConfigMap" };
         client.Charts.Add(new("cilium/cilium", "cilium", "1.20.3"));
+        client.Repositories.Add(new("cilium", "https://cilium.example/charts"));
         using var factory = new FakeHelmClientFactory(client);
         using var service = CreateService(factory);
         var token = TestContext.Current.CancellationToken;
@@ -63,9 +141,83 @@ public sealed class HelmServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task ListChartsAsync_bootstraps_empty_catalog_once_and_reuses_updated_indexes()
+    {
+        var chart = new HelmChartSearchResult("repo/web", "web", "1.0.0");
+        var client = new FakeHelmClient { ChartsAfterIndexUpdate = [chart] };
+        client.Repositories.Add(new("repo", "https://repo.test"));
+        using var factory = new FakeHelmClientFactory(client);
+        using var service = CreateService(factory);
+
+        var first = await service.ListChartsAsync(CreateConnection(), cancellationToken: TestContext.Current.CancellationToken);
+        var second = await service.ListChartsAsync(CreateConnection(), cancellationToken: TestContext.Current.CancellationToken);
+
+        first.ShouldBe([chart]);
+        second.ShouldBe([chart]);
+        client.UpdateRepositoriesCalls.ShouldBe(1);
+        client.SearchRepoCalls.Count.ShouldBe(3);
+    }
+
+    [Fact]
+    public async Task ListChartsAsync_retries_partial_catalog_after_a_failed_index_update()
+    {
+        var partialChart = new HelmChartSearchResult("repo/partial", "partial", "0.9.0");
+        var chart = new HelmChartSearchResult("repo/web", "web", "1.0.0");
+        var client = new FakeHelmClient
+        {
+            ChartsAfterFailedIndexUpdate = [partialChart],
+            ChartsAfterIndexUpdate = [chart],
+            ThrowOnRepositoryUpdate = true
+        };
+        client.Repositories.Add(new("repo", "https://repo.test"));
+        using var factory = new FakeHelmClientFactory(client);
+        using var service = CreateService(factory);
+
+        await Should.ThrowAsync<HelmActionException>(() =>
+            service.ListChartsAsync(CreateConnection(), cancellationToken: TestContext.Current.CancellationToken));
+        client.ThrowOnRepositoryUpdate = false;
+        var charts = await service.ListChartsAsync(CreateConnection(), cancellationToken: TestContext.Current.CancellationToken);
+
+        charts.ShouldBe([chart]);
+        client.UpdateRepositoriesCalls.ShouldBe(2);
+        client.SearchRepoCalls.Count.ShouldBe(3);
+    }
+
+    [Fact]
+    public async Task ListChartsAsync_does_not_update_indexes_when_no_repositories_are_configured()
+    {
+        var client = new FakeHelmClient();
+        using var factory = new FakeHelmClientFactory(client);
+        using var service = CreateService(factory);
+
+        var exception = await Should.ThrowAsync<HelmActionException>(() =>
+            service.ListChartsAsync(CreateConnection(), cancellationToken: TestContext.Current.CancellationToken));
+
+        exception.Message.ShouldContain("no repositories configured");
+        client.UpdateRepositoriesCalls.ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task ListChartsAsync_does_not_update_indexes_for_populated_catalog()
+    {
+        var client = new FakeHelmClient();
+        client.Repositories.Add(new("repo", "https://repo.test"));
+        client.Charts.Add(new("repo/web", "web", "1.0.0"));
+        using var factory = new FakeHelmClientFactory(client);
+        using var service = CreateService(factory);
+
+        var charts = await service.ListChartsAsync(CreateConnection(), cancellationToken: TestContext.Current.CancellationToken);
+
+        charts.ShouldBe(client.Charts);
+        client.UpdateRepositoriesCalls.ShouldBe(0);
+    }
+
+    [Fact]
     public async Task ListChartsAsync_uses_all_cached_versions_and_filters_exact_repository()
     {
         var client = new FakeHelmClient();
+        client.Repositories.Add(new("repo-a", "https://repo-a.test"));
+        client.Repositories.Add(new("repo-ab", "https://repo-ab.test"));
         client.Charts.Add(new("repo-a/web", "web", "2.0.0"));
         client.Charts.Add(new("repo-a/web", "web", "1.0.0"));
         client.Charts.Add(new("repo-ab/web", "web", "3.0.0"));
