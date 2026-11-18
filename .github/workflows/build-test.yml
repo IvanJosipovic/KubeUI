@@ -33,6 +33,13 @@ jobs:
         run: |
           # Temporary diagnostic: remove the kernel fallback after this run.
           mkdir -p TestResults
+          # Include CLR/JIT mappings in Linux system cores so dotnet-dump/SOS
+          # can recover managed state (the documented minimum is 0x3f).
+          echo "coredump_filter before: $(cat /proc/self/coredump_filter)"
+          printf '0x3f\n' > /proc/self/coredump_filter
+          coredump_filter="$(cat /proc/self/coredump_filter)"
+          echo "coredump_filter inherited by children: ${coredump_filter}"
+          test "${coredump_filter}" = "0000003f"
           ulimit -c unlimited
           sudo sysctl -w "kernel.core_pattern=${{ github.workspace }}/TestResults/core-%e-%p-%t.dmp"
 
