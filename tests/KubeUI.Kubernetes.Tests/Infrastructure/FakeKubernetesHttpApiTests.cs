@@ -536,6 +536,34 @@ public sealed class FakeKubernetesHttpApiTests
     }
 
     [Fact]
+    public async Task InitialEventsWatchMarksSnapshotCompletion()
+    {
+        using var api = new FakeKubernetesHttpApi();
+        api.Register<V1Pod>();
+        api.Add(new V1Pod { Metadata = new V1ObjectMeta { Name = "pod", NamespaceProperty = "default" } });
+        using var client = CreateHttpClient(api);
+        using var response = await client.GetAsync(
+            "/api/v1/namespaces/default/pods?watch=true&sendInitialEvents=true&allowWatchBookmarks=true",
+            HttpCompletionOption.ResponseHeadersRead,
+            TestContext.Current.CancellationToken);
+        using var stream = await response.Content.ReadAsStreamAsync(TestContext.Current.CancellationToken);
+        using var reader = new StreamReader(stream);
+
+        var added = JsonNode.Parse((await reader.ReadLineAsync(TestContext.Current.CancellationToken)
+            .AsTask().WaitAsync(TimeSpan.FromSeconds(3)))!)!;
+        var bookmark = JsonNode.Parse((await reader.ReadLineAsync(TestContext.Current.CancellationToken)
+            .AsTask().WaitAsync(TimeSpan.FromSeconds(3)))!)!;
+
+        added["type"]!.GetValue<string>().ShouldBe("ADDED");
+        added["object"]!["metadata"]!["name"]!.GetValue<string>().ShouldBe("pod");
+        bookmark["type"]!.GetValue<string>().ShouldBe("BOOKMARK");
+        bookmark["object"]!["metadata"]!["resourceVersion"]!.GetValue<string>().ShouldNotBeNullOrEmpty();
+        var annotation = bookmark["object"]!["metadata"]!["annotations"]?["k8s.io/initial-events-end"];
+        annotation.ShouldNotBeNull();
+        annotation.GetValue<string>().ShouldBe("true");
+    }
+
+    [Fact]
     public async Task DiscoveryServesLegacyVersionsAndGroupResourceLists()
     {
         using var api = new FakeKubernetesHttpApi();

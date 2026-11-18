@@ -5,6 +5,8 @@
   "commandLineOptions": {
     "coverage": true,
     "crashdump": true,
+    "crashdump-type": "Heap",
+    "crash-report": true,
     "hangdump": true,
     "hangdump-timeout": "5m",
     "report-xunit-trx": true

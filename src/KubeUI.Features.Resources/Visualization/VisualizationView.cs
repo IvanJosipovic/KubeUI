@@ -60,6 +60,7 @@ public sealed partial class VisualizationView : KubeUIView<VisualizationViewMode
             Trailing = CompactToolbar.Group(
                 new Ursa.Controls.MultiComboBox()
                     .Width(200)
+                    .MaxHeight(20)
                     .Classes("ClearButton")
                     .ToolTip_Tip(ResourcesLanguageManager.Instance.VisualizationView_ResourceTypesTooltip.ToBinding())
                     .ItemsSource(vm, x => x.ResourceTypes)
@@ -72,7 +73,6 @@ public sealed partial class VisualizationView : KubeUIView<VisualizationViewMode
                     .BindValue(NamespaceScopePicker.IsSelectionEnabledProperty, CompiledBinding.Create<VisualizationViewModel, bool>(x => x.IsNamespaceSelectionEnabled, source: vm))
                     .BindValue(NamespaceScopePicker.IsLinkEnabledProperty, CompiledBinding.Create<VisualizationViewModel, bool>(x => x.IsNamespaceSelectionEnabled, source: vm))
                     .IsVisible(vm, x => x.IsNamespaceSelectorVisible))
-                .MaxWidth(420)
         };
     }
 

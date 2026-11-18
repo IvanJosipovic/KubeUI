@@ -8,6 +8,7 @@ using DynamicData;
 using k8s;
 using KubernetesClient.Informer.Client;
 using KubeUI.Testing.Kubernetes.Transport;
+using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 using V1Namespace = k8s.Models.V1Namespace;
 using V1ObjectMeta = k8s.Models.V1ObjectMeta;
@@ -21,6 +22,32 @@ using V1Patch = k8s.Models.V1Patch;
 public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
 {
     [Fact]
+    public async Task FailedConnectionDisposesClientAndClearsPartialState()
+    {
+        var config = new TestClusterConfig { ThrowOnConnect = true };
+        await using var clusterScope = await new TestClusterGenerator().CreateAsync(
+            config,
+            TestContext.Current.CancellationToken);
+        var cluster = clusterScope.Cluster;
+
+        await cluster.Connect();
+
+        cluster.Client.ShouldBeNull();
+        cluster.Connected.ShouldBeFalse();
+        cluster.Status.ShouldBe(ClusterStatus.Errored);
+        cluster.LastError.ShouldNotBeNullOrEmpty();
+        cluster.Objects.ShouldBeEmpty();
+        cluster.ActiveResourceInformerTaskCount.ShouldBe(0);
+
+        config.ThrowOnConnect = false;
+        await cluster.Connect();
+
+        cluster.Client.ShouldNotBeNull();
+        cluster.Connected.ShouldBeTrue();
+        cluster.LastError.ShouldBeNull();
+    }
+
+    [Fact]
     public async Task DisconnectStopsAllResourceInformerTasks()
     {
         await using var clusterScope = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
@@ -31,6 +58,50 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
         await cluster.Disconnect();
 
         cluster.ActiveResourceInformerTaskCount.ShouldBe(0);
+    }
+    [Fact]
+    public async Task CancellingAsWatchStartsStopsInformer()
+    {
+        using var cancellation = new CancellationTokenSource();
+        await using var services = KubernetesTestServiceProvider.Build(new KubernetesTestSettingsStore());
+        var state = new WatchCancellationState(cancellation);
+        var generator = new TestClusterGenerator(services);
+        await using var clusterScope = await generator.CreateAsync(
+            new TestClusterConfig { HttpHandlerFactory = () => [new CancelWatchHandler(state)] },
+            TestContext.Current.CancellationToken);
+        using var informer = new ResourceInformer<V1Pod>(
+            clusterScope.Client,
+            new KubernetesTestHostApplicationLifetime(),
+            NullLogger<ResourceInformer<V1Pod>>.Instance);
+        informer.StartWatching();
+
+        using var releaseWorker = new ManualResetEventSlim();
+        TaskCompletionSource workerStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        var blocker = Task.Run(() =>
+        {
+            workerStarted.SetResult();
+            releaseWorker.Wait(TestContext.Current.CancellationToken);
+        });
+        try
+        {
+            await workerStarted.Task.WaitAsync(TestContext.Current.CancellationToken);
+            var run = informer.RunInfinite(cancellation.Token);
+            await state.WatchStarted.Task.WaitAsync(TimeSpan.FromSeconds(3), TestContext.Current.CancellationToken);
+            try
+            {
+                await run.WaitAsync(TimeSpan.FromSeconds(3), TestContext.Current.CancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested
+                && !TestContext.Current.CancellationToken.IsCancellationRequested)
+            {
+            }
+
+        }
+        finally
+        {
+            releaseWorker.Set();
+            await blocker;
+        }
     }
 
     [Fact]
@@ -482,6 +553,40 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
             }
 
             return base.SendAsync(request, cancellationToken);
+        }
+    }
+
+    private sealed class WatchCancellationState(CancellationTokenSource cancellation)
+    {
+        private int _watchStarted;
+
+        public TaskCompletionSource WatchStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public void Cancel()
+        {
+            if (Interlocked.Exchange(ref _watchStarted, 1) == 0)
+            {
+                cancellation.Cancel();
+                WatchStarted.TrySetResult();
+            }
+        }
+    }
+
+    private sealed class CancelWatchHandler(WatchCancellationState state) : DelegatingHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            var response = base.SendAsync(request, cancellationToken);
+            if (request.RequestUri is { } uri
+                && uri.AbsolutePath.EndsWith("/pods", StringComparison.Ordinal)
+                && uri.Query.Contains("watch=true", StringComparison.OrdinalIgnoreCase))
+            {
+                state.Cancel();
+            }
+
+            return response;
         }
     }
 

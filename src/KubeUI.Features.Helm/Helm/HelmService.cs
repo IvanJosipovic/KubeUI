@@ -17,6 +17,8 @@ public sealed class HelmService : IHelmService, IDisposable
     private readonly ReaderWriterLockSlim _nativeGate = new(LockRecursionPolicy.NoRecursion);
     private readonly CancellationTokenSource _disposeCancellation = new();
     private int _disposed;
+    private bool _repositoryIndexesInitialized;
+    private bool _repositoryIndexUpdateFailed;
 
     // Timeout for waiting on the native gate during disposal
     private static readonly TimeSpan DisposeGateTimeout = TimeSpan.FromSeconds(30);
@@ -47,6 +49,14 @@ public sealed class HelmService : IHelmService, IDisposable
             client =>
             {
                 var charts = client.SearchRepo(keyword: string.Empty, versions: true, devel: true);
+                if (!_repositoryIndexesInitialized
+                    && (charts.Count == 0 || _repositoryIndexUpdateFailed)
+                    && client.RepoList().Count != 0)
+                {
+                    UpdateRepositoryIndexes(client);
+                    charts = client.SearchRepo(keyword: string.Empty, versions: true, devel: true);
+                }
+
                 if (repositoryName is null)
                 {
                     return charts;
@@ -126,7 +136,24 @@ public sealed class HelmService : IHelmService, IDisposable
 
     /// <inheritdoc />
     public Task UpdateRepositoriesAsync(HelmConnection connection, CancellationToken cancellationToken = default)
-        => InvokeVoidAsync(connection, static client => client.RepoUpdate(), cancellationToken, isWriteOperation: true);
+        => InvokeVoidAsync(connection, UpdateRepositoryIndexes, cancellationToken, isWriteOperation: true);
+
+    private void UpdateRepositoryIndexes(IHelmClient client)
+    {
+        try
+        {
+            client.RepoUpdate();
+        }
+        catch
+        {
+            _repositoryIndexesInitialized = false;
+            _repositoryIndexUpdateFailed = true;
+            throw;
+        }
+
+        _repositoryIndexesInitialized = true;
+        _repositoryIndexUpdateFailed = false;
+    }
 
     /// <inheritdoc />
     public Task<IReadOnlyList<HelmRelease>> ListReleasesAsync(HelmConnection connection, bool allNamespaces = true, string? filter = null, CancellationToken cancellationToken = default)

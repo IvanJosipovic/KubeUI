@@ -8,7 +8,7 @@ using Grpc.Net.Client;
 using k8s.Models;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.Logging;
-using Pb = KubeUI.Features.Cilium.Hubble.Models;
+using HubbleModels = KubeUI.Features.Cilium.Hubble.Models;
 
 namespace KubeUI.Features.Cilium.Hubble;
 
@@ -29,7 +29,7 @@ public sealed class HubbleConnection : IHubbleConnection
     private readonly HubbleConnectionOptions _options;
     private readonly CancellationTokenSource _lifetime = new();
     private GrpcChannel? _channel;
-    private Pb.Observer.ObserverClient? _client;
+    private HubbleModels.Observer.ObserverClient? _client;
     private PortForwarder? _portForwarder;
     private X509Certificate2? _trustedRootCertificate;
     private X509Certificate2? _clientCertificate;
@@ -55,7 +55,6 @@ public sealed class HubbleConnection : IHubbleConnection
     }
 
     /// <inheritdoc />
-    [Obsolete]
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
         if (Interlocked.CompareExchange(ref _startState, 1, 0) != 0)
@@ -90,7 +89,7 @@ public sealed class HubbleConnection : IHubbleConnection
                 {
                     HttpHandler = CreateHttpHandler(useTls)
                 });
-            _client = new Pb.Observer.ObserverClient(_channel);
+            _client = new HubbleModels.Observer.ObserverClient(_channel);
             Flows = CreateFlowObservable(null).Publish().RefCount();
         }
         catch (OperationCanceledException) when (linkedCancellation.IsCancellationRequested)
@@ -109,7 +108,6 @@ public sealed class HubbleConnection : IHubbleConnection
     }
 
     /// <inheritdoc />
-    [Obsolete]
     public IObservable<FlowViewModel> ObserveFlows(IReadOnlyCollection<string> namespaces)
     {
         ArgumentNullException.ThrowIfNull(namespaces);
@@ -130,11 +128,9 @@ public sealed class HubbleConnection : IHubbleConnection
         return CreateFlowObservable(namespaceSnapshot);
     }
 
-    [Obsolete]
     private IObservable<FlowViewModel> CreateFlowObservable(IReadOnlyList<string>? namespaces)
         => Observable.Create<FlowViewModel>((observer, token) => ReadFlowsAsync(observer, token, namespaces));
 
-    [Obsolete]
     private async Task ReadFlowsAsync(
         IObserver<FlowViewModel> observer,
         CancellationToken subscriptionToken,
@@ -145,13 +141,13 @@ public sealed class HubbleConnection : IHubbleConnection
             _lifetime.Token);
         try
         {
-            var request = new Pb.GetFlowsRequest { Follow = true, Number = 10000 };
+            var request = new HubbleModels.GetFlowsRequest { Follow = true, Number = 10000 };
             if (namespaces is not null)
             {
                 foreach (var ns in namespaces)
                 {
-                    request.Whitelist.Add(new Pb.FlowFilter { SourcePod = { $"{ns}/" } });
-                    request.Whitelist.Add(new Pb.FlowFilter { DestinationPod = { $"{ns}/" } });
+                    request.Whitelist.Add(new HubbleModels.FlowFilter { SourcePod = { $"{ns}/" } });
+                    request.Whitelist.Add(new HubbleModels.FlowFilter { DestinationPod = { $"{ns}/" } });
                 }
             }
 

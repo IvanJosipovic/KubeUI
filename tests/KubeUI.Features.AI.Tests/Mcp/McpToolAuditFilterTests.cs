@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using KubeUI.Features.AI.Mcp;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -112,16 +114,61 @@ public sealed class McpToolAuditFilterTests
     }
 
     [Fact]
+    public async Task oversized_preflight_result_is_converted_to_a_limit_error_result()
+    {
+        var outcome = await McpToolAuditFilter.ExecuteAsync(
+            s_identity,
+            "kubeui_list_events",
+            NullLogger.Instance,
+            s_timeProvider,
+            _ => throw new McpToolOutputLimitExceededException(),
+            TestContext.Current.CancellationToken);
+
+        outcome.Outcome.ShouldBe(McpToolOutcome.Oversized);
+        outcome.Result.ShouldNotBeNull();
+        outcome.Result.IsError.ShouldBe(true);
+        outcome.Result.Content.ShouldHaveSingleItem()
+            .ShouldBeOfType<TextContentBlock>()
+            .Text.ShouldContain("1 MiB");
+    }
+
+    [Fact]
+    public void serialized_output_at_the_limit_is_accepted()
+    {
+        var value = new string('x', McpToolOutputLimiter.MaximumOutputBytes - 2);
+        var options = new JsonSerializerOptions
+        {
+            TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+        };
+
+        McpToolOutputLimiter.EnsureWithinLimit(value, options).ShouldBeSameAs(value);
+    }
+
+    [Fact]
+    public void serialized_output_over_the_limit_is_rejected()
+    {
+        var value = new string('x', McpToolOutputLimiter.MaximumOutputBytes - 1);
+        var options = new JsonSerializerOptions
+        {
+            TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+        };
+
+        Should.Throw<McpToolOutputLimitExceededException>(
+            () => McpToolOutputLimiter.EnsureWithinLimit(value, options));
+    }
+
+    [Fact]
     public async Task cancelled_call_is_recorded_as_cancelled_and_reraises_the_cancellation()
     {
         using var cancellation = new CancellationTokenSource();
         var handlerEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var logger = new RecordingLogger();
 
         var pending = McpToolAuditFilter.ExecuteAsync(
             s_identity,
             "kubeui_list_events",
-            NullLogger.Instance,
+            logger,
             s_timeProvider,
             async token =>
             {
@@ -139,31 +186,35 @@ public sealed class McpToolAuditFilterTests
         await cancellation.CancelAsync();
 
         await Should.ThrowAsync<OperationCanceledException>(async () => await pending);
+        logger.Entries.ShouldNotContain(entry => entry.Exception != null);
     }
 
     [Fact]
     public async Task invalid_request_is_recorded_and_reraises_the_argument_exception()
     {
+        var logger = new RecordingLogger();
         var thrown = await Should.ThrowAsync<ArgumentException>(async () =>
             await McpToolAuditFilter.ExecuteAsync(
                 s_identity,
                 "kubeui_list_resources",
-                NullLogger.Instance,
+                logger,
                 s_timeProvider,
                 _ => throw new ArgumentException("namespace is invalid", "namespace"),
                 TestContext.Current.CancellationToken));
 
         thrown.Message.ShouldContain("namespace is invalid");
+        logger.Entries.ShouldNotContain(entry => entry.Exception != null);
     }
 
     [Fact]
     public async Task unexpected_failure_is_reported_as_a_generic_invalid_operation()
     {
+        var logger = new RecordingLogger();
         var thrown = await Should.ThrowAsync<InvalidOperationException>(async () =>
             await McpToolAuditFilter.ExecuteAsync(
                 s_identity,
                 "kubeui_list_resources",
-                NullLogger.Instance,
+                logger,
                 s_timeProvider,
                 _ => throw new InvalidOperationException("connection reset by peer"),
                 TestContext.Current.CancellationToken));
@@ -171,6 +222,7 @@ public sealed class McpToolAuditFilterTests
         thrown.Message.ShouldBe("MCP tool request could not be completed.");
         thrown.InnerException.ShouldBeOfType<InvalidOperationException>()
             .Message.ShouldBe("connection reset by peer");
+        logger.Entries.ShouldNotContain(entry => entry.Exception != null);
     }
 
     [Fact]
@@ -199,7 +251,7 @@ public sealed class McpToolAuditFilterTests
 
     private sealed class RecordingLogger : ILogger
     {
-        public List<(LogLevel Level, string Message)> Entries { get; } = [];
+        public List<(LogLevel Level, string Message, Exception? Exception)> Entries { get; } = [];
 
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
 
@@ -208,7 +260,7 @@ public sealed class McpToolAuditFilterTests
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
             ArgumentNullException.ThrowIfNull(formatter);
-            Entries.Add((logLevel, formatter(state, exception)));
+            Entries.Add((logLevel, formatter(state, exception), exception));
         }
     }
 }

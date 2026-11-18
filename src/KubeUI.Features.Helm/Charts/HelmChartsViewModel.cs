@@ -141,8 +141,7 @@ public sealed partial class HelmChartsViewModel : ViewModelBase, IInitializeClus
         double starWidth)
     {
         var column = DynamicTableViewColumn<HelmChartSearchResult>.Create(key, header, selector);
-        column.WidthMode = DynamicTableViewWidthMode.Star;
-        column.Width = starWidth;
+        column.Width = new GridLength(starWidth, GridUnitType.Star);
         return column;
     }
 

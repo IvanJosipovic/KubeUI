@@ -134,9 +134,9 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
                             toolStarted.Title ?? toolStarted.Name ?? toolStarted.ToolCallId,
                             FormatInput(toolStarted.RawInput))));
                 else if (item is SessionUpdateEvent { Update.Value: ToolCallUpdate toolCompleted }
-                    && toolCompleted.Status is "completed" or "failed")
+                    && toolCompleted.Status is ToolCallStatus.Completed or ToolCallStatus.Failed)
                 {
-                    var succeeded = toolCompleted.Status == "completed";
+                    var succeeded = toolCompleted.Status == ToolCallStatus.Completed;
                     var toolName = toolCompleted.Title ?? toolCompleted.Name ?? toolCompleted.ToolCallId;
                     if (!succeeded)
                     {

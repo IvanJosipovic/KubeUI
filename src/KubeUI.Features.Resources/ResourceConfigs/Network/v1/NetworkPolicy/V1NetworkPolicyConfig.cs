@@ -22,7 +22,6 @@ public sealed partial class V1NetworkPolicyConfig : ResourceConfig<V1NetworkPoli
                 Key = "policy-types",
                 Name = ResourcesLanguageManager.Instance.V1NetworkPolicyConfig_Policy_Types.CurrentValue()!,
                 Field = x => x.Spec?.PolicyTypes is { Count: > 0 } policyTypes ? string.Join(", ", policyTypes) : "",
-                Width = 1, WidthMode = DynamicTableViewWidthMode.Star,
             },
             AgeColumn(),
         ];

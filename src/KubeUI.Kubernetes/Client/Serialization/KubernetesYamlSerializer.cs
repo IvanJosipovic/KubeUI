@@ -18,6 +18,12 @@ internal sealed class KubernetesYamlSerializer : IKubernetesYamlSerializer, IDis
 
     public string Serialize(object value) => KubernetesYaml.Serialize(value, _serializer.Value!);
 
+    public void Serialize(object value, TextWriter writer)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        KubernetesYaml.Serialize(value, writer, _serializer.Value!);
+    }
+
     public T Deserialize<T>(string yaml, bool strict = false)
     {
         using var reader = new StringReader(yaml);

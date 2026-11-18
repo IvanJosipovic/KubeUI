@@ -257,6 +257,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         }
         cluster.Runtime.NamespaceSelectionRequired += OnNamespaceSelectionRequired;
         cluster.CustomResourceRemoved += OnClusterCustomResourceRemoved;
+        cluster.CustomResourceDefinitionChanged += OnClusterCustomResourceDefinitionChanged;
     }
 
     private void UnsubscribeCluster(ClusterWorkspace cluster)
@@ -269,6 +270,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         }
         cluster.Runtime.NamespaceSelectionRequired -= OnNamespaceSelectionRequired;
         cluster.CustomResourceRemoved -= OnClusterCustomResourceRemoved;
+        cluster.CustomResourceDefinitionChanged -= OnClusterCustomResourceDefinitionChanged;
     }
 
     private void OnClusterRuntimePropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -426,6 +428,11 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             cluster.Runtime.Name,
             removedKind);
 
+        ApplyOnUiThread(cluster);
+    }
+
+    private void OnClusterCustomResourceDefinitionChanged(ClusterWorkspace cluster)
+    {
         ApplyOnUiThread(cluster);
     }
 

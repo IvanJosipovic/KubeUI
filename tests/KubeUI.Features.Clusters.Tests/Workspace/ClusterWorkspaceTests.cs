@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Text.Json.Nodes;
 using Avalonia.Controls;
@@ -12,9 +13,13 @@ using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.App.Infrastructure.Platform;
+using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources;
 using KubeUI.Testing.Kubernetes.Transport;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using Shouldly;
 
 namespace KubeUI.Features.Clusters.Tests.Workspace;
@@ -855,6 +860,305 @@ public class ClusterWorkspaceTests
         secondConnect.ShouldBeSameAs(firstConnect);
         await Task.WhenAll(firstConnect, secondConnect);
         workspace.Runtime.Connected.ShouldBeTrue();
+    }
+
+    [AvaloniaFact]
+    public async Task disconnect_invalidates_in_flight_workspace_initialization()
+    {
+        var connectEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var finishConnect = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var evaluationEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var finishEvaluation = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var connected = false;
+        var status = ClusterStatus.None;
+        var runtime = new Mock<IClusterRuntime>();
+        runtime.SetupGet(value => value.Name).Returns("test");
+        runtime.SetupGet(value => value.Connected).Returns(() => connected);
+        runtime.SetupGet(value => value.Status).Returns(() => status);
+        runtime.SetupGet(value => value.Namespaces)
+            .Returns(new ReadOnlyObservableCollection<V1Namespace>(new ObservableCollection<V1Namespace>()));
+        runtime.SetupGet(value => value.Objects).Returns(new Dictionary<GroupApiVersionKind, object>());
+        runtime.SetupGet(value => value.Permissions).Returns(new Mock<IClusterAuthorization>().Object);
+        runtime.Setup(value => value.Connect()).Returns(async () =>
+        {
+            connectEntered.TrySetResult();
+            await finishConnect.Task;
+            connected = true;
+            status = ClusterStatus.Connected;
+        });
+        runtime.Setup(value => value.Disconnect()).Returns(() =>
+        {
+            connected = false;
+            status = ClusterStatus.None;
+            return Task.CompletedTask;
+        });
+
+        var resourceConfig = new Mock<IClusterResourceConfig>();
+        resourceConfig.Setup(value => value.Kind).Returns(GroupApiVersionKind.From<V1Pod>());
+        resourceConfig.Setup(value => value.Permissions()).Returns([]);
+        resourceConfig.Setup(value => value.AuthorizationRequests()).Returns([]);
+        resourceConfig.Setup(value => value.EvaluateListWatchAccessAsync()).Returns(async () =>
+        {
+            evaluationEntered.TrySetResult();
+            await finishEvaluation.Task;
+        });
+
+        using var serviceProvider = new ServiceCollection()
+            .AddSingleton(resourceConfig.Object)
+            .BuildServiceProvider();
+        using var instrumentationSource = new ActivitySource("ClusterWorkspaceTests");
+        var instrumentation = new Mock<IClusterInstrumentation>();
+        instrumentation.SetupGet(value => value.Source).Returns(instrumentationSource);
+        using var workspace = new ClusterWorkspace(
+            runtime.Object,
+            serviceProvider,
+            NullLogger<ClusterWorkspace>.Instance,
+            instrumentation.Object);
+        var processedResourceConfigs = 0;
+        workspace.ResourceConfigProcessed += (_, _) => processedResourceConfigs++;
+
+        var connectTask = workspace.Connect();
+        try
+        {
+            await connectEntered.Task.WaitAsync(
+                TimeSpan.FromSeconds(10),
+                TestContext.Current.CancellationToken);
+            finishConnect.TrySetResult();
+            await evaluationEntered.Task.WaitAsync(
+                TimeSpan.FromSeconds(10),
+                TestContext.Current.CancellationToken);
+
+            var disconnectTask = workspace.Disconnect();
+
+            await disconnectTask.WaitAsync(
+                TimeSpan.FromSeconds(10),
+                TestContext.Current.CancellationToken);
+            connected.ShouldBeFalse();
+            finishEvaluation.TrySetResult();
+            await connectTask.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+
+            connected.ShouldBeFalse();
+            status.ShouldBe(ClusterStatus.None);
+            processedResourceConfigs.ShouldBe(0);
+        }
+        finally
+        {
+            finishConnect.TrySetResult();
+            finishEvaluation.TrySetResult();
+            await connectTask.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task reconnect_waits_for_an_in_flight_disconnect()
+    {
+        var disconnectEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var finishDisconnect = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var connected = false;
+        var connectCount = 0;
+        var status = ClusterStatus.None;
+        var runtime = new Mock<IClusterRuntime>();
+        runtime.SetupGet(value => value.Name).Returns("test");
+        runtime.SetupGet(value => value.Connected).Returns(() => connected);
+        runtime.SetupGet(value => value.Status).Returns(() => status);
+        runtime.SetupGet(value => value.Namespaces)
+            .Returns(new ReadOnlyObservableCollection<V1Namespace>(new ObservableCollection<V1Namespace>()));
+        runtime.SetupGet(value => value.Objects).Returns(new Dictionary<GroupApiVersionKind, object>());
+        runtime.SetupGet(value => value.Permissions).Returns(new Mock<IClusterAuthorization>().Object);
+        runtime.Setup(value => value.Connect()).Returns(() =>
+        {
+            connectCount++;
+            connected = true;
+            status = ClusterStatus.Connected;
+            return Task.CompletedTask;
+        });
+        runtime.Setup(value => value.Disconnect()).Returns(async () =>
+        {
+            disconnectEntered.TrySetResult();
+            await finishDisconnect.Task;
+            connected = false;
+            status = ClusterStatus.None;
+        });
+
+        using var serviceProvider = new ServiceCollection().BuildServiceProvider();
+        using var instrumentationSource = new ActivitySource("ClusterWorkspaceTests");
+        var instrumentation = new Mock<IClusterInstrumentation>();
+        instrumentation.SetupGet(value => value.Source).Returns(instrumentationSource);
+        using var workspace = new ClusterWorkspace(
+            runtime.Object,
+            serviceProvider,
+            NullLogger<ClusterWorkspace>.Instance,
+            instrumentation.Object);
+
+        await workspace.Connect().WaitAsync(TestContext.Current.CancellationToken);
+        var disconnectTask = workspace.Disconnect();
+        var reconnectTask = workspace.Connect();
+
+        try
+        {
+            await disconnectEntered.Task.WaitAsync(
+                TimeSpan.FromSeconds(10),
+                TestContext.Current.CancellationToken);
+            connectCount.ShouldBe(1);
+
+            finishDisconnect.TrySetResult();
+            await Task.WhenAll(disconnectTask, reconnectTask)
+                .WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+
+            connectCount.ShouldBe(2);
+            connected.ShouldBeTrue();
+            status.ShouldBe(ClusterStatus.Connected);
+        }
+        finally
+        {
+            finishDisconnect.TrySetResult();
+            await Task.WhenAll(disconnectTask, reconnectTask)
+                .WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task removing_workspace_disconnects_a_connection_that_finishes_after_removal()
+    {
+        var connectEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var finishConnect = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var removalDisconnectEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var connected = false;
+        var disconnectCount = 0;
+        var status = ClusterStatus.None;
+        var runtime = new Mock<IClusterRuntime>();
+        runtime.SetupGet(value => value.Name).Returns("test");
+        runtime.SetupGet(value => value.Connected).Returns(() => connected);
+        runtime.SetupGet(value => value.Status).Returns(() => status);
+        runtime.SetupGet(value => value.Namespaces)
+            .Returns(new ReadOnlyObservableCollection<V1Namespace>(new ObservableCollection<V1Namespace>()));
+        runtime.SetupGet(value => value.Objects).Returns(new Dictionary<GroupApiVersionKind, object>());
+        runtime.SetupGet(value => value.Permissions).Returns(new Mock<IClusterAuthorization>().Object);
+        runtime.Setup(value => value.Connect()).Returns(async () =>
+        {
+            connectEntered.TrySetResult();
+            await finishConnect.Task;
+            connected = true;
+            status = ClusterStatus.Connected;
+        });
+        runtime.Setup(value => value.Disconnect()).Returns(() =>
+        {
+            if (Interlocked.Increment(ref disconnectCount) == 1)
+            {
+                removalDisconnectEntered.TrySetResult();
+            }
+
+            connected = false;
+            status = ClusterStatus.None;
+            return Task.CompletedTask;
+        });
+
+        using var serviceProvider = new ServiceCollection().BuildServiceProvider();
+        using var instrumentationSource = new ActivitySource("ClusterWorkspaceTests");
+        var instrumentation = new Mock<IClusterInstrumentation>();
+        instrumentation.SetupGet(value => value.Source).Returns(instrumentationSource);
+        using var workspace = new ClusterWorkspace(
+            runtime.Object,
+            serviceProvider,
+            NullLogger<ClusterWorkspace>.Instance,
+            instrumentation.Object);
+
+        var connectTask = workspace.Connect();
+        try
+        {
+            await connectEntered.Task.WaitAsync(
+                TimeSpan.FromSeconds(10),
+                TestContext.Current.CancellationToken);
+            workspace.DisconnectAfterRemoval();
+            await removalDisconnectEntered.Task.WaitAsync(
+                TimeSpan.FromSeconds(10),
+                TestContext.Current.CancellationToken);
+            finishConnect.TrySetResult();
+            await connectTask.WaitAsync(
+                TimeSpan.FromSeconds(10),
+                TestContext.Current.CancellationToken);
+
+            connected.ShouldBeFalse();
+            disconnectCount.ShouldBe(2);
+            status.ShouldBe(ClusterStatus.None);
+        }
+        finally
+        {
+            finishConnect.TrySetResult();
+            await connectTask.WaitAsync(
+                TimeSpan.FromSeconds(10),
+                TestContext.Current.CancellationToken);
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task disabling_workspace_waits_for_connection_initialization_before_disconnect()
+    {
+        var connectEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var finishConnect = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var disconnectEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var disconnectFinished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var connected = false;
+        var status = ClusterStatus.None;
+        var runtime = new Mock<IClusterRuntime>();
+        runtime.SetupGet(value => value.Name).Returns("test");
+        runtime.SetupGet(value => value.Connected).Returns(() => connected);
+        runtime.SetupGet(value => value.Status).Returns(() => status);
+        runtime.SetupGet(value => value.Namespaces)
+            .Returns(new ReadOnlyObservableCollection<V1Namespace>(new ObservableCollection<V1Namespace>()));
+        runtime.SetupGet(value => value.Objects).Returns(new Dictionary<GroupApiVersionKind, object>());
+        runtime.SetupGet(value => value.Permissions).Returns(new Mock<IClusterAuthorization>().Object);
+        runtime.Setup(value => value.Connect()).Returns(async () =>
+        {
+            connectEntered.TrySetResult();
+            await finishConnect.Task;
+            connected = true;
+            status = ClusterStatus.Connected;
+        });
+        runtime.Setup(value => value.Disconnect()).Returns(() =>
+        {
+            disconnectEntered.TrySetResult();
+            connected = false;
+            status = ClusterStatus.None;
+            disconnectFinished.TrySetResult();
+            return Task.CompletedTask;
+        });
+
+        using var serviceProvider = new ServiceCollection().BuildServiceProvider();
+        using var instrumentationSource = new ActivitySource("ClusterWorkspaceTests");
+        var instrumentation = new Mock<IClusterInstrumentation>();
+        instrumentation.SetupGet(value => value.Source).Returns(instrumentationSource);
+        using var workspace = new ClusterWorkspace(
+            runtime.Object,
+            serviceProvider,
+            NullLogger<ClusterWorkspace>.Instance,
+            instrumentation.Object);
+
+        var connectTask = workspace.Connect();
+        try
+        {
+            await connectEntered.Task.WaitAsync(
+                TimeSpan.FromSeconds(10),
+                TestContext.Current.CancellationToken);
+            workspace.IsEnabled = false;
+
+            disconnectEntered.Task.IsCompleted.ShouldBeFalse();
+
+            finishConnect.TrySetResult();
+            await Task.WhenAll(connectTask, disconnectFinished.Task).WaitAsync(
+                TimeSpan.FromSeconds(10),
+                TestContext.Current.CancellationToken);
+
+            connected.ShouldBeFalse();
+            status.ShouldBe(ClusterStatus.None);
+        }
+        finally
+        {
+            finishConnect.TrySetResult();
+            await connectTask.WaitAsync(
+                TimeSpan.FromSeconds(10),
+                TestContext.Current.CancellationToken);
+        }
     }
 
     [AvaloniaFact]

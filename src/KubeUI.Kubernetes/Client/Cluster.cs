@@ -258,6 +258,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                                 Connected = false;
                                 Status = ClusterStatus.Errored;
                                 LastError = "Unable to connect because the cluster cannot list namespaces and no fallback namespaces are configured.";
+                                await CleanupFailedConnectionAsync().ConfigureAwait(false);
                                 NamespaceSelectionRequired?.Invoke(this);
                                 _logger.LogWarning(
                                     "Cluster {Name} cannot list namespaces and has no configured namespace fallback.",
@@ -302,6 +303,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
                         Status = ClusterStatus.Errored;
                         LastError = ex.Message;
+                        await CleanupFailedConnectionAsync().ConfigureAwait(false);
                     }
                 }
             }
@@ -324,6 +326,19 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             _connectionLifecycleLimiter.Release();
         }
 
+    }
+
+    private async Task CleanupFailedConnectionAsync()
+    {
+        StopPortForwarders();
+        StopNamespaceSubscription();
+        await StopResourceInformersAsync().ConfigureAwait(false);
+        ClearDynamicCustomResourceDefinitions();
+        ClearSeededResources();
+        Client = null;
+        _openApiSchemaLoader.Reset();
+        _discoveryClient = null;
+        ResetAuthorizationIndex();
     }
 
     /// <summary>Stops runtime work, clears seeded resources, and disconnects the Kubernetes client.</summary>
@@ -1224,6 +1239,10 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         }
         catch (OperationCanceledException) when (cancellationTokenSource?.IsCancellationRequested == true)
         {
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "One or more resource informer tasks failed while stopping cluster {name}.", Name);
         }
 
         foreach (var container in Objects.Values.OfType<IClearableResourceContainer>())

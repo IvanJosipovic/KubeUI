@@ -35,6 +35,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     private long _connectGeneration;
     private long _connectTaskGeneration;
     private Task? _connectTask;
+    private Task? _disconnectTask;
     private INotifyCollectionChanged? _namespaces;
 
     private IClusterInstrumentation _instrumentation;
@@ -94,18 +95,27 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
     private async Task DisconnectDisabledAsync()
     {
+        Task? connectTask;
+        lock (_connectLock)
+        {
+            connectTask = _connectTask;
+        }
+
         try
         {
-            Task? connectTask;
-            lock (_connectLock)
-            {
-                connectTask = _connectTask;
-            }
             if (connectTask is not null)
             {
-                await connectTask.ConfigureAwait(false);
+                try
+                {
+                    await connectTask.ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Connection initialization ended while disabling cluster {ClusterName}", Runtime.Name);
+                }
             }
-            if (!IsEnabled && Runtime.Connected)
+
+            if (!IsEnabled)
             {
                 await Disconnect().ConfigureAwait(false);
             }
@@ -133,6 +143,9 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     /// <summary>Raised after a discovered custom-resource kind is removed from the workspace.</summary>
     public event Action<ClusterWorkspace, GroupApiVersionKind>? CustomResourceRemoved;
 
+    /// <summary>Raised when a custom resource definition changes in the runtime.</summary>
+    public event Action<ClusterWorkspace>? CustomResourceDefinitionChanged;
+
     private Activity? StartWorkspaceActivity(string activityName, ActivityKind activityKind = ActivityKind.Internal)
     {
         var activity = _instrumentation.Source.StartActivity(activityName, activityKind);
@@ -146,31 +159,46 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         lock (_connectLock)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
+            if (!IsEnabled)
+            {
+                return Task.CompletedTask;
+            }
+
             if (_connectTask is { IsCompleted: false } && _connectTaskGeneration == _connectGeneration)
             {
                 return _connectTask;
             }
 
             var previousConnect = _connectTask;
+            var previousDisconnect = _disconnectTask;
             var connectGeneration = ++_connectGeneration;
             _connectTaskGeneration = connectGeneration;
             _connectTask = previousConnect is { IsCompleted: false }
-                ? Task.Run(() => ConnectAfterPreviousAsync(previousConnect, connectGeneration))
+                || previousDisconnect is { IsCompleted: false }
+                ? Task.Run(() => ConnectAfterPreviousAsync(previousConnect, previousDisconnect, connectGeneration))
                 : Task.Run(() => ConnectCoreAsync(connectGeneration));
             return _connectTask;
         }
     }
 
-    /// <summary>Waits for a stale connection attempt before initializing its replacement.</summary>
-    private async Task ConnectAfterPreviousAsync(Task previousConnect, long connectGeneration)
+    /// <summary>Waits for prior connection and disconnection work before initializing a replacement.</summary>
+    private async Task ConnectAfterPreviousAsync(Task? previousConnect, Task? previousDisconnect, long connectGeneration)
     {
-        try
+        if (previousConnect is not null)
         {
-            await previousConnect.ConfigureAwait(false);
+            try
+            {
+                await previousConnect.ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Prior cluster connection ended before a replacement connection started for {ClusterName}", Runtime.Name);
+            }
         }
-        catch (Exception ex)
+
+        if (previousDisconnect is not null)
         {
-            _logger.LogDebug(ex, "Prior cluster connection ended before a replacement connection started for {ClusterName}", Runtime.Name);
+            await previousDisconnect.ConfigureAwait(false);
         }
 
         await ConnectCoreAsync(connectGeneration).ConfigureAwait(false);
@@ -184,12 +212,29 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         {
             if (!IsConnectGenerationCurrent(connectGeneration))
             {
+                await WaitForDisabledDisconnectAsync().ConfigureAwait(false);
+                return;
+            }
+
+            if (!IsEnabled)
+            {
                 return;
             }
 
             EnsureBuiltInResourceConfigs();
             await Runtime.Connect().ConfigureAwait(false);
-            if (!IsConnectGenerationCurrent(connectGeneration) || !Runtime.Connected)
+            if (!IsConnectGenerationCurrent(connectGeneration))
+            {
+                await WaitForDisabledDisconnectAsync().ConfigureAwait(false);
+                return;
+            }
+
+            if (!IsEnabled)
+            {
+                return;
+            }
+
+            if (!Runtime.Connected)
             {
                 return;
             }
@@ -197,12 +242,12 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             await Runtime.RefreshApiDiscoveryAsync().ConfigureAwait(false);
             if (!IsConnectGenerationCurrent(connectGeneration) || !Runtime.Connected)
             {
+                await WaitForDisabledDisconnectAsync().ConfigureAwait(false);
                 return;
             }
 
             if (!IsEnabled || _disposed)
             {
-                await Disconnect().ConfigureAwait(false);
                 return;
             }
 
@@ -210,6 +255,12 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             {
                 await ReconcileApiDiscoverySnapshotAsync(discoverySnapshot, evaluatePermissions: false).ConfigureAwait(false);
                 if (!IsConnectGenerationCurrent(connectGeneration) || !Runtime.Connected)
+                {
+                    await WaitForDisabledDisconnectAsync().ConfigureAwait(false);
+                    return;
+                }
+
+                if (!IsEnabled)
                 {
                     return;
                 }
@@ -220,20 +271,38 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
                 return;
             }
 
-            await UpdateResourceConfigsPermissionsAndEvaluateAsync().ConfigureAwait(false);
-            if (!IsConnectGenerationCurrent(connectGeneration) || !Runtime.Connected)
+            await UpdateResourceConfigsPermissionsAndEvaluateAsync(connectGeneration: connectGeneration).ConfigureAwait(false);
+            if (!IsConnectGenerationCurrent(connectGeneration))
+            {
+                await WaitForDisabledDisconnectAsync().ConfigureAwait(false);
+                return;
+            }
+
+            if (!Runtime.Connected || !IsEnabled || _disposed)
             {
                 return;
             }
 
-            await SeedResourcesConfiguredForConnectAsync().ConfigureAwait(false);
-            if (!IsConnectGenerationCurrent(connectGeneration) || !Runtime.Connected)
+            await SeedResourcesConfiguredForConnectAsync(connectGeneration).ConfigureAwait(false);
+            if (!IsConnectGenerationCurrent(connectGeneration))
+            {
+                await WaitForDisabledDisconnectAsync().ConfigureAwait(false);
+                return;
+            }
+
+            if (!Runtime.Connected || !IsEnabled || _disposed)
             {
                 return;
             }
 
-            await SeedPermissionWatchersAsync().ConfigureAwait(false);
-            if (!IsConnectGenerationCurrent(connectGeneration) || !Runtime.Connected)
+            await SeedPermissionWatchersAsync(connectGeneration).ConfigureAwait(false);
+            if (!IsConnectGenerationCurrent(connectGeneration))
+            {
+                await WaitForDisabledDisconnectAsync().ConfigureAwait(false);
+                return;
+            }
+
+            if (!Runtime.Connected || !IsEnabled || _disposed)
             {
                 return;
             }
@@ -256,6 +325,13 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
+            if (!IsConnectGenerationCurrent(connectGeneration))
+            {
+                await WaitForDisabledDisconnectAsync().ConfigureAwait(false);
+                _logger.LogDebug(ex, "Ignoring error from stale connection attempt for cluster {ClusterName}", Runtime.Name);
+                return;
+            }
+
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             Runtime.LastError = ex.Message;
             Runtime.Status = ClusterStatus.Errored;
@@ -305,7 +381,8 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     }
 
     private async Task UpdateResourceConfigsPermissionsAndEvaluateAsync(
-        IReadOnlyCollection<IClusterResourceConfig>? resourceConfigs = null)
+        IReadOnlyCollection<IClusterResourceConfig>? resourceConfigs = null,
+        long? connectGeneration = null)
     {
         using var activity = StartWorkspaceActivity(nameof(UpdateResourceConfigsPermissionsAndEvaluateAsync));
 
@@ -315,12 +392,27 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
         foreach (var orderBatch in orderBatches)
         {
+            if (connectGeneration.HasValue && !IsConnectInitializationCurrent(connectGeneration.Value))
+            {
+                return;
+            }
+
             await Parallel.ForEachAsync(
                 orderBatch,
                 new ParallelOptions { MaxDegreeOfParallelism = 4 },
                 async (resourceConfig, _) =>
                 {
+                    if (connectGeneration.HasValue && !IsConnectInitializationCurrent(connectGeneration.Value))
+                    {
+                        return;
+                    }
+
                     await UpdateResourceConfigPermissionsAndEvaluateAsync(resourceConfig).ConfigureAwait(false);
+                    if (connectGeneration.HasValue && !IsConnectInitializationCurrent(connectGeneration.Value))
+                    {
+                        return;
+                    }
+
                     NotifyResourceConfigProcessed(resourceConfig);
                 }).ConfigureAwait(false);
         }
@@ -344,14 +436,34 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         await EvaluateResourceConfigAccessCoreAsync(resourceConfig).ConfigureAwait(false);
     }
 
-    public async Task Disconnect()
+    private async Task WaitForDisabledDisconnectAsync()
+    {
+        if (!IsEnabled || _disposed)
+        {
+            await Disconnect().ConfigureAwait(false);
+        }
+    }
+
+    public Task Disconnect()
     {
         lock (_connectLock)
         {
             _connectGeneration++;
             _workspaceStateInitialized = false;
-        }
+            _connectTask = null;
+            _connectTaskGeneration = -1;
+            if (_disconnectTask is { IsCompleted: false })
+            {
+                return _disconnectTask;
+            }
 
+            _disconnectTask = DisconnectCoreAsync();
+            return _disconnectTask;
+        }
+    }
+
+    private async Task DisconnectCoreAsync()
+    {
         await Runtime.Disconnect().ConfigureAwait(false);
         ResetWorkspaceState();
     }
@@ -452,21 +564,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     {
         try
         {
-            Task? connectTask;
-            lock (_connectLock)
-            {
-                connectTask = _connectTask;
-            }
-
-            if (connectTask is not null)
-            {
-                await connectTask.ConfigureAwait(false);
-            }
-
-            if (Runtime.Connected)
-            {
-                await Disconnect().ConfigureAwait(false);
-            }
+            await Disconnect().ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -498,12 +596,20 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
     }
 
+    private bool IsConnectInitializationCurrent(long generation)
+    {
+        lock (_connectLock)
+        {
+            return !_disposed && IsEnabled && _connectGeneration == generation;
+        }
+    }
+
     /// <summary>Marks initialization complete only when the supplied connection generation is current.</summary>
     private bool TryMarkWorkspaceInitialized(long generation)
     {
         lock (_connectLock)
         {
-            if (_disposed || _connectGeneration != generation)
+            if (_disposed || !IsEnabled || _connectGeneration != generation)
             {
                 return false;
             }
@@ -528,7 +634,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
     }
 
-    private async Task SeedResourcesConfiguredForConnectAsync()
+    private async Task SeedResourcesConfiguredForConnectAsync(long generation)
     {
         using var activity = StartWorkspaceActivity(nameof(SeedResourcesConfiguredForConnectAsync));
 
@@ -539,26 +645,42 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
         foreach (var seedBatch in seedBatches)
         {
-            await Task.WhenAll(seedBatch.Select(EnsureResourceSeededAsync)).ConfigureAwait(false);
+            if (!IsConnectInitializationCurrent(generation))
+            {
+                return;
+            }
+
+            await Task.WhenAll(seedBatch.Select(resourceConfig => EnsureResourceSeededAsync(resourceConfig, generation)))
+                .ConfigureAwait(false);
         }
     }
 
-    private async Task SeedPermissionWatchersAsync()
+    private async Task SeedPermissionWatchersAsync(long? generation = null)
     {
         foreach (var kind in PermissionWatchKinds)
         {
+            if (generation is long currentGeneration && !IsConnectInitializationCurrent(currentGeneration))
+            {
+                return;
+            }
+
             if (_resourceConfigs.TryGetValue(kind, out var resourceConfig)
                 && resourceConfig.PermissionsLoaded
                 && resourceConfig.CanListAndWatch)
             {
-                await EnsureResourceSeededAsync(resourceConfig).ConfigureAwait(false);
+                await EnsureResourceSeededAsync(resourceConfig, generation).ConfigureAwait(false);
             }
         }
     }
 
-    private async Task EnsureResourceSeededAsync(IClusterResourceConfig resourceConfig)
+    private async Task EnsureResourceSeededAsync(IClusterResourceConfig resourceConfig, long? generation = null)
     {
         using var activity = StartWorkspaceActivity(nameof(EnsureResourceSeededAsync));
+
+        if (generation is long currentGeneration && !IsConnectInitializationCurrent(currentGeneration))
+        {
+            return;
+        }
 
         if (Runtime.Objects.TryGetValue(resourceConfig.Kind, out var existing)
             && existing is IResourceContainer { IsSeeded: true })
@@ -658,6 +780,11 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         if (Array.IndexOf(PermissionWatchKinds, resourceKind) >= 0)
         {
             _permissionRefreshCoordinator.Request(PermissionRefreshScope.All);
+        }
+
+        if (item is V1CustomResourceDefinition)
+        {
+            CustomResourceDefinitionChanged?.Invoke(this);
         }
     }
 

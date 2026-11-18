@@ -39,7 +39,6 @@
     <PackageReference Include="AvaloniaEdit.TextMate" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="Dock.Model.Mvvm" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="FluentIcons.Avalonia" />
     <PackageReference Include="Irihi.Ursa" />
     <PackageReference Include="PropertyGenerator.Avalonia">

@@ -14,6 +14,11 @@ namespace KubeUI.Features.Helm.Helm;
 public interface IHelmService
 {
     /// <summary>Lists chart versions from cached repository indexes, optionally for one repository.</summary>
+    /// <remarks>
+    /// If the catalog is empty and repositories are configured, the service downloads indexes and retries.
+    /// Failed updates are retried on later calls even when partial results are available; populated catalogs and
+    /// successful updates remain cache-only until indexes are explicitly updated.
+    /// </remarks>
     /// <param name="connection">The Kubernetes connection Helm runs against.</param>
     /// <param name="repositoryName">Optional exact configured repository name.</param>
     /// <param name="cancellationToken">Cancels waiting for the operation to start.</param>
