@@ -15,6 +15,9 @@ public sealed class ContainerFileAccess : IContainerFileAccess
     /// <summary>The most entries a single directory listing returns.</summary>
     public const int MaxEntries = 5000;
 
+    /// <summary>The most output bytes a directory listing collects before it is truncated.</summary>
+    public const int MaxListingBytes = 2 * 1024 * 1024;
+
     /// <summary>How long one exec may take before it is cancelled.</summary>
     public static readonly TimeSpan OperationTimeout = TimeSpan.FromSeconds(30);
 
@@ -41,21 +44,22 @@ public sealed class ContainerFileAccess : IContainerFileAccess
     {
         try
         {
-            var find = await RunAsync(["find", "/", "-maxdepth", "0"], cancellationToken).ConfigureAwait(false);
-            var cat = await RunAsync(["cat", "/dev/null"], cancellationToken).ConfigureAwait(false);
-            var stat = await RunAsync(["stat", "/"], cancellationToken).ConfigureAwait(false);
+            // Both probes open their own exec stream, so they run concurrently to keep opening a browser at
+            // one round trip instead of two.
+            var results = await Task.WhenAll(
+                RunAsync(["find", "/", "-maxdepth", "0"], cancellationToken),
+                RunAsync(["cat", "/dev/null"], cancellationToken)).ConfigureAwait(false);
 
             // A command that ran without a "not found" error is available. busybox tools often exit non-zero
             // for a missing operand, so absence is detected from the error text rather than the exit status.
             return new ContainerFileCapabilities(
-                CanList: !Missing(find),
-                CanRead: !Missing(cat),
-                CanStat: !Missing(stat),
+                CanList: !Missing(results[0]),
+                CanRead: !Missing(results[1]),
                 Problem: null);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            return new ContainerFileCapabilities(false, false, false, ex.Message);
+            return new ContainerFileCapabilities(false, false, ex.Message);
         }
 
         static bool Missing(ExecResult result) =>
@@ -72,14 +76,18 @@ public sealed class ContainerFileAccess : IContainerFileAccess
         // -print0 gives unambiguous framing; %y reports kind in the same call.
         var result = await RunAsync(
             ["find", path, "-maxdepth", "1", "-mindepth", "1", "-printf", "%y\\0%p\\0%s\\0"],
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken,
+            MaxListingBytes).ConfigureAwait(false);
 
         if (result.StandardOutput.Length == 0 && result.StandardError.Length > 0)
         {
             throw new ContainerFileAccessException(result.StandardError);
         }
 
-        return ContainerFileListingParser.Parse(result.StandardOutput, MaxEntries);
+        var listing = ContainerFileListingParser.Parse(result.StandardOutput, MaxEntries);
+
+        // A byte-level cut-off would otherwise drop trailing entries silently.
+        return result.Truncated ? listing with { Truncated = true } : listing;
     }
 
     /// <inheritdoc />
@@ -156,4 +164,12 @@ public sealed class ContainerFileAccess : IContainerFileAccess
             }
         }
     }
+}
+
+/// <summary>Creates <see cref="ContainerFileAccess"/> instances, one per browsed container.</summary>
+public sealed class ContainerFileAccessFactory : IContainerFileAccessFactory
+{
+    /// <inheritdoc />
+    public IContainerFileAccess Create(ClusterWorkspace cluster, string podName, string @namespace, string containerName)
+        => new ContainerFileAccess(cluster, podName, @namespace, containerName);
 }

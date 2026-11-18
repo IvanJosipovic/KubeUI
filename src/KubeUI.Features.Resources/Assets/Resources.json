@@ -119,6 +119,8 @@
   "ContainerFileBrowserView_Open": "Open Folder",
   "ContainerFileBrowserView_Probing": "Checking container capabilities…",
   "ContainerFileBrowserView_Title": "Container Files",
+  "ContainerFileBrowserView_TooLarge": "This file is larger than the {0} MB download limit.",
+  "ContainerFileBrowserView_Truncated": "This listing was cut off; some entries are not shown.",
   "ContainerFileBrowserView_Unsupported": "This container lacks the utilities needed to browse files ({0}).",
   "ContainerFileBrowserView_ViewContents": "View Contents",
   "PodConsoleView_Title": "Pod Console",

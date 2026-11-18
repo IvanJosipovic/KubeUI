@@ -1,3 +1,5 @@
+using KubeUI.Features.Clusters.Workspace;
+
 namespace KubeUI.Features.Resources.Workloads.v1.Pod.Services;
 
 /// <summary>One entry in a container directory listing.</summary>
@@ -6,7 +8,11 @@ namespace KubeUI.Features.Resources.Workloads.v1.Pod.Services;
 /// <param name="IsDirectory">Whether the entry is a directory.</param>
 /// <param name="IsSymbolicLink">Whether the entry is a symbolic link.</param>
 /// <param name="Size">The entry's size in bytes when the container could report it.</param>
-public sealed record ContainerFileEntry(string Name, string Path, bool IsDirectory, bool IsSymbolicLink, long? Size);
+public sealed record ContainerFileEntry(string Name, string Path, bool IsDirectory, bool IsSymbolicLink, long? Size)
+{
+    /// <summary>Whether the entry is a regular file rather than a folder or symbolic link.</summary>
+    public bool IsFile => !IsDirectory && !IsSymbolicLink;
+}
 
 /// <summary>The outcome of a container directory listing.</summary>
 /// <param name="Entries">The entries found, ordered directories first then by name.</param>
@@ -16,9 +22,8 @@ public sealed record ContainerDirectoryListing(IReadOnlyList<ContainerFileEntry>
 /// <summary>What a container can do for file browsing, probed before any listing.</summary>
 /// <param name="CanList">Whether <c>find</c> with NUL framing and type reporting is available.</param>
 /// <param name="CanRead">Whether <c>cat</c> is available.</param>
-/// <param name="CanStat">Whether <c>stat</c> is available, which lets sizes be read before content.</param>
 /// <param name="Problem">Why the probe could not complete, when it could not.</param>
-public sealed record ContainerFileCapabilities(bool CanList, bool CanRead, bool CanStat, string? Problem)
+public sealed record ContainerFileCapabilities(bool CanList, bool CanRead, string? Problem)
 {
     /// <summary>Whether browsing can proceed with the utilities found.</summary>
     public bool CanBrowse => Problem is null && CanList && CanRead;
@@ -65,4 +70,11 @@ public interface IContainerFileAccess
 
     /// <summary>Reads a file's content, bounded by the implementation's limit.</summary>
     Task<ContainerFileContent> ReadAsync(string path, CancellationToken cancellationToken = default);
+}
+
+/// <summary>Creates access to a container's files.</summary>
+public interface IContainerFileAccessFactory
+{
+    /// <summary>Creates access for one pod and container.</summary>
+    IContainerFileAccess Create(ClusterWorkspace cluster, string podName, string @namespace, string containerName);
 }

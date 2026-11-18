@@ -30,6 +30,7 @@ public static partial class KubeUIResourcesFeatureServiceCollectionExtensions
         services.AddTransient<Func<ResourceYamlViewModel>>(sp => () => sp.GetRequiredService<ResourceYamlViewModel>());
         services.AddTransient<Func<PodLogsViewModel>>(sp => () => sp.GetRequiredService<PodLogsViewModel>());
         services.AddTransient(static serviceProvider => new CustomResourceConfig(serviceProvider));
+        services.AddSingleton<IContainerFileAccessFactory, ContainerFileAccessFactory>();
         services.AddTransient<IPodLogExportService, PodLogExportService>();
         services.AddTransient<IPodLogsLauncher, PodLogsLauncher>();
         services.AddViewFactories(GetViewFactories());
