@@ -268,7 +268,8 @@ internal static class Program
         services.AddOpenTelemetry()
             .ConfigureResource(resource => resource
                 .AddService("Desktop", "com.KubeUI.Desktop", serviceVersion: version)
-            .AddOperatingSystemDetector()
+                .AddOperatingSystemDetector()
+                .AddHostDetector()
                 .AddAttributes(new Dictionary<string, object>(StringComparer.Ordinal)
                 {
 #if DEBUG
