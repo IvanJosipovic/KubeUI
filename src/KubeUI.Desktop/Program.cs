@@ -338,13 +338,23 @@ internal static class Program
 
         var path = BuildMacOsPath(Environment.GetEnvironmentVariable("PATH"));
 
-        // .NET's Environment.SetEnvironmentVariable only updates its own managed cache; it does not
-        // call the native setenv. Helm.NET's Go shim snapshots the native environment when its runtime
-        // initialises, so a GUI-launched app's default PATH (/usr/bin:/bin:/usr/sbin:/sbin) leaves
-        // client-go credential plugins such as kubelogin unresolvable. Update the native environment
-        // first, while no native module has loaded yet, then the managed cache for .NET consumers.
-        NativeEnvironment.SetVariable("PATH", path);
+        // Set the managed PATH first. Unix Process.Start resolves bare exec commands (for example a
+        // kubeconfig's kubelogin plugin) from .NET's cached environment, and that path already worked.
         Environment.SetEnvironmentVariable("PATH", path);
+
+        // The managed setter does not touch the native environ. Helm.NET's Go shim snapshots the native
+        // environment when its runtime initialises, so a GUI-launched app's default PATH
+        // (/usr/bin:/bin:/usr/sbin:/sbin) leaves client-go credential plugins unresolvable. Write the
+        // native value too, before any native module loads. Best effort: a native failure must not
+        // undo the managed PATH above.
+        try
+        {
+            NativeEnvironment.SetVariable("PATH", path);
+        }
+        catch (Exception exception)
+        {
+            Debug.WriteLine($"Unable to set the native PATH: {exception.Message}");
+        }
     }
 
     internal static string BuildMacOsPath(string? existingPath)
