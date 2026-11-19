@@ -1,4 +1,3 @@
-using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Data.Converters;
 using Avalonia.Layout;
@@ -24,7 +23,7 @@ public sealed class ContainerFileBrowserView : KubeUIView<ContainerFileBrowserVi
         ArgumentNullException.ThrowIfNull(vm);
 
         return new Grid()
-            .Rows("Auto,Auto,*,Auto")
+            .Rows("Auto,Auto,*")
             .Children(
                 CreateHeader(vm).Row(0),
                 CreateStatus(vm).Row(1),
@@ -33,8 +32,7 @@ public sealed class ContainerFileBrowserView : KubeUIView<ContainerFileBrowserVi
                     .Row(2)
                     .Children(
                         new Border().Col(0).Child(CreateTree(vm)),
-                        CreateTable(vm).Col(1)),
-                CreatePreview(vm).Row(3));
+                        CreateTable(vm).Col(1)));
     }
 
     private static CompactToolbar CreateHeader(ContainerFileBrowserViewModel vm)
@@ -65,22 +63,17 @@ public sealed class ContainerFileBrowserView : KubeUIView<ContainerFileBrowserVi
                     .TextWrapping(TextWrapping.Wrap)
                     .Margin(0, 4));
 
-    private static Border CreatePreview(ContainerFileBrowserViewModel vm)
-        => new Border()
-            .IsVisible(vm, x => x.PreviewPath, converter: new StringNotNullOrEmptyConverter())
-            .Child(
-                new ScrollViewer()
-                    .Content(
-                        new TextBox()
-                            .Text(vm, x => x.PreviewText)
-                            .IsReadOnly(true)
-                            .AcceptsReturn(true)
-                            .TextWrapping(TextWrapping.NoWrap)));
-
     private static TreeView CreateTree(ContainerFileBrowserViewModel vm)
     {
         var tree = new TreeView()
             .ItemsSource(vm, x => x.RootFolders)
+            // Selection is driven by the view model so table navigation and tree choices agree.
+            .BindValue(
+                TreeView.SelectedItemProperty,
+                CompiledBinding.Create<ContainerFileBrowserViewModel, ContainerFolderNode?>(
+                    x => x.SelectedTreeFolder,
+                    source: vm,
+                    mode: BindingMode.TwoWay))
             .Styles(
                 new Style<TreeViewItem>()
                     .Setter(
@@ -105,14 +98,6 @@ public sealed class ContainerFileBrowserView : KubeUIView<ContainerFileBrowserVi
                             .Text(CompiledBinding.Create<ContainerFolderNode, string>(static node => node.Name))
                             .VerticalAlignment(VerticalAlignment.Center)),
                 static node => node.Children));
-
-        tree.OnSelectionChanged(new EventHandler<SelectionChangedEventArgs>((_, _) =>
-        {
-            if (tree.SelectedItem is ContainerFolderNode folder)
-            {
-                _ = vm.LoadFolderAsync(folder);
-            }
-        }));
 
         return tree;
     }

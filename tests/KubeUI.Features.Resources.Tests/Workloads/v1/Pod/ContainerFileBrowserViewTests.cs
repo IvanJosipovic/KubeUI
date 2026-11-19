@@ -14,6 +14,7 @@ using KubeUI.Features.Resources.Workloads.v1.Pod.ViewModels;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Shouldly;
+using SvcSystems.Avalonia.DynamicTableView;
 
 namespace KubeUI.Features.Resources.Tests.Workloads.v1.Pod;
 
@@ -107,6 +108,34 @@ public sealed class ContainerFileBrowserViewTests
     }
 
     [AvaloniaFact]
+    public async Task Table_navigation_selects_the_folder_in_the_tree()
+    {
+        var access = new FakeContainerFileAccess(new Dictionary<string, ContainerDirectoryListing>(StringComparer.Ordinal)
+        {
+            ["/"] = Listing(Directory("/etc")),
+            ["/etc"] = Listing(Directory("/etc/nginx")),
+        });
+        using var vm = CreateViewModel(access);
+        await vm.InitializeAsync();
+
+        var view = new ContainerFileBrowserView { DataContext = vm };
+        using var window = Application.Current.CreateTestWindow(content: view);
+        window.Show();
+        await WaitForAsync(() => FindItem(view, "/etc") is not null);
+
+        await vm.OpenFolderCommand.ExecuteAsync(vm.Entries.Single(entry => entry.IsDirectory));
+        await WaitForRenderAsync(window, () => FindItem(view, "/etc/nginx") is not null);
+
+        var tree = view.GetVisualDescendants().OfType<TreeView>().Single();
+        tree.SelectedItem.ShouldBeSameAs(vm.SelectedFolder);
+
+        // The root stays reachable from the tree after the table moved away from it.
+        tree.SelectedItem = vm.RootFolders[0];
+        await WaitForAsync(() => vm.SelectedFolder!.Path == "/");
+        vm.Entries.ShouldContain(static entry => entry.Name == "etc");
+    }
+
+    [AvaloniaFact]
     public async Task Header_uses_the_compact_toolbar_with_identity_and_trailing_refresh()
     {
         var access = new FakeContainerFileAccess(new Dictionary<string, ContainerDirectoryListing>(StringComparer.Ordinal)
@@ -161,6 +190,7 @@ public sealed class ContainerFileBrowserViewTests
         => new(
             Mock.Of<IPlatformServices>(),
             new FakeContainerFileAccessFactory(access),
+            new NoOpPreviewLauncher(),
             Mock.Of<ILogger<ContainerFileBrowserViewModel>>())
         {
             Cluster = null!,
@@ -182,6 +212,7 @@ public sealed class ContainerFileBrowserViewTests
 
     private static ContainerFileEntry Link(string path)
         => new(path[(path.LastIndexOf('/') + 1)..], path, IsDirectory: false, IsSymbolicLink: true, Size: 0);
+
 
     private static async Task WaitForAsync(Func<bool> predicate, int timeoutMs = 3000)
         => await TestWait.UntilAsync(
@@ -220,5 +251,11 @@ public sealed class ContainerFileBrowserViewTests
 
         public Task<ContainerFileContent> ReadAsync(string path, CancellationToken cancellationToken = default)
             => throw new NotSupportedException();
+    }
+
+    private sealed class NoOpPreviewLauncher : IContainerFilePreviewLauncher
+    {
+        public Task ShowAsync(ClusterWorkspace cluster, V1Pod pod, string containerName, ContainerFileEntry entry)
+            => Task.CompletedTask;
     }
 }

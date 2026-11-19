@@ -82,6 +82,19 @@ public sealed class ContainerFileListingParserTests
     }
 
     [Fact]
+    public void drops_a_field_cut_off_inside_an_entry()
+    {
+        // The byte limit cut the size field of the second entry after "12".
+        var output = Bytes("f\0/a\0" + "1\0" + "f\0/b\0" + "12");
+
+        var listing = ContainerFileListingParser.Parse(output, 100);
+
+        listing.Entries.Count.ShouldBe(1);
+        listing.Entries[0].Name.ShouldBe("a");
+        listing.Entries[0].Size.ShouldBe(1);
+    }
+
+    [Fact]
     public void reports_empty_output_as_no_entries()
     {
         var listing = ContainerFileListingParser.Parse([], 100);

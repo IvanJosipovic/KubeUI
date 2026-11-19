@@ -53,10 +53,10 @@ public sealed partial class ContainerFileBrowserViewModel : ViewModelBase, IClus
 {
     private readonly IPlatformServices _platformServices;
     private readonly IContainerFileAccessFactory _accessFactory;
+    private readonly IContainerFilePreviewLauncher _previewLauncher;
     private readonly ILogger<ContainerFileBrowserViewModel> _logger;
     private IContainerFileAccess? _access;
     private CancellationTokenSource? _navigation;
-    private CancellationTokenSource? _preview;
     private CancellationTokenSource? _download;
     private bool _disposed;
 
@@ -64,10 +64,12 @@ public sealed partial class ContainerFileBrowserViewModel : ViewModelBase, IClus
     public ContainerFileBrowserViewModel(
         IPlatformServices platformServices,
         IContainerFileAccessFactory accessFactory,
+        IContainerFilePreviewLauncher previewLauncher,
         ILogger<ContainerFileBrowserViewModel> logger)
     {
         _platformServices = platformServices;
         _accessFactory = accessFactory;
+        _previewLauncher = previewLauncher;
         _logger = logger;
         Title = ResourcesLanguageManager.Instance.ContainerFileBrowserView_Title.CurrentValue()!;
         RootFolders.Add(new ContainerFolderNode("/", "/"));
@@ -118,6 +120,10 @@ public sealed partial class ContainerFileBrowserViewModel : ViewModelBase, IClus
     [ObservableProperty]
     public partial ContainerFolderNode? SelectedFolder { get; set; }
 
+    /// <summary>The folder selected in the folder tree.</summary>
+    [ObservableProperty]
+    public partial ContainerFolderNode? SelectedTreeFolder { get; set; }
+
     /// <summary>The entry chosen in the table.</summary>
     [ObservableProperty]
     public partial ContainerFileEntry? SelectedEntry { get; set; }
@@ -137,22 +143,6 @@ public sealed partial class ContainerFileBrowserViewModel : ViewModelBase, IClus
     /// <summary>Whether the container lacks the utilities browsing needs.</summary>
     [ObservableProperty]
     public partial bool IsUnsupported { get; set; }
-
-    /// <summary>The previewed file's path, or null when nothing is previewed.</summary>
-    [ObservableProperty]
-    public partial string? PreviewPath { get; set; }
-
-    /// <summary>The previewed file's text.</summary>
-    [ObservableProperty]
-    public partial string? PreviewText { get; set; }
-
-    /// <summary>Why the preview is unavailable, when it is.</summary>
-    [ObservableProperty]
-    public partial string? PreviewMessage { get; set; }
-
-    /// <summary>Whether the previewed file was truncated.</summary>
-    [ObservableProperty]
-    public partial bool PreviewTruncated { get; set; }
 
     /// <summary>Prepares the browser for a pod and container, probing capabilities.</summary>
     public async Task InitializeAsync()
@@ -220,7 +210,7 @@ public sealed partial class ContainerFileBrowserViewModel : ViewModelBase, IClus
         await LoadCoreAsync(folder, BeginNavigation()).ConfigureAwait(true);
     }
 
-    /// <summary>Previews the chosen file.</summary>
+    /// <summary>Previews the chosen file in the bottom tool dock.</summary>
     public async Task PreviewAsync(ContainerFileEntry entry)
     {
         ArgumentNullException.ThrowIfNull(entry);
@@ -229,37 +219,7 @@ public sealed partial class ContainerFileBrowserViewModel : ViewModelBase, IClus
             return;
         }
 
-        var token = Renew(ref _preview);
-        PreviewPath = entry.Path;
-        PreviewText = null;
-        PreviewMessage = null;
-        PreviewTruncated = false;
-        try
-        {
-            var content = await _access.ReadAsync(entry.Path, token).ConfigureAwait(true);
-            if (token.IsCancellationRequested)
-            {
-                return;
-            }
-
-            if (!content.IsText)
-            {
-                PreviewMessage = ResourcesLanguageManager.Instance.ContainerFileBrowserView_Binary.CurrentValue();
-                return;
-            }
-
-            PreviewText = System.Text.Encoding.UTF8.GetString(content.Content);
-            PreviewTruncated = content.Truncated;
-        }
-        catch (OperationCanceledException)
-        {
-            // Superseded or closed.
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Container file browser could not read {Path}.", entry.Path);
-            PreviewMessage = ex.Message;
-        }
+        await _previewLauncher.ShowAsync(Cluster, Object, ContainerName, entry).ConfigureAwait(true);
     }
 
     /// <summary>Downloads the chosen file to a location the user picks.</summary>
@@ -304,6 +264,10 @@ public sealed partial class ContainerFileBrowserViewModel : ViewModelBase, IClus
                 return;
             }
 
+            // The picker can stay open past disposal; opening the destination truncates an existing file,
+            // so a cancelled download must stop before touching it.
+            token.ThrowIfCancellationRequested();
+
             await using var stream = await file.OpenWriteAsync().ConfigureAwait(true);
             await stream.WriteAsync(content.Content, token).ConfigureAwait(true);
             StatusMessage = string.Format(
@@ -342,11 +306,23 @@ public sealed partial class ContainerFileBrowserViewModel : ViewModelBase, IClus
         ? Task.CompletedTask
         : LoadFolderAsync(FindOrCreateChild(entry));
 
+    partial void OnSelectedTreeFolderChanged(ContainerFolderNode? value)
+    {
+        // Navigation sets both properties, so only a tree choice for another folder starts a load.
+        if (value is null || ReferenceEquals(value, SelectedFolder))
+        {
+            return;
+        }
+
+        _ = LoadFolderAsync(value);
+    }
+
     private async Task LoadCoreAsync(ContainerFolderNode folder, CancellationToken token)
     {
         // Clear before the round trip so a superseded load never leaves the previous folder's rows
         // visible under the newly selected folder.
         SelectedFolder = folder;
+        SelectedTreeFolder = folder;
         IsLoading = true;
         IsTruncated = false;
         StatusMessage = null;
@@ -382,6 +358,7 @@ public sealed partial class ContainerFileBrowserViewModel : ViewModelBase, IClus
     private void ShowFolder(ContainerFolderNode folder)
     {
         SelectedFolder = folder;
+        SelectedTreeFolder = folder;
         IsTruncated = folder.IsTruncated;
         ReplaceEntries(folder.Entries);
     }
@@ -507,7 +484,6 @@ public sealed partial class ContainerFileBrowserViewModel : ViewModelBase, IClus
 
         _disposed = true;
         Reset(ref _navigation);
-        Reset(ref _preview);
         Reset(ref _download);
         (TableSource as IDisposable)?.Dispose();
 

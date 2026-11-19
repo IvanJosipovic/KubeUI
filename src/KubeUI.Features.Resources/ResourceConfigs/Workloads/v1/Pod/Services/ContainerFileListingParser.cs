@@ -84,11 +84,8 @@ public static class ContainerFileListingParser
             start = i + 1;
         }
 
-        if (start < output.Length)
-        {
-            fields.Add(Encoding.UTF8.GetString(output[start..]));
-        }
-
+        // A field without its NUL terminator is a value cut off by the byte limit, not a complete one.
+        // Dropping it keeps a partial size or path from being reported as real metadata.
         return fields;
     }
 

@@ -117,6 +117,7 @@
   "ContainerFileBrowserView_Download": "Download",
   "ContainerFileBrowserView_Downloaded": "Downloaded {0}",
   "ContainerFileBrowserView_Open": "Open Folder",
+  "ContainerFileBrowserView_PreviewTruncated": "This preview is cut off; the file is larger than the preview limit.",
   "ContainerFileBrowserView_Probing": "Checking container capabilities…",
   "ContainerFileBrowserView_Title": "Container Files",
   "ContainerFileBrowserView_TooLarge": "This file is larger than the {0} MB download limit.",

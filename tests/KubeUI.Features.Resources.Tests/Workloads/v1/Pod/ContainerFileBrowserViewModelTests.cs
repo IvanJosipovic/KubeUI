@@ -74,6 +74,57 @@ public sealed class ContainerFileBrowserViewModelTests
     }
 
     [AvaloniaFact]
+    public async Task Choosing_a_folder_in_the_tree_loads_its_entries()
+    {
+        var access = new FakeContainerFileAccess();
+        access.AddListing("/", Listing(Directory("/etc")));
+        access.AddListing("/etc", Listing(File("/etc/hosts", 5)));
+        using var vm = CreateViewModel(access);
+        await vm.InitializeAsync();
+        var etc = vm.RootFolders[0].Children[0];
+
+        vm.SelectedTreeFolder = etc;
+
+        await TestWait.UntilAsync(
+            () => ReferenceEquals(vm.SelectedFolder, etc),
+            3000,
+            TestContext.Current.CancellationToken);
+        access.Listed.ShouldBe(["/", "/etc"]);
+        vm.Entries.Select(static entry => entry.Name).ShouldBe(["hosts"]);
+    }
+
+    [AvaloniaFact]
+    public async Task Opening_a_folder_from_the_table_selects_it_in_the_tree()
+    {
+        var access = new FakeContainerFileAccess();
+        access.AddListing("/", Listing(Directory("/etc")));
+        access.AddListing("/etc", Listing(File("/etc/hosts", 5)));
+        using var vm = CreateViewModel(access);
+        await vm.InitializeAsync();
+        var etc = vm.RootFolders[0].Children[0];
+
+        await vm.OpenFolderCommand.ExecuteAsync(vm.Entries.Single());
+
+        vm.SelectedFolder.ShouldBeSameAs(etc);
+        vm.SelectedTreeFolder.ShouldBeSameAs(etc);
+    }
+
+    [AvaloniaFact]
+    public async Task Choosing_the_folder_already_shown_does_not_list_it_again()
+    {
+        var access = new FakeContainerFileAccess();
+        access.AddListing("/", Listing(Directory("/etc")));
+        using var vm = CreateViewModel(access);
+        await vm.InitializeAsync();
+        var root = vm.RootFolders[0];
+
+        vm.SelectedTreeFolder = null;
+        vm.SelectedTreeFolder = root;
+
+        access.Listed.ShouldBe(["/"]);
+    }
+
+    [AvaloniaFact]
     public async Task Refresh_lists_the_selected_folder_again()
     {
         var access = new FakeContainerFileAccess();
@@ -170,9 +221,22 @@ public sealed class ContainerFileBrowserViewModelTests
         var access = new FakeContainerFileAccess();
         access.AddListing("/", Listing(Directory("/etc")));
         access.AddListing("/etc", Listing(Directory("/etc/nginx")));
-        access.AddContent("/etc/hosts", Text("hello"));
         access.Gate("/etc");
-        using var vm = CreateViewModel(access);
+        var requests = new PreviewRequestLog();
+        using var vm = new ContainerFileBrowserViewModel(
+            Mock.Of<IPlatformServices>(),
+            new FakeContainerFileAccessFactory(access),
+            requests,
+            Mock.Of<ILogger<ContainerFileBrowserViewModel>>())
+        {
+            Cluster = null!,
+            Object = new V1Pod
+            {
+                Metadata = new V1ObjectMeta { Name = PodName, NamespaceProperty = PodNamespace },
+            },
+            ContainerName = ContainerName,
+        };
+
         await vm.InitializeAsync();
 
         var listing = vm.LoadFolderAsync(vm.RootFolders[0].Children[0]);
@@ -182,7 +246,9 @@ public sealed class ContainerFileBrowserViewModelTests
 
         vm.SelectedFolder!.Path.ShouldBe("/etc");
         vm.Entries.ShouldHaveSingleItem().Name.ShouldBe("nginx");
-        vm.PreviewText.ShouldBe("hello");
+        var request = requests.Requests.ShouldHaveSingleItem();
+        request.ContainerName.ShouldBe(ContainerName);
+        request.Path.ShouldBe("/etc/hosts");
         vm.IsLoading.ShouldBeFalse();
     }
 
@@ -238,6 +304,29 @@ public sealed class ContainerFileBrowserViewModelTests
     }
 
     [AvaloniaFact]
+    public async Task A_cancelled_download_does_not_open_the_picked_destination()
+    {
+        var access = new FakeContainerFileAccess();
+        access.AddListing("/", Listing(File("/notes.txt", 3)));
+        access.AddContent("/notes.txt", Text("abc"));
+        var picked = new TaskCompletionSource<IStorageFile?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var file = new Mock<IStorageFile>();
+        var platform = new Mock<IPlatformServices>();
+        platform
+            .Setup(picker => picker.SaveFilePickerAsync(It.IsAny<FilePickerSaveOptions>()))
+            .Returns(picked.Task);
+        using var vm = CreateViewModel(access, platform.Object);
+        await vm.InitializeAsync();
+
+        var download = vm.DownloadAsync(vm.Entries[0]);
+        vm.Dispose();
+        picked.SetResult(file.Object);
+        await download;
+
+        file.Verify(storage => storage.OpenWriteAsync(), Times.Never);
+    }
+
+    [AvaloniaFact]
     public async Task Downloading_a_file_writes_its_bytes_to_the_picked_location()
     {
         var access = new FakeContainerFileAccess();
@@ -269,10 +358,12 @@ public sealed class ContainerFileBrowserViewModelTests
 
     private static ContainerFileBrowserViewModel CreateViewModel(
         FakeContainerFileAccessFactory factory,
-        IPlatformServices platform)
+        IPlatformServices platform,
+        PreviewRequestLog? requests = null)
         => new(
             platform,
             factory,
+            requests ?? new PreviewRequestLog(),
             Mock.Of<ILogger<ContainerFileBrowserViewModel>>())
         {
             Cluster = null!,
@@ -366,6 +457,17 @@ public sealed class ContainerFileBrowserViewModelTests
             Read.Add(path);
             cancellationToken.ThrowIfCancellationRequested();
             return Task.FromResult(_contents[path]);
+        }
+    }
+
+    private sealed class PreviewRequestLog : IContainerFilePreviewLauncher
+    {
+        public List<(string ContainerName, string Path)> Requests { get; } = [];
+
+        public Task ShowAsync(ClusterWorkspace cluster, V1Pod pod, string containerName, ContainerFileEntry entry)
+        {
+            Requests.Add((containerName, entry.Path));
+            return Task.CompletedTask;
         }
     }
 }

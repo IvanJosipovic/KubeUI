@@ -45,17 +45,29 @@ public sealed class ContainerFileAccess : IContainerFileAccess
         try
         {
             // Both probes open their own exec stream, so they run concurrently to keep opening a browser at
-            // one round trip instead of two.
+            // one round trip instead of two. The listing probe runs the exact options a listing needs,
+            // because a find that accepts -maxdepth can still reject -mindepth or -printf.
             var results = await Task.WhenAll(
-                RunAsync(["find", "/", "-maxdepth", "0"], cancellationToken),
+                RunAsync(["find", "/", "-mindepth", "0", "-maxdepth", "0", "-printf", "%y\\0%p\\0%s\\0"], cancellationToken),
                 RunAsync(["cat", "/dev/null"], cancellationToken)).ConfigureAwait(false);
 
-            // A command that ran without a "not found" error is available. busybox tools often exit non-zero
-            // for a missing operand, so absence is detected from the error text rather than the exit status.
-            return new ContainerFileCapabilities(
-                CanList: !Missing(results[0]),
-                CanRead: !Missing(results[1]),
-                Problem: null);
+            // busybox tools often exit non-zero for a missing operand, so absence is detected from the
+            // error text rather than the exit status.
+            var canList = !Missing(results[0]);
+            var canRead = !Missing(results[1]);
+
+            // The listing probe must also produce output: a find that accepts the options but prints
+            // nothing would otherwise look usable and then fail on the first listing. A failure for
+            // another reason, such as a denied root, keeps its own error so the browser can show it.
+            if (canList && results[0].StandardOutput.Length == 0)
+            {
+                return new ContainerFileCapabilities(
+                    CanList: false,
+                    CanRead: canRead,
+                    Problem: results[0].StandardError.Length > 0 ? results[0].StandardError : null);
+            }
+
+            return new ContainerFileCapabilities(canList, canRead, Problem: null);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -65,7 +77,12 @@ public sealed class ContainerFileAccess : IContainerFileAccess
         static bool Missing(ExecResult result) =>
             result.StandardError.Contains("not found", StringComparison.OrdinalIgnoreCase)
             || result.StandardError.Contains("No such file", StringComparison.OrdinalIgnoreCase)
-            || result.StandardError.Contains("executable file not found", StringComparison.OrdinalIgnoreCase);
+            || result.StandardError.Contains("executable file not found", StringComparison.OrdinalIgnoreCase)
+            || result.StandardError.Contains("unrecognized", StringComparison.OrdinalIgnoreCase)
+            || result.StandardError.Contains("unknown predicate", StringComparison.OrdinalIgnoreCase)
+            || result.StandardError.Contains("invalid option", StringComparison.OrdinalIgnoreCase)
+            || result.StandardError.Contains("illegal option", StringComparison.OrdinalIgnoreCase)
+            || result.StandardError.Contains("unsupported", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <inheritdoc />
@@ -96,14 +113,17 @@ public sealed class ContainerFileAccess : IContainerFileAccess
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
         var result = await RunAsync(["cat", path], cancellationToken, MaxFileBytes).ConfigureAwait(false);
-        if (result.StandardOutput.Length == 0 && result.StandardError.Length > 0)
+
+        // A nonzero cat status is reported on stderr; without this a partial read after an error would
+        // look like a complete file and could be downloaded. A truncated buffer is already flagged, and
+        // the failure it may have hit is indistinguishable from the limit, so it is not treated as fatal.
+        if (!result.Truncated && result.StandardError.Length > 0)
         {
             throw new ContainerFileAccessException(result.StandardError);
         }
 
         var content = result.StandardOutput;
-        var truncated = result.Truncated || content.Length >= MaxFileBytes;
-        return new ContainerFileContent(content, truncated, ContainerFileListingParser.LooksLikeText(content));
+        return new ContainerFileContent(content, result.Truncated, ContainerFileListingParser.LooksLikeText(content));
     }
 
     private async Task<ExecResult> RunAsync(string[] command, CancellationToken cancellationToken, int maxBytes = 64 * 1024)
