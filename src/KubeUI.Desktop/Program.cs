@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -334,6 +335,19 @@ internal static class Program
         if (!OperatingSystem.IsMacOS())
             return;
 
+        var path = BuildMacOsPath(Environment.GetEnvironmentVariable("PATH"));
+
+        // .NET's Environment.SetEnvironmentVariable only updates its own managed cache; it does not
+        // call the native setenv. Helm.NET's Go shim snapshots the native environment when its runtime
+        // initialises, so a GUI-launched app's default PATH (/usr/bin:/bin:/usr/sbin:/sbin) leaves
+        // client-go credential plugins such as kubelogin unresolvable. Update the native environment
+        // first, while no native module has loaded yet, then the managed cache for .NET consumers.
+        NativeEnvironment.SetVariable("PATH", path);
+        Environment.SetEnvironmentVariable("PATH", path);
+    }
+
+    internal static string BuildMacOsPath(string? existingPath)
+    {
         var macOsDefaultPaths = new[]
         {
             "/opt/homebrew/bin",
@@ -345,19 +359,29 @@ internal static class Program
             "/sbin"
         };
 
-        var existingPath = Environment.GetEnvironmentVariable("PATH");
-
         var paths = existingPath?
             .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .ToList()
             ?? [];
 
-        foreach (var path in macOsDefaultPaths)
+        foreach (var macOsPath in macOsDefaultPaths)
         {
-            if (!paths.Contains(path, StringComparer.Ordinal))
-                paths.Add(path);
+            if (!paths.Contains(macOsPath, StringComparer.Ordinal))
+                paths.Add(macOsPath);
         }
 
-        Environment.SetEnvironmentVariable("PATH", string.Join(Path.PathSeparator, paths));
+        return string.Join(Path.PathSeparator, paths);
+    }
+
+    private static class NativeEnvironment
+    {
+        [DllImport("libc", EntryPoint = "setenv", CharSet = CharSet.Ansi)]
+        private static extern int SetEnv(string name, string value, int overwrite);
+
+        internal static void SetVariable(string name, string value)
+        {
+            if (SetEnv(name, value, overwrite: 1) != 0)
+                throw new InvalidOperationException($"Failed to set native environment variable '{name}'.");
+        }
     }
 }
