@@ -31,11 +31,6 @@ jobs:
         env:
           DOTNET_CreateDumpDiagnostics: "1"
         run: |
-          # Temporary diagnostic: remove the kernel fallback after this run.
-          mkdir -p TestResults
-          ulimit -c unlimited
-          sudo sysctl -w "kernel.core_pattern=${{ github.workspace }}/TestResults/core-%e-%p-%t.dmp"
-
           dotnet test \
             --configuration Release \
             --no-build \
