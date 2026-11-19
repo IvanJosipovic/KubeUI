@@ -45,7 +45,8 @@ public sealed partial class ContainerFilePreviewViewModel : ViewModelBase, IClus
     public string Identity => $"{Object?.Namespace()}/{Object?.Name()}/{ContainerName}";
 
     /// <summary>The document holding the previewed file's text.</summary>
-    public TextDocument Document { get; } = new();
+    /// <remarks>Refresh replaces the whole text, so undo history would only retain old file contents.</remarks>
+    public TextDocument Document { get; } = new() { UndoStack = { SizeLimit = 0 } };
 
     /// <summary>Why the file cannot be previewed, when it cannot.</summary>
     [ObservableProperty]

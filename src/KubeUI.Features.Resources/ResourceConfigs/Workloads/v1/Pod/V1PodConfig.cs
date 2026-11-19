@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Avalonia.Collections;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
@@ -502,10 +504,19 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
         vm.Cluster = Cluster;
         vm.Object = pod;
         vm.ContainerName = container.Name;
-        vm.Id = $"{nameof(BrowseFiles)}-{Cluster.Runtime.Name}-{pod.Namespace()}-{pod.Name()}-{container.Name}";
+        vm.Id = BuildBrowserId(Cluster.Runtime.Name, pod.Namespace(), pod.Name(), container.Name);
 
         _factory.AddToDocuments(vm);
         await vm.InitializeAsync();
+    }
+
+    internal static string BuildBrowserId(string clusterName, string? @namespace, string podName, string containerName)
+    {
+        // Joins on NUL because none of these components can contain it; the digest keeps the id
+        // short while preventing different component splits from producing the same document id.
+        var identity = string.Join("\0", clusterName, @namespace, podName, containerName);
+        var digest = SHA256.HashData(Encoding.UTF8.GetBytes(identity));
+        return $"{nameof(BrowseFiles)}-{clusterName}-{Convert.ToHexString(digest.AsSpan(0, 8))}";
     }
 
     private bool CanBrowseFiles(IList? parameters)

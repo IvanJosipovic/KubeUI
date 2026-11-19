@@ -11,6 +11,14 @@ namespace KubeUI.Features.Resources.Tests.Workloads.v1.Pod;
 
 public sealed class ContainerFilePreviewViewModelTests
 {
+    [Fact]
+    public void The_preview_document_does_not_keep_undo_history()
+    {
+        using var vm = CreateViewModel(new FakeContainerFileAccess(), "/etc/hosts");
+
+        vm.Document.UndoStack.SizeLimit.ShouldBe(0);
+    }
+
     [AvaloniaFact]
     public async Task Load_reads_the_file_text()
     {

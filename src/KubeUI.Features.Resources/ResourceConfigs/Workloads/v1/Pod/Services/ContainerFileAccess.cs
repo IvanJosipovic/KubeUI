@@ -130,8 +130,11 @@ public sealed class ContainerFileAccess : IContainerFileAccess
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(OperationTimeout);
+        // Reaching the output cap stops the exec so a huge file yields its bounded prefix quickly
+        // instead of being drained until the operation times out.
+        using var limitReached = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token);
 
-        using var stdout = new BoundedBuffer(maxBytes);
+        using var stdout = new BoundedBuffer(maxBytes, limitReached.Cancel);
         using var stderr = new BoundedBuffer(16 * 1024);
 
         try
@@ -145,10 +148,16 @@ public sealed class ContainerFileAccess : IContainerFileAccess
                 async (stdIn, stdOut, stdErr) =>
                 {
                     await Task.WhenAll(
-                        stdout.CopyFromAsync(stdOut, timeout.Token),
-                        stderr.CopyFromAsync(stdErr, timeout.Token)).ConfigureAwait(false);
+                        stdout.CopyFromAsync(stdOut, limitReached.Token),
+                        stderr.CopyFromAsync(stdErr, limitReached.Token)).ConfigureAwait(false);
                 },
-                timeout.Token).ConfigureAwait(false);
+                limitReached.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (limitReached.IsCancellationRequested
+            && !timeout.IsCancellationRequested
+            && !cancellationToken.IsCancellationRequested)
+        {
+            // Truncated success: the bounded prefix is returned below.
         }
         catch (OperationCanceledException) when (timeout.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
@@ -162,8 +171,8 @@ public sealed class ContainerFileAccess : IContainerFileAccess
 
     private sealed record ExecResult(byte[] StandardOutput, bool Truncated, string StandardError);
 
-    /// <summary>Collects a stream's bytes up to a limit, then drains without storing.</summary>
-    private sealed class BoundedBuffer(int limit) : MemoryStream
+    /// <summary>Collects a stream's bytes up to a limit and reports when that limit is crossed.</summary>
+    private sealed class BoundedBuffer(int limit, Action? onLimit = null) : MemoryStream
     {
         public bool Truncated { get; private set; }
 
@@ -182,13 +191,15 @@ public sealed class ContainerFileAccess : IContainerFileAccess
                 if (room <= 0)
                 {
                     Truncated = true;
-                    continue;
+                    onLimit?.Invoke();
+                    return;
                 }
 
                 Write(buffer, 0, Math.Min(read, room));
                 if (read > room)
                 {
                     Truncated = true;
+                    onLimit?.Invoke();
                 }
             }
         }
