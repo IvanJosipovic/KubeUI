@@ -56,13 +56,34 @@ public sealed class ContainerFilePreviewViewModelTests
     [AvaloniaFact]
     public async Task A_failed_read_reports_the_error()
     {
-        var access = new FakeContainerFileAccess { ReadError = new ContainerFileAccessException("permission denied") };
+        var access = new FakeContainerFileAccess();
+        access.AddError("/etc/shadow", new ContainerFileAccessException("permission denied"));
         using var vm = CreateViewModel(access, "/etc/shadow");
 
         await vm.LoadAsync();
 
         vm.Message.ShouldBe("permission denied");
         vm.Text.ShouldBeNull();
+        vm.IsLoading.ShouldBeFalse();
+    }
+
+    [AvaloniaFact]
+    public async Task A_superseded_failure_does_not_replace_the_current_preview()
+    {
+        var access = new FakeContainerFileAccess();
+        access.AddContent("/b.txt", Text("b"));
+        access.AddError("/a.txt", new ContainerFileAccessException("stale failure"));
+        access.Gate("/a.txt");
+        using var vm = CreateViewModel(access, "/a.txt");
+
+        var stale = vm.LoadAsync();
+        vm.Path = "/b.txt";
+        await vm.LoadAsync();
+        access.Release("/a.txt");
+        await stale;
+
+        vm.Text.ShouldBe("b");
+        vm.Message.ShouldBeNull();
         vm.IsLoading.ShouldBeFalse();
     }
 
@@ -114,12 +135,19 @@ public sealed class ContainerFilePreviewViewModelTests
     private sealed class FakeContainerFileAccess : IContainerFileAccess
     {
         private readonly Dictionary<string, ContainerFileContent> _contents = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, Exception> _errors = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, TaskCompletionSource> _gates = new(StringComparer.Ordinal);
 
         public List<string> Read { get; } = [];
 
-        public Exception? ReadError { get; set; }
-
         public void AddContent(string path, ContainerFileContent content) => _contents[path] = content;
+
+        public void AddError(string path, Exception error) => _errors[path] = error;
+
+        public void Gate(string path)
+            => _gates[path] = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public void Release(string path) => _gates[path].TrySetResult();
 
         public Task<ContainerFileCapabilities> ProbeAsync(CancellationToken cancellationToken = default)
             => throw new NotSupportedException();
@@ -127,16 +155,22 @@ public sealed class ContainerFilePreviewViewModelTests
         public Task<ContainerDirectoryListing> ListAsync(string path, CancellationToken cancellationToken = default)
             => throw new NotSupportedException();
 
-        public Task<ContainerFileContent> ReadAsync(string path, CancellationToken cancellationToken = default)
+        public async Task<ContainerFileContent> ReadAsync(string path, CancellationToken cancellationToken = default)
         {
             Read.Add(path);
-            cancellationToken.ThrowIfCancellationRequested();
-            if (ReadError is not null)
+            if (_gates.TryGetValue(path, out var gate))
             {
-                throw ReadError;
+                // Deliberately not token-aware: a read can fail after the load that started it was superseded.
+                await gate.Task;
             }
 
-            return Task.FromResult(_contents[path]);
+            if (_errors.TryGetValue(path, out var error))
+            {
+                throw error;
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            return _contents[path];
         }
     }
 }

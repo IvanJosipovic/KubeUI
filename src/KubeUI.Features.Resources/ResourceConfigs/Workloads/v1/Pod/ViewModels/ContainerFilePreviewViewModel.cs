@@ -91,6 +91,13 @@ public sealed partial class ContainerFilePreviewViewModel : ViewModelBase, IClus
         }
         catch (Exception ex)
         {
+            // A superseded load can still fail after its token was cancelled; that failure must not
+            // replace the message of the load that replaced it.
+            if (token.IsCancellationRequested)
+            {
+                return;
+            }
+
             _logger.LogWarning(ex, "Container file preview could not read {Path}.", Path);
             Message = ex.Message;
         }

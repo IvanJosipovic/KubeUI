@@ -101,6 +101,30 @@ public sealed class ContainerFilePreviewLauncherTests
             .ShouldBe(["/etc/notes.txt", "/etc/hosts"]);
     }
 
+    [AvaloniaFact]
+    public async Task Namespace_and_pod_boundaries_do_not_share_an_id()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        var access = new FakeContainerFileAccess();
+        access.AddContent("/etc/notes.txt", Text("notes"));
+        var launcher = CreateLauncher(access);
+
+        var first = CreatePod("c");
+        first.Metadata!.NamespaceProperty = "a-b";
+        var second = CreatePod("b-c");
+        second.Metadata!.NamespaceProperty = "a";
+
+        await launcher.ShowAsync(workspace, first, "app", File("/etc/notes.txt", 5));
+        await launcher.ShowAsync(workspace, second, "app", File("/etc/notes.txt", 5));
+
+        var previews = BottomDock().VisibleDockables!
+            .OfType<ContainerFilePreviewViewModel>()
+            .Where(preview => ReferenceEquals(preview.Object, first) || ReferenceEquals(preview.Object, second))
+            .ToList();
+        previews.Count.ShouldBe(2);
+        previews[0].Id.ShouldNotBe(previews[1].Id);
+    }
+
     private static ContainerFilePreviewLauncher CreateLauncher(IContainerFileAccess access)
         => new(
             () => new ContainerFilePreviewViewModel(

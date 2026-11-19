@@ -134,19 +134,28 @@ public sealed class ContainerFileAccess : IContainerFileAccess
         using var stdout = new BoundedBuffer(maxBytes);
         using var stderr = new BoundedBuffer(16 * 1024);
 
-        await _cluster.Runtime.Client!.NamespacedPodExecAsync(
-            _podName,
-            _namespace,
-            _containerName,
-            command,
-            tty: false,
-            async (stdIn, stdOut, stdErr) =>
-            {
-                await Task.WhenAll(
-                    stdout.CopyFromAsync(stdOut, timeout.Token),
-                    stderr.CopyFromAsync(stdErr, timeout.Token)).ConfigureAwait(false);
-            },
-            timeout.Token).ConfigureAwait(false);
+        try
+        {
+            await _cluster.Runtime.Client!.NamespacedPodExecAsync(
+                _podName,
+                _namespace,
+                _containerName,
+                command,
+                tty: false,
+                async (stdIn, stdOut, stdErr) =>
+                {
+                    await Task.WhenAll(
+                        stdout.CopyFromAsync(stdOut, timeout.Token),
+                        stderr.CopyFromAsync(stdErr, timeout.Token)).ConfigureAwait(false);
+                },
+                timeout.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (timeout.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            // The exec timeout is not caller cancellation; surface it so a read cannot look empty.
+            throw new ContainerFileAccessException(
+                ResourcesLanguageManager.Instance.ContainerFileBrowserView_OperationTimeout.CurrentValue()!);
+        }
 
         return new ExecResult(stdout.ToArray(), stdout.Truncated, Encoding.UTF8.GetString(stderr.ToArray()).Trim());
     }

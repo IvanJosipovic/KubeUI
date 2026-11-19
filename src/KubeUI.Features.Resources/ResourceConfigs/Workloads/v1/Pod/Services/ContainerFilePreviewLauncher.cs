@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Dock.Model.Core;
 using k8s.Models;
 using KubeUI.Features.Clusters.Workspace;
@@ -54,5 +56,11 @@ public sealed class ContainerFilePreviewLauncher(
         V1Pod pod,
         string containerName,
         string path)
-        => $"{nameof(ContainerFilePreviewViewModel)}-{cluster.Runtime.Name}-{pod.Namespace()}-{pod.Name()}-{containerName}-{path}";
+    {
+        // Kubernetes names and Linux paths cannot contain NUL, so joining with it keeps component
+        // boundaries unambiguous; the digest keeps the id short while staying stable per target.
+        var identity = string.Join("\0", cluster.Runtime.Name, pod.Namespace(), pod.Name(), containerName, path);
+        var digest = SHA256.HashData(Encoding.UTF8.GetBytes(identity));
+        return $"{nameof(ContainerFilePreviewViewModel)}-{cluster.Runtime.Name}-{Convert.ToHexString(digest.AsSpan(0, 8))}";
+    }
 }
