@@ -19,13 +19,13 @@ public interface IClusterResourceConfig : IInitializeCluster
     /// <summary>Gets whether the resource is seeded when the cluster connects.</summary>
     bool SeedOnConnect => false;
 
-    /// <summary>Gets whether this configuration was created from a custom resource definition.</summary>
+    /// <summary>Gets whether this configuration represents a dynamically discovered resource.</summary>
     bool IsCustomResource => false;
 
     /// <summary>Gets the Kubernetes group/version/kind served by this configuration.</summary>
     GroupApiVersionKind Kind { get; }
 
-    /// <summary>Gets the custom resource definition backing this configuration, when applicable.</summary>
+    /// <summary>Gets the backing custom resource definition when available; discovery-backed configs may not have CRD read access.</summary>
     V1CustomResourceDefinition? CustomResourceDefinition => null;
 
     /// <summary>Gets the display name of the resource kind.</summary>
@@ -61,19 +61,32 @@ public interface IClusterResourceConfig : IInitializeCluster
     Task SeedResource(bool waitForReady, CancellationToken cancellationToken);
 }
 
-/// <summary>Configures a resource kind discovered from a custom resource definition.</summary>
+/// <summary>Consumes optional printer-column metadata from a readable CRD without owning resource registration.</summary>
+public interface IClusterCustomResourcePrinterColumnConsumer
+{
+    /// <summary>Updates supplemental printer columns for this discovery-backed resource.</summary>
+    /// <param name="definition">A readable CRD, or null when no matching CRD is available.</param>
+    void ConfigurePrinterColumns(V1CustomResourceDefinition? definition);
+}
+
+/// <summary>Configures a dynamic resource kind discovered from the Kubernetes API.</summary>
 public interface IClusterCustomResourceConfig : IClusterResourceConfig
 {
+    /// <summary>Applies a resource endpoint from a complete API discovery snapshot.</summary>
+    /// <param name="resource">The discovered resource endpoint.</param>
+    void Configure(ApiDiscoveryResource resource);
+
     /// <summary>Applies a discovered custom resource definition to the configuration.</summary>
     /// <param name="definition">The custom resource definition to apply.</param>
     void Configure(V1CustomResourceDefinition definition);
 }
 
-/// <summary>Creates the resource configuration selected for a discovered custom resource definition.</summary>
+/// <summary>Creates the resource configuration selected for a discovered dynamic resource.</summary>
 public interface IClusterCustomResourceConfigFactory
 {
-    /// <summary>Creates the configuration matching a discovered custom resource definition.</summary>
-    /// <param name="definition">The discovered custom resource definition.</param>
-    /// <returns>The configuration serving the definition.</returns>
-    IClusterCustomResourceConfig Create(V1CustomResourceDefinition definition);
+    /// <summary>Creates the configuration matching a discovered API endpoint.</summary>
+    /// <param name="resource">The discovered API endpoint.</param>
+    /// <returns>The configuration serving the endpoint.</returns>
+    IClusterCustomResourceConfig Create(ApiDiscoveryResource resource);
+
 }

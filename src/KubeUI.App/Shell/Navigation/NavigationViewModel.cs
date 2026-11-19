@@ -256,6 +256,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             runtime.PropertyChanged += OnClusterRuntimePropertyChanged;
         }
         cluster.Runtime.NamespaceSelectionRequired += OnNamespaceSelectionRequired;
+        cluster.CustomResourceRemoved += OnClusterCustomResourceRemoved;
         cluster.CustomResourceDefinitionChanged += OnClusterCustomResourceDefinitionChanged;
     }
 
@@ -268,6 +269,7 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             runtime.PropertyChanged -= OnClusterRuntimePropertyChanged;
         }
         cluster.Runtime.NamespaceSelectionRequired -= OnNamespaceSelectionRequired;
+        cluster.CustomResourceRemoved -= OnClusterCustomResourceRemoved;
         cluster.CustomResourceDefinitionChanged -= OnClusterCustomResourceDefinitionChanged;
     }
 
@@ -417,6 +419,16 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             "Navigation reconciled for {ClusterName}: Items={Items}",
             cluster.Runtime.Name,
             node.NavigationItems.Count);
+    }
+
+    private void OnClusterCustomResourceRemoved(ClusterWorkspace cluster, GroupApiVersionKind removedKind)
+    {
+        _logger.LogDebug(
+            "Navigation dynamic resource removal received for {ClusterName}: {ResourceKind}",
+            cluster.Runtime.Name,
+            removedKind);
+
+        ApplyOnUiThread(cluster);
     }
 
     private void OnClusterCustomResourceDefinitionChanged(ClusterWorkspace cluster)

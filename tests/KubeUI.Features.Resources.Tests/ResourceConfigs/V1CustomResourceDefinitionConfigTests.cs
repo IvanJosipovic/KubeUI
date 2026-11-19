@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Threading;
 using k8s;
 using k8s.Models;
 using KubeUI.App.Shell.Navigation;
@@ -44,18 +45,58 @@ public class V1CustomResourceDefinitionConfigTests
     public async Task generic_resource_list_initializes_with_its_resource_kind()
     {
         var services = Application.Current.GetTestServices();
-        var cluster = await Application.Current.CreateClusterAsync();
-        var config = ActivatorUtilities.CreateInstance<CustomResourceConfig>(services);
-        config.Initialize(cluster);
-        config.Configure(TestCustomResourceDefinitionFactory.Create("example.com", "examples", "someString"));
-        cluster.AddResourceConfigForTest(config);
-        cluster.Runtime.ModelCatalog.RegisterCustomResourceDefinition(config.Kind);
+        using var cluster = await Application.Current.CreateClusterAsync();
+        await cluster.Runtime.SeedResource<V1CustomResourceDefinition>(true, TestContext.Current.CancellationToken);
+        var crd = TestCustomResourceDefinitionFactory.Create("example.com", "examples", "someString");
+        crd.Spec.Versions[0].AdditionalPrinterColumns =
+        [
+            new V1CustomResourceColumnDefinition
+            {
+                Name = "Some string",
+                Type = "string",
+                JsonPath = ".spec.someString",
+            },
+        ];
+        await cluster.Runtime.CreateAsync(crd, TestContext.Current.CancellationToken);
+        var kind = new GroupApiVersionKind("kubeui.com", "v1beta1", "Test", "examples");
+        var config = await TestWait.UntilValueAsync(
+            () => cluster.GetResourceConfigs().OfType<CustomResourceConfig>()
+                .FirstOrDefault(candidate => candidate.Kind == kind
+                    && candidate.Columns().Any(column => column.Name == "Some string")),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+        config.ShouldNotBeNull();
 
-        var vm = services.GetRequiredService<ResourceListViewModel<GenericKubernetesObject>>();
-        vm.InitializeResource(cluster, config.Kind);
+        using var vm = services.GetRequiredService<ResourceListViewModel<GenericKubernetesObject>>();
+        vm.InitializeResource(cluster, kind);
+        vm.TableSource.Columns.ShouldContain(column => column.Key == "some-string");
 
-        vm.Kind.ShouldBe(config.Kind);
+        config.ConfigurePrinterColumns(null);
+        Dispatcher.UIThread.RunJobs();
+        vm.TableSource.Columns.ShouldNotContain(column => column.Key == "some-string");
+        config.ConfigurePrinterColumns(crd);
+        Dispatcher.UIThread.RunJobs();
+        vm.TableSource.Columns.ShouldContain(column => column.Key == "some-string");
+
+        var json = JsonDocument.Parse("{\"spec\":{\"someString\":\"from-json-path\"}}");
+        using (json)
+        {
+            var resource = new GenericKubernetesObject
+            {
+                Metadata = new V1ObjectMeta { Name = "printer-column-check" },
+                Properties = new Dictionary<string, JsonElement>
+                {
+                    ["spec"] = json.RootElement.GetProperty("spec").Clone(),
+                },
+            };
+            config.Columns().Single(column => column.Name == "Some string")
+                .DisplayValue(resource).ShouldBe("from-json-path");
+        }
+
+        vm.Kind.ShouldBe(kind);
         vm.ResourceConfig.ShouldBe(config);
+        vm.TableSource.Columns.ShouldContain(column => column.Key == "some-string");
     }
 
     [AvaloniaFact]
@@ -122,6 +163,29 @@ public class V1CustomResourceDefinitionConfigTests
     }
 
     [AvaloniaFact]
+    public void api_discovery_config_uses_discovered_identity_scope_and_generic_columns()
+    {
+        var services = Application.Current.GetTestServices();
+        var config = ActivatorUtilities.CreateInstance<CustomResourceConfig>(services);
+        var resource = new ApiDiscoveryResource(
+            new GroupApiVersionKind("gateway.networking.k8s.io", "v1", "HTTPRoute", "httproutes"),
+            isNamespaced: true,
+            freshness: "Current",
+            verbs: ["list", "watch"]);
+
+        config.Configure(resource);
+
+        config.Kind.ShouldBe(resource.Kind);
+        config.IsNamespaced.ShouldBeTrue();
+        config.Origin.ShouldBe(ResourceOrigin.ApiDiscovery);
+        config.IsCustomResource.ShouldBeTrue();
+        config.Definition.ShouldBeNull();
+        config.CustomResourceDefinition.ShouldBeNull();
+        config.Name.ShouldBe("HTTP Routes");
+        config.Columns().Select(static column => column.Name).ShouldBe(["Name", "Namespace", "Age"]);
+    }
+
+    [AvaloniaFact]
     public void custom_resource_config_reports_a_definition_without_a_served_storage_version()
     {
         var services = Application.Current.GetTestServices();
@@ -161,6 +225,68 @@ public class V1CustomResourceDefinitionConfigTests
         config.GetCustomMenuItems(Array.Empty<GenericKubernetesObject>()).Single().Title.ShouldBe("Configured action");
         config.Properties(new GenericKubernetesObject()).ShouldContain(static control => control is Border);
         config.ShouldBeAssignableTo<ResourceConfig<GenericKubernetesObject>>();
+    }
+
+    [AvaloniaFact]
+    public void discovery_configuration_uses_the_matching_served_crd_version_for_printer_columns()
+    {
+        var services = Application.Current.GetTestServices();
+        var config = new CustomResourceConfig(services);
+        var kind = new GroupApiVersionKind("kubeui.com", "v1beta1", "Test", "widgets");
+        config.Configure(new ApiDiscoveryResource(kind, true, "Current", ["list", "watch"]));
+        var columnsChanged = 0;
+        config.ColumnsChanged += (_, _) => columnsChanged++;
+        var crd = TestCustomResourceDefinitionFactory.Create("widgets.kubeui.com", "widgets", "value");
+        crd.Spec.Versions[0].Storage = false;
+        crd.Spec.Versions[0].AdditionalPrinterColumns =
+        [
+            new V1CustomResourceColumnDefinition
+            {
+                Name = "Count",
+                Type = "integer",
+                Format = "int64",
+                JsonPath = ".spec.count",
+            },
+        ];
+        crd.Spec.Versions.Add(new V1CustomResourceDefinitionVersion
+        {
+            Name = "v1",
+            Served = true,
+            Storage = true,
+            AdditionalPrinterColumns =
+            [
+                new V1CustomResourceColumnDefinition
+                {
+                    Name = "Wrong version",
+                    Type = "string",
+                    JsonPath = ".spec.value",
+                },
+            ],
+        });
+        config.ConfigurePrinterColumns(crd);
+
+        using var specDocument = JsonDocument.Parse("{\"count\":42}");
+        var resource = new GenericKubernetesObject
+        {
+            Properties = new Dictionary<string, JsonElement>
+            {
+                ["spec"] = specDocument.RootElement.Clone(),
+            },
+        };
+        var columns = config.Columns();
+
+        columnsChanged.ShouldBe(1);
+        columns.Select(static column => column.Name).ShouldContain("Count");
+        columns.Select(static column => column.Name).ShouldNotContain("Wrong version");
+        columns.Count(static column => column.Name == "Namespace").ShouldBe(1);
+        var countColumn = columns.Single(static column => column.Name == "Count");
+        countColumn.ValueType.ShouldBe(typeof(long?));
+        countColumn.DisplayValue(resource).ShouldBe("42");
+        config.Definition.ShouldBeNull();
+
+        config.ConfigurePrinterColumns(null);
+        columnsChanged.ShouldBe(2);
+        config.Columns().Select(static column => column.Name).ShouldBe(["Name", "Namespace", "Age"]);
     }
 
     private sealed class TestKubeUiCustomResourceConfig(

@@ -344,8 +344,14 @@ public sealed class PortForwarderTests
 
         await ConnectAsync(sut.LocalPort, TestContext.Current.CancellationToken);
 
-        await WaitForAsync(() => sut.Status == "No port found for Service", cancellationToken: TestContext.Current.CancellationToken);
-        await WaitForAsync(() => sut.Connections == 0, cancellationToken: TestContext.Current.CancellationToken);
+        await WaitForAsync(
+            () => sut.Status == "No port found for Service",
+            timeoutMs: 10000,
+            cancellationToken: TestContext.Current.CancellationToken);
+        await WaitForAsync(
+            () => sut.Connections == 0,
+            timeoutMs: 10000,
+            cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Theory, KubernetesBackendData]

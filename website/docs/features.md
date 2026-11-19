@@ -11,7 +11,7 @@ KubeUI is a desktop workspace for everyday Kubernetes exploration and operations
 
 - Load Kubernetes configuration files and connect to multiple clusters.
 - Open resource views in a dockable workspace that supports multiple windows and monitors.
-- Browse built-in resources and custom resources discovered from CRDs.
+- Browse built-in and custom resources advertised by authenticated Kubernetes API discovery, subject to your resource permissions.
 
 ## Resource exploration
 

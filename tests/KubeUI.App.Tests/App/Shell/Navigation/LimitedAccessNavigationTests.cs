@@ -1,5 +1,7 @@
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using k8s;
+using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.App.Shell.Navigation;
 using Shouldly;
@@ -47,6 +49,83 @@ public sealed class LimitedAccessNavigationTests
 
         await navigation.TreeViewSelectionChangedAsync(podsLink).WaitAsync(TestContext.Current.CancellationToken);
         await navigation.TreeViewSelectionChangedAsync(deploymentsLink).WaitAsync(TestContext.Current.CancellationToken);
+    }
+
+    [AvaloniaTheory, KubernetesBackendData]
+    [Trait("Category", "Kind")]
+    public async Task discovered_custom_resource_is_navigable_without_crd_definition_access(KubernetesBackend backend)
+    {
+        var definition = TestCustomResourceDefinitionFactory.Create("widgets.kubeui.com", "widgets", "value");
+        var kind = new GroupApiVersionKind("kubeui.com", "v1beta1", "Test", "widgets");
+        using var workspace = await Application.Current.CreateClusterAsync(config =>
+        {
+            config.Type = backend;
+            config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
+            config.InitialResources =
+            [
+                definition,
+                new V1Namespace { Metadata = new V1ObjectMeta { Name = "my-app" } },
+                new V1ServiceAccount
+                {
+                    Metadata = new V1ObjectMeta
+                    {
+                        Name = KubernetesRbac.ServiceAccountName,
+                        NamespaceProperty = KubernetesRbac.ServiceAccountNamespace,
+                    },
+                },
+                .. KubernetesRbac.ClusterWide(
+                    new RbacRule("namespaces", "list"),
+                    new RbacRule("namespaces", "watch")),
+                .. KubernetesRbac.InNamespace(
+                    "my-app",
+                    new RbacRule("widgets", "list", "kubeui.com"),
+                    new RbacRule("widgets", "watch", "kubeui.com")),
+            ];
+        });
+        var services = Application.Current.GetTestServices();
+        var navigation = services.GetRequiredService<NavigationViewModel>();
+        var clusterNode = navigation.Clusters.Single(node => node.Cluster == workspace);
+
+        var resourceLink = await TestWait.UntilValueAsync(
+            () =>
+            {
+                Dispatcher.UIThread.RunJobs();
+                return FindResourceLink(clusterNode, kind);
+            },
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        workspace.Runtime.Permissions.CanI<V1CustomResourceDefinition>(Verb.List).ShouldBeFalse();
+        workspace.Runtime.Permissions.CanI<V1CustomResourceDefinition>(Verb.Watch).ShouldBeFalse();
+        workspace.GetResourceConfig(kind).CanListAndWatch.ShouldBeTrue();
+        resourceLink.ShouldNotBeNull();
+        await navigation.TreeViewSelectionChangedAsync(resourceLink).WaitAsync(TestContext.Current.CancellationToken);
+    }
+
+    /// <summary>Finds a matching resource link anywhere beneath a cluster navigation node.</summary>
+    private static NavigationLink? FindResourceLink(ClusterNavigationNode root, GroupApiVersionKind kind)
+    {
+        return FindResourceLink(root.NavigationItems, kind);
+    }
+
+    /// <summary>Finds a matching resource link recursively within navigation items.</summary>
+    private static NavigationLink? FindResourceLink(IEnumerable<NavigationItem> items, GroupApiVersionKind kind)
+    {
+        foreach (var child in items)
+        {
+            if (child is NavigationLink resourceLink && resourceLink.ResourceKind == kind)
+            {
+                return resourceLink;
+            }
+
+            var nested = FindResourceLink(child.NavigationItems, kind);
+            if (nested is not null)
+            {
+                return nested;
+            }
+        }
+
+        return null;
     }
 
     private static NavigationLink? FindResourceLink(ClusterNavigationNode root, string name)

@@ -12,13 +12,23 @@ using KubeUI.Kubernetes.Serialization;
 namespace KubeUI.Features.Resources;
 
 /// <summary>Configures a dynamically discovered Kubernetes resource from its CRD definition.</summary>
-public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>, IClusterCustomResourceConfig
+public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>, IClusterCustomResourceConfig, IClusterCustomResourcePrinterColumnConsumer
 {
+    /// <summary>Stores validated OpenAPI printer-column metadata for later column construction.</summary>
+    private readonly record struct PrinterColumnSpec(string Name, string JsonPath, string Type, string? Format);
+
     private readonly Lock _configureLock = new();
     private bool _isNamespaced = true;
     private string? _resourceName;
     private GroupApiVersionKind _kind;
     private IReadOnlyList<NavigationGroup> _groups = [];
+    private IReadOnlyList<IResourceListColumn> _discoveryAdditionalColumns = [];
+    private IReadOnlyList<IResourceListColumn> _discoveryPrinterColumns = [];
+    private IReadOnlyList<IResourceListColumn> _discoveryDefinitionColumns = [];
+    private IReadOnlyList<PrinterColumnSpec> _discoveryPrinterColumnSpecs = [];
+    private string? _discoveryPrinterColumnDefinitionName;
+    private long? _discoveryPrinterColumnDefinitionGeneration;
+    private ResourceOrigin _origin = ResourceOrigin.CustomResourceDefinition;
 
     /// <summary>Creates a kind-specific custom resource config with identity supplied by overrides.</summary>
     protected CustomResourceConfig()
@@ -79,6 +89,12 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>, ICl
         return spec.Versions?.Any(version => version.Served
             && string.Equals(version.Name, ApiVersion, StringComparison.Ordinal)) == true;
     }
+
+    internal bool Matches(ApiDiscoveryResource resource)
+        => !IsFallback
+            && string.Equals(ApiGroup, resource.Kind.Group, StringComparison.Ordinal)
+            && string.Equals(KindName, resource.Kind.Kind, StringComparison.Ordinal)
+            && (ApiVersion is null || string.Equals(ApiVersion, resource.Kind.ApiVersion, StringComparison.Ordinal));
 
     internal static CustomResourceConfig Select(
         V1CustomResourceDefinition crd,
@@ -144,6 +160,51 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>, ICl
         };
     }
 
+    /// <summary>Selects the specialized config matching a discovered resource, or the generic fallback.</summary>
+    internal static CustomResourceConfig Select(
+        ApiDiscoveryResource resource,
+        IEnumerable<CustomResourceConfig> configurations)
+    {
+        ArgumentNullException.ThrowIfNull(resource);
+        ArgumentNullException.ThrowIfNull(configurations);
+
+        var available = configurations
+            .DistinctBy(static configuration => (
+                configuration.GetType(),
+                configuration.ApiGroup,
+                configuration.KindName,
+                configuration.ApiVersion))
+            .ToArray();
+        var matching = available.Where(configuration => configuration.Matches(resource)).ToArray();
+        if (matching.Length == 0)
+        {
+            return GetFallback(available);
+        }
+
+        var preferred = matching
+            .OrderBy(configuration => configuration.ApiVersion is null ? 1 : 0)
+            .ToArray();
+        var bestPriority = preferred[0].ApiVersion is null ? 1 : 0;
+        var bestMatches = preferred.Where(configuration => (configuration.ApiVersion is null ? 1 : 0) == bestPriority).ToArray();
+        return bestMatches.Length switch
+        {
+            1 => bestMatches[0],
+            _ => throw new InvalidOperationException(
+                $"More than one CustomResourceConfig matches discovered resource '{resource.Kind}' with equal priority: {string.Join(", ", bestMatches.Select(configuration => configuration.GetType().Name))}.")
+        };
+    }
+
+    private static CustomResourceConfig GetFallback(IEnumerable<CustomResourceConfig> configurations)
+    {
+        var fallback = configurations.Where(static configuration => configuration.IsFallback).ToArray();
+        return fallback.Length switch
+        {
+            1 => fallback[0],
+            0 => throw new InvalidOperationException("No generic CustomResourceConfig fallback is registered."),
+            _ => throw new InvalidOperationException("More than one generic CustomResourceConfig fallback is registered."),
+        };
+    }
+
     private static int GetConfigPriority(CustomResourceConfig config, string? storageVersion)
     {
         // Priority 0: Exact storage version match
@@ -167,7 +228,7 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>, ICl
     public override string Name => _resourceName ?? base.Name;
 
     /// <inheritdoc />
-    public override ResourceOrigin Origin => ResourceOrigin.CustomResourceDefinition;
+    public override ResourceOrigin Origin => _origin;
 
     /// <summary>Gets the CRD that defines this resource kind, or null before it is configured.</summary>
     public V1CustomResourceDefinition? Definition { get; private set; }
@@ -225,6 +286,13 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>, ICl
                 ?? throw new InvalidOperationException("CRD has no served storage version.");
 
             Definition = crd;
+            _origin = ResourceOrigin.CustomResourceDefinition;
+            _discoveryAdditionalColumns = [];
+            _discoveryPrinterColumns = [];
+            _discoveryDefinitionColumns = [];
+            _discoveryPrinterColumnSpecs = [];
+            _discoveryPrinterColumnDefinitionName = null;
+            _discoveryPrinterColumnDefinitionGeneration = null;
             _resourceName = spec.Names!.Kind.Humanize(LetterCasing.Title).Pluralize();
             _groups = NavigationGroupPath.CreateCustomResourceGroups(spec.Group);
 
@@ -236,47 +304,7 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>, ICl
                 _columns.Add(NamespaceColumn());
             }
 
-            List<IResourceListColumn> crdPrinterColumns = [];
-
-            if (version.AdditionalPrinterColumns != null)
-            {
-                foreach (var item in version.AdditionalPrinterColumns)
-                {
-                    if (string.Equals(item.JsonPath, ".metadata.creationTimestamp", StringComparison.Ordinal))
-                    {
-                        continue;
-                    }
-
-                    try
-                    {
-                        switch (item.Type, item.Format)
-                        {
-                            case ("integer", "int64"):
-                                crdPrinterColumns.Add(CreateColumn(item.Name, item.JsonPath, ConvertInt64));
-                                break;
-                            case ("integer", _):
-                                crdPrinterColumns.Add(CreateColumn(item.Name, item.JsonPath, ConvertInt32));
-                                break;
-                            case ("number", _):
-                                crdPrinterColumns.Add(CreateColumn(item.Name, item.JsonPath, ConvertDouble));
-                                break;
-                            case ("boolean", _):
-                                crdPrinterColumns.Add(CreateColumn(item.Name, item.JsonPath, ConvertBoolean));
-                                break;
-                            case ("date", _):
-                                crdPrinterColumns.Add(CreateDateColumn(item.Name, item.JsonPath));
-                                break;
-                            default:
-                                crdPrinterColumns.Add(CreateStringColumn(item.Name, item.JsonPath));
-                                break;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Unable to generate generic resource column: {Name} in {Resource}", item.Name, crd.Name());
-                    }
-                }
-            }
+            var crdPrinterColumns = CreatePrinterColumns(crd, version.AdditionalPrinterColumns);
 
             if (IncludeAdditionalPrinterColumns)
             {
@@ -289,12 +317,166 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>, ICl
         }
     }
 
+    /// <summary>Configures this instance from a discovered resource endpoint.</summary>
+    /// <param name="resource">The resource endpoint from API discovery.</param>
+    public void Configure(ApiDiscoveryResource resource)
+    {
+        ArgumentNullException.ThrowIfNull(resource);
+        if (!IsFallback && !Matches(resource))
+        {
+            throw new InvalidOperationException($"Discovered resource '{resource.Kind}' does not match this configuration.");
+        }
+
+        lock (_configureLock)
+        {
+            Definition = null;
+            _kind = resource.Kind;
+            _resourceName = _kind.Kind.Humanize(LetterCasing.Title).Pluralize();
+            _groups = NavigationGroupPath.CreateCustomResourceGroups(_kind.Group);
+            _isNamespaced = resource.IsNamespaced;
+            _origin = ResourceOrigin.ApiDiscovery;
+            _discoveryAdditionalColumns = CreateAdditionalColumns(resource).ToArray();
+            _discoveryPrinterColumns = [];
+            _discoveryDefinitionColumns = [];
+            _discoveryPrinterColumnSpecs = [];
+            _discoveryPrinterColumnDefinitionName = null;
+            _discoveryPrinterColumnDefinitionGeneration = null;
+            RebuildDiscoveryColumns();
+        }
+    }
+
+    /// <inheritdoc />
+    public void ConfigurePrinterColumns(V1CustomResourceDefinition? definition)
+    {
+        lock (_configureLock)
+        {
+            if (_origin != ResourceOrigin.ApiDiscovery)
+            {
+                return;
+            }
+
+            var matchingDefinition = MatchesDiscoveryKind(definition) ? definition : null;
+            var version = matchingDefinition?.Spec?.Versions?.FirstOrDefault(candidate =>
+                candidate.Served && string.Equals(candidate.Name, _kind.ApiVersion, StringComparison.Ordinal));
+            var specs = version?.AdditionalPrinterColumns?
+                .Where(static column => !string.IsNullOrWhiteSpace(column.Name)
+                    && !string.IsNullOrWhiteSpace(column.JsonPath)
+                    && !string.Equals(column.JsonPath, ".metadata.creationTimestamp", StringComparison.Ordinal))
+                .Select(static column => new PrinterColumnSpec(
+                    column.Name,
+                    column.JsonPath,
+                    column.Type ?? "string",
+                    column.Format))
+                .ToArray() ?? [];
+            var definitionName = version is null ? null : matchingDefinition!.Metadata?.Name;
+            var definitionGeneration = version is null ? null : matchingDefinition!.Metadata?.Generation;
+
+            if (string.Equals(_discoveryPrinterColumnDefinitionName, definitionName, StringComparison.Ordinal)
+                && _discoveryPrinterColumnDefinitionGeneration == definitionGeneration
+                && _discoveryPrinterColumnSpecs.SequenceEqual(specs))
+            {
+                return;
+            }
+
+            _discoveryPrinterColumnDefinitionName = definitionName;
+            _discoveryPrinterColumnDefinitionGeneration = definitionGeneration;
+            _discoveryPrinterColumnSpecs = specs;
+            _discoveryPrinterColumns = IncludeAdditionalPrinterColumns && matchingDefinition is not null && version is not null
+                ? CreatePrinterColumns(matchingDefinition, version.AdditionalPrinterColumns)
+                : [];
+            _discoveryDefinitionColumns = matchingDefinition is not null && version is not null
+                ? CreateAdditionalColumns(matchingDefinition).ToArray()
+                : [];
+            RebuildDiscoveryColumns();
+        }
+
+        NotifyColumnsChanged();
+    }
+
+    private bool MatchesDiscoveryKind(V1CustomResourceDefinition? definition)
+        => definition?.Spec is { } spec
+            && string.Equals(spec.Group, _kind.Group, StringComparison.Ordinal)
+            && string.Equals(spec.Names?.Kind, _kind.Kind, StringComparison.Ordinal)
+            && string.Equals(spec.Names?.Plural, _kind.PluralName, StringComparison.Ordinal);
+
     /// <summary>Gets whether CRD printer columns should be included for this kind.</summary>
     protected virtual bool IncludeAdditionalPrinterColumns => true;
 
     /// <summary>Creates columns specific to this CRD kind.</summary>
     /// <param name="crd">CRD being configured.</param>
     protected virtual IEnumerable<IResourceListColumn> CreateAdditionalColumns(V1CustomResourceDefinition crd) => [];
+
+    /// <summary>Creates additional columns specific to a discovered endpoint.</summary>
+    /// <param name="resource">The discovered endpoint being configured.</param>
+    /// <returns>Additional columns to display for the endpoint.</returns>
+    protected virtual IEnumerable<IResourceListColumn> CreateAdditionalColumns(ApiDiscoveryResource resource) => [];
+
+    /// <summary>Builds table columns from CRD and discovery printer-column definitions.</summary>
+    private List<IResourceListColumn> CreatePrinterColumns(
+        V1CustomResourceDefinition crd,
+        IEnumerable<V1CustomResourceColumnDefinition>? definitions)
+    {
+        List<IResourceListColumn> columns = [];
+        if (definitions is null)
+        {
+            return columns;
+        }
+
+        foreach (var item in definitions)
+        {
+            if (string.IsNullOrWhiteSpace(item.JsonPath)
+                || string.Equals(item.JsonPath, ".metadata.creationTimestamp", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            try
+            {
+                switch (item.Type, item.Format)
+                {
+                    case ("integer", "int64"):
+                        columns.Add(CreateColumn(item.Name, item.JsonPath, ConvertInt64));
+                        break;
+                    case ("integer", _):
+                        columns.Add(CreateColumn(item.Name, item.JsonPath, ConvertInt32));
+                        break;
+                    case ("number", _):
+                        columns.Add(CreateColumn(item.Name, item.JsonPath, ConvertDouble));
+                        break;
+                    case ("boolean", _):
+                        columns.Add(CreateColumn(item.Name, item.JsonPath, ConvertBoolean));
+                        break;
+                    case ("date", _):
+                        columns.Add(CreateDateColumn(item.Name, item.JsonPath));
+                        break;
+                    default:
+                        columns.Add(CreateStringColumn(item.Name, item.JsonPath));
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unable to generate generic resource column: {Name} in {Resource}", item.Name, crd.Name());
+            }
+        }
+
+        return columns;
+    }
+
+    private void RebuildDiscoveryColumns()
+    {
+        _columns.Clear();
+        _columns.Add(NameColumn(SortDirection.Ascending));
+        if (IsNamespaced)
+        {
+            _columns.Add(NamespaceColumn());
+        }
+
+        _columns.AddRange(_discoveryPrinterColumns);
+        _columns.AddRange(_discoveryDefinitionColumns);
+        _columns.AddRange(_discoveryAdditionalColumns);
+        _columns.Add(AgeColumn());
+    }
 
     private static ResourceListColumn<GenericKubernetesObject, TValue?> CreateColumn<TValue>(
         string name,
@@ -374,7 +556,10 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>, ICl
 
     protected override IList<IResourceListColumn> CreateDefaultColumns()
     {
-        return _columns.ToArray();
+        lock (_configureLock)
+        {
+            return _columns.ToArray();
+        }
     }
 
     private static string CreateColumnKey(string name)

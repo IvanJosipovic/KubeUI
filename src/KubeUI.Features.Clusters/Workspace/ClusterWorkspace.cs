@@ -16,9 +16,8 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ClusterWorkspace> _logger;
     private readonly ConcurrentDictionary<GroupApiVersionKind, IClusterResourceConfig> _resourceConfigs = new();
-    private readonly ConcurrentDictionary<string, long> _customResourceDefinitionRevisions = new(StringComparer.Ordinal);
-    private readonly ConcurrentDictionary<string, long> _customResourceDefinitionObservedGenerations = new(StringComparer.Ordinal);
     private readonly CancellationTokenSource _disposeCancellation = new();
+    private readonly SemaphoreSlim _discoveryReconcileGate = new(1, 1);
     private static readonly GroupApiVersionKind[] PermissionWatchKinds =
     [
         GroupApiVersionKind.From<V1ClusterRole>(),
@@ -31,13 +30,12 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
     private readonly Lock _connectLock = new();
     private readonly PermissionRefreshCoordinator _permissionRefreshCoordinator;
-    private long _customResourceDefinitionRevision;
-    private long _connectGeneration;
     private volatile bool _disposed;
     private volatile bool _workspaceStateInitialized;
+    private long _connectGeneration;
+    private long _connectTaskGeneration;
     private Task? _connectTask;
     private Task? _disconnectTask;
-    private long _connectTaskGeneration;
     private INotifyCollectionChanged? _namespaces;
 
     private IClusterInstrumentation _instrumentation;
@@ -97,8 +95,26 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
     private async Task DisconnectDisabledAsync()
     {
+        Task? connectTask;
+        lock (_connectLock)
+        {
+            connectTask = _connectTask;
+        }
+
         try
         {
+            if (connectTask is not null)
+            {
+                try
+                {
+                    await connectTask.ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Connection initialization ended while disabling cluster {ClusterName}", Runtime.Name);
+                }
+            }
+
             if (!IsEnabled)
             {
                 await Disconnect().ConfigureAwait(false);
@@ -124,10 +140,11 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     /// </summary>
     public event Action<ClusterWorkspace, IClusterResourceConfig>? ResourceConfigProcessed;
 
-    /// <summary>Raised when a custom resource definition is added, changed, or removed.</summary>
-    public event Action<ClusterWorkspace>? CustomResourceDefinitionChanged;
+    /// <summary>Raised after a discovered custom-resource kind is removed from the workspace.</summary>
+    public event Action<ClusterWorkspace, GroupApiVersionKind>? CustomResourceRemoved;
 
-    public event Action<ClusterWorkspace, GroupApiVersionKind>? CustomResourceDefinitionRemoved;
+    /// <summary>Raised when a custom resource definition changes in the runtime.</summary>
+    public event Action<ClusterWorkspace>? CustomResourceDefinitionChanged;
 
     private Activity? StartWorkspaceActivity(string activityName, ActivityKind activityKind = ActivityKind.Internal)
     {
@@ -136,47 +153,84 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         return activity;
     }
 
+    /// <summary>Connects the runtime and initializes workspace resources for the current connection generation.</summary>
     public Task Connect()
     {
         lock (_connectLock)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
+            if (!IsEnabled)
+            {
+                return Task.CompletedTask;
+            }
+
             if (_connectTask is { IsCompleted: false } && _connectTaskGeneration == _connectGeneration)
             {
                 return _connectTask;
             }
 
-            var generation = _connectGeneration;
-            _connectTaskGeneration = generation;
-            _connectTask = _disconnectTask is { IsCompleted: false } disconnectTask
-                ? ConnectAfterDisconnectAsync(disconnectTask, generation)
-                : Task.Run(() => ConnectCoreAsync(generation));
+            var previousConnect = _connectTask;
+            var previousDisconnect = _disconnectTask;
+            var connectGeneration = ++_connectGeneration;
+            _connectTaskGeneration = connectGeneration;
+            _connectTask = previousConnect is { IsCompleted: false }
+                || previousDisconnect is { IsCompleted: false }
+                ? Task.Run(() => ConnectAfterPreviousAsync(previousConnect, previousDisconnect, connectGeneration))
+                : Task.Run(() => ConnectCoreAsync(connectGeneration));
             return _connectTask;
         }
     }
 
-    private async Task ConnectAfterDisconnectAsync(Task disconnectTask, long generation)
+    /// <summary>Waits for prior connection and disconnection work before initializing a replacement.</summary>
+    private async Task ConnectAfterPreviousAsync(Task? previousConnect, Task? previousDisconnect, long connectGeneration)
     {
-        await disconnectTask.ConfigureAwait(false);
-        await ConnectCoreAsync(generation).ConfigureAwait(false);
+        if (previousConnect is not null)
+        {
+            try
+            {
+                await previousConnect.ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Prior cluster connection ended before a replacement connection started for {ClusterName}", Runtime.Name);
+            }
+        }
+
+        if (previousDisconnect is not null)
+        {
+            await previousDisconnect.ConfigureAwait(false);
+        }
+
+        await ConnectCoreAsync(connectGeneration).ConfigureAwait(false);
     }
 
-    private async Task ConnectCoreAsync(long generation)
+    /// <summary>Runs connection initialization while the supplied generation remains current.</summary>
+    private async Task ConnectCoreAsync(long connectGeneration)
     {
         using var activity = StartWorkspaceActivity(nameof(Connect), ActivityKind.Client);
         try
         {
-            if (!IsConnectGenerationCurrent(generation))
+            if (!IsConnectGenerationCurrent(connectGeneration))
             {
                 await WaitForDisabledDisconnectAsync().ConfigureAwait(false);
                 return;
             }
 
+            if (!IsEnabled)
+            {
+                return;
+            }
+
             EnsureBuiltInResourceConfigs();
             await Runtime.Connect().ConfigureAwait(false);
-            if (!IsConnectGenerationCurrent(generation))
+            if (!IsConnectGenerationCurrent(connectGeneration))
             {
                 await WaitForDisabledDisconnectAsync().ConfigureAwait(false);
+                return;
+            }
+
+            if (!IsEnabled)
+            {
                 return;
             }
 
@@ -185,10 +239,31 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
                 return;
             }
 
+            await Runtime.RefreshApiDiscoveryAsync().ConfigureAwait(false);
+            if (!IsConnectGenerationCurrent(connectGeneration) || !Runtime.Connected)
+            {
+                await WaitForDisabledDisconnectAsync().ConfigureAwait(false);
+                return;
+            }
+
             if (!IsEnabled || _disposed)
             {
-                await DisconnectCoreAsync().ConfigureAwait(false);
                 return;
+            }
+
+            if (Runtime.ApiDiscoverySnapshot is { } discoverySnapshot)
+            {
+                await ReconcileApiDiscoverySnapshotAsync(discoverySnapshot, evaluatePermissions: false).ConfigureAwait(false);
+                if (!IsConnectGenerationCurrent(connectGeneration) || !Runtime.Connected)
+                {
+                    await WaitForDisabledDisconnectAsync().ConfigureAwait(false);
+                    return;
+                }
+
+                if (!IsEnabled)
+                {
+                    return;
+                }
             }
 
             if (_workspaceStateInitialized)
@@ -196,8 +271,8 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
                 return;
             }
 
-            await UpdateResourceConfigsPermissionsAndEvaluateAsync(connectGeneration: generation).ConfigureAwait(false);
-            if (!IsConnectGenerationCurrent(generation))
+            await UpdateResourceConfigsPermissionsAndEvaluateAsync(connectGeneration: connectGeneration).ConfigureAwait(false);
+            if (!IsConnectGenerationCurrent(connectGeneration))
             {
                 await WaitForDisabledDisconnectAsync().ConfigureAwait(false);
                 return;
@@ -208,8 +283,8 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
                 return;
             }
 
-            await SeedResourcesConfiguredForConnectAsync(generation).ConfigureAwait(false);
-            if (!IsConnectGenerationCurrent(generation))
+            await SeedResourcesConfiguredForConnectAsync(connectGeneration).ConfigureAwait(false);
+            if (!IsConnectGenerationCurrent(connectGeneration))
             {
                 await WaitForDisabledDisconnectAsync().ConfigureAwait(false);
                 return;
@@ -220,8 +295,8 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
                 return;
             }
 
-            await SeedPermissionWatchersAsync(generation).ConfigureAwait(false);
-            if (!IsConnectGenerationCurrent(generation))
+            await SeedPermissionWatchersAsync(connectGeneration).ConfigureAwait(false);
+            if (!IsConnectGenerationCurrent(connectGeneration))
             {
                 await WaitForDisabledDisconnectAsync().ConfigureAwait(false);
                 return;
@@ -232,27 +307,25 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
                 return;
             }
 
-            var initialized = false;
-            lock (_connectLock)
+            if (!TryMarkWorkspaceInitialized(connectGeneration))
             {
-                if (IsConnectGenerationCurrent(generation)
-                    && Runtime.Connected
-                    && IsEnabled
-                    && !_disposed)
-                {
-                    _workspaceStateInitialized = true;
-                    initialized = true;
-                }
+                return;
             }
 
-            if (!initialized)
+            if (Runtime.ApiDiscoverySnapshot is { } completedSnapshot)
             {
-                await WaitForDisabledDisconnectAsync().ConfigureAwait(false);
+                await ReconcileApiDiscoverySnapshotAsync(completedSnapshot, evaluatePermissions: true).ConfigureAwait(false);
             }
+        }
+        catch (OperationCanceledException) when (!IsConnectGenerationCurrent(connectGeneration)
+            || _disposed
+            || !IsEnabled
+            || !Runtime.Connected)
+        {
         }
         catch (Exception ex)
         {
-            if (!IsConnectGenerationCurrent(generation))
+            if (!IsConnectGenerationCurrent(connectGeneration))
             {
                 await WaitForDisabledDisconnectAsync().ConfigureAwait(false);
                 _logger.LogDebug(ex, "Ignoring error from stale connection attempt for cluster {ClusterName}", Runtime.Name);
@@ -275,6 +348,10 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     {
         return _permissionRefreshCoordinator.RefreshAsync();
     }
+
+    /// <summary>Refreshes the complete authenticated Kubernetes API discovery snapshot.</summary>
+    public Task RefreshApiDiscoveryAsync()
+        => Runtime.RefreshApiDiscoveryAsync();
 
     private bool CanRefreshPermissions()
     {
@@ -315,7 +392,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
         foreach (var orderBatch in orderBatches)
         {
-            if (connectGeneration.HasValue && !IsConnectGenerationCurrent(connectGeneration.Value))
+            if (connectGeneration.HasValue && !IsConnectInitializationCurrent(connectGeneration.Value))
             {
                 return;
             }
@@ -325,13 +402,13 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
                 new ParallelOptions { MaxDegreeOfParallelism = 4 },
                 async (resourceConfig, _) =>
                 {
-                    if (connectGeneration.HasValue && !IsConnectGenerationCurrent(connectGeneration.Value))
+                    if (connectGeneration.HasValue && !IsConnectInitializationCurrent(connectGeneration.Value))
                     {
                         return;
                     }
 
                     await UpdateResourceConfigPermissionsAndEvaluateAsync(resourceConfig).ConfigureAwait(false);
-                    if (connectGeneration.HasValue && !IsConnectGenerationCurrent(connectGeneration.Value))
+                    if (connectGeneration.HasValue && !IsConnectInitializationCurrent(connectGeneration.Value))
                     {
                         return;
                     }
@@ -359,11 +436,20 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         await EvaluateResourceConfigAccessCoreAsync(resourceConfig).ConfigureAwait(false);
     }
 
+    private async Task WaitForDisabledDisconnectAsync()
+    {
+        if (!IsEnabled || _disposed)
+        {
+            await Disconnect().ConfigureAwait(false);
+        }
+    }
+
     public Task Disconnect()
     {
         lock (_connectLock)
         {
             _connectGeneration++;
+            _workspaceStateInitialized = false;
             _connectTask = null;
             _connectTaskGeneration = -1;
             if (_disconnectTask is { IsCompleted: false })
@@ -376,23 +462,9 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
     }
 
-    private bool IsConnectGenerationCurrent(long generation)
-    {
-        return Volatile.Read(ref _connectGeneration) == generation;
-    }
-
-    private async Task WaitForDisabledDisconnectAsync()
-    {
-        if (!IsEnabled || _disposed)
-        {
-            await Disconnect().ConfigureAwait(false);
-        }
-    }
-
     private async Task DisconnectCoreAsync()
     {
         await Runtime.Disconnect().ConfigureAwait(false);
-        _workspaceStateInitialized = false;
         ResetWorkspaceState();
     }
 
@@ -446,6 +518,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         NotifyResourceConfigProcessed(resourceConfig);
     }
 
+    /// <summary>Unsubscribes workspace handlers and cancels pending workspace operations.</summary>
     public void Dispose()
     {
         lock (_connectLock)
@@ -455,9 +528,11 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
                 return;
             }
             _disposed = true;
+            _connectGeneration++;
         }
 
         Runtime.OnChange -= OnRuntimeChange;
+        Runtime.ApiDiscoverySnapshotRefreshed -= OnApiDiscoverySnapshotRefreshed;
         if (Runtime.Permissions is { } permissions)
         {
             permissions.PermissionsInvalidated -= OnPermissionsInvalidated;
@@ -513,6 +588,37 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
     }
 
+    private bool IsConnectGenerationCurrent(long generation)
+    {
+        lock (_connectLock)
+        {
+            return !_disposed && _connectGeneration == generation;
+        }
+    }
+
+    private bool IsConnectInitializationCurrent(long generation)
+    {
+        lock (_connectLock)
+        {
+            return !_disposed && IsEnabled && _connectGeneration == generation;
+        }
+    }
+
+    /// <summary>Marks initialization complete only when the supplied connection generation is current.</summary>
+    private bool TryMarkWorkspaceInitialized(long generation)
+    {
+        lock (_connectLock)
+        {
+            if (_disposed || !IsEnabled || _connectGeneration != generation)
+            {
+                return false;
+            }
+
+            _workspaceStateInitialized = true;
+            return true;
+        }
+    }
+
     private async Task EvaluateResourceConfigAccessCoreAsync(IClusterResourceConfig resourceConfig)
     {
         ArgumentNullException.ThrowIfNull(resourceConfig);
@@ -539,7 +645,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
         foreach (var seedBatch in seedBatches)
         {
-            if (!IsConnectGenerationCurrent(generation))
+            if (!IsConnectInitializationCurrent(generation))
             {
                 return;
             }
@@ -553,7 +659,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     {
         foreach (var kind in PermissionWatchKinds)
         {
-            if (generation is long currentGeneration && !IsConnectGenerationCurrent(currentGeneration))
+            if (generation is long currentGeneration && !IsConnectInitializationCurrent(currentGeneration))
             {
                 return;
             }
@@ -571,7 +677,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     {
         using var activity = StartWorkspaceActivity(nameof(EnsureResourceSeededAsync));
 
-        if (generation is long currentGeneration && !IsConnectGenerationCurrent(currentGeneration))
+        if (generation is long currentGeneration && !IsConnectInitializationCurrent(currentGeneration))
         {
             return;
         }
@@ -593,9 +699,11 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         ResourceConfigProcessed?.Invoke(this, resourceConfig);
     }
 
+    /// <summary>Subscribes workspace state handlers to the current runtime and permission cache.</summary>
     private void SubscribeRuntime()
     {
         Runtime.OnChange += OnRuntimeChange;
+        Runtime.ApiDiscoverySnapshotRefreshed += OnApiDiscoverySnapshotRefreshed;
         if (Runtime.Permissions is { } permissions)
         {
             permissions.PermissionsInvalidated += OnPermissionsInvalidated;
@@ -645,11 +753,9 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>Removes discovery-backed resource configs when the runtime disconnects.</summary>
     private void ResetWorkspaceState()
     {
-        _customResourceDefinitionRevisions.Clear();
-        _customResourceDefinitionObservedGenerations.Clear();
-
         var removedCustomResourceKinds = _resourceConfigs
             .Where(static pair => pair.Value.IsCustomResource)
             .Select(static pair => pair.Key)
@@ -664,7 +770,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         {
             if (_resourceConfigs.TryRemove(removedKind, out _))
             {
-                NotifyCustomResourceDefinitionRemoved(removedKind);
+                NotifyCustomResourceRemoved(removedKind);
             }
         }
     }
@@ -674,57 +780,148 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         if (Array.IndexOf(PermissionWatchKinds, resourceKind) >= 0)
         {
             _permissionRefreshCoordinator.Request(PermissionRefreshScope.All);
-            return;
         }
 
-        if (item is not V1CustomResourceDefinition crd)
+        if (item is V1CustomResourceDefinition)
         {
-            return;
-        }
-
-        var definitionName = crd.Name() ?? string.Empty;
-
-        if (eventType == WatchEventType.Deleted)
-        {
-            RemoveCustomResourceDefinition(definitionName, crd);
-            _customResourceDefinitionRevisions.TryRemove(definitionName, out _);
-            _customResourceDefinitionObservedGenerations.TryRemove(definitionName, out _);
             CustomResourceDefinitionChanged?.Invoke(this);
-            return;
         }
-
-        if (!crd.TryGetResourceKind(out _))
-        {
-            return;
-        }
-
-        if (eventType == WatchEventType.Modified
-            && crd.Metadata?.Generation is long observedGeneration
-            && observedGeneration > 0
-            && _customResourceDefinitionObservedGenerations.TryGetValue(definitionName, out var previousGeneration)
-            && previousGeneration == observedGeneration)
-        {
-            return;
-        }
-
-        // Navigation availability depends on the CRD itself, even when access to
-        // instances of the custom resource is denied.
-        CustomResourceDefinitionChanged?.Invoke(this);
-
-        // The generation is recorded here, before the definition is processed, so that a
-        // repeated event for the same generation does not start a second processing pass.
-        // A definition that cannot resolve a served storage version returns above and is
-        // never recorded, so it is retried when the definition changes.
-        if (crd.Metadata?.Generation is long generation && generation > 0)
-        {
-            _customResourceDefinitionObservedGenerations[definitionName] = generation;
-        }
-
-        var revision = Interlocked.Increment(ref _customResourceDefinitionRevision);
-        _customResourceDefinitionRevisions[definitionName] = revision;
-        _ = ProcessCustomResourceDefinitionAsync(crd, definitionName, revision);
     }
 
+    /// <summary>Reconciles refreshed discovery snapshots for the active connected runtime.</summary>
+    private void OnApiDiscoverySnapshotRefreshed(IClusterRuntime runtime, ApiDiscoverySnapshot snapshot)
+    {
+        if (ReferenceEquals(runtime, Runtime) && _workspaceStateInitialized && !_disposed)
+        {
+            _ = ReconcileApiDiscoverySnapshotFromRefreshAsync(snapshot);
+        }
+    }
+
+    /// <summary>Applies matching cached CRD printer columns to discovery-backed resource configs.</summary>
+    private void ApplyCachedCustomResourcePrinterColumns()
+    {
+        if (!Runtime.Objects.ContainsKey(GroupApiVersionKind.From<V1CustomResourceDefinition>()))
+        {
+            return;
+        }
+
+        var definitions = Runtime.GetResourceList<V1CustomResourceDefinition>();
+        foreach (var resourceConfig in _resourceConfigs.Values)
+        {
+            if (!resourceConfig.IsCustomResource
+                || resourceConfig.CustomResourceDefinition is not null
+                || resourceConfig is not IClusterCustomResourcePrinterColumnConsumer consumer)
+            {
+                continue;
+            }
+
+            var definition = definitions.FirstOrDefault(candidate =>
+                candidate.Spec is { } spec
+                && string.Equals(spec.Group, resourceConfig.Kind.Group, StringComparison.Ordinal)
+                && string.Equals(spec.Names?.Kind, resourceConfig.Kind.Kind, StringComparison.Ordinal)
+                && string.Equals(spec.Names?.Plural, resourceConfig.Kind.PluralName, StringComparison.Ordinal));
+            consumer.ConfigurePrinterColumns(definition);
+        }
+    }
+
+    /// <summary>Runs snapshot reconciliation for a refresh event and logs failures outside shutdown.</summary>
+    private async Task ReconcileApiDiscoverySnapshotFromRefreshAsync(ApiDiscoverySnapshot snapshot)
+    {
+        try
+        {
+            await ReconcileApiDiscoverySnapshotAsync(snapshot, evaluatePermissions: true).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (_disposeCancellation.IsCancellationRequested)
+        {
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error reconciling API discovery resources for cluster {ClusterName}", Runtime.Name);
+        }
+    }
+
+    /// <summary>Replaces discovery-backed configs with resources in the supplied complete snapshot.</summary>
+    private async Task ReconcileApiDiscoverySnapshotAsync(
+        ApiDiscoverySnapshot snapshot,
+        bool evaluatePermissions)
+    {
+        try
+        {
+            await _discoveryReconcileGate.WaitAsync(_disposeCancellation.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (_disposeCancellation.IsCancellationRequested)
+        {
+            return;
+        }
+
+        try
+        {
+            if (_disposed || !Runtime.Connected)
+            {
+                return;
+            }
+
+            var resources = snapshot.PreferredResources
+                .Where(resource => Runtime.ModelCatalog.IsCustomResource(resource.Kind)
+                    && resource.Verbs.Contains("list")
+                    && resource.Verbs.Contains("watch"))
+                .ToArray();
+            var targetKinds = resources
+                .Select(static resource => (resource.Kind.Group, resource.Kind.Kind))
+                .ToHashSet();
+
+            var removedKinds = _resourceConfigs
+                .Where(pair => pair.Value.IsCustomResource
+                    && !targetKinds.Contains((pair.Key.Group, pair.Key.Kind)))
+                .Select(static pair => pair.Key)
+                .ToArray();
+            foreach (var removedKind in removedKinds)
+            {
+                RemoveCustomResourceConfig(removedKind);
+            }
+
+            var factory = _serviceProvider.GetRequiredService<IClusterCustomResourceConfigFactory>();
+            foreach (var resource in resources)
+            {
+                if (_resourceConfigs.TryGetValue(resource.Kind, out var existingConfig)
+                    && existingConfig.IsCustomResource
+                    && existingConfig.CustomResourceDefinition is null
+                    && existingConfig.IsNamespaced == resource.IsNamespaced)
+                {
+                    continue;
+                }
+
+                var resourceConfig = factory.Create(resource);
+                resourceConfig.Initialize(this);
+                resourceConfig.Configure(resource);
+
+                if (evaluatePermissions)
+                {
+                    await UpdateResourceConfigPermissionsAndEvaluateAsync(resourceConfig).ConfigureAwait(false);
+                }
+
+                if (_disposed || !Runtime.Connected)
+                {
+                    return;
+                }
+
+                RemoveOtherCustomResourceVersions(resourceConfig.Kind);
+                _resourceConfigs[resourceConfig.Kind] = resourceConfig;
+                if (evaluatePermissions)
+                {
+                    NotifyResourceConfigProcessed(resourceConfig);
+                }
+            }
+
+            ApplyCachedCustomResourcePrinterColumns();
+        }
+        finally
+        {
+            _discoveryReconcileGate.Release();
+        }
+    }
+
+    /// <summary>Removes older served-version configs for the same discovered custom-resource kind.</summary>
     private void RemoveOtherCustomResourceVersions(GroupApiVersionKind currentKind)
     {
         var previousKinds = _resourceConfigs
@@ -737,130 +934,21 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
         foreach (var previousKind in previousKinds)
         {
-            RemoveCustomResourceDefinition(previousKind);
+            RemoveCustomResourceConfig(previousKind);
         }
     }
 
-    private async Task ProcessCustomResourceDefinitionAsync(
-        V1CustomResourceDefinition crd,
-        string definitionName,
-        long revision)
-    {
-        using var activity = StartWorkspaceActivity(nameof(ProcessCustomResourceDefinitionAsync));
-        activity?.SetTag("kubernetes.crd.name", crd.Name());
-
-        try
-        {
-            var resourceConfig = _serviceProvider.GetRequiredService<IClusterCustomResourceConfigFactory>().Create(crd);
-            resourceConfig.Initialize(this);
-            resourceConfig.Configure(crd);
-
-            _logger.LogDebug(
-                "Custom resource definition discovered for {ClusterName}: Definition={DefinitionName}; ResourceKind={ResourceKind}; Revision={Revision}",
-                Runtime.Name,
-                definitionName,
-                resourceConfig.Kind,
-                revision);
-
-            await UpdateResourceConfigPermissionsAndEvaluateAsync(resourceConfig).ConfigureAwait(false);
-
-            _logger.LogDebug(
-                "Custom resource definition access evaluated for {ClusterName}: Definition={DefinitionName}; ResourceKind={ResourceKind}; PermissionsLoaded={PermissionsLoaded}; CanListAndWatch={CanListAndWatch}; Revision={Revision}",
-                Runtime.Name,
-                definitionName,
-                resourceConfig.Kind,
-                resourceConfig.PermissionsLoaded,
-                resourceConfig.CanListAndWatch,
-                revision);
-
-            if (!resourceConfig.CanListAndWatch)
-            {
-                _logger.LogDebug(
-                    "Custom resource definition skipped for {ClusterName}: list/watch access denied; Definition={DefinitionName}; ResourceKind={ResourceKind}",
-                    Runtime.Name,
-                    definitionName,
-                    resourceConfig.Kind);
-                return;
-            }
-
-            if (!_customResourceDefinitionRevisions.TryGetValue(definitionName, out var currentRevision)
-                || currentRevision != revision)
-            {
-                _logger.LogDebug(
-                    "Custom resource definition skipped for {ClusterName}: stale revision; Definition={DefinitionName}; ResourceKind={ResourceKind}; CurrentRevision={CurrentRevision}; Revision={Revision}",
-                    Runtime.Name,
-                    definitionName,
-                    resourceConfig.Kind,
-                    currentRevision,
-                    revision);
-                return;
-            }
-
-            RemoveOtherCustomResourceVersions(resourceConfig.Kind);
-            _resourceConfigs[resourceConfig.Kind] = resourceConfig;
-            _logger.LogDebug(
-                "Custom resource definition registered for {ClusterName}: Definition={DefinitionName}; ResourceKind={ResourceKind}; ConfigCount={ConfigCount}",
-                Runtime.Name,
-                definitionName,
-                resourceConfig.Kind,
-                _resourceConfigs.Count);
-            NotifyResourceConfigProcessed(resourceConfig);
-        }
-        catch (OperationCanceledException) when (_disposeCancellation.IsCancellationRequested)
-        {
-        }
-        catch (Exception ex)
-        {
-            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
-            _logger.LogError(ex, "Error processing custom resource definition {Crd}", crd.Name());
-        }
-    }
-
-    private void RemoveCustomResourceDefinition(string definitionName, V1CustomResourceDefinition crd)
-    {
-        var removedKinds = _resourceConfigs
-            .Where(pair => pair.Value.IsCustomResource
-                && MatchesCustomResourceDefinition(pair.Value, definitionName, crd))
-            .Select(static pair => pair.Key)
-            .ToArray();
-
-        foreach (var kind in removedKinds)
-        {
-            RemoveCustomResourceDefinition(kind);
-        }
-    }
-
-    private static bool MatchesCustomResourceDefinition(
-        IClusterResourceConfig resourceConfig,
-        string definitionName,
-        V1CustomResourceDefinition crd)
-    {
-        if (!string.IsNullOrEmpty(definitionName)
-            && string.Equals(
-                resourceConfig.CustomResourceDefinition?.Name(),
-                definitionName,
-                StringComparison.Ordinal))
-        {
-            return true;
-        }
-
-        return !string.IsNullOrEmpty(crd.Spec?.Group)
-            && !string.IsNullOrEmpty(crd.Spec.Names?.Kind)
-            && string.Equals(resourceConfig.Kind.Group, crd.Spec.Group, StringComparison.Ordinal)
-            && string.Equals(resourceConfig.Kind.Kind, crd.Spec.Names.Kind, StringComparison.Ordinal);
-    }
-
-    private void RemoveCustomResourceDefinition(GroupApiVersionKind kind)
+    private void RemoveCustomResourceConfig(GroupApiVersionKind kind)
     {
         if (_resourceConfigs.TryRemove(kind, out _))
         {
-            NotifyCustomResourceDefinitionRemoved(kind);
+            NotifyCustomResourceRemoved(kind);
         }
     }
 
-    private void NotifyCustomResourceDefinitionRemoved(GroupApiVersionKind kind)
+    private void NotifyCustomResourceRemoved(GroupApiVersionKind kind)
     {
-        CustomResourceDefinitionRemoved?.Invoke(this, kind);
+        CustomResourceRemoved?.Invoke(this, kind);
     }
 
     private void UpdateClusterColor()

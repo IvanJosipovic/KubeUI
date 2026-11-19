@@ -7,14 +7,10 @@ using Humanizer;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubeUI.Controls.Presentation;
 using KubeUI.Features.AI.Agents;
 using KubeUI.Features.AI.Chat;
 using KubeUI.Features.Clusters.Workspace;
-using KubeUI.Features.Resources;
 using KubeUI.Features.Resources.Common;
-using KubeUI.Kubernetes;
-using SortDirection = KubeUI.Features.Resources.SortDirection;
 
 namespace KubeUI.Features.Resources.List;
 
@@ -141,6 +137,7 @@ public partial class ResourceListViewModel<[DynamicallyAccessedMembers(Dynamical
         InitializeResource(cluster, GroupApiVersionKind.From<T>());
     }
 
+    /// <summary>Initializes this list for a discovered kind and subscribes to its resource container.</summary>
     public void InitializeResource(ClusterWorkspace cluster, GroupApiVersionKind kind)
     {
         UnsubscribeFromSelectedNamespaces();
@@ -157,9 +154,15 @@ public partial class ResourceListViewModel<[DynamicallyAccessedMembers(Dynamical
             _tableSource = null;
         }
 
+        if (ResourceConfig is not null)
+        {
+            ResourceConfig.ColumnsChanged -= ResourceConfigOnColumnsChanged;
+        }
+
         Cluster = cluster;
         _kind = kind;
         ResourceConfig = Cluster.GetResourceConfig<T>(kind);
+        ResourceConfig.ColumnsChanged += ResourceConfigOnColumnsChanged;
         Title = kind.Kind.Humanize(LetterCasing.Title).Pluralize();
         Id = Cluster.Runtime.Name + "-" + kind;
         var seedTask = ResourceConfig.SeedResource();
@@ -225,6 +228,55 @@ public partial class ResourceListViewModel<[DynamicallyAccessedMembers(Dynamical
             _tableSource.SearchText = SearchQuery;
     }
 
+    /// <summary>Rebuilds table columns when the associated resource configuration changes.</summary>
+    private void ResourceConfigOnColumnsChanged(object? sender, EventArgs e)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!ReferenceEquals(sender, ResourceConfig) || _tableSource is null)
+            {
+                return;
+            }
+
+            _resourceColumns = ResourceConfig.Columns();
+            var columns = CreateDynamicColumns(_resourceColumns);
+            _tableSource.Columns.Clear();
+            foreach (var column in columns)
+            {
+                _tableSource.Columns.Add(column);
+            }
+
+            _tableSource.SetSort(_tableSource.SortDescriptors.ToArray());
+            SetNamespaceFilter();
+        });
+    }
+
+    /// <summary>Creates DynamicTableView columns from the resource configuration's column definitions.</summary>
+    private List<DynamicTableViewColumn<T>> CreateDynamicColumns(IList<IResourceListColumn> resourceColumns)
+    {
+        var columns = new List<DynamicTableViewColumn<T>>(resourceColumns.Count);
+        foreach (var column in resourceColumns)
+        {
+            try
+            {
+                var cellTemplate = column.CustomControl is null ? null : CreateCellTemplate(column);
+                var dynamicColumn = column.CreateDynamicTableViewColumn(cellTemplate);
+                if (dynamicColumn is not DynamicTableViewColumn<T> typedColumn)
+                {
+                    throw new InvalidOperationException($"Column '{column.Key}' has an incompatible row type.");
+                }
+
+                columns.Add(typedColumn);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Unable to generate resource column {ColumnKey}", column.Key);
+            }
+        }
+
+        return columns;
+    }
+
     public IEnumerable<MenuItemViewModel> GetContextMenuItems(IEnumerable? selectedItems)
     {
         if (ResourceConfig == null)
@@ -285,8 +337,14 @@ public partial class ResourceListViewModel<[DynamicallyAccessedMembers(Dynamical
             item => item is T resource && namespaces.Contains(resource.Namespace() ?? string.Empty));
     }
 
+    /// <summary>Releases resource, namespace, table, and selection subscriptions owned by the view model.</summary>
     public void Dispose()
     {
+        if (ResourceConfig is not null)
+        {
+            ResourceConfig.ColumnsChanged -= ResourceConfigOnColumnsChanged;
+        }
+
         _agentContextService.ClearContext(this);
         if (_tableSource is not null)
         {
