@@ -1,11 +1,10 @@
 using Avalonia.Automation;
 using Avalonia.Controls.Primitives;
-using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Xaml.Interactions.Core;
 using AvaloniaEdit;
+using KubeUI.Controls.Editors;
 using KubeUI.Controls.Editors.Behaviors;
 using KubeUI.Controls.Presentation;
-using KubeUI.Controls.Styles;
 
 namespace KubeUI.Features.Helm.Releases;
 
@@ -27,16 +26,16 @@ public sealed class HelmReleaseEditorView : KubeUIView<HelmReleaseEditorViewMode
             .MinHeight(200)
             .MaxHeight(400)
             .IsReadOnly(vm, x => x.IsLoading)
-            .FontFamily(new DynamicResourceExtension(Typography.CodeFontFamilyResourceKey))
-            .FontSize(new DynamicResourceExtension(Typography.CodeFontSizeResourceKey))
             .WordWrap(false)
             .BindValue(
                 DataValidationErrors.ErrorsProperty,
                 CompiledBinding.Create<HelmReleaseEditorViewModel, IEnumerable<object>>(
                     x => x.ValuesYamlValidationErrors));
-        Interaction.GetBehaviors(valuesEditor).Add(new HelmValuesEditorBehavior());
-        Interaction.GetBehaviors(valuesEditor).Add(new YamlSyntaxHighlightingBehavior());
-        Interaction.GetBehaviors(valuesEditor).Add(new YamlFoldingBehavior());
+
+        valuesEditor.Behaviors(
+            new HelmValuesEditorBehavior(),
+            new YamlSyntaxHighlightingBehavior(),
+            new YamlFoldingBehavior());
 
         return new ScrollViewer()
             .HorizontalScrollBarVisibility(ScrollBarVisibility.Disabled)

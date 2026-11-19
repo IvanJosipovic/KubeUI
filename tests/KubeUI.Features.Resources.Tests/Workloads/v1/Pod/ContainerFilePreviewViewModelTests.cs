@@ -20,7 +20,7 @@ public sealed class ContainerFilePreviewViewModelTests
 
         await vm.LoadAsync();
 
-        vm.Text.ShouldBe("127.0.0.1 localhost");
+        vm.Document.Text.ShouldBe("127.0.0.1 localhost");
         vm.Message.ShouldBeNull();
         vm.IsTruncated.ShouldBeFalse();
         vm.IsLoading.ShouldBeFalse();
@@ -36,7 +36,7 @@ public sealed class ContainerFilePreviewViewModelTests
 
         await vm.LoadAsync();
 
-        vm.Text.ShouldBeNull();
+        vm.Document.Text.ShouldBeEmpty();
         vm.Message.ShouldBe(ResourcesLanguageManager.Instance.ContainerFileBrowserView_Binary.CurrentValue());
     }
 
@@ -49,7 +49,7 @@ public sealed class ContainerFilePreviewViewModelTests
 
         await vm.LoadAsync();
 
-        vm.Text.ShouldBe("abc");
+        vm.Document.Text.ShouldBe("abc");
         vm.IsTruncated.ShouldBeTrue();
     }
 
@@ -63,7 +63,7 @@ public sealed class ContainerFilePreviewViewModelTests
         await vm.LoadAsync();
 
         vm.Message.ShouldBe("permission denied");
-        vm.Text.ShouldBeNull();
+        vm.Document.Text.ShouldBeEmpty();
         vm.IsLoading.ShouldBeFalse();
     }
 
@@ -82,7 +82,7 @@ public sealed class ContainerFilePreviewViewModelTests
         access.Release("/a.txt");
         await stale;
 
-        vm.Text.ShouldBe("b");
+        vm.Document.Text.ShouldBe("b");
         vm.Message.ShouldBeNull();
         vm.IsLoading.ShouldBeFalse();
     }

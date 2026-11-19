@@ -12,7 +12,7 @@ namespace KubeUI.Features.Helm.Charts;
 public sealed class HelmChartsView : KubeUIView<HelmChartsViewModel>
 {
     /// <inheritdoc />
-    [RequiresUnreferencedCode("DynamicTableView creates columns from runtime Helm chart metadata.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Xaml.Behaviors.Interactivity is rooted for the Helm lifecycle EventTriggerBehavior in the trimmed desktop build.")]
     protected override object Build(HelmChartsViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);
@@ -56,7 +56,7 @@ public sealed class HelmChartsView : KubeUIView<HelmChartsViewModel>
                     .MaxWidth(760)
             },
             table.Row(1));
-        Interaction.GetBehaviors(root).Add(new EventTriggerBehavior
+        root.Behaviors(new EventTriggerBehavior
         {
             EventName = nameof(Loaded),
             Actions = [new InvokeCommandAction { Command = vm.RefreshCommand }]

@@ -34,7 +34,6 @@ public sealed class Fluent : AvaloniaStyles
     private readonly ColorPaletteResources _lightPalette = CreateLightPalette();
     private readonly ColorPaletteResources _darkPalette = CreateDarkPalette();
 
-    [RequiresUnreferencedCode("Fluent styles load Avalonia styles from runtime XAML resources.")]
     public Fluent()
     {
         Add(new SemiTheme { Locale = s_locale });
@@ -242,7 +241,7 @@ public sealed class Fluent : AvaloniaStyles
         RegionColor = Color("#1E1E1E")
     };
 
-    [RequiresUnreferencedCode("Calls Avalonia.Markup.Xaml.Styling.StyleInclude.StyleInclude(Uri)")]
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "ILLink.XamlRoots.xml preserves the XAML loaders used by StyleInclude.")]
     private static StyleInclude CreateStyleInclude(string source) => new(s_baseUri) { Source = new Uri(source) };
 
     private static Color Color(string value) => Avalonia.Media.Color.Parse(value);

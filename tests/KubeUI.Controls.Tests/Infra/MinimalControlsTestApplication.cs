@@ -1,8 +1,10 @@
 using Avalonia;
 using Avalonia.Headless;
 using Avalonia.Markup.Xaml.Styling;
+using Avalonia.Media;
 using Avalonia.Themes.Fluent;
 using KubeUI.Controls.Styles;
+using KubeUI.Foundation.Styles;
 using Semi.Avalonia;
 using Ursa.Themes.Semi;
 
@@ -23,6 +25,9 @@ public sealed class MinimalControlsTestApplication : Application
 {
     public override void Initialize()
     {
+        Resources[Typography.CodeFontFamilyResourceKey] = new FontFamily(Typography.CodeFontFamilyName);
+        Resources[Typography.CodeFontSizeResourceKey] = Typography.DefaultCodeFontSize;
+
         Styles.Add(new FluentTheme());
         Styles.Add(new StyleInclude(new Uri("avares://KubeUI.Foundation"))
         {

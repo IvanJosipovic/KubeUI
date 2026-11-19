@@ -1,3 +1,4 @@
+using AvaloniaEdit.Document;
 using k8s.Models;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources.Workloads.v1.Pod.Services;
@@ -43,9 +44,8 @@ public sealed partial class ContainerFilePreviewViewModel : ViewModelBase, IClus
     /// <summary>The namespace, pod and container identity shown in the header.</summary>
     public string Identity => $"{Object?.Namespace()}/{Object?.Name()}/{ContainerName}";
 
-    /// <summary>The previewed file's text.</summary>
-    [ObservableProperty]
-    public partial string? Text { get; set; }
+    /// <summary>The document holding the previewed file's text.</summary>
+    public TextDocument Document { get; } = new();
 
     /// <summary>Why the file cannot be previewed, when it cannot.</summary>
     [ObservableProperty]
@@ -64,7 +64,7 @@ public sealed partial class ContainerFilePreviewViewModel : ViewModelBase, IClus
     {
         var token = Renew();
         IsLoading = true;
-        Text = null;
+        Document.Text = string.Empty;
         Message = null;
         IsTruncated = false;
         try
@@ -82,7 +82,7 @@ public sealed partial class ContainerFilePreviewViewModel : ViewModelBase, IClus
                 return;
             }
 
-            Text = System.Text.Encoding.UTF8.GetString(content.Content);
+            Document.Text = System.Text.Encoding.UTF8.GetString(content.Content);
             IsTruncated = content.Truncated;
         }
         catch (OperationCanceledException)

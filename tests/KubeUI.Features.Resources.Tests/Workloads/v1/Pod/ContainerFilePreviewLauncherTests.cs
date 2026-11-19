@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using AvaloniaEdit;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
@@ -23,29 +24,30 @@ public sealed class ContainerFilePreviewLauncherTests
     {
         using var workspace = await Application.Current.CreateClusterAsync();
         var access = new FakeContainerFileAccess();
-        access.AddContent("/etc/notes.txt", Text("hello"));
+        const string yaml = "apiVersion: v1\nkind: Pod\nmetadata:\n  name: api\nspec:\n  replicas: 2\n";
+        access.AddContent("/app/config.yaml", Text(yaml));
         var launcher = CreateLauncher(access);
         var pod = CreatePod("launcher-docks");
 
-        await launcher.ShowAsync(workspace, pod, "app", File("/etc/notes.txt", 5));
+        await launcher.ShowAsync(workspace, pod, "app", File("/app/config.yaml", 5));
 
         var preview = BottomDock().VisibleDockables!
             .OfType<ContainerFilePreviewViewModel>()
             .Where(preview => ReferenceEquals(preview.Object, pod))
             .ShouldHaveSingleItem();
-        preview.Title.ShouldBe("notes.txt");
-        preview.Path.ShouldBe("/etc/notes.txt");
+        preview.Title.ShouldBe("config.yaml");
+        preview.Path.ShouldBe("/app/config.yaml");
         preview.Cluster.ShouldBe(workspace);
         preview.Object.ShouldBe(pod);
         preview.ContainerName.ShouldBe("app");
-        preview.Text.ShouldBe("hello");
+        preview.Document.Text.ShouldBe(yaml);
 
         // Documentation capture; no-op unless KUBEUI_TEST_SCREENSHOTS is set.
         var dockControl = new DockControl { Layout = Application.Current.GetRequiredTestService<IFactory>().GetDockable<IRootDock>("Root") };
         using var window = Application.Current.CreateTestWindow(content: dockControl);
         window.Show();
         await TestWait.UntilAsync(
-            () => FindText(dockControl, "hello") is not null,
+            () => FindEditor(dockControl, yaml) is not null,
             3000,
             TestContext.Current.CancellationToken,
             () =>
@@ -137,10 +139,10 @@ public sealed class ContainerFilePreviewLauncherTests
             .GetDockable<IToolDock>("BottomDock")
             .ShouldNotBeNull();
 
-    private static TextBox? FindText(Control view, string text)
+    private static TextEditor? FindEditor(Control view, string text)
         => view.GetVisualDescendants()
-            .OfType<TextBox>()
-            .FirstOrDefault(box => string.Equals(box.Text, text, StringComparison.Ordinal));
+            .OfType<TextEditor>()
+            .FirstOrDefault(editor => string.Equals(editor.Document.Text, text, StringComparison.Ordinal));
 
     private static V1Pod CreatePod(string name) => new()
     {

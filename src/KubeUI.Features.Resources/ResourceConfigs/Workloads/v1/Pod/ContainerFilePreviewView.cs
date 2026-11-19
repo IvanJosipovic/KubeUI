@@ -1,9 +1,15 @@
+using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
+using AvaloniaEdit;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using KubeUI.Controls.Converters;
+using KubeUI.Controls.DependencyInjection;
 using KubeUI.Controls.Layout;
 using KubeUI.Controls.Presentation;
+using KubeUI.Features.Resources.Infrastructure;
+using KubeUI.Features.Resources.Settings;
+using KubeUI.Features.Resources.Workloads.v1.Pod.Behaviors;
 using KubeUI.Features.Resources.Workloads.v1.Pod.ViewModels;
 
 namespace KubeUI.Features.Resources.Workloads.v1.Pod;
@@ -47,13 +53,22 @@ public sealed class ContainerFilePreviewView : KubeUIView<ContainerFilePreviewVi
                     .IsVisible(vm, x => x.Message, converter: new StringNotNullOrEmptyConverter())
                     .TextWrapping(TextWrapping.Wrap)
                     .Margin(0, 4),
-                new ScrollViewer()
-                    .Row(3)
-                    .Content(
-                        new TextBox()
-                            .Text(vm, x => x.Text)
-                            .IsReadOnly(true)
-                            .AcceptsReturn(true)
-                            .TextWrapping(TextWrapping.NoWrap)));
+                CreateEditor(vm).Row(3));
+    }
+
+    private static TextEditor CreateEditor(ContainerFilePreviewViewModel vm)
+    {
+        var editor = new TextEditor()
+            .Document(vm, x => x.Document)
+            .HorizontalScrollBarVisibility(ScrollBarVisibility.Auto)
+            .IsReadOnly(true)
+            .ShowLineNumbers(true)
+            .VerticalScrollBarVisibility(ScrollBarVisibility.Visible)
+            .WordWrap(false)
+            .WithCodeFontSizeKeyBindings(
+                ((IServiceProviderHost)Application.Current!).Services.GetRequiredService<IResourceAppearanceSettings>())
+            .Behaviors(new ContainerFileSyntaxHighlightingBehavior(vm.Path));
+
+        return editor;
     }
 }

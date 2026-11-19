@@ -3,12 +3,15 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using Avalonia.Xaml.Interactivity;
+using AvaloniaEdit;
 using Avalonia.VisualTree;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
 using k8s.Models;
 using KubeUI.Controls.Layout;
 using KubeUI.Features.Clusters.Workspace;
+using KubeUI.Features.Resources.Workloads.v1.Pod.Behaviors;
 using KubeUI.Features.Resources.Workloads.v1.Pod.Services;
 using KubeUI.Features.Resources.Workloads.v1.Pod.ViewModels;
 using Microsoft.Extensions.Logging;
@@ -36,12 +39,21 @@ public sealed class ContainerFilePreviewViewTests
         var binary = ResourcesLanguageManager.Instance.ContainerFileBrowserView_Binary.CurrentValue()!;
         await WaitForAsync(() => HasVisibleText(view, binary));
 
+        var editor = view.GetVisualDescendants().OfType<TextEditor>().ShouldHaveSingleItem();
+        editor.IsReadOnly.ShouldBeTrue();
+        editor.ShowLineNumbers.ShouldBeTrue();
+        editor.FontFamily.ShouldNotBeNull();
+        editor.FontSize.ShouldBeGreaterThan(0);
+        editor.KeyBindings.Count.ShouldBe(4);
+        Interaction.GetBehaviors(editor).OfType<ContainerFileSyntaxHighlightingBehavior>().ShouldHaveSingleItem();
+
         vm.Path = "/var/big.log";
         await vm.LoadAsync();
         var truncated = ResourcesLanguageManager.Instance.ContainerFileBrowserView_PreviewTruncated.CurrentValue()!;
         await WaitForAsync(() => HasVisibleText(view, truncated));
         HasVisibleText(view, binary).ShouldBeFalse();
-        vm.Text.ShouldBe("abc");
+        vm.Document.Text.ShouldBe("abc");
+        editor.Document.Text.ShouldBe("abc");
     }
 
     private static bool HasVisibleText(Control view, string text)
