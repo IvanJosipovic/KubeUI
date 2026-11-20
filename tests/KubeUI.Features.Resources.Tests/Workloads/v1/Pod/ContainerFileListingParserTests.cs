@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using KubeUI.Features.Resources.Workloads.v1.Pod.Services;
 using Shouldly;
@@ -61,7 +62,7 @@ public sealed class ContainerFileListingParserTests
         var builder = new StringBuilder();
         for (var i = 0; i < 10; i++)
         {
-            builder.Append($"f\0/file{i}\0").Append("1\0");
+            builder.Append(CultureInfo.InvariantCulture, $"f\0/file{i}\0").Append("1\0");
         }
 
         var listing = ContainerFileListingParser.Parse(Bytes(builder.ToString()), 3);

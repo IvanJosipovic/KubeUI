@@ -264,7 +264,7 @@ public sealed class ContainerFileBrowserViewModelTests
         await vm.InitializeAsync();
 
         vm.IsUnsupported.ShouldBeTrue();
-        vm.StatusMessage.ShouldContain("find");
+        vm.StatusMessage.ShouldNotBeNull().ShouldContain("find");
         access.Listed.ShouldBeEmpty();
     }
 
@@ -281,7 +281,7 @@ public sealed class ContainerFileBrowserViewModelTests
         await vm.DownloadAsync(vm.Entries[0]);
 
         platform.Verify(picker => picker.SaveFilePickerAsync(It.IsAny<FilePickerSaveOptions>()), Times.Never);
-        vm.StatusMessage.ShouldContain("download limit");
+        vm.StatusMessage.ShouldNotBeNull().ShouldContain("download limit");
     }
 
     [AvaloniaFact]
@@ -300,7 +300,7 @@ public sealed class ContainerFileBrowserViewModelTests
         await vm.DownloadAsync(entry);
 
         access.Read.ShouldBeEmpty();
-        vm.StatusMessage.ShouldContain("download limit");
+        vm.StatusMessage.ShouldNotBeNull().ShouldContain("download limit");
     }
 
     [AvaloniaFact]
@@ -345,7 +345,7 @@ public sealed class ContainerFileBrowserViewModelTests
         await vm.DownloadAsync(vm.Entries[0]);
 
         destination.ToArray().ShouldBe("abc"u8.ToArray());
-        vm.StatusMessage.ShouldContain("Downloaded");
+        vm.StatusMessage.ShouldNotBeNull().ShouldContain("Downloaded");
     }
 
     private static ContainerFileBrowserViewModel CreateViewModel(FakeContainerFileAccess access)
@@ -395,9 +395,9 @@ public sealed class ContainerFileBrowserViewModelTests
     {
         public List<(string Pod, string Namespace, string Container)> Created { get; } = [];
 
-        public IContainerFileAccess Create(ClusterWorkspace cluster, string podName, string @namespace, string containerName)
+        public IContainerFileAccess Create(ClusterWorkspace cluster, string podName, string podNamespace, string containerName)
         {
-            Created.Add((podName, @namespace, containerName));
+            Created.Add((podName, podNamespace, containerName));
             return access;
         }
     }

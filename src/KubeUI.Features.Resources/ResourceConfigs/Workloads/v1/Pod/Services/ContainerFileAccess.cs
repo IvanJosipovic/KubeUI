@@ -27,15 +27,15 @@ public sealed class ContainerFileAccess : IContainerFileAccess
     private readonly string _containerName;
 
     /// <summary>Creates access for one pod and container.</summary>
-    public ContainerFileAccess(ClusterWorkspace cluster, string podName, string @namespace, string containerName)
+    public ContainerFileAccess(ClusterWorkspace cluster, string podName, string podNamespace, string containerName)
     {
         ArgumentNullException.ThrowIfNull(cluster);
         ArgumentException.ThrowIfNullOrWhiteSpace(podName);
-        ArgumentException.ThrowIfNullOrWhiteSpace(@namespace);
+        ArgumentException.ThrowIfNullOrWhiteSpace(podNamespace);
         ArgumentException.ThrowIfNullOrWhiteSpace(containerName);
         _cluster = cluster;
         _podName = podName;
-        _namespace = @namespace;
+        _namespace = podNamespace;
         _containerName = containerName;
     }
 
@@ -210,6 +210,6 @@ public sealed class ContainerFileAccess : IContainerFileAccess
 public sealed class ContainerFileAccessFactory : IContainerFileAccessFactory
 {
     /// <inheritdoc />
-    public IContainerFileAccess Create(ClusterWorkspace cluster, string podName, string @namespace, string containerName)
-        => new ContainerFileAccess(cluster, podName, @namespace, containerName);
+    public IContainerFileAccess Create(ClusterWorkspace cluster, string podName, string podNamespace, string containerName)
+        => new ContainerFileAccess(cluster, podName, podNamespace, containerName);
 }

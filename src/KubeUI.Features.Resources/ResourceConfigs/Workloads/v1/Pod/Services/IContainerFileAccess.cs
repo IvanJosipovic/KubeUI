@@ -76,5 +76,5 @@ public interface IContainerFileAccess
 public interface IContainerFileAccessFactory
 {
     /// <summary>Creates access for one pod and container.</summary>
-    IContainerFileAccess Create(ClusterWorkspace cluster, string podName, string @namespace, string containerName);
+    IContainerFileAccess Create(ClusterWorkspace cluster, string podName, string podNamespace, string containerName);
 }

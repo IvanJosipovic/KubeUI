@@ -160,7 +160,7 @@ public sealed class ContainerFilePreviewLauncherTests
 
     private sealed class FakeContainerFileAccessFactory(IContainerFileAccess access) : IContainerFileAccessFactory
     {
-        public IContainerFileAccess Create(ClusterWorkspace cluster, string podName, string @namespace, string containerName)
+        public IContainerFileAccess Create(ClusterWorkspace cluster, string podName, string podNamespace, string containerName)
             => access;
     }
 
