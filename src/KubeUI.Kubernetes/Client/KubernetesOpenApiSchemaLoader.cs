@@ -315,12 +315,16 @@ public sealed class KubernetesOpenApiSchemaLoader : IDisposable
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
-                    _logger.LogDebug(
-                        ex,
-                        "Unable to load Kubernetes OpenAPI v3 schemas for {name} on attempt {attempt} of {maxAttempts}.",
-                        clusterName,
-                        attempt,
-                        maxAttempts);
+                    // Avoid allocating the logging args array when debug logging is disabled.
+                    if (_logger.IsEnabled(LogLevel.Debug))
+                    {
+                        _logger.LogDebug(
+                            ex,
+                            "Unable to load Kubernetes OpenAPI v3 schemas for {ClusterName} on attempt {Attempt} of {MaxAttempts}.",
+                            clusterName,
+                            attempt,
+                            maxAttempts);
+                    }
 
                     if (attempt < maxAttempts)
                     {

@@ -171,6 +171,10 @@ public sealed partial class PodConsoleViewModel : ViewModelBase, IClusterWorkspa
     public async Task Paste()
     {
         var clipboard = TopLevelAccessor.GetRequired().Clipboard;
+        if (clipboard is null)
+        {
+            return;
+        }
 
         var text = await clipboard.TryGetTextAsync();
 

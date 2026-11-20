@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Text;
 using k8s.Models;
 using KubeUI.Kubernetes;
 
@@ -39,10 +40,10 @@ public sealed partial class PodLogsViewModel
 
         StringBuilder builder = new();
         builder.AppendLine("# KubeUI multi-resource log export");
-        builder.AppendLine($"# Exported: {DateTimeOffset.UtcNow:O}");
-        builder.AppendLine($"# Resources: {_scopeItems.Count}");
-        builder.AppendLine($"# Resolved Pods: {AvailablePods.Count}");
-        builder.AppendLine($"# Streams: {PlannedStreamCount}");
+        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"# Exported: {DateTimeOffset.UtcNow:O}"));
+        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"# Resources: {_scopeItems.Count}"));
+        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"# Resolved Pods: {AvailablePods.Count}"));
+        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"# Streams: {PlannedStreamCount}"));
         builder.AppendLine("# Cross-stream lines are shown in arrival order.");
         for (var i = 0; i < _scopeItems.Count; i++)
         {

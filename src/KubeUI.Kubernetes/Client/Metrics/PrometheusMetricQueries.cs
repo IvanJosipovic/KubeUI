@@ -173,7 +173,12 @@ internal sealed class PrometheusMetricQueries(
     private async Task<SeriesLoadResult> QuerySeriesAsync(Cluster cluster, ResolvedPrometheusEndpoint endpoint, IPrometheusProvider provider, MetricQueryDefinition definition, MetricCategory category, DateTimeOffset start, DateTimeOffset end, int stepSeconds, int frames, CancellationToken cancellationToken)
     {
         var query = provider.BuildQuery(category, definition.Name, definition.Options);
-        logger.LogDebug("Requesting Prometheus metric {Metric} for cluster {Cluster} over {Start:u} to {End:u} at {StepSeconds}s step.", definition.Name, cluster.Name, start, end, stepSeconds);
+        // Avoid allocating the logging args array when debug logging is disabled.
+        if (logger.IsEnabled(LogLevel.Debug))
+        {
+            logger.LogDebug("Requesting Prometheus metric {Metric} for cluster {Cluster} over {Start:u} to {End:u} at {StepSeconds}s step.", definition.Name, cluster.Name, start, end, stepSeconds);
+        }
+
         var response = await ExecuteAsync(cluster, endpoint, provider, query, start, end, stepSeconds, cancellationToken).ConfigureAwait(false);
         if (response == null || !string.Equals(response.Status, "success", StringComparison.Ordinal))
         {
@@ -183,7 +188,14 @@ internal sealed class PrometheusMetricQueries(
         }
         var series = NormalizeResultSet(definition.Name, response, frames, stepSeconds);
         if (series.Count == 0)
-            logger.LogDebug("Prometheus returned no series for metric {Metric} on cluster {Cluster}.", definition.Name, cluster.Name);
+        {
+            // Avoid allocating the logging args array when debug logging is disabled.
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug("Prometheus returned no series for metric {Metric} on cluster {Cluster}.", definition.Name, cluster.Name);
+            }
+        }
+
         return new SeriesLoadResult(series, false);
     }
 

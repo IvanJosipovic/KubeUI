@@ -1,5 +1,6 @@
 namespace KubeUI.Testing.Utilities;
 
+#pragma warning disable CA1068 // CancellationToken intentionally precedes the optional beforePoll callback; this public helper is called from many test projects, so reordering would break numerous positional call sites
 public static class TestWait
 {
     public static Task UntilAsync(
@@ -30,10 +31,7 @@ public static class TestWait
         Action? beforePoll = null)
     {
         ArgumentNullException.ThrowIfNull(predicate);
-        if (timeout <= TimeSpan.Zero)
-        {
-            throw new ArgumentOutOfRangeException(nameof(timeout));
-        }
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(timeout, TimeSpan.Zero);
 
         var deadline = DateTime.UtcNow + timeout;
         var interval = new PeriodicTimer(pollInterval ?? TimeSpan.FromMilliseconds(25));
@@ -81,10 +79,7 @@ public static class TestWait
         where T : class
     {
         ArgumentNullException.ThrowIfNull(valueFactory);
-        if (timeout <= TimeSpan.Zero)
-        {
-            throw new ArgumentOutOfRangeException(nameof(timeout));
-        }
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(timeout, TimeSpan.Zero);
 
         var deadline = DateTime.UtcNow + timeout;
         var interval = new PeriodicTimer(pollInterval ?? TimeSpan.FromMilliseconds(25));
@@ -130,3 +125,4 @@ public static class TestWait
             beforePoll: beforePoll);
     }
 }
+#pragma warning restore CA1068

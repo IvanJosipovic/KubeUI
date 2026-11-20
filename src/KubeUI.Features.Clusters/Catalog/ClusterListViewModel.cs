@@ -1,4 +1,5 @@
 using System.Collections.Specialized;
+using System.Globalization;
 using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
 using Avalonia.Controls.Selection;
@@ -131,7 +132,7 @@ public sealed partial class ClusterListViewModel : ViewModelBase, IDisposable
         ContentDialogSettings settings = new()
         {
             Title = ClustersLanguageManager.Instance.ClusterListView_Delete_Title.CurrentValue()!,
-            Content = string.Format(ClustersLanguageManager.Instance.ClusterListView_Delete_Content.CurrentValue()!, cluster.Runtime.Name)!,
+            Content = string.Format(CultureInfo.CurrentCulture, ClustersLanguageManager.Instance.ClusterListView_Delete_Content.CurrentValue()!, cluster.Runtime.Name)!,
             PrimaryButtonText = ClustersLanguageManager.Instance.ClusterListView_Delete_Primary.CurrentValue()!,
             SecondaryButtonText = ClustersLanguageManager.Instance.ClusterListView_Delete_Secondary.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary
@@ -183,7 +184,7 @@ public sealed partial class ClusterListViewModel : ViewModelBase, IDisposable
             {
                 _notificationManager.Show(new Notification(
                     ClustersLanguageManager.Instance.ClusterListView_AddKubeConfig.CurrentValue()!,
-                    string.Format(ClustersLanguageManager.Instance.ClusterListView_InvalidKubeConfig.CurrentValue()!, path),
+                    string.Format(CultureInfo.CurrentCulture, ClustersLanguageManager.Instance.ClusterListView_InvalidKubeConfig.CurrentValue()!, path),
                     NotificationType.Warning));
                 continue;
             }
@@ -207,7 +208,7 @@ public sealed partial class ClusterListViewModel : ViewModelBase, IDisposable
         ContentDialogSettings settings = new()
         {
             Title = ClustersLanguageManager.Instance.ClusterListView_RemoveKubeConfig.CurrentValue()!,
-            Content = string.Format(ClustersLanguageManager.Instance.ClusterListView_RemoveKubeConfig_Content.CurrentValue()!, path),
+            Content = string.Format(CultureInfo.CurrentCulture, ClustersLanguageManager.Instance.ClusterListView_RemoveKubeConfig_Content.CurrentValue()!, path),
             PrimaryButtonText = ClustersLanguageManager.Instance.ClusterListView_Delete_Primary.CurrentValue()!,
             SecondaryButtonText = ClustersLanguageManager.Instance.ClusterListView_Delete_Secondary.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary

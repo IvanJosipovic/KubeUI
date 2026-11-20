@@ -95,34 +95,57 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
         var kube = cluster.Client as k8s.Kubernetes;
         if (kube == null)
         {
-            _logger.LogDebug("Skipping metrics initialization for cluster {Name} because the Kubernetes client is not available.", cluster.Name);
+            // Avoid allocating the logging args array when debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Skipping metrics initialization for cluster {Name} because the Kubernetes client is not available.", cluster.Name);
+            }
+
             return;
         }
 
         var settings = _settings.GetClusterMetricsSettings(cluster);
         var configuredType = settings.MetricsServiceType;
-        _logger.LogInformation(
-            "Initializing metrics for cluster {Name}. Configured backend: {MetricsBackend}, configured Prometheus provider: {PrometheusProvider}.",
-            cluster.Name,
-            configuredType,
-            settings.PrometheusProviderKind?.ToString() ?? "auto");
+        // Avoid allocating the logging args array when information logging is disabled.
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation(
+                "Initializing metrics for cluster {Name}. Configured backend: {MetricsBackend}, configured Prometheus provider: {PrometheusProvider}.",
+                cluster.Name,
+                configuredType,
+                settings.PrometheusProviderKind?.ToString() ?? "auto");
+        }
 
         if (configuredType == MetricsServiceType.None)
         {
-            _logger.LogInformation("Metrics are disabled for cluster {Name}.", cluster.Name);
+            // Avoid allocating the logging args array when information logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation("Metrics are disabled for cluster {Name}.", cluster.Name);
+            }
+
             return;
         }
 
         if (configuredType == MetricsServiceType.KubernetesMetricsServer)
         {
-            _logger.LogInformation("Cluster {Name} is configured to use Kubernetes Metrics Server.", cluster.Name);
+            // Avoid allocating the logging args array when information logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation("Cluster {Name} is configured to use Kubernetes Metrics Server.", cluster.Name);
+            }
+
             await StartKubernetesMetricsAsync(cluster).ConfigureAwait(false);
             return;
         }
 
         if (configuredType is MetricsServiceType.Prometheus or MetricsServiceType.Auto)
         {
-            _logger.LogInformation("Cluster {Name} will attempt Prometheus metrics initialization.", cluster.Name);
+            // Avoid allocating the logging args array when information logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation("Cluster {Name} will attempt Prometheus metrics initialization.", cluster.Name);
+            }
             var discoverySettings = configuredType == MetricsServiceType.Auto ? new ClusterMetricsSettings() : settings;
             var promReady = await TryStartPrometheusAsync(cluster, kube, discoverySettings, configuredType == MetricsServiceType.Auto).ConfigureAwait(false);
             if (promReady)
@@ -156,7 +179,11 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
     {
         if (_cluster != null)
         {
-            _logger.LogDebug("Stopping metrics service for cluster {Name}.", _cluster.Name);
+            // Avoid allocating the logging args array when debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Stopping metrics service for cluster {Name}.", _cluster.Name);
+            }
         }
 
         _lifecycleCancellationTokenSource?.Cancel();
@@ -201,25 +228,39 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
     {
         try
         {
-            _logger.LogDebug(
-                "Resolving Prometheus endpoint for cluster {Name}. Configured provider: {Provider}.",
-                cluster.Name,
-                settings.PrometheusProviderKind?.ToString() ?? "auto");
+            // Avoid allocating the logging args array when debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug(
+                    "Resolving Prometheus endpoint for cluster {Name}. Configured provider: {Provider}.",
+                    cluster.Name,
+                    settings.PrometheusProviderKind?.ToString() ?? "auto");
+            }
+
             var resolved = await ResolvePrometheusEndpointAsync(kube, settings, autoDiscoverOnly, _lifecycleCancellationTokenSource?.Token ?? CancellationToken.None).ConfigureAwait(false);
             if (resolved.Endpoint == null || resolved.Provider == null)
             {
-                _logger.LogInformation("No Prometheus endpoint could be resolved for cluster {Name}.", cluster.Name);
+                // Avoid allocating the logging args array when information logging is disabled.
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    _logger.LogInformation("No Prometheus endpoint could be resolved for cluster {Name}.", cluster.Name);
+                }
+
                 return false;
             }
 
             _resolvedPrometheusEndpoint = resolved.Endpoint;
             _resolvedPrometheusProvider = resolved.Provider;
             await _prometheusQueryClient.PrepareAsync(cluster, resolved.Endpoint, _lifecycleCancellationTokenSource?.Token ?? CancellationToken.None).ConfigureAwait(false);
-            _logger.LogInformation(
-                "Resolved Prometheus provider {Provider} for cluster {Name}: {Endpoint}.",
-                resolved.Provider.Kind,
-                cluster.Name,
-                DescribeEndpoint(resolved.Endpoint));
+            // Avoid allocating the logging args array when information logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation(
+                    "Resolved Prometheus provider {Provider} for cluster {Name}: {Endpoint}.",
+                    resolved.Provider.Kind,
+                    cluster.Name,
+                    DescribeEndpoint(resolved.Endpoint));
+            }
             if (string.IsNullOrWhiteSpace(resolved.Endpoint.Namespace)
                 && string.IsNullOrWhiteSpace(resolved.Endpoint.DirectUrl))
             {
@@ -248,10 +289,15 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
 
             ActiveMetricsBackend = ActiveMetricsBackend.Prometheus(resolved.Provider.Kind);
             IsMetricsAvailable = true;
-            _logger.LogInformation(
-                "Prometheus metrics activated for cluster {Name} using provider {Provider}.",
-                cluster.Name,
-                resolved.Provider.Kind);
+            // Avoid allocating the logging args array when information logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation(
+                    "Prometheus metrics activated for cluster {Name} using provider {Provider}.",
+                    cluster.Name,
+                    resolved.Provider.Kind);
+            }
+
             return true;
         }
         catch (OperationCanceledException) when (_lifecycleCancellationTokenSource?.IsCancellationRequested == true)
@@ -260,7 +306,12 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
         }
         catch (Exception ex)
         {
-            _logger.LogDebug(ex, "Unable to initialize Prometheus metrics for cluster {Name}", cluster.Name);
+            // Avoid allocating the logging args array when debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug(ex, "Unable to initialize Prometheus metrics for cluster {Name}", cluster.Name);
+            }
+
             _resolvedPrometheusEndpoint = null;
             _resolvedPrometheusProvider = null;
             await _prometheusQueryClient.ResetAsync().ConfigureAwait(false);
@@ -271,18 +322,32 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
 
     private async Task StartKubernetesMetricsAsync(Cluster cluster)
     {
-        _logger.LogDebug("Checking Kubernetes Metrics Server availability for cluster {Name}.", cluster.Name);
+        // Avoid allocating the logging args array when debug logging is disabled.
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Checking Kubernetes Metrics Server availability for cluster {Name}.", cluster.Name);
+        }
+
         if (!await _kubernetesMetricsCollector.StartAsync(cluster, _lifecycleCancellationTokenSource?.Token ?? CancellationToken.None).ConfigureAwait(false))
         {
             ActiveMetricsBackend = ActiveMetricsBackend.None;
             IsMetricsAvailable = false;
-            _logger.LogInformation("Kubernetes Metrics Server is not available for cluster {Name}.", cluster.Name);
+            // Avoid allocating the logging args array when information logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation("Kubernetes Metrics Server is not available for cluster {Name}.", cluster.Name);
+            }
+
             return;
         }
 
         ActiveMetricsBackend = ActiveMetricsBackend.KubernetesMetricsServer;
         IsMetricsAvailable = true;
-        _logger.LogInformation("Kubernetes Metrics Server metrics activated for cluster {Name}.", cluster.Name);
+        // Avoid allocating the logging args array when information logging is disabled.
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("Kubernetes Metrics Server metrics activated for cluster {Name}.", cluster.Name);
+        }
     }
 
     private async Task<(ResolvedPrometheusEndpoint? Endpoint, IPrometheusProvider? Provider)> ResolvePrometheusEndpointAsync(
@@ -298,10 +363,15 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
                 throw new InvalidOperationException($"Unknown Prometheus provider '{settings.PrometheusProviderKind}'.");
             }
 
-            _logger.LogInformation(
-                "Using explicitly configured Prometheus provider {Provider} for cluster {Name}.",
-                selectedProvider.Kind,
-                _cluster?.Name);
+            // Avoid allocating the logging args array when information logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation(
+                    "Using explicitly configured Prometheus provider {Provider} for cluster {Name}.",
+                    selectedProvider.Kind,
+                    _cluster?.Name);
+            }
+
             return (await selectedProvider.TryResolveServiceAsync(kube, settings, cancellationToken).ConfigureAwait(false), selectedProvider);
         }
 
@@ -314,19 +384,33 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
 
             try
             {
-                _logger.LogDebug("Trying Prometheus provider {Provider} for cluster {Name}.", provider.Kind, _cluster?.Name);
+                // Avoid allocating the logging args array when debug logging is disabled.
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Trying Prometheus provider {Provider} for cluster {Name}.", provider.Kind, _cluster?.Name);
+                }
+
                 var endpoint = await provider.TryResolveServiceAsync(kube, settings, cancellationToken).ConfigureAwait(false);
                 if (endpoint != null)
                 {
-                    _logger.LogInformation(
-                        "Prometheus provider {Provider} matched cluster {Name}: {Endpoint}.",
-                        provider.Kind,
-                        _cluster?.Name,
-                        DescribeEndpoint(endpoint));
+                    // Avoid allocating the logging args array when information logging is disabled.
+                    if (_logger.IsEnabled(LogLevel.Information))
+                    {
+                        _logger.LogInformation(
+                            "Prometheus provider {Provider} matched cluster {Name}: {Endpoint}.",
+                            provider.Kind,
+                            _cluster?.Name,
+                            DescribeEndpoint(endpoint));
+                    }
+
                     return (endpoint, provider);
                 }
 
-                _logger.LogDebug("Prometheus provider {Provider} did not match cluster {Name}.", provider.Kind, _cluster?.Name);
+                // Avoid allocating the logging args array when debug logging is disabled.
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Prometheus provider {Provider} did not match cluster {Name}.", provider.Kind, _cluster?.Name);
+                }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -334,11 +418,20 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
             }
             catch (Exception ex)
             {
-                _logger.LogDebug(ex, "Prometheus provider {Provider} did not resolve for cluster {Name}", provider.Kind, _cluster?.Name);
+                // Avoid allocating the logging args array when debug logging is disabled.
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug(ex, "Prometheus provider {Provider} did not resolve for cluster {Name}", provider.Kind, _cluster?.Name);
+                }
             }
         }
 
-        _logger.LogInformation("No Prometheus providers matched cluster {Name}.", _cluster?.Name);
+        // Avoid allocating the logging args array when information logging is disabled.
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("No Prometheus providers matched cluster {Name}.", _cluster?.Name);
+        }
+
         return (null, null);
     }
 

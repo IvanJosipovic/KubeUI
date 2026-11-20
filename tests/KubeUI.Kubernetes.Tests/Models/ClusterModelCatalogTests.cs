@@ -209,7 +209,7 @@ public sealed class ClusterModelCatalogTests
         var schema = catalog.OpenApiSchemas.GetSchema("Root");
 
         schema.ShouldBeSameAs(target);
-        schema.Properties.ShouldContainKey("name");
+        schema.ShouldNotBeNull().Properties.ShouldNotBeNull().ShouldContainKey("name");
     }
 
     [Fact]
@@ -251,7 +251,7 @@ public sealed class ClusterModelCatalogTests
         catalog.RegisterOpenApiSchema(rootDocument);
         catalog.RegisterOpenApiSchema(targetDocument);
 
-        catalog.OpenApiSchemas.ExpandReferences(catalog.OpenApiSchemas.GetSchema("Root")!.Properties["spec"])
+        catalog.OpenApiSchemas.ExpandReferences(catalog.OpenApiSchemas.GetSchema("Root")!.Properties!["spec"])
             .ShouldBeSameAs(catalog.OpenApiSchemas.GetSchema("Target"));
     }
 }

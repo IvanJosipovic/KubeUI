@@ -44,10 +44,10 @@ public sealed class MRDiffDetectionViewModelTests
     public async Task Provider_log_diffs_are_searchable_and_clear_restarts_tail_replay()
     {
         await using var fixture = await CrossplaneTestCluster.CreateWithProviderAsync(
-            TestContext.Current.CancellationToken,
             [CreateProviderPod(restartCount: 0)],
             providerName: "provider-demo",
-            widgetUid: "uid-1");
+            widgetUid: "uid-1",
+            cancellationToken: TestContext.Current.CancellationToken);
         var runtime = fixture.Cluster.Cluster;
 
         // The fake API server assigns uids; read the observed widget uid so the provider
@@ -79,7 +79,7 @@ public sealed class MRDiffDetectionViewModelTests
         var factory = Application.Current.GetRequiredTestService<IFactory>();
         var mainViewModel = Application.Current.GetRequiredTestService<MainViewModel>();
         var previousLayout = mainViewModel.Layout;
-        var layout = factory.CreateLayout();
+        var layout = factory.CreateLayout() ?? throw new InvalidOperationException("Factory did not create a layout.");
         factory.InitLayout(layout);
         mainViewModel.Layout = layout;
         using var instrumentation = new Instrumentation();
@@ -176,7 +176,7 @@ public sealed class MRDiffDetectionViewModelTests
             yamlViewModel.Object.ApiVersion.ShouldBe("example.com/v1");
             yamlViewModel.Object.Kind.ShouldBe("Widget");
             factory.GetDockable<IToolDock>("BottomDock")!.VisibleDockables
-                .ShouldContain(yamlViewModel);
+                .ShouldNotBeNull().ShouldContain(yamlViewModel);
         }
         finally
         {
@@ -208,14 +208,14 @@ public sealed class MRDiffDetectionViewModelTests
         await WaitForAsync(() => GetRows(viewModel).Length == 3);
         await CrossplaneTestCluster.CreateCustomResourceAsync(
             fixture,
-            TestContext.Current.CancellationToken,
             providerKind,
             new GenericKubernetesObject
             {
                 ApiVersion = "pkg.crossplane.io/v1",
                 Kind = "Provider",
                 Metadata = new V1ObjectMeta { Name = "provider-another" }
-            });
+            },
+            TestContext.Current.CancellationToken);
         await WaitForAsync(() => viewModel.Providers.Count == 2);
         viewModel.SelectedProvider?.Name.ShouldBe("provider-demo");
 
@@ -249,14 +249,14 @@ public sealed class MRDiffDetectionViewModelTests
         await WaitForAsync(() => GetRows(viewModel).Length == 0);
         await CrossplaneTestCluster.DeleteCustomResourceAsync(
             fixture,
-            TestContext.Current.CancellationToken,
             providerKind,
             new GenericKubernetesObject
             {
                 ApiVersion = "pkg.crossplane.io/v1",
                 Kind = "Provider",
                 Metadata = new V1ObjectMeta { Name = "provider-demo" }
-            });
+            },
+            TestContext.Current.CancellationToken);
         await WaitForAsync(() => viewModel.Status == CrossplaneLanguageManager.Instance.MRDiffDetectionView_SelectProvider.CurrentValue());
         viewModel.SelectedProvider.ShouldBeNull();
         var seedingToken = await seedStarted.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
@@ -345,8 +345,8 @@ public sealed class MRDiffDetectionViewModelTests
     public async Task Provider_monitor_failures_are_reported_in_status()
     {
         await using var fixture = await CrossplaneTestCluster.CreateWithProviderAsync(
-            TestContext.Current.CancellationToken,
-            [CreateProviderPod(restartCount: 0)]);
+            [CreateProviderPod(restartCount: 0)],
+            cancellationToken: TestContext.Current.CancellationToken);
         var runtime = fixture.Cluster.Cluster;
         GroupApiVersionKind providerKind = new("pkg.crossplane.io", "v1", "Provider", "providers");
 

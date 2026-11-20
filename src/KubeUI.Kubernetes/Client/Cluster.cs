@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Reactive.Linq;
 using System.Text;
@@ -94,10 +95,10 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     /// </summary>
     public Func<KubernetesClientConfiguration, IKubernetes>? KubernetesClientFactory { get; set; }
 
-    [ObservableProperty]
     /// <summary>
     /// Gets or sets the model catalog used to resolve registered and cluster-specific resource models.
     /// </summary>
+    [ObservableProperty]
     public partial ClusterModelCatalog ModelCatalog { get; set; }
 
     [ObservableProperty]
@@ -112,6 +113,9 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     /// <param name="settings">Cluster settings store.</param>
     /// <param name="serviceProvider">Application service provider.</param>
     /// <param name="dispatcher">Dispatcher used for UI-bound observable updates.</param>
+    /// <param name="jsonSerializer">Serializer used for Kubernetes JSON payloads.</param>
+    /// <param name="yamlSerializer">Serializer used for Kubernetes YAML documents.</param>
+    /// <param name="metricsService">Optional metrics service.</param>
     /// <param name="authorizationOptions">Authorization behavior options.</param>
     public Cluster(ILogger<Cluster> logger, ILoggerFactory loggerFactory, ClusterModelCatalog modelCatalog, IClusterSettingsStore settings, IServiceProvider serviceProvider, IThreadDispatcher dispatcher, IKubernetesJsonSerializer jsonSerializer, IKubernetesYamlSerializer yamlSerializer, IMetricsService? metricsService = null, IOptions<ClusterAuthorizationOptions>? authorizationOptions = null)
     {
@@ -179,7 +183,12 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             }
 
             await _connectionLimiter.WaitAsync();
-            _logger.LogInformation("Connecting to {name}", Name);
+            // Avoid allocating the logging args array when information logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation("Connecting to {Name}", Name);
+            }
+
             var wasConnected = Connected;
 
             try
@@ -280,7 +289,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                     catch (Exception ex)
                     {
                         activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
-                        _logger.LogError(ex, "Error connecting to {name}", Name);
+                        _logger.LogError(ex, "Error connecting to {Name}", Name);
 
                         Connected = false;
 
@@ -293,7 +302,11 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             finally
             {
                 _connectionLimiter.Release();
-                _logger.LogInformation("Connected to {name}", Name);
+                // Avoid allocating the logging args array when information logging is disabled.
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    _logger.LogInformation("Connected to {Name}", Name);
+                }
             }
 
             if (Connected)
@@ -341,7 +354,11 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         {
             await StopMetricsInitializationAsync().ConfigureAwait(false);
             await _connectionLimiter.WaitAsync().ConfigureAwait(false);
-            _logger.LogInformation("Disconnecting from {name}", Name);
+            // Avoid allocating the logging args array when information logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation("Disconnecting from {Name}", Name);
+            }
 
             try
             {
@@ -376,7 +393,11 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                 _connectionLimiter.Release();
             }
 
-            _logger.LogInformation("Disconnected from {name}", Name);
+            // Avoid allocating the logging args array when information logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation("Disconnected from {Name}", Name);
+            }
         }
         finally
         {
@@ -477,7 +498,11 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         var seedTask = container.GetOrCreateSeedTask(() =>
             Task.Run(() => SeedResourceCoreAsync<T>(informerCancellationToken)));
 
-        _logger.LogDebug("Seed requested for {kind}.", kind);
+        // Avoid allocating the logging args array when debug logging is disabled.
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Seed requested for {Kind}.", kind);
+        }
 
         try
         {
@@ -492,10 +517,20 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
         if (waitForReady)
         {
-            _logger.LogDebug("Waiting for resource readiness for {type}.", typeof(T));
+            // Avoid allocating the logging args array when debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Waiting for resource readiness for {Type}.", typeof(T));
+            }
+
             using var readinessCancellation = CreateReadinessToken(informerCancellationToken, cancellationToken);
             await IsResourceReady<T>(readinessCancellation?.Token ?? informerCancellationToken).ConfigureAwait(false);
-            _logger.LogDebug("Resource readiness reached for {type}.", typeof(T));
+
+            // Avoid allocating the logging args array when debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Resource readiness reached for {Type}.", typeof(T));
+            }
         }
 
         if (!container.IsSeeded)
@@ -607,7 +642,14 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
     private async Task SeedResourceCoreAsync<T>(CancellationToken informerCancellationToken) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        _logger.LogDebug("Starting seed initialization for {type}.", typeof(T));
+        // Avoid allocating the logging args array when debug logging is disabled.
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Starting seed initialization for {Type}.", typeof(T));
+        }
+
+        // Seeding before connect is valid; informer creation is guarded by permissions and happens after connect.
+        var client = Client!;
 
         var kind = GroupApiVersionKind.From<T>();
 
@@ -615,12 +657,13 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
         if (CanI<T>(Verb.List) && CanI<T>(Verb.Watch))
         {
-            var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), resourceListLimit: 10000);
+            var informer = new ResourceInformer<T>(client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), resourceListLimit: 10000);
             container.Informers.Add(informer);
             container.InformerRegistrations.Add(informer.Register(GetResourceInformerCallback<T>()));
             informer.StartWatching();
 
-            _resourceInformerTasks.Add(Task.Run(() => informer.RunInfinite(informerCancellationToken)));
+            // RunInfinite handles cancellation internally; passing the token to Task.Run would skip the task and its cleanup.
+            _resourceInformerTasks.Add(Task.Run(() => informer.RunInfinite(informerCancellationToken), CancellationToken.None));
         }
         else
         {
@@ -643,17 +686,22 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
                 if (CanI<T>(Verb.List, ns) && CanI<T>(Verb.Watch, ns))
                 {
-                    var informer = new ResourceInformer<T>(Client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), @namespace: ns, resourceListLimit: 10000);
+                    var informer = new ResourceInformer<T>(client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), @namespace: ns, resourceListLimit: 10000);
                     container.Informers.Add(informer);
                     container.InformerRegistrations.Add(informer.Register(GetResourceInformerCallback<T>()));
                     informer.StartWatching();
 
-                    _resourceInformerTasks.Add(Task.Run(() => informer.RunInfinite(informerCancellationToken)));
+                    // RunInfinite handles cancellation internally; passing the token to Task.Run would skip the task and its cleanup.
+            _resourceInformerTasks.Add(Task.Run(() => informer.RunInfinite(informerCancellationToken), CancellationToken.None));
                 }
             }
         }
 
-        _logger.LogDebug("Finished seed initialization for {type}.", typeof(T));
+        // Avoid allocating the logging args array when debug logging is disabled.
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Finished seed initialization for {Type}.", typeof(T));
+        }
 
         if (container.IsSeeded)
         {
@@ -733,7 +781,12 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         {
             if (!TryGetKubernetesClient(out var kubernetesClient))
             {
-                _logger.LogDebug("Skipping API discovery refresh for disconnected cluster {name}.", Name);
+                // Avoid allocating the logging args array when debug logging is disabled.
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Skipping API discovery refresh for disconnected cluster {Name}.", Name);
+                }
+
                 return;
             }
 
@@ -744,11 +797,11 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         catch (Exception ex)
         {
             Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
-            _logger.LogError(ex, "Unable to refresh API discovery for cluster {name}", Name);
+            _logger.LogError(ex, "Unable to refresh API discovery for cluster {Name}", Name);
         }
     }
 
-    private bool TryGetKubernetesClient(out k8s.Kubernetes client)
+    private bool TryGetKubernetesClient([NotNullWhen(true)] out k8s.Kubernetes? client)
     {
         client = Client as k8s.Kubernetes;
         return client is not null;
@@ -771,7 +824,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         catch (Exception ex)
         {
             Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
-            _logger.LogError(ex, "Unable to load OpenAPI schemas for cluster {name}", Name);
+            _logger.LogError(ex, "Unable to load OpenAPI schemas for cluster {Name}", Name);
         }
     }
 
@@ -826,7 +879,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     public async Task DeleteResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var kind = item.GetResourceKind(ModelCatalog);
-        using var client = Client.GetGenericClient(kind);
+        using var client = Client!.GetGenericClient(kind);
 
         if (string.IsNullOrEmpty(item.Namespace()))
         {
@@ -862,7 +915,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             return container.Items;
         }
 
-        throw new Exception("Resource has not been Seeded " + kind);
+        throw new InvalidOperationException("Resource has not been Seeded " + kind);
     }
 
     public IObservable<int> GetResourceCount<T>() where T : class, IKubernetesObject<V1ObjectMeta>, new()
@@ -883,7 +936,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     public async Task AddOrUpdateResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
         var kind = item.GetResourceKind(ModelCatalog);
-        using var client = Client.GetGenericClient(kind);
+        using var client = Client!.GetGenericClient(kind);
         var isNamespaced = IsResourceNamespaced(kind);
 
         if (isNamespaced && string.IsNullOrEmpty(item.Namespace()))
@@ -948,7 +1001,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             {
                 if (!ModelCatalog.TryGetResourceKind(generic.ApiVersion ?? string.Empty, generic.Kind ?? string.Empty, out var resourceKind))
                 {
-                    exceptions.Add(new Exception($"Unable to find resource model for {generic.ApiVersion + "/" + generic.Kind}"));
+                    exceptions.Add(new InvalidOperationException($"Unable to find resource model for {generic.ApiVersion + "/" + generic.Kind}"));
                     continue;
                 }
 

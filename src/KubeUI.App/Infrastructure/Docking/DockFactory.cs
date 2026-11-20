@@ -130,7 +130,8 @@ public class DockFactory : Factory
         {
             var chat = _serviceProvider.GetRequiredService<AgentChatViewModel>();
             chat.SetPinnedBounds(0, 0, 420, 0); //todo make this dynamic based on window size
-            _rootDock.RightPinnedDockables.Add(chat);
+            // Root dock and its pinned collection are initialized above in CreateLayout.
+            _rootDock!.RightPinnedDockables!.Add(chat);
         }
 
         return _rootDock;
@@ -176,7 +177,7 @@ public class DockFactory : Factory
     /// Runs dispose on closed Dockables
     /// </summary>
     /// <param name="dockable"></param>
-    public override void CloseDockable(IDockable dockable)
+    public override void CloseDockable(IDockable? dockable)
     {
         try
         {

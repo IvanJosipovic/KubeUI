@@ -56,7 +56,14 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             CanRefreshPermissions,
             cancellationToken => Task.Delay(PermissionRefreshDebounce, cancellationToken),
             _disposeCancellation.Token,
-            exception => _logger.LogDebug(exception, "Unable to refresh permissions for cluster {ClusterName}", Runtime.Name));
+            exception =>
+            {
+                // Avoid allocating the logging arguments when debug logging is disabled.
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug(exception, "Unable to refresh permissions for cluster {ClusterName}", Runtime.Name);
+                }
+            });
 
         SubscribeRuntime();
         SubscribeNamespaces();
@@ -255,7 +262,12 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             if (!IsConnectGenerationCurrent(generation))
             {
                 await WaitForDisabledDisconnectAsync().ConfigureAwait(false);
-                _logger.LogDebug(ex, "Ignoring error from stale connection attempt for cluster {ClusterName}", Runtime.Name);
+                // Avoid allocating the logging arguments when debug logging is disabled.
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug(ex, "Ignoring error from stale connection attempt for cluster {ClusterName}", Runtime.Name);
+                }
+
                 return;
             }
 
@@ -524,7 +536,11 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         catch (Exception ex)
         {
             Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
-            _logger.LogDebug(ex, "Unable to evaluate permissions for {Kind}", resourceConfig.Kind);
+            // Avoid allocating the logging arguments when debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug(ex, "Unable to evaluate permissions for {Kind}", resourceConfig.Kind);
+            }
         }
     }
 
@@ -755,55 +771,78 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             resourceConfig.Initialize(this);
             resourceConfig.Configure(crd);
 
-            _logger.LogDebug(
-                "Custom resource definition discovered for {ClusterName}: Definition={DefinitionName}; ResourceKind={ResourceKind}; Revision={Revision}",
-                Runtime.Name,
-                definitionName,
-                resourceConfig.Kind,
-                revision);
+            // Avoid allocating the logging arguments when debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug(
+                    "Custom resource definition discovered for {ClusterName}: Definition={DefinitionName}; ResourceKind={ResourceKind}; Revision={Revision}",
+                    Runtime.Name,
+                    definitionName,
+                    resourceConfig.Kind,
+                    revision);
+            }
 
             await UpdateResourceConfigPermissionsAndEvaluateAsync(resourceConfig).ConfigureAwait(false);
 
-            _logger.LogDebug(
-                "Custom resource definition access evaluated for {ClusterName}: Definition={DefinitionName}; ResourceKind={ResourceKind}; PermissionsLoaded={PermissionsLoaded}; CanListAndWatch={CanListAndWatch}; Revision={Revision}",
-                Runtime.Name,
-                definitionName,
-                resourceConfig.Kind,
-                resourceConfig.PermissionsLoaded,
-                resourceConfig.CanListAndWatch,
-                revision);
+            // Avoid allocating the logging arguments when debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug(
+                    "Custom resource definition access evaluated for {ClusterName}: Definition={DefinitionName}; ResourceKind={ResourceKind}; PermissionsLoaded={PermissionsLoaded}; CanListAndWatch={CanListAndWatch}; Revision={Revision}",
+                    Runtime.Name,
+                    definitionName,
+                    resourceConfig.Kind,
+                    resourceConfig.PermissionsLoaded,
+                    resourceConfig.CanListAndWatch,
+                    revision);
+            }
 
             if (!resourceConfig.CanListAndWatch)
             {
-                _logger.LogDebug(
-                    "Custom resource definition skipped for {ClusterName}: list/watch access denied; Definition={DefinitionName}; ResourceKind={ResourceKind}",
-                    Runtime.Name,
-                    definitionName,
-                    resourceConfig.Kind);
+                // Avoid allocating the logging arguments when debug logging is disabled.
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug(
+                        "Custom resource definition skipped for {ClusterName}: list/watch access denied; Definition={DefinitionName}; ResourceKind={ResourceKind}",
+                        Runtime.Name,
+                        definitionName,
+                        resourceConfig.Kind);
+                }
+
                 return;
             }
 
             if (!_customResourceDefinitionRevisions.TryGetValue(definitionName, out var currentRevision)
                 || currentRevision != revision)
             {
-                _logger.LogDebug(
-                    "Custom resource definition skipped for {ClusterName}: stale revision; Definition={DefinitionName}; ResourceKind={ResourceKind}; CurrentRevision={CurrentRevision}; Revision={Revision}",
-                    Runtime.Name,
-                    definitionName,
-                    resourceConfig.Kind,
-                    currentRevision,
-                    revision);
+                // Avoid allocating the logging arguments when debug logging is disabled.
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug(
+                        "Custom resource definition skipped for {ClusterName}: stale revision; Definition={DefinitionName}; ResourceKind={ResourceKind}; CurrentRevision={CurrentRevision}; Revision={Revision}",
+                        Runtime.Name,
+                        definitionName,
+                        resourceConfig.Kind,
+                        currentRevision,
+                        revision);
+                }
+
                 return;
             }
 
             RemoveOtherCustomResourceVersions(resourceConfig.Kind);
             _resourceConfigs[resourceConfig.Kind] = resourceConfig;
-            _logger.LogDebug(
-                "Custom resource definition registered for {ClusterName}: Definition={DefinitionName}; ResourceKind={ResourceKind}; ConfigCount={ConfigCount}",
-                Runtime.Name,
-                definitionName,
-                resourceConfig.Kind,
-                _resourceConfigs.Count);
+            // Avoid allocating the logging arguments when debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug(
+                    "Custom resource definition registered for {ClusterName}: Definition={DefinitionName}; ResourceKind={ResourceKind}; ConfigCount={ConfigCount}",
+                    Runtime.Name,
+                    definitionName,
+                    resourceConfig.Kind,
+                    _resourceConfigs.Count);
+            }
+
             NotifyResourceConfigProcessed(resourceConfig);
         }
         catch (OperationCanceledException) when (_disposeCancellation.IsCancellationRequested)

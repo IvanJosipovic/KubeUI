@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Text;
 using Avalonia.Controls;
@@ -325,7 +326,7 @@ public sealed class UpdateAvailableViewModelTests
     private static double GetResource(Application application, string key)
     {
         application.TryGetResource(key, application.ActualThemeVariant, out var value).ShouldBeTrue();
-        return Convert.ToDouble(value);
+        return Convert.ToDouble(value, CultureInfo.InvariantCulture);
     }
 
     private sealed class StubHttpMessageHandler(

@@ -23,9 +23,9 @@ public sealed class WalkthroughDemoResourcesTests
             var deploymentUid = deployment.Metadata?.Uid;
             Assert.False(string.IsNullOrWhiteSpace(deploymentUid));
 
-            var replicaSet = Assert.Single(replicaSets.Where(candidate =>
+            var replicaSet = Assert.Single(replicaSets, candidate =>
                 candidate.Metadata?.OwnerReferences?.Any(owner =>
-                    owner.Kind == V1Deployment.KubeKind && owner.Uid == deploymentUid) == true));
+                    owner.Kind == V1Deployment.KubeKind && owner.Uid == deploymentUid) == true);
             var ownedPods = pods.Where(pod =>
                 pod.Metadata?.OwnerReferences?.Any(owner =>
                     owner.Kind == V1ReplicaSet.KubeKind

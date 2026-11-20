@@ -19,9 +19,10 @@ public sealed class RecordingTests
             .Speak(
                 "The default namespace graph is ready. I'll zoom into the web Deployment and follow its child resources.",
                 root => root is VisualizationView view
-                    && view.ViewModel.SelectedNamespaces.Any(
+                    && view.ViewModel is { } vm
+                    && vm.SelectedNamespaces.Any(
                         namespaceResource => namespaceResource.Metadata?.Name == "default")
-                    && view.ViewModel.Graph is { } graph
+                    && vm.Graph is { } graph
                     && graph.Resources.Count(resource =>
                         resource is V1Pod pod && pod.Metadata?.NamespaceProperty == "default") >= 10
                     && graph.Resources.Any(resource =>

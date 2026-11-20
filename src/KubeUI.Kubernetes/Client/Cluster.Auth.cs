@@ -248,7 +248,12 @@ public partial class Cluster
         }
         catch (Exception ex)
         {
-            _logger.LogDebug(ex, "Unable to load Kubernetes authorization rules for namespace {Namespace}", @namespace);
+            // Avoid allocating the logging args array when debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug(ex, "Unable to load Kubernetes authorization rules for namespace {Namespace}", @namespace);
+            }
+
             return IncompleteNamespaceRules;
         }
     }

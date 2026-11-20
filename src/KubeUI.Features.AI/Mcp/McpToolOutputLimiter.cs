@@ -39,10 +39,7 @@ public static class McpToolOutputLimiter
         public void Advance(int count)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(count);
-            if (count > _buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, _buffer.Length);
             if (count > maximumBytes - _written)
             {
                 throw new McpToolOutputLimitExceededException();

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Text.Json;
 using Helm.NET;
 using KubeUI.Features.Helm.Helm;
@@ -152,7 +153,7 @@ internal static class HelmWalkthroughService
         var helmHome = Path.Combine(
             Path.GetTempPath(),
             "kubeui-docs-helm",
-            Environment.ProcessId.ToString(),
+            Environment.ProcessId.ToString(CultureInfo.InvariantCulture),
             Guid.NewGuid().ToString("N"));
         var configDirectory = Path.Combine(helmHome, "config");
         var cacheDirectory = Path.Combine(helmHome, "cache");

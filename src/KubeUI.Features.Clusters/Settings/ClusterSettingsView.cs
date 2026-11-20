@@ -35,7 +35,8 @@ public sealed class ClusterSettingsView : KubeUIView<ClusterSettingsViewModel>
     {
         return new Grid()
             .Cols("*,2*")
-            .IsVisible(vm, x => !x.Cluster.Runtime.ListNamespaces)
+            // This view is always built for a cluster-bound view model.
+            .IsVisible(vm, x => !x.Cluster!.Runtime.ListNamespaces)
             .ToolTip_Tip(ClustersLanguageManager.Instance.ClusterSettingsView_ManualNamespacesTooltip.ToBinding())
             .Children(
                 new Label()

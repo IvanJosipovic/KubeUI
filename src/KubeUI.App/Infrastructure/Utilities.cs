@@ -76,7 +76,9 @@ public static class Utilities
             }
         }
 
+#pragma warning disable CA2254 // Forwarding helper: the message is caller-supplied and must be logged verbatim.
         logger.LogError(ex, message);
+#pragma warning restore CA2254
     }
 
     internal static string GetMeaningfulExceptionMessage(Exception ex)

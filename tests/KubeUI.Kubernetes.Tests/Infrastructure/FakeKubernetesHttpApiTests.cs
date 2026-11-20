@@ -289,7 +289,7 @@ public sealed class FakeKubernetesHttpApiTests
 
         var nodes = await KubernetesMetricsClient.GetKubernetesNodesMetricsAsync(client, TestContext.Current.CancellationToken);
         var pods = await KubernetesMetricsClient.GetKubernetesPodsMetricsAsync(client, TestContext.Current.CancellationToken);
-        var apiGroups = await client.Apis.GetAPIVersionsAsync();
+        var apiGroups = await client.Apis.GetAPIVersionsAsync(TestContext.Current.CancellationToken);
 
         var nodeMetric = nodes.Items.ShouldHaveSingleItem();
         nodeMetric.Metadata.Name.ShouldBe("node-1");
@@ -459,10 +459,12 @@ public sealed class FakeKubernetesHttpApiTests
         using var stream = await response.Content.ReadAsStreamAsync(TestContext.Current.CancellationToken);
         using var reader = new StreamReader(stream);
 
-        var added = JsonNode.Parse((await reader.ReadLineAsync(TestContext.Current.CancellationToken)
-            .AsTask().WaitAsync(TimeSpan.FromSeconds(3)))!)!;
-        var bookmark = JsonNode.Parse((await reader.ReadLineAsync(TestContext.Current.CancellationToken)
-            .AsTask().WaitAsync(TimeSpan.FromSeconds(3)))!)!;
+        var addedLine = await reader.ReadLineAsync(TestContext.Current.CancellationToken)
+            .AsTask().WaitAsync(TimeSpan.FromSeconds(3), TestContext.Current.CancellationToken);
+        var added = JsonNode.Parse(addedLine!)!;
+        var bookmarkLine = await reader.ReadLineAsync(TestContext.Current.CancellationToken)
+            .AsTask().WaitAsync(TimeSpan.FromSeconds(3), TestContext.Current.CancellationToken);
+        var bookmark = JsonNode.Parse(bookmarkLine!)!;
 
         added["type"]!.GetValue<string>().ShouldBe("ADDED");
         added["object"]!["metadata"]!["name"]!.GetValue<string>().ShouldBe("pod");

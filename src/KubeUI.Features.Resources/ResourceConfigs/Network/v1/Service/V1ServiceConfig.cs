@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia.Collections;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
@@ -77,7 +78,7 @@ public sealed partial class V1ServiceConfig : ResourceConfig<V1Service>
                     ? null
                     : new AvaloniaList<MenuItemViewModel>(selectedItem.Spec.Ports.Select(p => new MenuItemViewModel()
                     {
-                        Title = string.Format(ResourcesLanguageManager.Instance.V1ServiceConfig_MenuItem_PortFormat.CurrentValue()!, p.Name, p.Port),
+                        Title = string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.V1ServiceConfig_MenuItem_PortFormat.CurrentValue()!, p.Name, p.Port),
                         Command = PortForwardServiceCommand,
                         CommandParameter = new ArrayList { selectedItem, p },
                     }).ToList()),
@@ -95,7 +96,7 @@ public sealed partial class V1ServiceConfig : ResourceConfig<V1Service>
             ContentDialogSettings settings = new()
             {
                 Title = ResourcesLanguageManager.Instance.ResourceListView_PortForward_Title.CurrentValue()!,
-                Content = string.Format(ResourcesLanguageManager.Instance.ResourceListView_PortForward_Content.CurrentValue()!, containerPort.Port, pf.LocalPort),
+                Content = string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.ResourceListView_PortForward_Content.CurrentValue()!, containerPort.Port, pf.LocalPort),
                 PrimaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_PortForward_Primary.CurrentValue()!,
                 SecondaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_PortForward_Secondary.CurrentValue()!,
                 DefaultButton = FAContentDialogButton.Secondary

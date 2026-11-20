@@ -67,7 +67,7 @@ public sealed class McpToolAuditFilterTests
 
         outcome.Outcome.ShouldBe(McpToolOutcome.Succeeded);
         outcome.Result.ShouldBeSameAs(toolResult);
-        outcome.Result.IsError.ShouldNotBe(true);
+        outcome.Result.ShouldNotBeNull().IsError.ShouldNotBe(true);
     }
 
     [Fact]

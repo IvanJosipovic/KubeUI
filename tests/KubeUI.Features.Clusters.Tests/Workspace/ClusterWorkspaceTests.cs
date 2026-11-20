@@ -1213,7 +1213,13 @@ public class ClusterWorkspaceTests
 
     private static IClusterResourceConfig? GetCustomResourceConfig(ClusterWorkspace workspace, V1CustomResourceDefinition crd)
     {
-        var version = crd.Spec?.Versions?.FirstOrDefault(x => x.Served && x.Storage)?.Name;
+        var spec = crd.Spec;
+        if (spec is null)
+        {
+            return null;
+        }
+
+        var version = spec.Versions?.FirstOrDefault(x => x.Served && x.Storage)?.Name;
         if (version == null)
         {
             return null;
@@ -1221,9 +1227,9 @@ public class ClusterWorkspaceTests
 
         return workspace.GetResourceConfigs().FirstOrDefault(x =>
             x.IsCustomResource
-            && string.Equals(x.Kind.Group, crd.Spec.Group, StringComparison.Ordinal)
+            && string.Equals(x.Kind.Group, spec.Group, StringComparison.Ordinal)
             && string.Equals(x.Kind.ApiVersion, version, StringComparison.Ordinal)
-            && string.Equals(x.Kind.Kind, crd.Spec.Names.Kind, StringComparison.Ordinal));
+            && string.Equals(x.Kind.Kind, spec.Names.Kind, StringComparison.Ordinal));
     }
 
     private static Task SeedResourceAsync(IClusterRuntime runtime, GroupApiVersionKind resourceKind)

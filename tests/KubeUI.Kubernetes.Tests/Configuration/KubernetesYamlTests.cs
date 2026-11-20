@@ -9,11 +9,13 @@ using YamlDotNet.Core;
 
 namespace KubeUI.Kubernetes.Tests.Configuration;
 
+#pragma warning disable CA1711 // xUnit collection-definition type name is the collection key; the "Collection" suffix is the xUnit convention
 [CollectionDefinition(Name, DisableParallelization = true)]
 public sealed class KubernetesYamlCollection
 {
     public const string Name = "Kubernetes YAML";
 }
+#pragma warning restore CA1711
 
 [Collection(KubernetesYamlCollection.Name)]
 public class KubernetesYamlTests : IDisposable
@@ -28,6 +30,7 @@ public class KubernetesYamlTests : IDisposable
     public void Dispose()
     {
         KubernetesYaml.UseStaticContext = _previousStaticContext;
+        GC.SuppressFinalize(this);
     }
 
     [Fact]
@@ -901,7 +904,7 @@ public class KubernetesYamlTests : IDisposable
               unknownField: value
             """.ReplaceLineEndings("\n");
 
-        Should.Throw<YamlException>(() => KubernetesYaml.Deserialize(yaml, typeof(V1Pod), strict: true));
+        Should.Throw<YamlException>(() => KubernetesYaml.Deserialize<V1Pod>(yaml, strict: true));
     }
 
     [Fact]

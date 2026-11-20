@@ -356,12 +356,14 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         _watchers.Clear();
     }
 
+#pragma warning disable CA2215 // The fake owns the shared backend; base.Dispose would dispose the inner handler on client disconnect and break reconnect.
     protected override void Dispose(bool disposing)
     {
         // The production Kubernetes client owns the handler it receives and disposes it when a
         // client disconnects. This fake is the shared backend owner; Shutdown is called by the
         // test harness after the final client has disconnected.
     }
+#pragma warning restore CA2215
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
@@ -718,8 +720,8 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
                     continue;
                 }
 
-                var roleRules = string.Equals(roleBinding.RoleRef?.Kind, "ClusterRole", StringComparison.Ordinal)
-                    ? GetClusterRole(roleBinding.RoleRef.Name)?.Rules
+                var roleRules = roleBinding.RoleRef is { Kind: "ClusterRole" } clusterRoleRef
+                    ? GetClusterRole(clusterRoleRef.Name)?.Rules
                     : GetRole(roleBinding.RoleRef?.Name, roleBinding.Metadata?.NamespaceProperty)?.Rules;
                 if (roleRules is not null)
                 {
@@ -2703,8 +2705,8 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
                     continue;
                 }
 
-                var rules = string.Equals(roleBinding.RoleRef?.Kind, "ClusterRole", StringComparison.Ordinal)
-                    ? GetClusterRole(roleBinding.RoleRef.Name)?.Rules
+                var rules = roleBinding.RoleRef is { Kind: "ClusterRole" } clusterRoleRef
+                    ? GetClusterRole(clusterRoleRef.Name)?.Rules
                     : GetRole(roleBinding.RoleRef?.Name, roleBinding.Metadata?.NamespaceProperty)?.Rules;
                 if (RulesAllow(rules, group, resource, verb, subresource, resourceName))
                 {
@@ -3088,7 +3090,8 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         public override long Length => 0;
         public override long Position { get => 0; set => throw new NotSupportedException(); }
         public override void Flush() => throw new NotSupportedException();
-        public override int Read(byte[] buffer, int offset, int count) => ReadAsync(buffer.AsMemory(offset, count), cancellationToken).GetAwaiter().GetResult();
+        // Stream.Read is synchronous, so block on a Task (never on an incomplete ValueTask directly).
+        public override int Read(byte[] buffer, int offset, int count) => ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask().GetAwaiter().GetResult();
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token = default)
         {
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, token, shutdownCancellation);

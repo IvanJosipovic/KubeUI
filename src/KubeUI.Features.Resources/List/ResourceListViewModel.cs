@@ -301,6 +301,7 @@ public partial class ResourceListViewModel<[DynamicallyAccessedMembers(Dynamical
             _itemsNotifications = null;
         }
         UnsubscribeFromSelectedNamespaces();
+        GC.SuppressFinalize(this);
     }
 
     private async Task LoadAsync(Task seedTask)

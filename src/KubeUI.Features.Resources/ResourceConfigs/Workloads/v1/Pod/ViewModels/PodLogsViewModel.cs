@@ -189,44 +189,44 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable, IPodL
     /// <summary>Gets whether the selected Pod can navigate to its controller logs.</summary>
     public bool CanJumpToController => !IsMultiScope && SessionResolution?.ParentResource is not null;
 
-    [ObservableProperty]
     /// <summary>Gets or sets the cluster that supplies the logs.</summary>
+    [ObservableProperty]
     public partial IClusterRuntime Cluster { get; set; }
 
-    [ObservableProperty]
     /// <summary>Gets or sets the primary selected resource.</summary>
+    [ObservableProperty]
     public partial IKubernetesObject<V1ObjectMeta>? Object { get; set; }
 
-    [ObservableProperty]
     /// <summary>Gets or sets the container name, or an empty value for all containers.</summary>
+    [ObservableProperty]
     public partial string ContainerName { get; set; }
 
-    [ObservableProperty]
     /// <summary>Gets the document containing the displayed log output.</summary>
+    [ObservableProperty]
     public partial TextDocument Logs { get; set; } = CreateLogDocument();
 
-    [ObservableProperty]
     /// <summary>Gets the Pods currently resolved from the selected scopes.</summary>
+    [ObservableProperty]
     public partial IReadOnlyList<V1Pod> AvailablePods { get; set; } = [];
 
-    [ObservableProperty]
     /// <summary>Gets the containers available in the resolved Pods.</summary>
+    [ObservableProperty]
     public partial IReadOnlyList<PodLogContainerOption> AvailableContainers { get; set; } = [];
 
-    [ObservableProperty]
     /// <summary>Gets or sets whether previous container logs are requested.</summary>
+    [ObservableProperty]
     public partial bool Previous { get; set; }
 
-    [ObservableProperty]
     /// <summary>Gets or sets whether timestamps are shown in the log output.</summary>
+    [ObservableProperty]
     public partial bool Timestamps { get; set; }
 
-    [ObservableProperty]
     /// <summary>Gets or sets whether output keeps the editor at the bottom.</summary>
+    [ObservableProperty]
     public partial bool AutoScrollToBottom { get; set; } = true;
 
-    [ObservableProperty]
     /// <summary>Gets or sets whether long log lines wrap in the editor.</summary>
+    [ObservableProperty]
     public partial bool WordWrap { get; set; }
 
     private bool _showResourceNames;
@@ -257,12 +257,12 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable, IPodL
         }
     }
 
-    [ObservableProperty]
     /// <summary>Gets or sets the request to resume following the newest logs.</summary>
+    [ObservableProperty]
     public partial bool FollowLogsRequested { get; set; }
 
-    [ObservableProperty]
     /// <summary>Gets the number of log entries received while the display was paused.</summary>
+    [ObservableProperty]
     public partial int PendingLogCount { get; private set; }
 
     /// <summary>Gets whether log entries are waiting to be displayed.</summary>
@@ -278,40 +278,40 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable, IPodL
             ? string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.PodLogsView_LogUpdatesPaused.CurrentValue()!, PendingLogCount)
             : ResourcesLanguageManager.Instance.PodLogsView_UpdatesPaused.CurrentValue()!;
 
-    [ObservableProperty]
     /// <summary>Gets or sets the persisted editor scroll offset.</summary>
+    [ObservableProperty]
     public partial Vector ScrollOffset { get; set; }
 
-    [ObservableProperty]
     /// <summary>Gets or sets the resolved single-scope session state.</summary>
+    [ObservableProperty]
     public partial PodLogSessionState? SessionState { get; set; }
 
-    [ObservableProperty]
     /// <summary>Gets or sets the resolved single-scope log target.</summary>
+    [ObservableProperty]
     public partial PodLogSessionResolution? SessionResolution { get; set; }
 
-    [ObservableProperty]
     /// <summary>Gets or sets the resolved multi-scope session state.</summary>
+    [ObservableProperty]
     public partial PodLogMultiSessionState? MultiSessionState { get; set; }
 
-    [ObservableProperty]
     /// <summary>Gets or sets the resolved multi-scope log targets.</summary>
+    [ObservableProperty]
     public partial PodLogMultiSessionResolution? MultiSessionResolution { get; set; }
 
-    [ObservableProperty]
     /// <summary>Gets whether previous logs are available for the current target.</summary>
+    [ObservableProperty]
     public partial bool PreviousLogsAvailable { get; set; }
 
-    [ObservableProperty]
     /// <summary>Gets whether the view is resolving or opening log streams.</summary>
+    [ObservableProperty]
     public partial bool IsConnecting { get; set; }
 
-    [ObservableProperty]
     /// <summary>Gets whether at least one log stream is active.</summary>
+    [ObservableProperty]
     public partial bool IsConnected { get; set; }
 
-    [ObservableProperty]
     /// <summary>Gets the number of streams planned for the current selection.</summary>
+    [ObservableProperty]
     public partial int PlannedStreamCount { get; set; }
 
     /// <summary>Gets whether the selected targets exceed the recommended stream count.</summary>
@@ -326,8 +326,8 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable, IPodL
             StreamWarningThreshold)
         : string.Empty;
 
-    [ObservableProperty]
     /// <summary>Gets the latest user-visible connection error.</summary>
+    [ObservableProperty]
     public partial string? ConnectionError { get; set; }
 
     /// <summary>Resolves the selected resources and opens their log streams.</summary>
@@ -593,30 +593,30 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable, IPodL
         UpdateScopePresentation(updateSelection);
     }
 
-    [RelayCommand]
     /// <summary>Clears the displayed and buffered log output.</summary>
+    [RelayCommand]
     public void Clear()
     {
         ClearOutput();
     }
 
-    [RelayCommand]
     /// <summary>Reconnects and reloads the current log session.</summary>
+    [RelayCommand]
     public Task Refresh()
     {
         return Connect();
     }
 
-    [RelayCommand]
     /// <summary>Requests that the editor follow the newest output.</summary>
+    [RelayCommand]
     public void FollowLogs()
     {
         AutoScrollToBottom = true;
         FollowLogsRequested = true;
     }
 
-    [RelayCommand]
     /// <summary>Exports the current log output through the platform picker.</summary>
+    [RelayCommand]
     public Task DownloadLogs()
     {
         var suggestedFileName = BuildSuggestedFileName();
@@ -641,8 +641,8 @@ public sealed partial class PodLogsViewModel : ViewModelBase, IDisposable, IPodL
         }
     }
 
-    [RelayCommand]
     /// <summary>Opens the logs for the selected resource's controller.</summary>
+    [RelayCommand]
     public Task JumpToControlledByLogs()
     {
         var parentResource = SessionResolution?.ParentResource;

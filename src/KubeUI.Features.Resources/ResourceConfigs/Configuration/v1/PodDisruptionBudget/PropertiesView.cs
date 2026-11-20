@@ -22,15 +22,15 @@ public sealed class PropertiesView : ViewBase<V1PodDisruptionBudget>
                     .Value(vm.Spec.Selector?.MatchLabels.Count ?? 0),
                 new PropertyItem()
                     .Key(ResourcesLanguageManager.Instance.PodDisruptionBudgetPropertiesView_Disruptions_Allowed.CurrentValue()!)
-                    .Value(vm.Status.DisruptionsAllowed),
+                    .Value((object?)vm.Status.DisruptionsAllowed ?? string.Empty),
                 new PropertyItem()
                     .Key(ResourcesLanguageManager.Instance.PodDisruptionBudgetPropertiesView_Current_Healthy.CurrentValue()!)
-                    .Value(vm.Status.CurrentHealthy),
+                    .Value((object?)vm.Status.CurrentHealthy ?? string.Empty),
                 new PropertyItem()
                     .Key(ResourcesLanguageManager.Instance.PodDisruptionBudgetPropertiesView_Desired_Healthy.CurrentValue()!)
-                    .Value(vm.Status.DesiredHealthy),
+                    .Value((object?)vm.Status.DesiredHealthy ?? string.Empty),
                 new PropertyItem()
                     .Key(ResourcesLanguageManager.Instance.PodDisruptionBudgetPropertiesView_Expected_Pods.CurrentValue()!)
-                    .Value(vm.Status.ExpectedPods));
+                    .Value((object?)vm.Status.ExpectedPods ?? string.Empty));
     }
 }

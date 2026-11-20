@@ -13,10 +13,10 @@ public sealed class PropertiesView : ViewBase<V1PriorityClass>
             .Children(
                 new PropertyItem()
                     .Key(ResourcesLanguageManager.Instance.PriorityClassPropertiesView_Value.CurrentValue()!)
-                    .Value(vm.Value),
+                    .Value((object?)vm.Value ?? string.Empty),
                 new PropertyItem()
                     .Key(ResourcesLanguageManager.Instance.PriorityClassPropertiesView_Global_Default.CurrentValue()!)
-                    .Value(vm.GlobalDefault),
+                    .Value((object?)vm.GlobalDefault ?? string.Empty),
                 new PropertyItem()
                     .Key(ResourcesLanguageManager.Instance.PriorityClassPropertiesView_Preemption_Policy.CurrentValue()!)
                     .Value(vm.PreemptionPolicy),

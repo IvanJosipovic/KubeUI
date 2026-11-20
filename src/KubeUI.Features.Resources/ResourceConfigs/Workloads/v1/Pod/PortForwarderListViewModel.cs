@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia.Controls.Selection;
 using DynamicData;
 using DynamicData.Binding;
@@ -39,7 +40,7 @@ public sealed partial class PortForwarderListViewModel : ViewModelBase, IInitial
         ContentDialogSettings settings = new()
         {
             Title = ResourcesLanguageManager.Instance.PortForwarderListView_Remove_Title.CurrentValue()!,
-            Content = string.Format(ResourcesLanguageManager.Instance.PortForwarderListView_Remove_Content.CurrentValue()!, pf.Namespace, pf.Name, pf.Port),
+            Content = string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.PortForwarderListView_Remove_Content.CurrentValue()!, pf.Namespace, pf.Name, pf.Port),
             PrimaryButtonText = ResourcesLanguageManager.Instance.PortForwarderListView_Remove_Primary.CurrentValue()!,
             SecondaryButtonText = ResourcesLanguageManager.Instance.PortForwarderListView_Remove_Secondary.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary

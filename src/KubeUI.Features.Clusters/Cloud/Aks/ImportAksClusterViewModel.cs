@@ -1,3 +1,4 @@
+using System.Globalization;
 using KubeUI.Features.Azure;
 using KubeUI.Kubernetes;
 
@@ -77,6 +78,7 @@ public sealed partial class ImportAksClusterViewModel : ViewModelBase
                         statusText,
                         Environment.NewLine,
                         string.Format(
+                            CultureInfo.CurrentCulture,
                             ClustersLanguageManager.Instance.ImportAksClusterView_AccountFormat.CurrentValue()!,
                             authenticationStatus.AzureCliUsername ?? "(unknown)",
                             authenticationStatus.AzureCliTenantId ?? "(unknown)"));
@@ -206,7 +208,7 @@ public sealed partial class ImportAksClusterViewModel : ViewModelBase
 
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
-                StatusMessage = string.Format(ClustersLanguageManager.Instance.ImportAksClusterView_Imported.CurrentValue()!, SelectedCluster.Name);
+                StatusMessage = string.Format(CultureInfo.CurrentCulture, ClustersLanguageManager.Instance.ImportAksClusterView_Imported.CurrentValue()!, SelectedCluster.Name);
             });
         }
         catch (Exception ex)

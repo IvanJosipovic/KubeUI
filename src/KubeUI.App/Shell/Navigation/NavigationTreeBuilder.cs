@@ -425,7 +425,11 @@ internal sealed class NavigationTreeBuilder
         }
         catch (Exception ex)
         {
-            _logger.LogDebug(ex, "Unable to evaluate port forward permissions for cluster {Cluster}", cluster.Runtime.Name);
+            // Guard avoids allocating the params array when Debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug(ex, "Unable to evaluate port forward permissions for cluster {Cluster}", cluster.Runtime.Name);
+            }
             return false;
         }
     }

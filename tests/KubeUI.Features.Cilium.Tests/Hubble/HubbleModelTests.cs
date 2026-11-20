@@ -1,5 +1,4 @@
 using KubeUI.Features.Cilium.Hubble;
-using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Features.Cilium.Hubble.Models;
 using Shouldly;
 
@@ -61,8 +60,9 @@ public sealed class HubbleModelTests
         var builder = new ServiceMapGraphBuilder();
         builder.AddFlow(Flow("old", timestamp: DateTime.UtcNow.AddMinutes(-10)));
 
-        builder.Build(TimeSpan.FromMinutes(15), namespaces: ["team-a", "team-b"]).EdgeCount.ShouldBe(1);
-        builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a", "team-b"]).EdgeCount.ShouldBe(0);
+        builder.Build(TimeSpan.FromMinutes(15), namespaces: ["team-a", "team-b"],
+            cancellationToken: TestContext.Current.CancellationToken).EdgeCount.ShouldBe(1);
+        builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a", "team-b"], cancellationToken: TestContext.Current.CancellationToken).EdgeCount.ShouldBe(0);
     }
 
     [Fact]
@@ -71,8 +71,8 @@ public sealed class HubbleModelTests
         var builder = new ServiceMapGraphBuilder();
         builder.AddFlow(Flow("scoped"));
 
-        builder.Build(TimeSpan.FromMinutes(5)).NodeCount.ShouldBe(0);
-        builder.GetFlows(TimeSpan.FromMinutes(5)).ShouldBeEmpty();
+        builder.Build(TimeSpan.FromMinutes(5), cancellationToken: TestContext.Current.CancellationToken).NodeCount.ShouldBe(0);
+        builder.GetFlows(TimeSpan.FromMinutes(5), cancellationToken: TestContext.Current.CancellationToken).ShouldBeEmpty();
     }
 
     [Fact]
@@ -83,14 +83,15 @@ public sealed class HubbleModelTests
         flow.SourceWorkload = "client";
         flow.SourceWorkloadKind = "Deployment";
         builder.AddFlow(flow);
-        var node = builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a"]).Nodes.Single(candidate => candidate.Name == "client");
+        var node = builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a"], cancellationToken: TestContext.Current.CancellationToken).Nodes.Single(candidate => candidate.Name == "client");
 
         builder.GetFlowsForNode(
                 node,
                 TimeSpan.FromMinutes(5),
                 aggregateByNamespace: false,
                 showOnlyErrors: false,
-                namespaces: ["team-a"])
+                namespaces: ["team-a"],
+                cancellationToken: TestContext.Current.CancellationToken)
             .ShouldContain(flow);
     }
 
@@ -100,7 +101,7 @@ public sealed class HubbleModelTests
         var builder = new ServiceMapGraphBuilder();
         builder.AddFlow(Flow("pod-kind"));
 
-        var pod = builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a", "team-b"])
+        var pod = builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a", "team-b"], cancellationToken: TestContext.Current.CancellationToken)
             .Nodes.Single(node => node.Id == "team-a/client");
 
         pod.WorkloadType.ShouldBe("Pod");
@@ -114,7 +115,8 @@ public sealed class HubbleModelTests
         builder.AddFlow(Flow("error", FlowVerdict.Error));
         builder.AddFlow(Flow("forward", FlowVerdict.Forwarded));
 
-        var graph = builder.Build(TimeSpan.FromMinutes(5), showOnlyErrors: true, namespaces: ["team-a", "team-b"]);
+        var graph = builder.Build(TimeSpan.FromMinutes(5), showOnlyErrors: true, namespaces: ["team-a", "team-b"],
+            cancellationToken: TestContext.Current.CancellationToken);
 
         graph.EdgeCount.ShouldBe(1);
         graph.Edges[0].FlowCount.ShouldBe(2);
@@ -136,7 +138,7 @@ public sealed class HubbleModelTests
         builder.AddFlow(first);
         builder.AddFlow(second);
 
-        builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a", "team-b"]).NodeCount.ShouldBe(3);
+        builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a", "team-b"], cancellationToken: TestContext.Current.CancellationToken).NodeCount.ShouldBe(3);
     }
 
     [Fact]
@@ -174,7 +176,7 @@ public sealed class HubbleModelTests
         builder.AddFlow(second);
         builder.AddFlow(third);
 
-        var graph = builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a", "team-b"]);
+        var graph = builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a", "team-b"], cancellationToken: TestContext.Current.CancellationToken);
 
         graph.NodeCount.ShouldBe(2);
         graph.EdgeCount.ShouldBe(1);
@@ -227,7 +229,7 @@ public sealed class HubbleModelTests
 
         var builder = new ServiceMapGraphBuilder();
         builder.AddFlow(mappedFlow);
-        var graph = builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a", "team-b"]);
+        var graph = builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a", "team-b"], cancellationToken: TestContext.Current.CancellationToken);
 
         graph.Nodes.Single(node => node.Name == "broker").AccessPoints
             .Single().ApplicationProtocols.ShouldBeEmpty();
@@ -265,7 +267,7 @@ public sealed class HubbleModelTests
 
         var builder = new ServiceMapGraphBuilder();
         builder.AddFlow(mappedFlow);
-        var graph = builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a", "team-b"]);
+        var graph = builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a", "team-b"], cancellationToken: TestContext.Current.CancellationToken);
 
         graph.Nodes.Single(node => node.Name == "server").AccessPoints
             .Single().ApplicationProtocols.ShouldBe([protocol]);
@@ -291,7 +293,7 @@ public sealed class HubbleModelTests
 
         var builder = new ServiceMapGraphBuilder();
         builder.AddFlow(mappedFlow);
-        var graph = builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a", "team-b"]);
+        var graph = builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a", "team-b"], cancellationToken: TestContext.Current.CancellationToken);
 
         graph.Nodes.Single(node => node.Name == "dns").AccessPoints
             .Select(accessPoint => accessPoint.Port)
@@ -310,7 +312,7 @@ public sealed class HubbleModelTests
         var builder = new ServiceMapGraphBuilder();
         builder.AddFlow(flow);
 
-        var graph = builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a"]);
+        var graph = builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a"], cancellationToken: TestContext.Current.CancellationToken);
 
         var external = graph.Nodes.Single(node => node.Name == "api.example.com");
         external.AccessPoints.Select(accessPoint => (accessPoint.Protocol, accessPoint.Port))
@@ -341,7 +343,7 @@ public sealed class HubbleModelTests
         builder.AddFlow(ingress);
         builder.AddFlow(reply);
 
-        var graph = builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a", "team-b"]);
+        var graph = builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a", "team-b"], cancellationToken: TestContext.Current.CancellationToken);
 
         graph.Nodes.Single(node => node.Name == "server").AccessPoints
             .Select(accessPoint => accessPoint.Port)
@@ -354,7 +356,8 @@ public sealed class HubbleModelTests
                 TimeSpan.FromMinutes(5),
                 aggregateByNamespace: false,
                 showOnlyErrors: false,
-                namespaces: ["team-a", "team-b"])
+                namespaces: ["team-a", "team-b"],
+                cancellationToken: TestContext.Current.CancellationToken)
             .ShouldNotContain(reply);
     }
 
@@ -369,7 +372,7 @@ public sealed class HubbleModelTests
         flow.DestinationServiceNamespace = "team-b";
         builder.AddFlow(flow);
 
-        var graph = builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a", "team-b"]);
+        var graph = builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a", "team-b"], cancellationToken: TestContext.Current.CancellationToken);
 
         graph.Nodes.Select(node => node.Id).ShouldContain("service/team-a/frontend");
         graph.Nodes.Select(node => node.Id).ShouldContain("service/team-b/backend");
@@ -397,7 +400,7 @@ public sealed class HubbleModelTests
         builder.AddFlow(forward);
         builder.AddFlow(reverse);
 
-        var graph = builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a", "team-b"]);
+        var graph = builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a", "team-b"], cancellationToken: TestContext.Current.CancellationToken);
 
         graph.NodeCount.ShouldBe(2);
         graph.EdgeCount.ShouldBe(2);
@@ -412,10 +415,11 @@ public sealed class HubbleModelTests
         builder.AddFlow(Flow("first"));
         builder.AddFlow(Flow("first"));
         builder.AddFlow(Flow("second"));
-        builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a"]).Edges.Single().FlowCount.ShouldBe(2);
+        builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a"], cancellationToken: TestContext.Current.CancellationToken).Edges.Single().FlowCount.ShouldBe(2);
         builder.AddFlow(Flow("third"));
         builder.AddFlow(Flow("first"));
-        builder.GetFlows(TimeSpan.FromMinutes(5), namespaces: ["team-a"]).Select(flow => flow.Uuid)
+        builder.GetFlows(TimeSpan.FromMinutes(5), namespaces: ["team-a"],
+            cancellationToken: TestContext.Current.CancellationToken).Select(flow => flow.Uuid)
             .ShouldBe(["third", "first"]);
     }
 
@@ -427,7 +431,7 @@ public sealed class HubbleModelTests
         builder.AddFlow(Flow("second"));
         builder.AddFlow(Flow("third"));
 
-        builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a", "team-b"]).Edges.Single().FlowCount.ShouldBe(2);
+        builder.Build(TimeSpan.FromMinutes(5), namespaces: ["team-a", "team-b"], cancellationToken: TestContext.Current.CancellationToken).Edges.Single().FlowCount.ShouldBe(2);
     }
 
     private static FlowViewModel Flow(

@@ -85,7 +85,12 @@ public sealed class KubeConfigDiscovery : IKubeConfigDiscovery
         }
         catch (Exception ex)
         {
-            _logger.LogDebug(ex, "Skipping {Path} because it is not a kubeconfig file", path);
+            // Avoid allocating the logging args array when debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug(ex, "Skipping {Path} because it is not a kubeconfig file", path);
+            }
+
             return false;
         }
     }

@@ -69,7 +69,8 @@ public static class DesignTimePreview
     public static async Task<ClusterWorkspace> CreateClusterAsync<TResource>()
         where TResource : class, IKubernetesObject<V1ObjectMeta>, new()
     {
-        var cluster = Services.GetRequiredService<ClusterWorkspaceCatalog>().GetDefault();
+        var cluster = Services.GetRequiredService<ClusterWorkspaceCatalog>().GetDefault()
+            ?? throw new InvalidOperationException("No default cluster is configured for design-time previews.");
         await cluster.Connect().ConfigureAwait(false);
         await cluster.Runtime.SeedResource<TResource>().ConfigureAwait(false);
         return cluster;

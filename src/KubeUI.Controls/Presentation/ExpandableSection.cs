@@ -29,8 +29,8 @@ public partial class ExpandableSection : Expander, IDeclarativeViewBase
         if (Design.IsDesignMode)
         {
             Header = "Header";
-            Content = new StackPanel();
-            var panel = (Content as StackPanel);
+            var panel = new StackPanel();
+            Content = panel;
 
             for (var i = 0; i < 5; i++)
             {

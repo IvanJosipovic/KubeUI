@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
@@ -54,6 +55,7 @@ public sealed partial class UpdateAvailableViewModel : ViewModelBase
     {
         LatestVersion = latestVersion;
         VersionSummary = string.Format(
+            CultureInfo.CurrentCulture,
             AppLanguageManager.Instance.UpdateAvailableView_VersionSummaryFormat.CurrentValue()!,
             currentVersion,
             latestVersion);
@@ -84,7 +86,7 @@ public sealed partial class UpdateAvailableViewModel : ViewModelBase
         IsUpdating = true;
         CanClose = false;
         DownloadProgress = 0;
-        DownloadProgressText = string.Format(AppLanguageManager.Instance.UpdateAvailableView_DownloadProgress.CurrentValue()!, 0);
+        DownloadProgressText = string.Format(CultureInfo.CurrentCulture, AppLanguageManager.Instance.UpdateAvailableView_DownloadProgress.CurrentValue()!, 0);
 
         try
         {
@@ -106,7 +108,8 @@ public sealed partial class UpdateAvailableViewModel : ViewModelBase
     private async Task OpenReleaseNoteLinkAsync(LinkClickedEventArgs args)
     {
         var uri = args.HRef;
-        if (uri.IsAbsoluteUri
+        if (uri is not null
+            && uri.IsAbsoluteUri
             && (uri.Scheme == Uri.UriSchemeHttp
                 || uri.Scheme == Uri.UriSchemeHttps
                 || uri.Scheme == Uri.UriSchemeMailto))
@@ -121,6 +124,7 @@ public sealed partial class UpdateAvailableViewModel : ViewModelBase
         {
             DownloadProgress = Math.Clamp(progress, 0, 100);
             DownloadProgressText = string.Format(
+                CultureInfo.CurrentCulture,
                 AppLanguageManager.Instance.UpdateAvailableView_DownloadProgress.CurrentValue()!,
                 DownloadProgress);
         });
@@ -156,7 +160,7 @@ public sealed partial class UpdateAvailableViewModel : ViewModelBase
         return new ContentDialogSettings
         {
             Title = AppLanguageManager.Instance.UpdateAvailableView_Confirm_Title.CurrentValue()!,
-            Content = string.Format(AppLanguageManager.Instance.UpdateAvailableView_Confirm_Content.CurrentValue()!, latestVersion),
+            Content = string.Format(CultureInfo.CurrentCulture, AppLanguageManager.Instance.UpdateAvailableView_Confirm_Content.CurrentValue()!, latestVersion),
             PrimaryButtonText = AppLanguageManager.Instance.UpdateAvailableView_Confirm_Primary.CurrentValue()!,
             SecondaryButtonText = AppLanguageManager.Instance.UpdateAvailableView_Confirm_Secondary.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary

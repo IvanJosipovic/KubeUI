@@ -97,15 +97,15 @@ public partial class PodContainerCellView : ViewBase<V1Pod>
                         new StackPanel()
                             .Children(
                                 new TextBlock()
-                                    .Text(string.Format(ResourcesLanguageManager.Instance.PodContainerCellView_NameFormat.CurrentValue()!, vm.Name)),
+                                    .Text(string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.PodContainerCellView_NameFormat.CurrentValue()!, vm.Name)),
                                 new TextBlock()
-                                    .Text(string.Format(ResourcesLanguageManager.Instance.PodContainerCellView_TypeFormat.CurrentValue()!, vm.Type)),
+                                    .Text(string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.PodContainerCellView_TypeFormat.CurrentValue()!, vm.Type)),
                                 new TextBlock()
-                                    .Text(string.Format(ResourcesLanguageManager.Instance.PodContainerCellView_StatusFormat.CurrentValue()!, vm.Status)),
+                                    .Text(string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.PodContainerCellView_StatusFormat.CurrentValue()!, vm.Status)),
                                 new TextBlock()
-                                    .Text(string.Format(ResourcesLanguageManager.Instance.PodContainerCellView_RestartsFormat.CurrentValue()!, vm.Restarts)),
+                                    .Text(string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.PodContainerCellView_RestartsFormat.CurrentValue()!, vm.Restarts)),
                                 new TextBlock()
-                                    .Text(string.Format(ResourcesLanguageManager.Instance.PodContainerCellView_ImageFormat.CurrentValue()!, vm.Image))))));
+                                    .Text(string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.PodContainerCellView_ImageFormat.CurrentValue()!, vm.Image))))));
     }
 
     protected override void OnDataContextChanged(EventArgs e)

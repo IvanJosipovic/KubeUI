@@ -58,10 +58,7 @@ public sealed class TestCluster : IDisposable, IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(runtimeCatalog);
 
-        if (_disposed != 0)
-        {
-            throw new ObjectDisposedException(nameof(TestCluster));
-        }
+        ObjectDisposedException.ThrowIf(_disposed != 0, this);
 
         runtimeCatalog.AddCluster(Cluster);
         _runtimeCatalog = runtimeCatalog;

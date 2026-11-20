@@ -1,4 +1,5 @@
-﻿using Humanizer;
+﻿using System.Globalization;
+using Humanizer;
 using k8s.Models;
 using KubeUI.Controls.Threading;
 
@@ -16,7 +17,7 @@ public sealed class PodMetricMemoryCellView : PodMetricCellBase
         try
         {
             var usageBytes = metric.Containers.Sum(container => container.Usage["memory"].ToInt64());
-            return usageBytes.Bytes().Humanize();
+            return usageBytes.Bytes().Humanize(CultureInfo.CurrentCulture);
         }
         catch
         {

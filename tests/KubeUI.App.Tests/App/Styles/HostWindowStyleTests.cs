@@ -20,7 +20,7 @@ public sealed class HostWindowStyleTests
 
             Dispatcher.UIThread.RunJobs();
 
-            window.RequestedThemeVariant.ShouldBe(Application.Current.RequestedThemeVariant);
+            window.RequestedThemeVariant.ShouldBe(Application.Current!.RequestedThemeVariant);
             window.TransparencyLevelHint.ShouldContain(WindowTransparencyLevel.None);
             window.Opacity.ShouldBe(1.0);
         }
@@ -51,8 +51,11 @@ public sealed class HostWindowStyleTests
 
     private static HostWindow CreateHostWindow(bool isToolWindow)
     {
-        var factory = Application.Current.GetTestServices().GetRequiredService<IFactory>();
-        var window = factory.HostWindowLocator[nameof(IDockWindow)]().ShouldBeOfType<HostWindow>();
+        var app = Application.Current.ShouldNotBeNull();
+        var factory = app.GetTestServices().GetRequiredService<IFactory>();
+        // DockFactory always initializes HostWindowLocator.
+        var locator = factory.HostWindowLocator![nameof(IDockWindow)].ShouldNotBeNull();
+        var window = locator().ShouldBeOfType<HostWindow>();
         window.IsToolWindow = isToolWindow;
         return window;
     }

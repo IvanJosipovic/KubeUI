@@ -2,6 +2,8 @@
   <PropertyGroup>
     <DebugType>embedded</DebugType>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Generated Avalonia markup extension members are undocumented; first-party CS1591 is a suggestion. -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 

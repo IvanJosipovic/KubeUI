@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -5,6 +6,7 @@ using KubernetesClient.Informer.Client;
 namespace KubeUI.Kubernetes;
 
 /// <summary>Provides cached and live Kubernetes authorization checks.</summary>
+[SuppressMessage("Naming", "CA1716:Identifiers should not match keywords", Justification = "Public API contract; renaming a parameter is a breaking change. Revisit in next major version.")]
 public interface IClusterAuthorization
 {
     /// <summary>Raised after the full authorization cache has been discarded.</summary>

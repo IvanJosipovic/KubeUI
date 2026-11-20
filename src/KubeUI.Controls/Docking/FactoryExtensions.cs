@@ -83,7 +83,8 @@ public static class FactoryExtensions
 
     public static bool AddToDocuments(this IFactory factory, IDockable vm)
     {
-        var documents = factory.GetDockable<IDocumentDock>("Documents");
+        // The layout always contains the "Documents" dock after initialization.
+        var documents = factory.GetDockable<IDocumentDock>("Documents")!;
 
         var existing = factory.FindDockableById(vm.Id);
 
@@ -140,7 +141,8 @@ public static class FactoryExtensions
     /// <param name="focus">Whether to activate and focus the replacement.</param>
     public static void AddToRight(this IFactory factory, IDockable vm, bool previewPinned = true, bool focus = true)
     {
-        var rightDock = factory.GetDockable<IToolDock>("RightDock");
+        // The layout always contains the "RightDock" after initialization.
+        var rightDock = factory.GetDockable<IToolDock>("RightDock")!;
 
         var pinnedDoc = factory.FindRightPinnedDockable(vm.Id);
 

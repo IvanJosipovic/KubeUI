@@ -1,4 +1,6 @@
+#pragma warning disable CA1716 // Public namespace is an API contract; renaming would be a breaking change.
 namespace KubeUI.Features.Clusters.Error;
+#pragma warning restore CA1716
 
 public sealed partial class ClusterErrorView : KubeUIView<ClusterErrorViewModel>
 {

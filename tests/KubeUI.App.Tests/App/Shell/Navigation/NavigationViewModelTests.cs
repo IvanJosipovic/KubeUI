@@ -82,7 +82,7 @@ public class NavigationViewModelTests
         while (DateTime.UtcNow < deadline)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            await TestApplicationExtensions.WaitForUiAsync();
+            await TestApplicationExtensions.WaitForUiAsync(cancellationToken);
 
             var nextValue = await count
                 .Take(1)
@@ -98,7 +98,7 @@ public class NavigationViewModelTests
             await WaitForNextPollAsync(cancellationToken);
         }
 
-        await TestApplicationExtensions.WaitForUiAsync();
+        await TestApplicationExtensions.WaitForUiAsync(cancellationToken);
         return null;
     }
 
@@ -271,7 +271,7 @@ public class NavigationViewModelTests
         while (DateTime.UtcNow < deadline)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            await TestApplicationExtensions.WaitForUiAsync();
+            await TestApplicationExtensions.WaitForUiAsync(cancellationToken);
 
             if (latest == expected)
             {
@@ -281,7 +281,7 @@ public class NavigationViewModelTests
             await WaitForNextPollAsync(cancellationToken);
         }
 
-        await TestApplicationExtensions.WaitForUiAsync();
+        await TestApplicationExtensions.WaitForUiAsync(cancellationToken);
         return latest == int.MinValue ? null : latest;
     }
 
@@ -864,6 +864,7 @@ public class NavigationViewModelTests
             .SingleOrDefault(x => x.Id == "cluster-error");
 
         errorDocument.ShouldNotBeNull();
+        errorDocument.Error.ShouldNotBeNull();
         errorDocument.Error.ShouldContain("simulated connection failure");
     }
 
@@ -889,6 +890,7 @@ public class NavigationViewModelTests
         workspace.Runtime.ListNamespaces.ShouldBeFalse();
 
         await WaitForAsync(() => workspace.Runtime.Status == ClusterStatus.Errored);
+        workspace.Runtime.LastError.ShouldNotBeNull();
         workspace.Runtime.LastError.ShouldContain("cannot list namespaces");
         await WaitForAsync(() =>
             documents.VisibleDockables?.OfType<ClusterSettingsViewModel>().Any(x => x.Id == nameof(ClusterSettingsViewModel) + workspace.Runtime.Name) == true);
@@ -900,11 +902,12 @@ public class NavigationViewModelTests
         settingsDocument.Cluster.ShouldBe(workspace);
         workspace.Runtime.Status.ShouldBe(ClusterStatus.Errored);
 
-        (Application.Current as TestApp)?.ContentDialogSettings.ShouldNotBeNull();
-        (Application.Current as TestApp)?.ContentDialogSettings.Title.ShouldBe(ClustersLanguageManager.Instance.ClusterSettingsViewModel_Missing_Namespace_Permission_Title.CurrentValue());
-        (Application.Current as TestApp)?.ContentDialogSettings.Content.ShouldBe(ClustersLanguageManager.Instance.ClusterSettingsViewModel_Missing_Namespace_Permission_Content.CurrentValue());
-        (Application.Current as TestApp)?.ContentDialogSettings.PrimaryButtonText.ShouldBe(ClustersLanguageManager.Instance.ClusterSettingsViewModel_Missing_Namespace_Permission_Primary.CurrentValue());
-        (Application.Current as TestApp)?.ContentDialogSettings.DefaultButton.ShouldBe(FAContentDialogButton.Primary);
+        var dialogSettings = (Application.Current as TestApp)?.ContentDialogSettings;
+        dialogSettings.ShouldNotBeNull();
+        dialogSettings.Title.ShouldBe(ClustersLanguageManager.Instance.ClusterSettingsViewModel_Missing_Namespace_Permission_Title.CurrentValue());
+        dialogSettings.Content.ShouldBe(ClustersLanguageManager.Instance.ClusterSettingsViewModel_Missing_Namespace_Permission_Content.CurrentValue());
+        dialogSettings.PrimaryButtonText.ShouldBe(ClustersLanguageManager.Instance.ClusterSettingsViewModel_Missing_Namespace_Permission_Primary.CurrentValue());
+        dialogSettings.DefaultButton.ShouldBe(FAContentDialogButton.Primary);
     }
 
     [AvaloniaFact]
