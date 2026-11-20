@@ -44,10 +44,11 @@ public class V1CustomResourceDefinitionConfigTests
     public async Task generic_resource_list_initializes_with_its_resource_kind()
     {
         var services = Application.Current.GetTestServices();
-        var cluster = await Application.Current.CreateClusterAsync();
+        var crd = TestCustomResourceDefinitionFactory.Create("example.com", "examples", "someString");
+        var cluster = await Application.Current.CreateClusterAsync(config => config.InitialResources = [crd]);
         var config = ActivatorUtilities.CreateInstance<CustomResourceConfig>(services);
         config.Initialize(cluster);
-        config.Configure(TestCustomResourceDefinitionFactory.Create("example.com", "examples", "someString"));
+        config.Configure(crd);
         cluster.AddResourceConfigForTest(config);
         cluster.Runtime.ModelCatalog.RegisterCustomResourceDefinition(config.Kind);
 

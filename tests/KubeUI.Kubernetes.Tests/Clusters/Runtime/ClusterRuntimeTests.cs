@@ -66,7 +66,7 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
         DisposeTrackingKubernetes? trackedClient = null;
         scope.Cluster.KubernetesClientFactory = configuration => trackedClient = new DisposeTrackingKubernetes(
             configuration,
-            new BlockingPodWatchHandler(watchStarted, releaseWatch.Task),
+            new BlockingPodWatchHandler(watchStarted, releaseWatch.Task, timeout.Token),
             scope.FakeApi!.CreateClient("system:admin", useRoleBasedAuthorization: false));
 
         await scope.Cluster.Connect();
@@ -311,7 +311,8 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
 
     private sealed class BlockingPodWatchHandler(
         TaskCompletionSource started,
-        Task gate) : DelegatingHandler
+        Task gate,
+        CancellationToken testToken) : DelegatingHandler
     {
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
@@ -323,7 +324,10 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
                 && uri.Query.Contains("watch=true", StringComparison.OrdinalIgnoreCase))
             {
                 started.TrySetResult();
-                await gate.WaitAsync(cancellationToken);
+                // Hold the request until the test releases it. Observing the request token here
+                // would let disconnect abort the watch immediately, so the test could no longer
+                // verify that dispose waits for informer tasks to unwind.
+                await gate.WaitAsync(testToken);
             }
 
             return await base.SendAsync(request, cancellationToken);

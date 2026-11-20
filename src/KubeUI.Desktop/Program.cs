@@ -21,6 +21,7 @@ using KubeUI.App.Infrastructure.Mcp;
 using KubeUI.App.Infrastructure.Platform;
 using KubeUI.App.Options;
 using KubeUI.App.Services.Settings;
+using KubernetesClient.Informer.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -321,6 +322,7 @@ internal static class Program
                     .AddSource(AgentActivitySource.SourceName)
                     .AddSource(KubeUIAvaloniaServiceCollectionExtensions.KubernetesActivitySourceName)
                     .AddSource(Instrumentation.SourceName)
+                    .AddSource(InformerDiagnostics.ActivitySourceName)
                     .AddHttpClientInstrumentation()
                     .AddOtlpExporter(e =>
                     {

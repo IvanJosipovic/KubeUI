@@ -760,7 +760,20 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
         if (!_definitions.TryGetValue(DefinitionKey(route.Group, route.ApiVersion, route.PluralName), out var definition))
         {
-            return Error(HttpStatusCode.NotFound, $"the server could not find the requested resource {route.CollectionPath}");
+            // KubeUI seeds informers for every built-in kind it knows, but a test only needs
+            // typed registrations for the kinds it actually uses. Synthesize an empty built-in
+            // definition so LIST/WATCH succeeds instead of faulting on a 404. Unknown groups and
+            // CRDs still 404; CRDs are registered when their definitions are added to the state.
+            if (!KnownResourceMetadata.ContainsKey((route.Group, route.PluralName))
+                && !KindOverrides.ContainsKey((route.Group, route.PluralName)))
+            {
+                return Error(HttpStatusCode.NotFound, $"the server could not find the requested resource {route.CollectionPath}");
+            }
+
+            var api = new GroupApiVersionKind(route.Group, route.ApiVersion, string.Empty, route.PluralName);
+            definition = CreateDefinition(api, IsNamespacedResource(route.PluralName));
+            _definitions[DefinitionKey(route.Group, route.ApiVersion, route.PluralName)] = definition;
+            InvalidateGroupedDiscoveryETag();
         }
 
         var collectionKey = CollectionKey(route);
