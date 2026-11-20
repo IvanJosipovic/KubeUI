@@ -34,7 +34,7 @@
     <!-- UI Controls -->
     <PackageVersion Include="FluentAvaloniaUI" Version="3.1.0" />
     <PackageVersion Include="Svg.Controls.Skia.Avalonia" Version="12.0.0.17" />
-    <PackageVersion Include="SvcSystems.Avalonia.DynamicTableView" Version="1.0.0-alpha.23" />
+    <PackageVersion Include="SvcSystems.Avalonia.DynamicTableView" Version="1.0.0-alpha.24" />
     <PackageVersion Include="SvcSystems.UI.Terminal" Version="2.3.4" />
     <PackageVersion Include="Xaml.Behaviors.Avalonia" Version="12.1.5" />
     <PackageVersion Include="HanumanInstitute.MvvmDialogs.Avalonia" Version="2.4.0" />
@@ -43,7 +43,7 @@
     <PackageVersion Include="Irihi.Ursa.Themes.Semi" Version="2.3.1" />
     <PackageVersion Include="Irihi.Lingua" Version="1.1.0" />
     <PackageVersion Include="LiveMarkdown.Avalonia" Version="2.7.0" />
-    <PackageVersion Include="Semi.Avalonia" Version="12.1.0.1" />
+    <PackageVersion Include="Semi.Avalonia" Version="12.1.0.2" />
     <PackageVersion Include="PropertyGenerator.Avalonia" Version="1.3.1" />
     
     <!-- Graph -->
@@ -64,12 +64,12 @@
     <PackageVersion Include="YamlDotNet.System.Text.Json" Version="2.0.2" />
     <PackageVersion Include="Vecc.YamlDotNet.Analyzers.StaticGenerator" Version="18.1.0" />
     <PackageVersion Include="JsonPathLINQ" Version="1.0.0-alpha.17" />
-    <PackageVersion Include="Microsoft.OpenApi" Version="3.11.0" />
+    <PackageVersion Include="Microsoft.OpenApi" Version="3.11.1" />
     
     <!-- Azure -->
     <PackageVersion Include="Azure.Identity" Version="1.21.0" />
     <PackageVersion Include="Azure.ResourceManager" Version="1.14.0" />
-    <PackageVersion Include="Azure.ResourceManager.ContainerService" Version="1.9.0" />
+    <PackageVersion Include="Azure.ResourceManager.ContainerService" Version="1.10.0" />
     <PackageVersion Include="Azure.ResourceManager.Monitor" Version="1.3.1" />
     
     <!-- Microsoft Extensions -->
@@ -102,7 +102,7 @@
     <PackageVersion Include="Swordfish.NET.CollectionsV3" Version="3.3.16" />
     <PackageVersion Include="NuGet.Versioning" Version="8.0.0" />
     <PackageVersion Include="Velopack" Version="1.2.161" />
-    <PackageVersion Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.1.0-dev-798" />
+    <PackageVersion Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.2.0" />
     <PackageVersion Include="Grpc.Net.Client" Version="2.85.0" />
     <PackageVersion Include="Grpc.Tools" Version="2.85.0" />
     <PackageVersion Include="Google.Protobuf" Version="3.36.2" />
