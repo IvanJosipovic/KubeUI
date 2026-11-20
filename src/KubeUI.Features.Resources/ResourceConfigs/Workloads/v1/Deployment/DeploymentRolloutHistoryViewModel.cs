@@ -1,7 +1,5 @@
 using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Text.Json;
 using Avalonia.Controls.Notifications;
 using CommunityToolkit.Mvvm.Input;
 using FluentAvalonia.UI.Controls;
@@ -145,7 +143,6 @@ public sealed partial class DeploymentRolloutHistoryViewModel : ViewModelBase, I
     }
 
     [RelayCommand(CanExecute = nameof(CanUndo))]
-    [RequiresUnreferencedCode("Calls System.Text.Json.JsonSerializer.Serialize<TValue>(TValue, JsonSerializerOptions)")]
     private async Task Undo()
     {
         if (Cluster is null)
@@ -189,7 +186,7 @@ public sealed partial class DeploymentRolloutHistoryViewModel : ViewModelBase, I
             }
 
             var templateJson = _jsonSerializer.Serialize(source.Spec.Template);
-            var revisionJson = JsonSerializer.Serialize(deployment.Metadata.ResourceVersion);
+            var revisionJson = _jsonSerializer.Serialize(deployment.Metadata.ResourceVersion);
             var patchJson = "[{\"op\":\"test\",\"path\":\"/metadata/resourceVersion\",\"value\":" + revisionJson
                 + "},{\"op\":\"replace\",\"path\":\"/spec/template\",\"value\":" + templateJson + "}]";
             await Cluster.Runtime.Client.AppsV1.PatchNamespacedDeploymentAsync(

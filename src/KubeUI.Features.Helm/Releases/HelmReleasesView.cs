@@ -12,7 +12,7 @@ namespace KubeUI.Features.Helm.Releases;
 
 public sealed class HelmReleasesView : KubeUIView<HelmReleasesViewModel>
 {
-    [RequiresUnreferencedCode("DynamicTableView creates columns from runtime Helm release metadata.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Xaml.Behaviors.Interactivity is rooted for the Helm lifecycle EventTriggerBehavior in the trimmed desktop build.")]
     protected override object Build(HelmReleasesViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);
@@ -52,7 +52,7 @@ public sealed class HelmReleasesView : KubeUIView<HelmReleasesViewModel>
                         .MaxWidth(700)
                 },
                 table.Row(1));
-        Interaction.GetBehaviors(root).Add(new EventTriggerBehavior
+        root.Behaviors(new EventTriggerBehavior
         {
             EventName = nameof(Loaded),
             Actions = [new InvokeCommandAction { Command = vm.RefreshCommand }]

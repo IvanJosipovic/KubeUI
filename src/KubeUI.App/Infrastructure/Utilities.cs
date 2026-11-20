@@ -204,17 +204,6 @@ public static class Utilities
             || ex.Message.Contains("Exception during serialization", StringComparison.Ordinal);
     }
 
-    public static T Behaviors<T>(this T obj, params BehaviorCollection behaviorCollection) where T : AvaloniaObject
-    {
-        var collection = obj.GetValue(Interaction.BehaviorsProperty);
-        collection ??= [];
-
-        collection.AddRange(behaviorCollection);
-        obj.SetValue(Interaction.BehaviorsProperty, collection);
-
-        return obj;
-    }
-
     public static T KeyBindings<T>(this T obj, params KeyBinding[] keyBindings) where T : IInputElement
     {
         obj.KeyBindings.AddRange(keyBindings);

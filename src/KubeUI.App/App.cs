@@ -63,7 +63,7 @@ public partial class App : Application, IServiceProviderHost
         _applicationEventSource.KubernetesExecStdError -= KubernetesClientConfiguration_ExecStdError;
     }
 
-    [RequiresUnreferencedCode("Application initialization loads Avalonia styles from runtime XAML resources.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "ILLink.XamlRoots.xml preserves the XAML loaders used by ResourceInclude.")]
     public override void Initialize()
     {
         DockSettings.MinimumHorizontalDragDistance = 8;

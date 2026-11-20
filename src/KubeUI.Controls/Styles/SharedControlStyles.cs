@@ -3,6 +3,7 @@ using Avalonia.Controls.Templates;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
+using KubeUI.Foundation.Styles;
 using Ursa.Controls;
 using AvaloniaStyles = Avalonia.Styling.Styles;
 
@@ -34,6 +35,9 @@ public sealed class SharedControlStyles : AvaloniaStyles
                 }));
 
         Add(new Style<TextEditor>()
-            .Background(new DynamicResourceExtension("SystemAltHighColor")));
+            .Background(new DynamicResourceExtension("SystemAltHighColor"))
+            .Setter(TemplatedControl.FontFamilyProperty, new DynamicResourceExtension(Typography.CodeFontFamilyResourceKey))
+            .Setter(TemplatedControl.FontSizeProperty, new DynamicResourceExtension(Typography.CodeFontSizeResourceKey))
+            .Setter(TemplatedControl.FontWeightProperty, FontWeight.Normal));
     }
 }

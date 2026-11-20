@@ -1,5 +1,4 @@
 using Avalonia.Markup.Xaml.MarkupExtensions;
-using Avalonia.Xaml.Interactivity;
 using KubeUI.Controls.DependencyInjection;
 using KubeUI.Controls.Presentation;
 using KubeUI.Controls.Styles;
@@ -17,14 +16,11 @@ public sealed class PodConsoleView : KubeUIView<PodConsoleViewModel>
     {
         ArgumentNullException.ThrowIfNull(vm);
 
-        Interaction.GetBehaviors(this).Add(new PodConsoleConnectionBehavior());
+        this.Behaviors(new PodConsoleConnectionBehavior());
 
-        var root = new Grid();
-        foreach (var keyBinding in CodeFontSizeKeyBindings.Create(
-            ((IServiceProviderHost)Application.Current!).Services.GetRequiredService<IResourceAppearanceSettings>()))
-        {
-            root.KeyBindings.Add(keyBinding);
-        }
+        var root = new Grid().
+            WithCodeFontSizeKeyBindings(
+                ((IServiceProviderHost)Application.Current!).Services.GetRequiredService<IResourceAppearanceSettings>());
 
         return root
             .Rows("Auto,*")

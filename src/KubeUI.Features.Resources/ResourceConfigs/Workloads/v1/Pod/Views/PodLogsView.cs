@@ -1,10 +1,7 @@
-using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Input;
-using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Xaml.Interactions.Core;
-using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using CommunityToolkit.Mvvm.Input;
 using FluentIcons.Avalonia;
@@ -12,7 +9,6 @@ using FluentIcons.Common;
 using KubeUI.Controls.Converters;
 using KubeUI.Controls.Layout;
 using KubeUI.Controls.Presentation;
-using KubeUI.Controls.Styles;
 using KubeUI.Features.Resources.Infrastructure;
 using KubeUI.Features.Resources.Workloads.v1.Pod.Behaviors;
 using KubeUI.Features.Resources.Workloads.v1.Pod.ViewModels;
@@ -27,16 +23,11 @@ public sealed partial class PodLogsView : KubeUIView<PodLogsViewModel>
     private const double SourcesWidth = 300;
     private static readonly StringNotNullOrEmptyConverter HasErrorConverter = new();
 
-    [RequiresUnreferencedCode("Declarative pod-log view construction may use members removed by trimming.")]
     protected override object Build(PodLogsViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);
 
-        var root = new Grid();
-        foreach (var keyBinding in CodeFontSizeKeyBindings.Create(vm.SettingsService))
-        {
-            root.KeyBindings.Add(keyBinding);
-        }
+        var root = new Grid().WithCodeFontSizeKeyBindings(vm.SettingsService);
 
         return root
             .HorizontalAlignment(HorizontalAlignment.Stretch)
@@ -155,7 +146,6 @@ public sealed partial class PodLogsView : KubeUIView<PodLogsViewModel>
                     .Content(new FluentIcon().Icon(Icon.TextWrap)));
     }
 
-    [RequiresUnreferencedCode("Calls KubeUI.Features.Resources.Workloads.v1.Pod.Views.PodLogsView.CreateContextMenu(TextEditor)")]
     private TextEditor CreateEditor(PodLogsViewModel vm)
     {
         PodLogsEditorBehavior behavior = new();
@@ -166,8 +156,6 @@ public sealed partial class PodLogsView : KubeUIView<PodLogsViewModel>
         var editor = new TextEditor()
             .Row(1)
             .Document(vm, x => x.Logs)
-            .FontFamily(new DynamicResourceExtension(Typography.CodeFontFamilyResourceKey))
-            .FontSize(new DynamicResourceExtension(Typography.CodeFontSizeResourceKey))
             .FontWeight(FontWeight.Normal)
             .HorizontalScrollBarVisibility(ScrollBarVisibility.Auto)
             .IsReadOnly(true)
@@ -182,7 +170,7 @@ public sealed partial class PodLogsView : KubeUIView<PodLogsViewModel>
                 ShowBoxForControlCharacters = false,
             });
 
-        Interaction.GetBehaviors(editor).Add(behavior);
+        editor.Behaviors(behavior);
 
         editor.KeyBindings.Add(new KeyBinding
         {
