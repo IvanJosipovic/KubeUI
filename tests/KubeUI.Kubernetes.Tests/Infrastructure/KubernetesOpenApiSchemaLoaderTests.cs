@@ -125,6 +125,44 @@ public sealed class KubernetesOpenApiSchemaLoaderTests
         loaded.ShouldBeFalse();
     }
 
+    [Fact]
+    public async Task EnsureAsync_reports_missing_schema_document_as_failure()
+    {
+        var config = TestClusterConfig.Fake();
+        config.Name = "openapi-empty-document-test";
+        config.HttpHandlerFactory = () => [new EmptySchemaDocumentHandler()];
+        await using var cluster = await new TestClusterGenerator().CreateAsync(
+            config,
+            TestContext.Current.CancellationToken);
+        await cluster.Cluster.Connect().WaitAsync(TestContext.Current.CancellationToken);
+        var catalog = new KubernetesOpenApiSchemaCatalog();
+        using var loader = new KubernetesOpenApiSchemaLoader(catalog, new DebugLogger());
+
+        var loaded = await loader.EnsureAsync(
+            (k8s.Kubernetes)cluster.Client!, "fake", TestContext.Current.CancellationToken);
+
+        loaded.ShouldBeFalse();
+    }
+
+    private sealed class EmptySchemaDocumentHandler : DelegatingHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            if (request.RequestUri?.AbsolutePath.StartsWith("/openapi/v3/", StringComparison.Ordinal) == true)
+            {
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(string.Empty),
+                    RequestMessage = request,
+                });
+            }
+
+            return base.SendAsync(request, cancellationToken);
+        }
+    }
+
     private sealed class DebugLogger : ILogger
     {
         public IDisposable BeginScope<TState>(TState state) where TState : notnull => NullScope.Instance;

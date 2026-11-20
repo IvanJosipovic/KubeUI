@@ -154,6 +154,12 @@ public sealed class KubernetesOpenApiSchemaLoader : IDisposable
                     }
                 }
             }
+            else
+            {
+                // No document means this group version is missing from the catalog; do not
+                // report the load as complete or hover will never retry it.
+                complete = false;
+            }
         }
 
         lock (_cacheGate)
