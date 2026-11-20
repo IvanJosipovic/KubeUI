@@ -7,6 +7,7 @@ using KubeUI.App.Services.Settings;
 using KubeUI.App.Shell.Navigation;
 using KubeUI.App.Tests.Infra;
 using KubeUI.Desktop;
+using KubeUI.Features.Cilium;
 using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Crossplane;
@@ -224,6 +225,7 @@ public sealed class NavigationSectionTests
             config => config.Resources = [CreateCiliumCrd("cilium.io")],
             connect: false);
         await workspace.Connect();
+        (await workspace.Runtime.IsCiliumInstalledAsync(TestContext.Current.CancellationToken)).ShouldBeTrue();
 
         using var node = new ClusterNavigationNode(workspace);
         var provider = new HubbleNavigationSectionProvider(enabled: false);

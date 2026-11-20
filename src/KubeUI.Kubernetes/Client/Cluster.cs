@@ -1231,6 +1231,13 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         var cancellationTokenSource = Interlocked.Exchange(ref _resourceInformerCancellationTokenSource, null);
         cancellationTokenSource?.Cancel();
 
+        // Detach the client immediately so no new informers can be created against it,
+        // but keep it alive until the running informers have stopped. The client owns
+        // the HttpClient pipeline, so disposing it first makes in-flight or retrying
+        // watch requests fail with ObjectDisposedException.
+        var clientToDispose = Client;
+        Client = null;
+
         var informerTasks = Interlocked.Exchange(ref _resourceInformerTasks, []).ToArray();
         try
         {
@@ -1242,13 +1249,9 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         }
         finally
         {
-            // Informers may still be reconnecting while they unwind. Dispose their transport
-            // only after their tasks have completed so watch requests never see a null HttpClient.
-            if (Client is IDisposable disposableClient)
-            {
-                disposableClient.Dispose();
-                Client = null;
-            }
+            // Informers may still be reconnecting while they unwind, so dispose their
+            // transport only after the informer tasks have completed.
+            (clientToDispose as IDisposable)?.Dispose();
         }
 
         foreach (var container in Objects.Values.OfType<IClearableResourceContainer>())
