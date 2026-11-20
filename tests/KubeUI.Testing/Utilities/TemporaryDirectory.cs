@@ -1,3 +1,5 @@
+using System.Threading;
+
 namespace KubeUI.Testing.Utilities;
 
 /// <summary>
@@ -5,6 +7,8 @@ namespace KubeUI.Testing.Utilities;
 /// </summary>
 public sealed class TemporaryDirectory : IDisposable
 {
+    private const int MaxDeleteAttempts = 10;
+
     public TemporaryDirectory()
     {
         Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"kubeui-tests-{Guid.NewGuid():N}");
@@ -15,9 +19,29 @@ public sealed class TemporaryDirectory : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(Path))
+        if (!Directory.Exists(Path))
         {
-            Directory.Delete(Path, recursive: true);
+            return;
+        }
+
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                Directory.Delete(Path, recursive: true);
+                return;
+            }
+            catch (IOException) when (attempt < MaxDeleteAttempts)
+            {
+                // Windows can briefly hold a handle to a file in the scratch directory
+                // (antivirus/indexer or a just-closed reader). Retry with a short bounded
+                // backoff; let the final failure surface so real cleanup bugs are visible.
+                Thread.Sleep(20 * attempt);
+            }
+            catch (UnauthorizedAccessException) when (attempt < MaxDeleteAttempts)
+            {
+                Thread.Sleep(20 * attempt);
+            }
         }
     }
 }
