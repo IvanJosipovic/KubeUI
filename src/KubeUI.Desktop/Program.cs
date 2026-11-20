@@ -22,6 +22,7 @@ using KubeUI.App.Infrastructure.Mcp;
 using KubeUI.App.Infrastructure.Platform;
 using KubeUI.App.Options;
 using KubeUI.App.Services.Settings;
+using KubernetesClient.Informer.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -178,12 +179,14 @@ internal static class Program
             ApplicationName = "KubeUI",
             Args = args
         });
+
         builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
         var settings = settingsOverride ?? SettingsPersistenceLoader.Load();
-        var features = settings.Settings.PreviewFeatures ?? new FeatureSettings();
 
-        builder.Services.AddKubeUIAppServices(features);
+        // A settings file can explicitly contain "PreviewFeatures": null, which bypasses the
+        // property initializer. Fall back to defaults so startup cannot fault on a null deref.
+        builder.Services.AddKubeUIAppServices(settings.Settings.PreviewFeatures ?? new FeatureSettings());
 
         if (mcpEnabledOverride ?? settings.Settings.McpServerEnabled)
             builder.Services.AddKubeUIMcpServer<McpTools>(
@@ -320,6 +323,7 @@ internal static class Program
                     .AddSource(AgentActivitySource.SourceName)
                     .AddSource(KubeUIAvaloniaServiceCollectionExtensions.KubernetesActivitySourceName)
                     .AddSource(Instrumentation.SourceName)
+                    .AddSource(InformerDiagnostics.ActivitySourceName)
                     .AddHttpClientInstrumentation()
                     .AddOtlpExporter(e =>
                     {

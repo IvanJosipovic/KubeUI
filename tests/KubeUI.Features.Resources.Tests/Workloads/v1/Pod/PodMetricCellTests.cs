@@ -1268,7 +1268,7 @@ public sealed class PodMetricCellTests
 
     private static bool TooltipShowsPercentage(Control bar, double fraction)
         => ToolTip.GetTip(bar)?.ToString()?.Contains(
-            fraction.ToString("P0", System.Globalization.CultureInfo.CurrentCulture),
+            fraction.ToString("P0", CultureInfo.CurrentCulture),
             StringComparison.Ordinal) == true;
 
     private static V1Pod CreatePod(string name = "metrics-pod", string cpuLimit = "500m")
@@ -1449,8 +1449,8 @@ public sealed class PodMetricCellTests
             {
                 ["cpuUsage"] =
                 [
-                    CreateNodeSeries("cpuUsage", firstNode, double.Parse(firstCpu, System.Globalization.CultureInfo.InvariantCulture)),
-                    CreateNodeSeries("cpuUsage", secondNode, double.Parse(secondCpu, System.Globalization.CultureInfo.InvariantCulture)),
+                    CreateNodeSeries("cpuUsage", firstNode, double.Parse(firstCpu, CultureInfo.InvariantCulture)),
+                    CreateNodeSeries("cpuUsage", secondNode, double.Parse(secondCpu, CultureInfo.InvariantCulture)),
                 ],
                 ["memoryUsage"] =
                 [

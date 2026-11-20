@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Http.Resilience;
+using Microsoft.Extensions.Logging.Abstractions;
 using Polly;
 
 namespace KubeUI.Kubernetes;
@@ -6,7 +7,8 @@ namespace KubeUI.Kubernetes;
 internal sealed class PrometheusMetricQueries(
     ILogger logger,
     IPrometheusQueryClient queryClient,
-    TimeProvider timeProvider)
+    TimeProvider timeProvider,
+    ILoggerFactory? loggerFactory = null)
 {
     private static readonly TimeSpan s_retryBaseDelay = TimeSpan.FromSeconds(1);
     private static readonly TimeSpan s_requestTimeout = TimeSpan.FromSeconds(15);
@@ -26,6 +28,7 @@ internal sealed class PrometheusMetricQueries(
         ShouldHandle = static args => ValueTask.FromResult(ShouldRetry(args.Outcome.Exception)),
     })
     .AddTimeout(new Polly.Timeout.TimeoutStrategyOptions { Timeout = s_requestTimeout })
+    .ConfigureTelemetry(loggerFactory ?? NullLoggerFactory.Instance)
     .Build();
     private readonly Lock _sync = new();
     private readonly Dictionary<string, CachedSeries> _queryCache = new(StringComparer.Ordinal);
