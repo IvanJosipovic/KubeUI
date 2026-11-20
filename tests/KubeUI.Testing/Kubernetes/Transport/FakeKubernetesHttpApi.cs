@@ -755,34 +755,43 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
     private async Task<HttpResponseMessage> HandleResourceAsync(HttpRequestMessage request, Route route, CancellationToken cancellationToken)
     {
-        if (!_definitions.TryGetValue(DefinitionKey(route.Group, route.ApiVersion, route.PluralName), out var definition))
+        var definitionKey = DefinitionKey(route.Group, route.ApiVersion, route.PluralName);
+        if (!_definitions.TryGetValue(definitionKey, out var definition))
         {
-            // KubeUI seeds informers for every built-in kind it knows, but a test only needs
-            // typed registrations for the kinds it actually uses. Synthesize an empty built-in
-            // definition so LIST/WATCH succeeds instead of faulting on a 404. Unknown groups,
-            // versions and CRDs still 404; CRDs are registered when their definitions are added.
-            if (!KnownResourceMetadata.ContainsKey((route.Group, route.PluralName))
-                && !KindOverrides.ContainsKey((route.Group, route.PluralName)))
+            // Publish the definition and its discovery ETag together so a concurrent discovery
+            // request cannot observe the new resource with a stale validator.
+            lock (_state.DiscoveryGate)
             {
-                return Error(HttpStatusCode.NotFound, $"the server could not find the requested resource {route.CollectionPath}");
-            }
+                if (!_definitions.TryGetValue(definitionKey, out definition))
+                {
+                    // KubeUI seeds informers for every built-in kind it knows, but a test only needs
+                    // typed registrations for the kinds it actually uses. Synthesize an empty built-in
+                    // definition so LIST/WATCH succeeds instead of faulting on a 404. Unknown groups,
+                    // versions and CRDs still 404; CRDs are registered when their definitions are added.
+                    if (!KnownResourceMetadata.ContainsKey((route.Group, route.PluralName))
+                        && !KindOverrides.ContainsKey((route.Group, route.PluralName)))
+                    {
+                        return Error(HttpStatusCode.NotFound, $"the server could not find the requested resource {route.CollectionPath}");
+                    }
 
-            if (!SupportedBuiltInApiVersions.TryGetValue(route.Group, out var versions)
-                || !versions.Contains(route.ApiVersion, StringComparer.Ordinal))
-            {
-                return Error(HttpStatusCode.NotFound, $"the server could not find the requested resource {route.CollectionPath}");
-            }
+                    if (!SupportedBuiltInApiVersions.TryGetValue(route.Group, out var versions)
+                        || !versions.Contains(route.ApiVersion, StringComparer.Ordinal))
+                    {
+                        return Error(HttpStatusCode.NotFound, $"the server could not find the requested resource {route.CollectionPath}");
+                    }
 
-            var api = new GroupApiVersionKind(route.Group, route.ApiVersion, string.Empty, route.PluralName);
-            definition = CreateDefinition(api, IsNamespacedResource(route.PluralName));
-            _definitions[DefinitionKey(route.Group, route.ApiVersion, route.PluralName)] = definition;
-            if (string.IsNullOrEmpty(route.Group))
-            {
-                InvalidateCoreDiscoveryETag();
-            }
-            else
-            {
-                InvalidateGroupedDiscoveryETag();
+                    var api = new GroupApiVersionKind(route.Group, route.ApiVersion, string.Empty, route.PluralName);
+                    definition = CreateDefinition(api, IsNamespacedResource(route.PluralName));
+                    _definitions[definitionKey] = definition;
+                    if (string.IsNullOrEmpty(route.Group))
+                    {
+                        InvalidateCoreDiscoveryETag();
+                    }
+                    else
+                    {
+                        InvalidateGroupedDiscoveryETag();
+                    }
+                }
             }
         }
 

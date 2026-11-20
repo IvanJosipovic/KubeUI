@@ -52,7 +52,9 @@ public sealed class KubernetesOpenApiSchemaLoader : IDisposable
         if (!index.RootElement.TryGetProperty("paths", out var paths)
             || paths.ValueKind != JsonValueKind.Object)
         {
-            return true;
+            // An index without a valid paths object is a failed load, not an empty catalog.
+            // Reporting success would make hover cache it instead of retrying after recovery.
+            return false;
         }
 
         Dictionary<string, (string? Hash, Uri Uri)> references = [];

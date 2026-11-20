@@ -105,6 +105,44 @@ public sealed class KubernetesOpenApiSchemaLoaderTests
             TestContext.Current.CancellationToken));
     }
 
+    [Fact]
+    public async Task EnsureAsync_reports_invalid_index_as_failure()
+    {
+        var config = TestClusterConfig.Fake();
+        config.Name = "openapi-invalid-index-test";
+        config.HttpHandlerFactory = () => [new InvalidOpenApiIndexHandler()];
+        await using var cluster = await new TestClusterGenerator().CreateAsync(
+            config,
+            TestContext.Current.CancellationToken);
+        await cluster.Cluster.Connect().WaitAsync(TestContext.Current.CancellationToken);
+        var catalog = new KubernetesOpenApiSchemaCatalog();
+        using var loader = new KubernetesOpenApiSchemaLoader(catalog, NullLogger.Instance);
+
+        var loaded = await loader.EnsureAsync(
+            (k8s.Kubernetes)cluster.Client!, "fake", TestContext.Current.CancellationToken);
+
+        loaded.ShouldBeFalse();
+    }
+
+    private sealed class InvalidOpenApiIndexHandler : DelegatingHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            if (request.RequestUri?.AbsolutePath == "/openapi/v3")
+            {
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("{\"paths\":null}"),
+                    RequestMessage = request,
+                });
+            }
+
+            return base.SendAsync(request, cancellationToken);
+        }
+    }
+
     private sealed class FailSchemaDocumentHandler : DelegatingHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(
