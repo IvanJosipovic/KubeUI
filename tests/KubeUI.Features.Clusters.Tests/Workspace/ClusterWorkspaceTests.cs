@@ -72,6 +72,68 @@ public class ClusterWorkspaceTests
         workspace.GetResourceConfig(GroupApiVersionKind.From<V1Pod>()).ShouldBeSameAs(expected);
     }
 
+    [AvaloniaTheory, KubernetesBackendData]
+    [Trait("Category", "Kind")]
+    public async Task connect_reviews_only_list_and_watch_authorizations_per_resource_config(KubernetesBackend backend)
+    {
+        var services = Application.Current.GetTestServices();
+        await using var testCluster = await services.GetRequiredService<TestClusterGenerator>().CreateAsync(
+            new TestClusterConfig { Type = backend },
+            TestContext.Current.CancellationToken);
+        using var workspace = CreateWorkspace(testCluster, services);
+
+        var authorizationBefore = testCluster.AuthorizationRequestCount;
+        await workspace.Connect();
+
+        var configCount = workspace.GetResourceConfigs().Count();
+        var reviews = testCluster.AuthorizationRequestCount - authorizationBefore;
+
+        // Navigation visibility and informer seeding only need List and Watch. Reviewing
+        // the full permission manifest issued roughly six access reviews per config; the
+        // eager pass must stay close to the two list/watch requests per config.
+        reviews.ShouldBeGreaterThan(0);
+        reviews.ShouldBeLessThan(configCount * 4, $"reviews={reviews}, configs={configCount}");
+    }
+
+    [AvaloniaTheory, KubernetesBackendData]
+    [Trait("Category", "Kind")]
+    public async Task namespace_set_change_does_not_discard_other_namespaces_cached_decisions(KubernetesBackend backend)
+    {
+        var services = Application.Current.GetTestServices();
+        await using var testCluster = await services.GetRequiredService<TestClusterGenerator>().CreateAsync(
+            new TestClusterConfig { Type = backend },
+            TestContext.Current.CancellationToken);
+        using var workspace = CreateWorkspace(testCluster, services);
+        await workspace.Connect();
+
+        var podKind = GroupApiVersionKind.From<V1Pod>();
+        // Warm the cached namespace-scoped decision we expect to survive.
+        (await testCluster.Cluster.Permissions.UpdateCanI(podKind, Verb.List, "team-b")).ShouldBeTrue();
+
+        var refreshObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        workspace.ResourceConfigProcessed += (_, _) => refreshObserved.TrySetResult();
+
+        await Task.Run(() => workspace.Runtime.GetResourceSourceCache<V1Namespace>().AddOrUpdate(
+            new V1Namespace
+            {
+                Metadata = new V1ObjectMeta
+                {
+                    Name = "team-c",
+                    Uid = Guid.NewGuid().ToString(),
+                },
+            }), TestContext.Current.CancellationToken);
+        await refreshObserved.Task.WaitAsync(
+            TimeSpan.FromSeconds(10),
+            TestContext.Current.CancellationToken);
+
+        var rulesReviewsBefore = testCluster.FakeApi!.RulesReviewRequestCount;
+        var authorizationBefore = testCluster.AuthorizationRequestCount;
+        (await testCluster.Cluster.Permissions.UpdateCanI(podKind, Verb.List, "team-b")).ShouldBeTrue();
+
+        testCluster.FakeApi.RulesReviewRequestCount.ShouldBe(rulesReviewsBefore);
+        testCluster.AuthorizationRequestCount.ShouldBe(authorizationBefore);
+    }
+
     [AvaloniaFact]
     public async Task changing_runtime_status_to_connecting_updates_cluster_color()
     {

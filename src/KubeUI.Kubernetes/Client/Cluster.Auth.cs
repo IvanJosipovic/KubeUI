@@ -39,6 +39,8 @@ public partial class Cluster
         public ConcurrentDictionary<string, NamespaceRuleSet> NamespaceRules { get; } = new(StringComparer.Ordinal);
 
         public ConcurrentDictionary<string, Lazy<Task<NamespaceRuleSet>>> NamespaceRuleLoads { get; } = new(StringComparer.Ordinal);
+
+        public ConcurrentDictionary<PermissionCacheKey, Lazy<Task<bool>>> PermissionLoads { get; } = new();
     }
 
     private static PermissionCacheKey BuildReviewKey(
@@ -94,23 +96,83 @@ public partial class Cluster
     /// <inheritdoc />
     public void InvalidateNamespacePermissions()
     {
+        InvalidateNamespacePermissionsCore(affectedNamespaces: null);
+    }
+
+    /// <summary>
+    /// Discards cached authorization rule sets and decisions for a single namespace while
+    /// retaining cluster-wide decisions and the cached state of every other namespace.
+    /// </summary>
+    /// <param name="namespaceName">The namespace whose cached authorization state changed.</param>
+    public void InvalidateNamespacePermissions(string namespaceName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(namespaceName);
+        InvalidateNamespacePermissionsCore(new HashSet<string>([namespaceName], StringComparer.Ordinal));
+    }
+
+    /// <summary>
+    /// Discards cached authorization rule sets and decisions for the supplied namespaces while
+    /// retaining cluster-wide decisions and the cached state of every other namespace.
+    /// </summary>
+    /// <param name="namespaceNames">The namespaces whose cached authorization state changed.</param>
+    public void InvalidateNamespaces(IEnumerable<string> namespaceNames)
+    {
+        ArgumentNullException.ThrowIfNull(namespaceNames);
+
+        var affected = new HashSet<string>(
+            namespaceNames.Where(static name => !string.IsNullOrWhiteSpace(name)),
+            StringComparer.Ordinal);
+        if (affected.Count == 0)
+        {
+            return;
+        }
+
+        InvalidateNamespacePermissionsCore(affected);
+    }
+
+    /// <summary>
+    /// Replaces the current cache generation with one that carries forward only state that is
+    /// unaffected by the invalidation. A <see langword="null"/> <paramref name="affectedNamespaces"/>
+    /// discards all namespace-scoped state, preserving the legacy parameterless behavior.
+    /// </summary>
+    /// <remarks>
+    /// In-flight loads are never copied into the replacement generation: their lazy tasks are
+    /// bound to the generation they started in, so publishing them into a new generation would
+    /// let stale results outlive invalidation. Only completed rule sets and decisions are carried
+    /// forward.
+    /// </remarks>
+    private void InvalidateNamespacePermissionsCore(HashSet<string>? affectedNamespaces)
+    {
         while (true)
         {
             var current = Volatile.Read(ref _authorizationCache);
             var replacement = new AuthorizationCacheState();
 
-            // Keep cluster-wide decisions: an added or removed namespace does not change them.
+            // Keep cluster-wide decisions: a namespace change does not change them.
             foreach (var pair in current.PermissionIndex)
             {
-                if (string.IsNullOrEmpty(pair.Key.Namespace))
+                if (string.IsNullOrEmpty(pair.Key.Namespace)
+                    || (affectedNamespaces is not null
+                        && !affectedNamespaces.Contains(pair.Key.Namespace!)))
                 {
                     replacement.PermissionIndex[pair.Key] = pair.Value;
                 }
             }
 
-            // Namespace-scoped decisions and rule sets are discarded. A replacement generation
-            // is used so that in-flight loads started in the previous generation can only
-            // publish into that generation.
+            if (affectedNamespaces is not null)
+            {
+                // Retain completed rule sets for namespaces that were not affected. In-flight
+                // loads stay bound to the generation they started in and are deliberately not
+                // copied.
+                foreach (var pair in current.NamespaceRules)
+                {
+                    if (!affectedNamespaces.Contains(pair.Key))
+                    {
+                        replacement.NamespaceRules[pair.Key] = pair.Value;
+                    }
+                }
+            }
+
             if (ReferenceEquals(
                     Interlocked.CompareExchange(ref _authorizationCache, replacement, current),
                     current))
@@ -120,11 +182,28 @@ public partial class Cluster
         }
     }
 
-    private void InvalidatePermissionsAfterForbiddenResponse()
+    private void InvalidatePermissionsAfterForbiddenResponse(string requestPath)
     {
         if (!Connected || Client is null)
         {
             return;
+        }
+
+        // A namespaced request only invalidates that namespace's decisions. Dropping the
+        // whole cache here would force every resource to be re-reviewed and would reproduce
+        // the same denial on every informer.
+        var segments = requestPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        for (var i = 0; i < segments.Length - 1; i++)
+        {
+            if (string.Equals(segments[i], "namespaces", StringComparison.Ordinal))
+            {
+                var namespaceName = Uri.UnescapeDataString(segments[i + 1].Split('?')[0]);
+                if (!string.IsNullOrEmpty(namespaceName))
+                {
+                    InvalidateNamespacePermissions(namespaceName);
+                    return;
+                }
+            }
         }
 
         InvalidatePermissions();
@@ -152,6 +231,32 @@ public partial class Cluster
             return cached;
         }
 
+        // Share one in-flight access review per key, bound to the cache generation it will
+        // publish into. Without this, a cold cache issues one SSAR per concurrent caller
+        // (thousands on a large cluster) and in-flight results can be orphaned by a swap.
+        var lazy = cache.PermissionLoads.GetOrAdd(
+            keyCheck,
+            static (key, state) => new Lazy<Task<bool>>(
+                () => state.Cluster.LoadPermissionAsync(
+                    state.Cache,
+                    state.Kind,
+                    state.Verb,
+                    state.Namespace,
+                    state.Subresource),
+                LazyThreadSafetyMode.ExecutionAndPublication),
+            (Cluster: this, Cache: cache, Kind: kind, Verb: verb, Namespace: @namespace, Subresource: subresource));
+
+        return await lazy.Value.ConfigureAwait(false);
+    }
+
+    private async Task<bool> LoadPermissionAsync(
+        AuthorizationCacheState cache,
+        GroupApiVersionKind kind,
+        Verb verb,
+        string? @namespace,
+        string? subresource)
+    {
+        var verbString = verb.ToString().ToLowerInvariant();
         var model = new V1SelfSubjectAccessReview()
         {
             ApiVersion = V1SelfSubjectAccessReview.KubeGroup + "/" + V1SelfSubjectAccessReview.KubeApiVersion,
@@ -164,7 +269,7 @@ public partial class Cluster
                     NamespaceProperty = (string.IsNullOrEmpty(@namespace) ? "" : @namespace),
                     Resource = kind.PluralName,
                     Subresource = (string.IsNullOrEmpty(subresource) ? "" : subresource),
-                    Verb = verb.ToString().ToLowerInvariant(),
+                    Verb = verbString,
                     Version = kind.ApiVersion
                 }
             }
@@ -178,10 +283,18 @@ public partial class Cluster
             return false;
         }
 
-        var resp = await client.AuthorizationV1.CreateSelfSubjectAccessReviewAsync(model);
+        var resp = await client.AuthorizationV1.CreateSelfSubjectAccessReviewAsync(model).ConfigureAwait(false);
         var allowed = resp.Status?.Allowed == true;
-        SetPermissionResult(cache, kind, verbString, @namespace, subresource, allowed);
 
+        // The cache generation may have been swapped while the review was in flight. That
+        // result belongs to the old generation; re-check against the current one so callers
+        // (including informer seeding) never act on a decision that has been invalidated.
+        if (!ReferenceEquals(Volatile.Read(ref _authorizationCache), cache))
+        {
+            return await BuildPermissionAsync(kind, verb, @namespace, subresource).ConfigureAwait(false);
+        }
+
+        SetPermissionResult(cache, kind, verbString, @namespace, subresource, allowed);
         return allowed;
     }
 

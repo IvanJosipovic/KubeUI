@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Specialized;
 using System.Diagnostics;
@@ -30,6 +31,8 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     private static readonly TimeSpan PermissionRefreshDebounce = TimeSpan.FromMilliseconds(500);
 
     private readonly Lock _connectLock = new();
+    private readonly Lock _changedNamespacesLock = new();
+    private HashSet<string>? _changedNamespaces;
     private readonly PermissionRefreshCoordinator _permissionRefreshCoordinator;
     private long _customResourceDefinitionRevision;
     private long _connectGeneration;
@@ -308,7 +311,23 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
         else
         {
-            Runtime.Permissions.InvalidateNamespacePermissions();
+            HashSet<string>? changedNamespaces;
+            lock (_changedNamespacesLock)
+            {
+                changedNamespaces = _changedNamespaces;
+                _changedNamespaces = null;
+            }
+
+            // A namespace-set change only invalidates the namespaces that actually changed.
+            // If the change could not be resolved, discard every namespace-scoped decision.
+            if (changedNamespaces is { Count: > 0 })
+            {
+                Runtime.Permissions.InvalidateNamespaces(changedNamespaces);
+            }
+            else
+            {
+                Runtime.Permissions.InvalidateNamespacePermissions();
+            }
         }
 
         await UpdateResourceConfigsPermissionsAndEvaluateAsync().ConfigureAwait(false);
@@ -355,7 +374,11 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
     private async Task UpdateResourceConfigPermissionsAsync(IClusterResourceConfig resourceConfig)
     {
-        foreach (var request in resourceConfig.AuthorizationRequests().Distinct())
+        // Navigation visibility and informer seeding only depend on List and Watch.
+        // Command verbs (create/delete/patch/update) are requested on demand by the
+        // resource config's command enablement instead of being reviewed for every config
+        // on connect.
+        foreach (var request in resourceConfig.ListWatchAuthorizationRequests().Distinct())
         {
             await Runtime.Permissions.UpdatePermissionsAllNamespaceAsync(
                 request.ResourceKind,
@@ -639,7 +662,55 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
     private void OnNamespacesChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        var changedNamespaces = GetChangedNamespaceNames(e);
+        lock (_changedNamespacesLock)
+        {
+            if (changedNamespaces is null || changedNamespaces.Count == 0)
+            {
+                // A Reset (or an event without usable items) does not identify the affected
+                // namespaces, so the refresh must discard all namespace-scoped decisions.
+                _changedNamespaces = null;
+            }
+            else
+            {
+                _changedNamespaces ??= new HashSet<string>(StringComparer.Ordinal);
+                _changedNamespaces.UnionWith(changedNamespaces);
+            }
+        }
+
         _permissionRefreshCoordinator.Request(PermissionRefreshScope.Namespaces);
+    }
+
+    private static HashSet<string>? GetChangedNamespaceNames(NotifyCollectionChangedEventArgs e)
+    {
+        HashSet<string>? names = null;
+        AddNamespaceNames(e.OldItems, ref names);
+        AddNamespaceNames(e.NewItems, ref names);
+        return names;
+    }
+
+    private static void AddNamespaceNames(IList? items, ref HashSet<string>? names)
+    {
+        if (items is null)
+        {
+            return;
+        }
+
+        foreach (var item in items)
+        {
+            if (item is not V1Namespace @namespace)
+            {
+                continue;
+            }
+
+            var name = @namespace.Name();
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                continue;
+            }
+
+            (names ??= new HashSet<string>(StringComparer.Ordinal)).Add(name);
+        }
     }
 
     private void OnRuntimePropertyChanged(object? sender, PropertyChangedEventArgs e)

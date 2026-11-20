@@ -1511,20 +1511,25 @@ public partial class ContainerClass<T> : ObservableObject, IClearableResourceCon
 public sealed class OperationKeyHandler : DelegatingHandler
 {
     private readonly TimeSpan _forbiddenCoalesceWindow;
-    private readonly Action? _onForbidden;
+    private readonly Action<string>? _onForbidden;
     private long _lastForbiddenNotificationTicks;
 
     public OperationKeyHandler()
-        : this(null, TimeSpan.FromSeconds(5))
+        : this((Action<string>?)null, TimeSpan.FromSeconds(5))
     {
     }
 
     public OperationKeyHandler(Action onForbidden)
-        : this(onForbidden, TimeSpan.FromSeconds(5))
+        : this(onForbidden is null ? null : _ => onForbidden(), TimeSpan.FromSeconds(5))
     {
     }
 
     public OperationKeyHandler(Action? onForbidden, TimeSpan forbiddenCoalesceWindow)
+        : this(onForbidden is null ? null : _ => onForbidden(), forbiddenCoalesceWindow)
+    {
+    }
+
+    public OperationKeyHandler(Action<string>? onForbidden, TimeSpan forbiddenCoalesceWindow)
     {
         _onForbidden = onForbidden;
         _forbiddenCoalesceWindow = forbiddenCoalesceWindow;
@@ -1587,7 +1592,7 @@ public sealed class OperationKeyHandler : DelegatingHandler
 
         try
         {
-            _onForbidden();
+            _onForbidden(request.RequestUri?.PathAndQuery ?? string.Empty);
         }
         catch (Exception ex)
         {

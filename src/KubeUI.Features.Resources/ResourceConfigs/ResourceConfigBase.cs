@@ -1,9 +1,11 @@
+using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.Json;
 using Avalonia.Collections;
 using Avalonia.Controls.Notifications;
 using Avalonia.Input;
+using Avalonia.Threading;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
@@ -42,6 +44,12 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
     protected IFactory _factory = null!;
     private IPodLogsLauncher _podLogsLauncher = null!;
     private ResourcePropertiesCoordinator _propertiesCoordinator = null!;
+
+    // ICommand.CanExecute is synchronous, so command enablement cannot await a live
+    // authorization review. The workspace eagerly reviews only List/Watch; command verbs
+    // are requested on first use and tracked here so repeated menu openings do not reissue
+    // the same review. EvaluateListWatchAccessAsync clears this set on permission refresh.
+    private readonly ConcurrentDictionary<(Verb Verb, string? Namespace), byte> _reviewedCommandPermissions = new();
 
     protected ResourceConfigBase()
     {
@@ -354,8 +362,12 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
         (Verb.Watch, null),
     ];
 
-    public virtual Task EvaluateListWatchAccessAsync()
+    public virtual async Task EvaluateListWatchAccessAsync()
     {
+        // A permission refresh discards the authorization decisions the command enablement
+        // paths requested on demand, so let the next enablement check request them again.
+        _reviewedCommandPermissions.Clear();
+
         PermissionsLoaded = false;
         CanListAndWatch = false;
 
@@ -375,7 +387,32 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
         }
 
         PermissionsLoaded = true;
-        return Task.CompletedTask;
+
+        // Only List/Watch are reviewed eagerly now. A namespace's SelfSubjectRulesReview
+        // answers cached CanI checks for every verb, so warm it once per namespace. This
+        // keeps consumers that read cached command permissions (properties editing, action
+        // enablement) working without an access review per config and verb.
+        if (IsNamespaced && Cluster is not null)
+        {
+            foreach (var name in Cluster.Runtime.Namespaces
+                         .Select(static item => item.Name())
+                         .Where(static name => !string.IsNullOrWhiteSpace(name))
+                         .Distinct(StringComparer.Ordinal))
+            {
+                try
+                {
+                    await Cluster.Runtime.Permissions.UpdateCanI(Kind, Verb.Patch, name).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    // Avoid allocating the logging arguments when debug logging is disabled.
+                    if (_logger.IsEnabled(LogLevel.Debug))
+                    {
+                        _logger.LogDebug(ex, "Unable to warm namespace rules for {Kind} in {Namespace}", Kind, name);
+                    }
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -418,6 +455,61 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
         return false;
     }
 
+    /// <summary>
+    /// Answers a synchronous command enablement check, requesting a live authorization
+    /// review for the command verb when the cached decision is a denial. The cached decision
+    /// answers the current call; the supplied commands are re-queried after the live review
+    /// updates the authorization cache.
+    /// </summary>
+    private bool CanExecuteWithLiveReview(
+        Verb verb,
+        string? @namespace,
+        Func<bool> cachedDecision,
+        Func<Task> requestLiveReview,
+        params IRelayCommand[] commands)
+    {
+        if (cachedDecision())
+        {
+            return true;
+        }
+
+        if (!_reviewedCommandPermissions.TryAdd((verb, @namespace), 0))
+        {
+            return false;
+        }
+
+        _ = RefreshCommandPermissionAsync(verb, @namespace, requestLiveReview, commands);
+        return false;
+    }
+
+    private async Task RefreshCommandPermissionAsync(
+        Verb verb,
+        string? @namespace,
+        Func<Task> requestLiveReview,
+        IRelayCommand[] commands)
+    {
+        try
+        {
+            await requestLiveReview().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            // Avoid allocating the logging arguments when debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug(ex, "Unable to refresh {Verb} permission for {Kind} in {Namespace}", verb, Kind, @namespace);
+            }
+        }
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            foreach (var command in commands)
+            {
+                command.NotifyCanExecuteChanged();
+            }
+        });
+    }
+
     #region Actions
 
     [RelayCommand(CanExecute = nameof(CanNewResource))]
@@ -457,7 +549,12 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
 
     public bool CanNewResource()
     {
-        return Cluster.Runtime.Permissions.CanIAnyNamespace(Kind, IsNamespaced, Verb.Create);
+        return CanExecuteWithLiveReview(
+            Verb.Create,
+            null,
+            () => Cluster.Runtime.Permissions.CanIAnyNamespace(Kind, IsNamespaced, Verb.Create),
+            () => Cluster.Runtime.Permissions.UpdatePermissionsAllNamespaceAsync(Kind, IsNamespaced, Verb.Create),
+            NewResourceCommand);
     }
 
     [RelayCommand(CanExecute = nameof(CanDelete))]
@@ -513,9 +610,14 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
             return false;
         }
 
-        foreach (var item in items.Cast<T>().ToList().GroupBy(x => x.Namespace()))
+        foreach (var @namespace in items.Cast<T>().Select(x => x.Namespace()).Distinct())
         {
-            if (!Cluster.Runtime.Permissions.CanI(Kind, Verb.Delete, item.Key))
+            if (!CanExecuteWithLiveReview(
+                    Verb.Delete,
+                    @namespace,
+                    () => Cluster.Runtime.Permissions.CanI(Kind, Verb.Delete, @namespace),
+                    () => Cluster.Runtime.Permissions.UpdateCanI(Kind, Verb.Delete, @namespace),
+                    DeleteCommand))
             {
                 return false;
             }
@@ -587,10 +689,20 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
 
     private bool CanEditYaml(IList? items)
     {
-        return items is { Count: 1 }
-            && items[0] is T resource
-            && Cluster is not null
-            && Cluster.Runtime.Permissions.CanI(Kind, Verb.Update, resource.Metadata?.NamespaceProperty);
+        if (items is not { Count: 1 }
+            || items[0] is not T resource
+            || Cluster is null)
+        {
+            return false;
+        }
+
+        var @namespace = resource.Metadata?.NamespaceProperty;
+        return CanExecuteWithLiveReview(
+            Verb.Update,
+            @namespace,
+            () => Cluster.Runtime.Permissions.CanI(Kind, Verb.Update, @namespace),
+            () => Cluster.Runtime.Permissions.UpdateCanI(Kind, Verb.Update, @namespace),
+            EditYamlCommand);
     }
 
     [RelayCommand(CanExecute = nameof(CanVisualize))]
@@ -686,9 +798,14 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
             return false;
         }
 
-        foreach (var item in restartableItems.GroupBy(x => x.Namespace()))
+        foreach (var @namespace in restartableItems.Select(x => x.Namespace()).Distinct())
         {
-            if (!Cluster.Runtime.Permissions.CanI(Kind, Verb.Patch, item.Key))
+            if (!CanExecuteWithLiveReview(
+                    Verb.Patch,
+                    @namespace,
+                    () => Cluster.Runtime.Permissions.CanI(Kind, Verb.Patch, @namespace),
+                    () => Cluster.Runtime.Permissions.UpdateCanI(Kind, Verb.Patch, @namespace),
+                    RestartCommand))
             {
                 return false;
             }

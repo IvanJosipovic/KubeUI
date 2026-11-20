@@ -15,6 +15,10 @@ public interface IClusterAuthorization
     void InvalidatePermissions();
     /// <summary>Discards namespace-scoped authorization decisions and rule sets while retaining cluster-wide decisions.</summary>
     void InvalidateNamespacePermissions();
+    /// <summary>Discards one namespace's cached decisions while retaining all other namespaces and cluster-wide decisions.</summary>
+    void InvalidateNamespacePermissions(string namespaceName);
+    /// <summary>Discards the listed namespaces' cached decisions while retaining all other namespaces and cluster-wide decisions.</summary>
+    void InvalidateNamespaces(IEnumerable<string> namespaceNames);
     /// <summary>Returns cached permission for a resource and optional namespace/subresource.</summary>
     bool CanI(GroupApiVersionKind kind, Verb verb, string? @namespace = null, string? subresource = null);
     /// <summary>Returns whether permission exists in any namespace, or cluster-wide when <paramref name="namespaced"/> is false.</summary>

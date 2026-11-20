@@ -432,6 +432,103 @@ public sealed class ClusterAuthorizationTests
         cluster.Permissions.CanI(kind, Verb.List).ShouldBeFalse();
     }
 
+    [Fact]
+    public async Task targeted_namespace_invalidation_retains_other_namespaces_rules_and_decisions()
+    {
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            CreateRestrictedClusterConfig(
+                KubernetesBackend.Fake,
+                KubernetesRbac.InNamespace("default", new RbacRule("pods", "list"))),
+            TestContext.Current.CancellationToken);
+        var cluster = harness.Cluster;
+        await cluster.Connect();
+        var kind = GroupApiVersionKind.From<V1Pod>();
+        await TestWait.UntilAsync(
+            () => cluster.IsResourceNamespaced<V1Pod>(),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Load complete rule sets for both namespaces. "default" is granted pods/list,
+        // "my-app" is not. Rule-derived answers are served from the namespace rule sets.
+        (await cluster.Permissions.UpdateCanI(kind, Verb.List, "default")).ShouldBeTrue();
+        (await cluster.Permissions.UpdateCanI(kind, Verb.List, "my-app")).ShouldBeFalse();
+        cluster.Permissions.CanI(kind, Verb.List, "default").ShouldBeTrue();
+        cluster.Permissions.CanI(kind, Verb.List, "my-app").ShouldBeFalse();
+
+        var authorizationBefore = harness.FakeApi!.AuthorizationRequestCount;
+        var rulesReviewsBefore = harness.FakeApi.RulesReviewRequestCount;
+
+        // Only "my-app" changed. Invalidation must discard its rule set and decisions while
+        // retaining the rule set and decisions for every other namespace.
+        cluster.InvalidateNamespacePermissions("my-app");
+
+        // The retained namespace still answers from its cached rule set without any new
+        // access review or rules review.
+        cluster.Permissions.CanI(kind, Verb.List, "default").ShouldBeTrue();
+        harness.FakeApi.AuthorizationRequestCount.ShouldBe(authorizationBefore);
+        harness.FakeApi.RulesReviewRequestCount.ShouldBe(rulesReviewsBefore);
+
+        // The invalidated namespace lost its cached rule set.
+        cluster.Permissions.CanI(kind, Verb.List, "my-app").ShouldBeFalse();
+
+        // Re-reviewing the invalidated namespace issues exactly one new rules review and does
+        // not re-review the retained namespace.
+        (await cluster.Permissions.UpdateCanI(kind, Verb.List, "my-app")).ShouldBeFalse();
+        harness.FakeApi.RulesReviewRequestCount.ShouldBe(rulesReviewsBefore + 1);
+        harness.FakeApi.AuthorizationRequestCount.ShouldBe(authorizationBefore);
+        cluster.Permissions.CanI(kind, Verb.List, "default").ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task targeted_namespace_invalidation_does_not_publish_in_flight_rules_into_new_generation()
+    {
+        var state = new RulesReviewGateState();
+        var config = CreateRestrictedClusterConfig(KubernetesBackend.Fake);
+        config.HttpHandlerFactory = () => [new RulesReviewGateHandler(state)];
+
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            config,
+            TestContext.Current.CancellationToken);
+        var cluster = harness.Cluster;
+        await cluster.Connect();
+        await GrantPodListAsync(harness, "default", TestContext.Current.CancellationToken);
+        cluster.Permissions.InvalidatePermissions();
+
+        var kind = GroupApiVersionKind.From<V1Pod>();
+        var requestsBeforeLoad = state.RequestCount;
+        state.StartBlocking();
+        var staleLoad = cluster.Permissions.UpdateCanI(kind, Verb.List, "default");
+        try
+        {
+            await TestWait.UntilAsync(
+                () => state.RequestCount > requestsBeforeLoad,
+                TimeSpan.FromSeconds(10),
+                cancellationToken: TestContext.Current.CancellationToken);
+
+            await RevokePodListAsync(harness, "default", TestContext.Current.CancellationToken);
+
+            // Invalidate a different namespace while the "default" rules review is in flight.
+            // The in-flight load must publish into the generation it started in, not the new
+            // generation created by this targeted invalidation.
+            cluster.InvalidateNamespacePermissions("my-app");
+        }
+        finally
+        {
+            state.Gate.TrySetResult();
+        }
+
+        (await staleLoad.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken))
+            .ShouldBeTrue();
+        cluster.Permissions.CanI(kind, Verb.List, "default").ShouldBeFalse();
+
+        var requestsBeforeReload = state.RequestCount;
+        (await cluster.Permissions.UpdateCanI(kind, Verb.List, "default")
+            .WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken))
+            .ShouldBeFalse();
+        cluster.Permissions.CanI(kind, Verb.List, "default").ShouldBeFalse();
+        state.RequestCount.ShouldBeGreaterThan(requestsBeforeReload);
+    }
+
     [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]
@@ -557,6 +654,89 @@ public sealed class ClusterAuthorizationTests
 
         invalidated.ShouldBeTrue();
         cluster.Objects.ContainsKey(kind).ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task concurrent_cluster_scope_checks_share_one_authorization_review()
+    {
+        var state = new AccessReviewGateState();
+        var config = new TestClusterConfig
+        {
+            Type = KubernetesBackend.Fake,
+            HttpHandlerFactory = () => [new AccessReviewGateHandler(state)],
+        };
+
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            config,
+            TestContext.Current.CancellationToken);
+        var cluster = harness.Cluster;
+        await cluster.Connect();
+
+        // Connect only reviews Namespace list/watch, so the Pod list key is still uncached.
+        cluster.Permissions.CanI(GroupApiVersionKind.From<V1Pod>(), Verb.List).ShouldBeFalse();
+
+        var podReviewsBefore = state.PodRequestCount;
+        state.StartBlocking();
+
+        var kind = GroupApiVersionKind.From<V1Pod>();
+        var checks = Enumerable.Range(0, 32)
+            .Select(_ => Task.Run(
+                () => cluster.Permissions.UpdateCanI(kind, Verb.List),
+                TestContext.Current.CancellationToken))
+            .ToArray();
+
+        await TestWait.UntilAsync(
+            () => state.RequestCount > 0,
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken);
+        state.Gate.TrySetResult();
+
+        await Task.WhenAll(checks).WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        checks.ShouldAllBe(check => check.Result);
+        // Concurrent checks must share in-flight work rather than issue one review each.
+        (state.PodRequestCount - podReviewsBefore)
+            .ShouldBeLessThanOrEqualTo(2, $"allReviews={state.RequestCount}");
+    }
+
+    [Fact]
+    public async Task access_review_completed_after_invalidation_is_rechecked_in_the_current_generation()
+    {
+        var state = new AccessReviewGateState();
+        var config = new TestClusterConfig
+        {
+            Type = KubernetesBackend.Fake,
+            HttpHandlerFactory = () => [new AccessReviewGateHandler(state)],
+        };
+
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            config,
+            TestContext.Current.CancellationToken);
+        var cluster = harness.Cluster;
+        await cluster.Connect();
+
+        var kind = GroupApiVersionKind.From<V1Pod>();
+        var reviewsBefore = state.PodRequestCount;
+        state.StartBlocking();
+
+        var check = Task.Run(
+            () => cluster.Permissions.UpdateCanI(kind, Verb.List),
+            TestContext.Current.CancellationToken);
+
+        await TestWait.UntilAsync(
+            () => state.PodRequestCount > reviewsBefore,
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Replace the cache while the review is in flight. The in-flight result belongs to
+        // the old generation and must not satisfy a check against the new one.
+        cluster.Permissions.InvalidatePermissions();
+        cluster.Permissions.CanI(kind, Verb.List).ShouldBeFalse();
+        state.Gate.TrySetResult();
+
+        (await check.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken))
+            .ShouldBeTrue();
+        cluster.Permissions.CanI(kind, Verb.List).ShouldBeTrue();
+        (state.PodRequestCount - reviewsBefore).ShouldBeGreaterThanOrEqualTo(2);
     }
 
     [Fact]
@@ -760,6 +940,59 @@ public sealed class ClusterAuthorizationTests
 
             cancellationToken.ThrowIfCancellationRequested();
             await TestWait.NextPollAsync(TimeSpan.FromMilliseconds(25), cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private sealed class AccessReviewGateState
+    {
+        private int _requestCount;
+        private int _isBlocking;
+
+        public TaskCompletionSource Gate { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public int RequestCount => Volatile.Read(ref _requestCount);
+
+        public void StartBlocking() => Volatile.Write(ref _isBlocking, 1);
+
+        public bool TryBlockRequest()
+        {
+            Interlocked.Increment(ref _requestCount);
+            return Volatile.Read(ref _isBlocking) != 0;
+        }
+
+        public void RecordResource(string? resource)
+        {
+            if (string.Equals(resource, "pods", StringComparison.Ordinal))
+            {
+                Interlocked.Increment(ref _podRequestCount);
+            }
+        }
+
+        public int PodRequestCount => Volatile.Read(ref _podRequestCount);
+
+        private int _podRequestCount;
+    }
+
+    private sealed class AccessReviewGateHandler(AccessReviewGateState state) : DelegatingHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            if (request.RequestUri?.AbsolutePath.EndsWith(
+                    "/selfsubjectaccessreviews",
+                    StringComparison.Ordinal) == true)
+            {
+                var body = await request.Content!.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                request.Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
+                state.RecordResource(body.Contains("\"pods\"", StringComparison.Ordinal) ? "pods" : null);
+                if (state.TryBlockRequest())
+                {
+                    await state.Gate.Task.WaitAsync(cancellationToken);
+                }
+            }
+
+            return await base.SendAsync(request, cancellationToken);
         }
     }
 

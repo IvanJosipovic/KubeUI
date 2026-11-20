@@ -157,6 +157,26 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
     }
 
     [Fact]
+    public async Task OperationKeyHandler_reports_forbidden_request_path()
+    {
+        string? reportedPath = null;
+        using var handler = new OperationKeyHandler(
+            path => reportedPath = path,
+            TimeSpan.Zero)
+        {
+            InnerHandler = new ForbiddenHandler(),
+        };
+        using var invoker = new HttpMessageInvoker(handler);
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "http://kube/api/v1/namespaces/team-a/pods");
+        var response = await invoker.SendAsync(request, TestContext.Current.CancellationToken);
+
+        response.StatusCode.ShouldBe(System.Net.HttpStatusCode.Forbidden);
+        reportedPath.ShouldNotBeNull();
+        reportedPath!.ShouldContain("/namespaces/team-a/pods");
+    }
+
+    [Fact]
     public async Task SeedingAfterPermissionInvalidationStillCreatesInformer()
     {
         var pod = new V1Pod
@@ -322,6 +342,17 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
         public int RequestCount => Volatile.Read(ref _requestCount);
 
         public void OnDiscoveryRequest() => Interlocked.Increment(ref _requestCount);
+    }
+
+    private sealed class ForbiddenHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+            => Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.Forbidden)
+            {
+                RequestMessage = request,
+            });
     }
 
     private sealed class WatchCancellationState(CancellationTokenSource cancellation)

@@ -1,4 +1,5 @@
 using Avalonia.Headless.XUnit;
+using Avalonia.Threading;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
 using KubeUI.App.Shell.Navigation;
@@ -42,6 +43,24 @@ public sealed class ResourceConfigBasePermissionTests
         resource.Metadata.Labels["source"].ShouldBe("config");
         config.Columns().ShouldContain(column => column.Name == "Configured");
         config.GetCustomMenuItems(Array.Empty<V1Pod>()).Single().Title.ShouldBe("Configured action");
+    }
+
+    [AvaloniaTheory, KubernetesBackendData]
+    [Trait("Category", "Kind")]
+    public async Task command_permission_is_live_reviewed_when_only_list_and_watch_are_eager(KubernetesBackend backend)
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(
+            config => config.Type = backend);
+        var podConfig = workspace.GetResourceConfig<V1Pod>(GroupApiVersionKind.From<V1Pod>());
+
+        // The workspace eagerly reviews only List and Watch. Command enablement is
+        // synchronous, so Create is requested on demand and must still reflect the
+        // cluster's authorization decision.
+        await TestWait.UntilAsync(
+            () => podConfig.CanNewResource(),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
     }
 
     [AvaloniaFact]
