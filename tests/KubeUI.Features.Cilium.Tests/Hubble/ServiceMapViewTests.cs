@@ -481,8 +481,9 @@ public sealed class ServiceMapViewTests
             .OfType<EdgeControl>()
             .First()
             .GeometryBounds;
+        var previousLayout = graphControl.LayoutTask;
         graphControl.LayoutAlgorithm = LayoutAlgorithmTypeEnum.SimpleRandom;
-        await graphControl.LayoutTask!.WaitAsync(TestContext.Current.CancellationToken);
+        await WaitForLayoutAfterChangeAsync(graphControl, previousLayout, TestContext.Current.CancellationToken);
         var afterLayout = graphControl.Area.GetVertexPositions();
         afterLayout.Any(pair => pair.Value != beforeLayout[pair.Key]).ShouldBeTrue();
         graphControl.Area.GetVisualDescendants()
@@ -495,19 +496,22 @@ public sealed class ServiceMapViewTests
             if (algorithm == LayoutAlgorithmTypeEnum.Custom)
                 continue;
 
+            var previous = graphControl.LayoutTask;
             graphControl.LayoutAlgorithm = algorithm;
-            await graphControl.LayoutTask!.WaitAsync(TestContext.Current.CancellationToken);
+            await WaitForLayoutAfterChangeAsync(graphControl, previous, TestContext.Current.CancellationToken);
             graphControl.ActiveExternalLayoutAlgorithm.ShouldBe(algorithm);
             graphControl.Area.GetVertexPositions().Values
                 .ShouldAllBe(static position => double.IsFinite(position.X) && double.IsFinite(position.Y));
         }
 
+        var previousCompound = graphControl.LayoutTask;
         graphControl.LayoutAlgorithm = LayoutAlgorithmTypeEnum.CompoundFDP;
-        await graphControl.LayoutTask!.WaitAsync(TestContext.Current.CancellationToken);
+        await WaitForLayoutAfterChangeAsync(graphControl, previousCompound, TestContext.Current.CancellationToken);
         foreach (var algorithm in Enum.GetValues<EdgeRoutingAlgorithmTypeEnum>())
         {
+            var previousRouting = graphControl.LayoutTask;
             graphControl.EdgeRoutingAlgorithm = algorithm;
-            await graphControl.LayoutTask!.WaitAsync(TestContext.Current.CancellationToken);
+            await WaitForLayoutAfterChangeAsync(graphControl, previousRouting, TestContext.Current.CancellationToken);
             graphControl.GraphXEdgeCount.ShouldBe(graph.Edges.Count);
             graphControl.Area.LogicCore!.DefaultEdgeRoutingAlgorithm.ShouldBe(algorithm);
         }
@@ -1007,6 +1011,27 @@ public sealed class ServiceMapViewTests
             bitmap.Save(screenshotPath, PngBitmapEncoderOptions.Default);
         }
 
+    }
+
+    private static async Task WaitForLayoutAfterChangeAsync(ServiceMapGraphControl control, Task? previous, CancellationToken cancellationToken)
+    {
+        if (ReferenceEquals(control.LayoutTask, previous))
+        {
+            // The value did not change, so no relayout was queued.
+            if (control.LayoutTask is { } current)
+            {
+                await current.WaitAsync(cancellationToken);
+            }
+
+            return;
+        }
+
+        await TestWait.UntilAsync(
+            () => control.LayoutTask?.IsCompleted == true,
+            timeoutMs: 10_000,
+            cancellationToken: cancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+        await control.LayoutTask!.WaitAsync(cancellationToken);
     }
 
     private sealed class RecordingResourceIconService : IResourceIconService
