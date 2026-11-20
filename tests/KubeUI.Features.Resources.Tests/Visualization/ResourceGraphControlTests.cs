@@ -1669,6 +1669,7 @@ public sealed class ResourceGraphControlTests
         using VisualizationViewModel viewModel = new(builder);
         viewModel.Initialize(cluster);
         await builder.WaitForInitialBuildAsync();
+        await WaitForAsync(() => !viewModel.IsRebuildPendingOrRunning);
 
         await cluster.Runtime.AddOrUpdateResource(CreatePodForApi("pending"));
         await builder.WaitForAdditionStartedAsync();
