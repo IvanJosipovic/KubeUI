@@ -584,6 +584,56 @@ public class ClusterWorkspaceTests
 
     [AvaloniaTheory, KubernetesBackendData]
     [Trait("Category", "Kind")]
+    public async Task list_and_watch_in_different_namespaces_does_not_mark_resource_listable(KubernetesBackend backend)
+    {
+        using var workspace = await Application.Current.CreateClusterAsync(config =>
+        {
+            config.Type = backend;
+            config.AuthenticatedUser = KubernetesRbac.ServiceAccountUser;
+            config.InitialResources = new IKubernetesObject<V1ObjectMeta>[]
+                {
+                    new V1Namespace { Metadata = new V1ObjectMeta { Name = "team-a" } },
+                    new V1Namespace { Metadata = new V1ObjectMeta { Name = "team-b" } },
+                    new V1ServiceAccount
+                    {
+                        Metadata = new V1ObjectMeta
+                        {
+                            Name = KubernetesRbac.ServiceAccountName,
+                            NamespaceProperty = KubernetesRbac.ServiceAccountNamespace,
+                        },
+                    },
+                }
+                .Concat(KubernetesRbac.ClusterWide(
+                    new RbacRule("namespaces", "list"),
+                    new RbacRule("namespaces", "watch")))
+                .Concat(KubernetesRbac.InNamespace("team-a", new RbacRule("pods", "list")))
+                .Concat(KubernetesRbac.InNamespace("team-b", new RbacRule("pods", "watch")))
+                .ToArray();
+        });
+
+        await workspace.Connect();
+        await workspace.Runtime.SeedResource<V1Namespace>(true);
+
+        await TestWait.UntilAsync(
+            () => workspace.Runtime.Namespaces.Select(x => x.Name()).Contains("team-a")
+                && workspace.Runtime.Namespaces.Select(x => x.Name()).Contains("team-b"),
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+
+        await workspace.Runtime.Permissions.UpdateCanI<V1Pod>(Verb.List, "team-a");
+        await workspace.Runtime.Permissions.UpdateCanI<V1Pod>(Verb.Watch, "team-b");
+
+        var podConfig = workspace.GetResourceConfig<V1Pod>(GroupApiVersionKind.From<V1Pod>());
+        await podConfig.EvaluateListWatchAccessAsync();
+
+        // List is allowed only in team-a and watch only in team-b. No single informer scope
+        // has both verbs, so the config must not be advertised as listable, matching seeding.
+        podConfig.CanListAndWatch.ShouldBeFalse();
+    }
+
+    [AvaloniaTheory, KubernetesBackendData]
+    [Trait("Category", "Kind")]
     public async Task disconnect_disposes_seeded_informers_and_registrations(KubernetesBackend backend)
     {
         using var workspace = await Application.Current.CreateClusterAsync(

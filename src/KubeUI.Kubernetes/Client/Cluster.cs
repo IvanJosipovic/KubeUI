@@ -645,16 +645,6 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             _logger.LogDebug("Starting seed initialization for {Type}.", typeof(T));
         }
 
-        // CanI only reads the cached authorization index and reports a cache miss as a denial.
-        // A permission refresh can replace that cache after the resource configuration was
-        // evaluated but before this seed runs. Without a refresh here the list/watch checks
-        // below would both fail, no informer would be created, and the container would stay
-        // empty forever because the seed task is cached as successfully completed. These
-        // calls reuse the existing per-generation caches and are cheap when the decisions are
-        // already known, so they only do work when the permission truth is actually missing.
-        await UpdatePermissionsAllNamespaceAsync<T>(Verb.List).ConfigureAwait(false);
-        await UpdatePermissionsAllNamespaceAsync<T>(Verb.Watch).ConfigureAwait(false);
-
         // Seeding before connect is valid; informer creation is guarded by permissions and happens after connect.
         var client = Client!;
 
@@ -662,7 +652,16 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
         var container = (ContainerClass<T>)Objects.GetOrAdd(kind, _ => new ContainerClass<T>());
 
-        if (CanI<T>(Verb.List) && CanI<T>(Verb.Watch))
+        // Use awaited, live authorization decisions rather than reading the cache with CanI.
+        // CanI treats a missing cache entry as a denial, and a permission refresh can replace
+        // the cache at any time, so a cache read here could create zero informers even when
+        // navigation marked the resource listable. UpdateCanI performs a review when needed
+        // and returns the decision from the same generation that it writes, closing the gap
+        // between check and informer creation.
+        var canListGlobally = await UpdateCanI<T>(Verb.List).ConfigureAwait(false);
+        var canWatchGlobally = await UpdateCanI<T>(Verb.Watch).ConfigureAwait(false);
+
+        if (canListGlobally && canWatchGlobally)
         {
             var informer = new ResourceInformer<T>(client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), resourceListLimit: 10000);
             container.Informers.Add(informer);
@@ -691,7 +690,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             {
                 var ns = item.Name();
 
-                if (CanI<T>(Verb.List, ns) && CanI<T>(Verb.Watch, ns))
+                if (await UpdateCanI<T>(Verb.List, ns).ConfigureAwait(false)
+                    && await UpdateCanI<T>(Verb.Watch, ns).ConfigureAwait(false))
                 {
                     var informer = new ResourceInformer<T>(client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), @namespace: ns, resourceListLimit: 10000);
                     container.Informers.Add(informer);

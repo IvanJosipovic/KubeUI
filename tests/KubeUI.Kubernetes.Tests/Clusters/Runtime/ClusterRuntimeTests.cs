@@ -159,16 +159,25 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
     [Fact]
     public async Task SeedingAfterPermissionInvalidationStillCreatesInformer()
     {
-        await using var clusterScope = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
+        var pod = new V1Pod
+        {
+            Metadata = new V1ObjectMeta { Name = "after-invalidation", NamespaceProperty = "default" }
+        };
+        await using var clusterScope = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig { InitialResources = [pod] },
+            TestContext.Current.CancellationToken);
         var cluster = clusterScope.Cluster;
         await cluster.Connect();
 
-        // The workspace establishes these before a resource list view seeds.
+        // The workspace establishes these before a resource list view seeds. This is the
+        // state navigation uses to show the resource as listable.
         await cluster.Permissions.UpdateCanI<V1Pod>(Verb.List);
         await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Watch);
+        cluster.Permissions.CanI<V1Pod>(Verb.List).ShouldBeTrue();
 
-        // Simulate a permission refresh replacing the cache after the resource config was
-        // evaluated but before the list view seeded the resource.
+        // A permission refresh can replace the authorization cache after the resource config
+        // was evaluated but before the list view seeds it. CanI then reports a miss as a
+        // denial, so a cache-only gate creates no informer and the list stays empty.
         cluster.Permissions.InvalidatePermissions();
         cluster.Permissions.CanI<V1Pod>(Verb.List).ShouldBeFalse();
 
@@ -177,6 +186,7 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
         var podKind = GroupApiVersionKind.From<V1Pod>();
         var container = cluster.Objects[podKind].ShouldBeOfType<ContainerClass<V1Pod>>();
         container.InformerCount.ShouldBe(1);
+        cluster.GetResourceList<V1Pod>().ShouldContain(item => item.Metadata.Name == "after-invalidation");
         cluster.Permissions.CanI<V1Pod>(Verb.List).ShouldBeTrue();
     }
 

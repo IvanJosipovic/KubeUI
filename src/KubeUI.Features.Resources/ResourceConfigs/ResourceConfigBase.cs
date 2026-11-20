@@ -384,8 +384,12 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
     /// </summary>
     protected bool HasListAndWatchAccess()
     {
-        if (Cluster.Runtime.Permissions.CanIAnyNamespace(Kind, IsNamespaced, Verb.List)
-            && Cluster.Runtime.Permissions.CanIAnyNamespace(Kind, IsNamespaced, Verb.Watch))
+        // A cluster-wide informer needs both verbs cluster-wide. CanIAnyNamespace must not
+        // be used here: it can answer true for List in one scope and Watch in a different
+        // scope, which would mark the resource listable even though no informer can be
+        // created. Seeding requires both verbs in the same scope.
+        if (Cluster.Runtime.Permissions.CanI(Kind, Verb.List)
+            && Cluster.Runtime.Permissions.CanI(Kind, Verb.Watch))
         {
             return true;
         }
@@ -395,6 +399,7 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
             return false;
         }
 
+        // A namespaced informer needs both verbs in the same namespace.
         foreach (var @namespace in Cluster.Runtime.Namespaces)
         {
             var namespaceName = @namespace.Name();
