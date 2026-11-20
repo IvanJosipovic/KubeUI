@@ -54,6 +54,37 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
         cluster.ActiveResourceInformerTaskCount.ShouldBe(0);
     }
     [Fact]
+    public async Task DisconnectDisposesClientAfterInformerTasksComplete()
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        var watchStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseWatch = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        await using var scope = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig(),
+            TestContext.Current.CancellationToken);
+        DisposeTrackingKubernetes? trackedClient = null;
+        scope.Cluster.KubernetesClientFactory = configuration => trackedClient = new DisposeTrackingKubernetes(
+            configuration,
+            new BlockingPodWatchHandler(watchStarted, releaseWatch.Task),
+            scope.FakeApi!.CreateClient("system:admin", useRoleBasedAuthorization: false));
+
+        await scope.Cluster.Connect();
+        await scope.Cluster.Permissions.UpdateCanI<V1Pod>(Verb.List);
+        await scope.Cluster.Permissions.UpdateCanI<V1Pod>(Verb.Watch);
+        await scope.Cluster.SeedResource<V1Pod>();
+
+        await watchStarted.Task.WaitAsync(timeout.Token);
+        var disconnect = scope.Cluster.Disconnect();
+        trackedClient.ShouldNotBeNull();
+        trackedClient.Disposed.ShouldBeFalse();
+
+        releaseWatch.TrySetResult();
+        await disconnect.WaitAsync(timeout.Token);
+        trackedClient.Disposed.ShouldBeTrue();
+    }
+
+    [Fact]
     public async Task CancellingAsWatchStartsStopsInformer()
     {
         using var cancellation = new CancellationTokenSource();
@@ -258,6 +289,44 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
                 cancellation.Cancel();
                 WatchStarted.TrySetResult();
             }
+        }
+    }
+
+    private sealed class DisposeTrackingKubernetes(
+        k8s.KubernetesClientConfiguration configuration,
+        params DelegatingHandler[] handlers) : k8s.Kubernetes(configuration, handlers)
+    {
+        public bool Disposed { get; private set; }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Disposed = true;
+            }
+
+            base.Dispose(disposing);
+        }
+    }
+
+    private sealed class BlockingPodWatchHandler(
+        TaskCompletionSource started,
+        Task gate) : DelegatingHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            var uri = request.RequestUri;
+            if (uri is not null
+                && uri.AbsolutePath.EndsWith("/pods", StringComparison.Ordinal)
+                && uri.Query.Contains("watch=true", StringComparison.OrdinalIgnoreCase))
+            {
+                started.TrySetResult();
+                await gate.WaitAsync(cancellationToken);
+            }
+
+            return await base.SendAsync(request, cancellationToken);
         }
     }
 

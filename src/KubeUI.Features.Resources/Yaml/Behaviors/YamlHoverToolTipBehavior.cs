@@ -22,7 +22,7 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
     private Popup? _hoverPopup;
     private int _hoverRequest;
     private ScrollViewer? _scrollViewer;
-    private Task? _schemaLoadTask;
+    private Task<bool>? _schemaLoadTask;
     private Vector? _tooltipScrollOffset;
     private YamlSchemaNode? _schemaRoot;
     private ClusterModelCatalog? _schemaCatalog;
@@ -197,13 +197,20 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
         TryShowHoverTooltipAtPoint(point);
     }
 
-    internal async Task<bool> EnsureSchemaLoadAsync(Func<Task> loadSchemas)
+    internal async Task<bool> EnsureSchemaLoadAsync(Func<Task<bool>> loadSchemas)
     {
         try
         {
             _schemaLoadTask ??= loadSchemas();
-            await _schemaLoadTask.ConfigureAwait(true);
-            return true;
+            if (await _schemaLoadTask.ConfigureAwait(true))
+            {
+                return true;
+            }
+
+            // A failed load completes quietly so the rest of the app stays usable. Do not
+            // cache that completed task, otherwise hover would never retry the schema load.
+            _schemaLoadTask = null;
+            return false;
         }
         catch (Exception)
         {

@@ -15,8 +15,9 @@ public sealed class KubernetesOpenApiSchemaLoaderTests
         var catalog = new KubernetesOpenApiSchemaCatalog();
         using var loader = new KubernetesOpenApiSchemaLoader(catalog, NullLogger.Instance);
 
-        await loader.EnsureAsync((k8s.Kubernetes)cluster.Client!, "fake", TestContext.Current.CancellationToken);
+        var loaded = await loader.EnsureAsync((k8s.Kubernetes)cluster.Client!, "fake", TestContext.Current.CancellationToken);
 
+        loaded.ShouldBeTrue();
         catalog.Count.ShouldBeGreaterThan(0);
     }
 
@@ -30,8 +31,9 @@ public sealed class KubernetesOpenApiSchemaLoaderTests
         var catalog = new KubernetesOpenApiSchemaCatalog();
         using var loader = new KubernetesOpenApiSchemaLoader(catalog, NullLogger.Instance);
 
-        await loader.EnsureAsync((k8s.Kubernetes)cluster.Client!, "fake", TestContext.Current.CancellationToken);
+        var loaded = await loader.EnsureAsync((k8s.Kubernetes)cluster.Client!, "fake", TestContext.Current.CancellationToken);
 
+        loaded.ShouldBeFalse();
         catalog.Count.ShouldBe(0);
         // The loader surfaces failures quietly; a follow-up call may retry because nothing loaded.
         await Should.NotThrowAsync(() => loader.EnsureAsync(
@@ -50,10 +52,11 @@ public sealed class KubernetesOpenApiSchemaLoaderTests
         var catalog = new KubernetesOpenApiSchemaCatalog();
         using var loader = new KubernetesOpenApiSchemaLoader(catalog, NullLogger.Instance);
 
-        await loader.EnsureAsync((k8s.Kubernetes)cluster.Client!, "fake", TestContext.Current.CancellationToken);
+        var loaded = await loader.EnsureAsync((k8s.Kubernetes)cluster.Client!, "fake", TestContext.Current.CancellationToken);
 
         var indexRequests = cluster.FakeApi.RequestUris.Count(uri => uri?.AbsolutePath == "/openapi/v3");
         indexRequests.ShouldBe(1);
+        loaded.ShouldBeFalse();
         catalog.Count.ShouldBe(0);
     }
 
@@ -65,11 +68,13 @@ public sealed class KubernetesOpenApiSchemaLoaderTests
         using var loader = new KubernetesOpenApiSchemaLoader(catalog, NullLogger.Instance);
         var client = (k8s.Kubernetes)cluster.Client!;
 
-        await loader.EnsureAsync(client, "fake", TestContext.Current.CancellationToken);
+        var firstLoad = await loader.EnsureAsync(client, "fake", TestContext.Current.CancellationToken);
         var indexRequestsAfterFirstLoad = cluster.FakeApi!.RequestUris.Count(uri => uri?.AbsolutePath == "/openapi/v3");
 
-        await loader.EnsureAsync(client, "fake", TestContext.Current.CancellationToken);
+        var secondLoad = await loader.EnsureAsync(client, "fake", TestContext.Current.CancellationToken);
 
+        firstLoad.ShouldBeTrue();
+        secondLoad.ShouldBeTrue();
         cluster.FakeApi.RequestUris.Count(uri => uri?.AbsolutePath == "/openapi/v3")
             .ShouldBe(indexRequestsAfterFirstLoad);
     }

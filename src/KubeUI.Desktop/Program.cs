@@ -182,7 +182,9 @@ internal static class Program
 
         var settings = settingsOverride ?? SettingsPersistenceLoader.Load();
 
-        builder.Services.AddKubeUIAppServices(settings.Settings.PreviewFeatures);
+        // A settings file can explicitly contain "PreviewFeatures": null, which bypasses the
+        // property initializer. Fall back to defaults so startup cannot fault on a null deref.
+        builder.Services.AddKubeUIAppServices(settings.Settings.PreviewFeatures ?? new FeatureSettings());
 
         if (mcpEnabledOverride ?? settings.Settings.McpServerEnabled)
             builder.Services.AddKubeUIMcpServer<McpTools>(

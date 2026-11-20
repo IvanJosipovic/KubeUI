@@ -751,16 +751,17 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         return client is not null;
     }
 
-    public async Task EnsureOpenApiSchemasAsync()
+    /// <inheritdoc />
+    public async Task<bool> EnsureOpenApiSchemasAsync()
     {
         if (Client is not k8s.Kubernetes kubernetesClient)
         {
-            return;
+            return true;
         }
 
         try
         {
-            await _openApiSchemaLoader.EnsureAsync(
+            return await _openApiSchemaLoader.EnsureAsync(
                 kubernetesClient,
                 Name,
                 _resourceInformerCancellationTokenSource?.Token ?? CancellationToken.None).ConfigureAwait(false);
@@ -769,6 +770,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         {
             Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
             _logger.LogError(ex, "Unable to load OpenAPI schemas for cluster {name}", Name);
+            return false;
         }
     }
 
@@ -1174,12 +1176,6 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         var cancellationTokenSource = Interlocked.Exchange(ref _resourceInformerCancellationTokenSource, null);
         cancellationTokenSource?.Cancel();
 
-        if (Client is IDisposable disposableClient)
-        {
-            disposableClient.Dispose();
-            Client = null;
-        }
-
         var informerTasks = Interlocked.Exchange(ref _resourceInformerTasks, []).ToArray();
         try
         {
@@ -1188,6 +1184,16 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
         }
         catch (OperationCanceledException) when (cancellationTokenSource?.IsCancellationRequested == true)
         {
+        }
+        finally
+        {
+            // Informers may still be reconnecting while they unwind. Dispose their transport
+            // only after their tasks have completed so watch requests never see a null HttpClient.
+            if (Client is IDisposable disposableClient)
+            {
+                disposableClient.Dispose();
+                Client = null;
+            }
         }
 
         foreach (var container in Objects.Values.OfType<IClearableResourceContainer>())

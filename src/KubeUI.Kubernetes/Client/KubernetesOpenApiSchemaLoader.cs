@@ -268,11 +268,12 @@ public sealed class KubernetesOpenApiSchemaLoader : IDisposable
         }
     }
 
-    /// <summary>Loads schemas once, relying on transport resilience, and returns quietly on transient failure.</summary>
+    /// <summary>Loads schemas once, relying on transport resilience, and reports whether they are available.</summary>
     /// <param name="client">Authenticated Kubernetes client.</param>
     /// <param name="clusterName">Cluster name used for diagnostics.</param>
     /// <param name="cancellationToken">Token used to cancel loading.</param>
-    public async Task EnsureAsync(
+    /// <returns><see langword="true"/> when schemas are loaded or were already present; <see langword="false"/> when a transient failure prevented loading.</returns>
+    public async Task<bool> EnsureAsync(
         k8s.Kubernetes client,
         string clusterName,
         CancellationToken cancellationToken = default)
@@ -288,7 +289,7 @@ public sealed class KubernetesOpenApiSchemaLoader : IDisposable
         if (Volatile.Read(ref _loadAttempted) != 0 && _catalog.Count > 0)
         {
             activity?.SetTag("kubernetes.openapi.schema.load.skipped", true);
-            return;
+            return true;
         }
 
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -297,7 +298,7 @@ public sealed class KubernetesOpenApiSchemaLoader : IDisposable
             if (Volatile.Read(ref _loadAttempted) != 0 && _catalog.Count > 0)
             {
                 activity?.SetTag("kubernetes.openapi.schema.load.skipped", true);
-                return;
+                return true;
             }
 
             try
@@ -306,12 +307,17 @@ public sealed class KubernetesOpenApiSchemaLoader : IDisposable
                 Volatile.Write(ref _loadAttempted, 1);
                 activity?.SetTag("kubernetes.openapi.schema.count", _catalog.Count);
                 activity?.SetStatus(ActivityStatusCode.Ok);
+                return true;
             }
             catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
                 _logger.LogDebug(ex, "Unable to load Kubernetes OpenAPI v3 schemas for {name}.", clusterName);
+
+                // Report the failure instead of completing successfully. Callers that cache this
+                // task (YAML hover) must be able to drop it and retry on the next interaction.
+                return false;
             }
         }
         finally
