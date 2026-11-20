@@ -210,10 +210,7 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
                                 Name = "Cluster",
                                 InstanceName = Name
                             }
-                            .AddRetry(new HttpRetryStrategyOptions
-                            {
-                                MaxRetryAttempts = 3,
-                            })
+                            .AddRetry(ClusterHttpResilience.CreateRetryOptions())
                             .ConfigureTelemetry(_loggerFactory);
 
                             var handler = new OperationKeyHandler(InvalidatePermissionsAfterForbiddenResponse, _authorizationOptions.ForbiddenCoalesceWindow)

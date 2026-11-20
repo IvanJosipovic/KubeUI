@@ -21,11 +21,10 @@ public sealed class KubernetesOpenApiSchemaLoaderTests
     }
 
     [Fact]
-    public async Task EnsureAsync_retries_transient_failures_and_returns_quietly_when_the_index_is_unavailable()
+    public async Task EnsureAsync_returns_quietly_when_the_index_is_unavailable()
     {
         await using var cluster = await CreateClusterAsync(config =>
         {
-            // Fail every request so all three attempts hit the simulated transport failure.
             config.ThrowOnConnect = true;
         });
         var catalog = new KubernetesOpenApiSchemaCatalog();
@@ -39,6 +38,23 @@ public sealed class KubernetesOpenApiSchemaLoaderTests
             (k8s.Kubernetes)cluster.Client!,
             "fake",
             TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task EnsureAsync_performs_one_load_attempt_per_call()
+    {
+        await using var cluster = await new TestClusterGenerator().CreateAsync(
+            TestClusterConfig.Fake(),
+            TestContext.Current.CancellationToken);
+        cluster.FakeApi!.OpenApiV3IndexFailuresRemaining = 5;
+        var catalog = new KubernetesOpenApiSchemaCatalog();
+        using var loader = new KubernetesOpenApiSchemaLoader(catalog, NullLogger.Instance);
+
+        await loader.EnsureAsync((k8s.Kubernetes)cluster.Client!, "fake", TestContext.Current.CancellationToken);
+
+        var indexRequests = cluster.FakeApi.RequestUris.Count(uri => uri?.AbsolutePath == "/openapi/v3");
+        indexRequests.ShouldBe(1);
+        catalog.Count.ShouldBe(0);
     }
 
     [Fact]

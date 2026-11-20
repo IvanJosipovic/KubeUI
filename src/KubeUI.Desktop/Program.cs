@@ -177,12 +177,12 @@ internal static class Program
             ApplicationName = "KubeUI",
             Args = args
         });
+
         builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
         var settings = settingsOverride ?? SettingsPersistenceLoader.Load();
-        var features = settings.Settings.PreviewFeatures ?? new FeatureSettings();
 
-        builder.Services.AddKubeUIAppServices(features);
+        builder.Services.AddKubeUIAppServices(settings.Settings.PreviewFeatures);
 
         if (mcpEnabledOverride ?? settings.Settings.McpServerEnabled)
             builder.Services.AddKubeUIMcpServer<McpTools>(

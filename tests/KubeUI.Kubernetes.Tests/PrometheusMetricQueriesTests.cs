@@ -5,6 +5,7 @@ using System.Net;
 using k8s;
 using k8s.Models;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 
@@ -32,6 +33,26 @@ public sealed class PrometheusMetricQueriesTests
         PrometheusMetricQueries.ShouldRetry(new HttpRequestException("connection failed")).ShouldBeTrue();
         PrometheusMetricQueries.ShouldRetry(new Polly.Timeout.TimeoutRejectedException()).ShouldBeTrue();
         PrometheusMetricQueries.ShouldRetry(new InvalidOperationException("bad query")).ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task RequestAsync_emits_polly_telemetry_for_retries()
+    {
+        using var loggerFactory = new CapturingLoggerFactory();
+        var queryClient = new RecordingPrometheusQueryClient
+        {
+            ExceptionToThrow = new HttpRequestException("transient failure"),
+        };
+        var queries = new PrometheusMetricQueries(NullLogger.Instance, queryClient, TimeProvider.System, loggerFactory);
+        await using var cluster = CreateCluster();
+
+        await queries.RequestAsync(cluster, CreateEndpoint(), CreateProvider(), CreateRequest(), CancellationToken.None, CancellationToken.None);
+
+        loggerFactory.Records.ShouldContain(record =>
+            record.Category == "Polly"
+            && record.Level == LogLevel.Warning
+            && record.Message.Contains("PrometheusMetricQueries", StringComparison.Ordinal));
+        queryClient.QueryCalls.ShouldBe(4);
     }
 
     [Fact]
@@ -316,6 +337,33 @@ public sealed class PrometheusMetricQueriesTests
             ],
         },
     };
+
+    private sealed record CapturedLog(string Category, LogLevel Level, string Message);
+
+    private sealed class CapturingLoggerFactory : ILoggerFactory
+    {
+        public List<CapturedLog> Records { get; } = [];
+
+        public void AddProvider(ILoggerProvider provider)
+        {
+        }
+
+        public ILogger CreateLogger(string categoryName) => new CapturingLogger(this, categoryName);
+
+        public void Dispose()
+        {
+        }
+
+        private sealed class CapturingLogger(CapturingLoggerFactory factory, string category) : ILogger
+        {
+            public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+            public bool IsEnabled(LogLevel logLevel) => true;
+
+            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+                => factory.Records.Add(new CapturedLog(category, logLevel, formatter(state, exception)));
+        }
+    }
 
     private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
     {

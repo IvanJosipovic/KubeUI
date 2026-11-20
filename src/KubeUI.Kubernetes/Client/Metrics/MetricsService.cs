@@ -18,8 +18,8 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
     private ResolvedPrometheusEndpoint? _resolvedPrometheusEndpoint;
     private IPrometheusProvider? _resolvedPrometheusProvider;
 
-    public MetricsService(ILogger<MetricsService> logger, IClusterSettingsStore settings, IEnumerable<IPrometheusProvider> prometheusProviders, IPrometheusQueryClient prometheusQueryClient, IThreadDispatcher dispatcher)
-        : this(logger, settings, prometheusProviders, prometheusQueryClient, dispatcher, TimeProvider.System)
+    public MetricsService(ILogger<MetricsService> logger, IClusterSettingsStore settings, IEnumerable<IPrometheusProvider> prometheusProviders, IPrometheusQueryClient prometheusQueryClient, IThreadDispatcher dispatcher, ILoggerFactory? loggerFactory = null)
+        : this(logger, settings, prometheusProviders, prometheusQueryClient, dispatcher, TimeProvider.System, loggerFactory)
     {
     }
 
@@ -29,14 +29,15 @@ public sealed partial class MetricsService : ObservableObject, IMetricsService, 
         IEnumerable<IPrometheusProvider> prometheusProviders,
         IPrometheusQueryClient prometheusQueryClient,
         IThreadDispatcher dispatcher,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        ILoggerFactory? loggerFactory = null)
     {
         _logger = logger;
         _settings = settings;
         _prometheusProviders = prometheusProviders.ToDictionary(static x => x.Kind);
         _prometheusQueryClient = prometheusQueryClient;
         _kubernetesMetricsCollector = new KubernetesMetricsCollector(logger, dispatcher, KubernetesPodMetrics, KubernetesNodeMetrics);
-        _prometheusMetricQueries = new PrometheusMetricQueries(logger, prometheusQueryClient, timeProvider);
+        _prometheusMetricQueries = new PrometheusMetricQueries(logger, prometheusQueryClient, timeProvider, loggerFactory);
     }
 
     /// <inheritdoc />

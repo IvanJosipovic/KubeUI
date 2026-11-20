@@ -7,7 +7,7 @@ using Microsoft.OpenApi.Reader;
 namespace KubeUI.Kubernetes;
 
 /// <summary>
-/// Coordinates one-time, retryable OpenAPI schema loading for a cluster.
+/// Coordinates one-time OpenAPI schema loading for a cluster.
 /// </summary>
 public sealed class KubernetesOpenApiSchemaLoader : IDisposable
 {
@@ -268,7 +268,7 @@ public sealed class KubernetesOpenApiSchemaLoader : IDisposable
         }
     }
 
-    /// <summary>Loads schemas once, retrying transient failures, and returns quietly when all attempts fail.</summary>
+    /// <summary>Loads schemas once, relying on transport resilience, and returns quietly on transient failure.</summary>
     /// <param name="client">Authenticated Kubernetes client.</param>
     /// <param name="clusterName">Cluster name used for diagnostics.</param>
     /// <param name="cancellationToken">Token used to cancel loading.</param>
@@ -300,33 +300,18 @@ public sealed class KubernetesOpenApiSchemaLoader : IDisposable
                 return;
             }
 
-            const int maxAttempts = 3;
-            for (var attempt = 1; attempt <= maxAttempts; attempt++)
+            try
             {
-                try
-                {
-                    await LoadAsync(client, cancellationToken).ConfigureAwait(false);
-                    Volatile.Write(ref _loadAttempted, 1);
-                    activity?.SetTag("kubernetes.openapi.schema.count", _catalog.Count);
-                    activity?.SetStatus(ActivityStatusCode.Ok);
-                    return;
-                }
-                catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
-                    _logger.LogDebug(
-                        ex,
-                        "Unable to load Kubernetes OpenAPI v3 schemas for {name} on attempt {attempt} of {maxAttempts}.",
-                        clusterName,
-                        attempt,
-                        maxAttempts);
-
-                    if (attempt < maxAttempts)
-                    {
-                        await Task.Delay(TimeSpan.FromSeconds(attempt), cancellationToken).ConfigureAwait(false);
-                    }
-                }
+                await LoadAsync(client, cancellationToken).ConfigureAwait(false);
+                Volatile.Write(ref _loadAttempted, 1);
+                activity?.SetTag("kubernetes.openapi.schema.count", _catalog.Count);
+                activity?.SetStatus(ActivityStatusCode.Ok);
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+                _logger.LogDebug(ex, "Unable to load Kubernetes OpenAPI v3 schemas for {name}.", clusterName);
             }
         }
         finally
