@@ -32,6 +32,25 @@ public sealed class ProgramStartupTests
     }
 
     [Fact]
+    public void BuildMacOsPath_adds_tool_paths_without_duplicates()
+    {
+        var separator = Path.PathSeparator;
+        var existingPath = string.Join(separator, "/usr/bin", "/custom/bin", string.Empty);
+
+        var path = Program.BuildMacOsPath(existingPath);
+
+        path.ShouldBe(string.Join(separator,
+            "/usr/bin", "/custom/bin", "/opt/homebrew/bin", "/opt/homebrew/sbin", "/usr/local/bin", "/bin", "/usr/sbin", "/sbin"));
+    }
+
+    [Fact]
+    public void BuildMacOsPath_uses_default_paths_when_no_path_is_set()
+    {
+        Program.BuildMacOsPath(null).ShouldBe(string.Join(Path.PathSeparator,
+            "/opt/homebrew/bin", "/opt/homebrew/sbin", "/usr/local/bin", "/usr/bin", "/bin", "/usr/sbin", "/sbin"));
+    }
+
+    [Fact]
     public void StartHostAfterAvaloniaSetup_logs_startup_failure_at_critical_with_exception_details()
     {
         Mock<IHost> host = new(MockBehavior.Strict);
