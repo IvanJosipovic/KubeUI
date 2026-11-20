@@ -1269,6 +1269,61 @@ public sealed class FakeKubernetesHttpApiTests
         afterSynthesis.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
+    [Fact]
+    public async Task DiscoveryOverlappingSynthesisSeesConsistentETag()
+    {
+        using var api = new FakeKubernetesHttpApi();
+        using var client = CreateHttpClient(api);
+        using var initialRequest = CreateDiscoveryRequest();
+        using var beforeSynthesis = await client.SendAsync(
+            initialRequest,
+            TestContext.Current.CancellationToken);
+        var staleETag = beforeSynthesis.Headers.ETag!.Tag;
+
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var discoveryTasks = Enumerable.Range(0, 16).Select(async _ =>
+        {
+            await release.Task.WaitAsync(TestContext.Current.CancellationToken);
+            using var request = CreateDiscoveryRequest();
+            using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+            return (Status: response.StatusCode, ETag: response.Headers.ETag?.Tag);
+        });
+        var synthesisTasks = Enumerable.Range(0, 16).Select(async _ =>
+        {
+            await release.Task.WaitAsync(TestContext.Current.CancellationToken);
+            using var response = await client.GetAsync(
+                "/api/v1/services",
+                TestContext.Current.CancellationToken);
+            return response.StatusCode;
+        });
+
+        release.TrySetResult();
+        var discoveryResults = await Task.WhenAll(discoveryTasks);
+        var synthesisResults = await Task.WhenAll(synthesisTasks);
+
+        synthesisResults.ShouldAllBe(status => status == HttpStatusCode.OK);
+        discoveryResults.ShouldAllBe(result => result.Status == HttpStatusCode.OK && result.ETag != null);
+
+        using var conditionalRequest = CreateDiscoveryRequest();
+        conditionalRequest.Headers.IfNoneMatch.Add(new EntityTagHeaderValue(staleETag));
+        using var afterSynthesis = await client.SendAsync(
+            conditionalRequest,
+            TestContext.Current.CancellationToken);
+        afterSynthesis.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var publishedETag = afterSynthesis.Headers.ETag!.Tag;
+        publishedETag.ShouldNotBe(staleETag);
+        discoveryResults.ShouldAllBe(result =>
+            string.Equals(result.ETag, staleETag, StringComparison.Ordinal)
+            || string.Equals(result.ETag, publishedETag, StringComparison.Ordinal));
+    }
+
+    private static HttpRequestMessage CreateDiscoveryRequest()
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api");
+        request.Headers.Accept.ParseAdd("application/json;g=apidiscovery.k8s.io;v=v2beta1;as=APIGroupDiscoveryList");
+        return request;
+    }
+
     private static HttpClient CreateHttpClient(FakeKubernetesHttpApi api)
         => new(api) { BaseAddress = new Uri("http://fake-kubernetes") };
 
