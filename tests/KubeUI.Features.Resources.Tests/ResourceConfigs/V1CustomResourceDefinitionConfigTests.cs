@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using k8s;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.App.Shell.Navigation;
 using KubeUI.Features.Resources;
 using KubeUI.Features.Resources.Common;
@@ -46,10 +47,20 @@ public class V1CustomResourceDefinitionConfigTests
         var services = Application.Current.GetTestServices();
         var crd = TestCustomResourceDefinitionFactory.Create("example.com", "examples", "someString");
         var cluster = await Application.Current.CreateClusterAsync(config => config.InitialResources = [crd]);
-        var config = ActivatorUtilities.CreateInstance<CustomResourceConfig>(services);
-        config.Initialize(cluster);
-        config.Configure(crd);
-        cluster.AddResourceConfigForTest(config);
+
+        // The CRD is part of the fake cluster's state, so the workspace creates its own config.
+        // Use that instance instead of registering a second config for the same kind.
+        var expectedKind = new GroupApiVersionKind(
+            crd.Spec.Group,
+            crd.Spec.Versions[0].Name,
+            crd.Spec.Names.Kind,
+            crd.Spec.Names.Plural);
+        var config = await TestWait.UntilValueAsync(
+            () => cluster.GetResourceConfigs().OfType<CustomResourceConfig>()
+                .FirstOrDefault(value => value.Kind.Equals(expectedKind)),
+            5000,
+            TestContext.Current.CancellationToken);
+        config.ShouldNotBeNull();
         cluster.Runtime.ModelCatalog.RegisterCustomResourceDefinition(config.Kind);
 
         var vm = services.GetRequiredService<ResourceListViewModel<GenericKubernetesObject>>();

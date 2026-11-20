@@ -42,6 +42,20 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
     }
 
     [Fact]
+    public async Task EnsureOpenApiSchemasAsync_reports_false_without_a_kubernetes_client()
+    {
+        var config = new TestClusterConfig { ThrowOnConnect = true };
+        await using var scope = await new TestClusterGenerator().CreateAsync(
+            config,
+            TestContext.Current.CancellationToken);
+
+        await scope.Cluster.Connect();
+
+        scope.Cluster.Client.ShouldBeNull();
+        (await scope.Cluster.EnsureOpenApiSchemasAsync()).ShouldBeFalse();
+    }
+
+    [Fact]
     public async Task DisconnectStopsAllResourceInformerTasks()
     {
         await using var clusterScope = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);

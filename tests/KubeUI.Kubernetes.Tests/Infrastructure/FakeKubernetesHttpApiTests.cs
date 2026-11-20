@@ -1175,6 +1175,65 @@ public sealed class FakeKubernetesHttpApiTests
             TestContext.Current.CancellationToken)).StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
+    [Fact]
+    public async Task SynthesizedBuiltInDefinitionHonorsExplicitDenialOnFirstRequest()
+    {
+        using var api = new FakeKubernetesHttpApi();
+        api.SetPermission("runtimeclasses", "list", false);
+        using var client = CreateHttpClient(api);
+
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            using var response = await client.GetAsync(
+                "/apis/node.k8s.io/v1/runtimeclasses",
+                TestContext.Current.CancellationToken);
+            response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        }
+    }
+
+    [Fact]
+    public async Task SynthesizedBuiltInDefinitionRejectsUnsupportedApiVersion()
+    {
+        using var api = new FakeKubernetesHttpApi();
+        using var client = CreateHttpClient(api);
+
+        using var response = await client.GetAsync(
+            "/api/v999/services",
+            TestContext.Current.CancellationToken);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task SynthesizedBuiltInDefinitionUsesCanonicalKind()
+    {
+        using var api = new FakeKubernetesHttpApi();
+        using var client = CreateHttpClient(api);
+
+        using var response = await client.GetAsync(
+            "/apis/batch/v1/cronjobs",
+            TestContext.Current.CancellationToken);
+        var body = JsonNode.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        body!["kind"]!.GetValue<string>().ShouldBe("CronJobList");
+    }
+
+    [Fact]
+    public async Task SynthesizingCoreDefinitionInvalidatesCoreDiscovery()
+    {
+        using var api = new FakeKubernetesHttpApi();
+        var originalETag = api.CoreDiscoveryETag;
+        using var client = CreateHttpClient(api);
+
+        using var response = await client.GetAsync(
+            "/api/v1/services",
+            TestContext.Current.CancellationToken);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        api.CoreDiscoveryETag.ShouldNotBe(originalETag);
+    }
+
     private static HttpClient CreateHttpClient(FakeKubernetesHttpApi api)
         => new(api) { BaseAddress = new Uri("http://fake-kubernetes") };
 

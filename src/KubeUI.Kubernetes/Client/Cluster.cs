@@ -756,7 +756,9 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
     {
         if (Client is not k8s.Kubernetes kubernetesClient)
         {
-            return true;
+            // No client means no schemas are available. Reporting false keeps hover from
+            // caching a success across a later Connect.
+            return false;
         }
 
         try

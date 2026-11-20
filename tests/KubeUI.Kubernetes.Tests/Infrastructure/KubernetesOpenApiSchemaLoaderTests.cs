@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Http;
 using KubeUI.Kubernetes.Client;
 using KubeUI.Testing.Kubernetes.Bootstrap;
 using KubeUI.Testing.Utilities;
@@ -77,6 +79,48 @@ public sealed class KubernetesOpenApiSchemaLoaderTests
         secondLoad.ShouldBeTrue();
         cluster.FakeApi.RequestUris.Count(uri => uri?.AbsolutePath == "/openapi/v3")
             .ShouldBe(indexRequestsAfterFirstLoad);
+    }
+
+    [Fact]
+    public async Task EnsureAsync_reports_partial_schema_loads_as_failures()
+    {
+        var config = TestClusterConfig.Fake();
+        config.Name = "openapi-partial-test";
+        config.HttpHandlerFactory = () => [new FailSchemaDocumentHandler()];
+        await using var cluster = await new TestClusterGenerator().CreateAsync(
+            config,
+            TestContext.Current.CancellationToken);
+        await cluster.Cluster.Connect().WaitAsync(TestContext.Current.CancellationToken);
+        var catalog = new KubernetesOpenApiSchemaCatalog();
+        using var loader = new KubernetesOpenApiSchemaLoader(catalog, NullLogger.Instance);
+
+        var loaded = await loader.EnsureAsync(
+            (k8s.Kubernetes)cluster.Client!, "fake", TestContext.Current.CancellationToken);
+
+        loaded.ShouldBeFalse();
+        // A failed load is not marked attempted, so a later call can retry the document.
+        await Should.NotThrowAsync(() => loader.EnsureAsync(
+            (k8s.Kubernetes)cluster.Client!,
+            "fake",
+            TestContext.Current.CancellationToken));
+    }
+
+    private sealed class FailSchemaDocumentHandler : DelegatingHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            if (request.RequestUri?.AbsolutePath.StartsWith("/openapi/v3/", StringComparison.Ordinal) == true)
+            {
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound)
+                {
+                    RequestMessage = request,
+                });
+            }
+
+            return base.SendAsync(request, cancellationToken);
+        }
     }
 
     private static async Task<TestCluster> CreateClusterAsync(Action<TestClusterConfig>? configure = null)
