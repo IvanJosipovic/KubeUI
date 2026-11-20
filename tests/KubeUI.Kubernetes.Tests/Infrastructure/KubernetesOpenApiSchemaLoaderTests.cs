@@ -3,6 +3,7 @@ using System.Net.Http;
 using KubeUI.Kubernetes.Client;
 using KubeUI.Testing.Kubernetes.Bootstrap;
 using KubeUI.Testing.Utilities;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 
@@ -31,7 +32,7 @@ public sealed class KubernetesOpenApiSchemaLoaderTests
             config.ThrowOnConnect = true;
         });
         var catalog = new KubernetesOpenApiSchemaCatalog();
-        using var loader = new KubernetesOpenApiSchemaLoader(catalog, NullLogger.Instance);
+        using var loader = new KubernetesOpenApiSchemaLoader(catalog, new DebugLogger());
 
         var loaded = await loader.EnsureAsync((k8s.Kubernetes)cluster.Client!, "fake", TestContext.Current.CancellationToken);
 
@@ -92,7 +93,7 @@ public sealed class KubernetesOpenApiSchemaLoaderTests
             TestContext.Current.CancellationToken);
         await cluster.Cluster.Connect().WaitAsync(TestContext.Current.CancellationToken);
         var catalog = new KubernetesOpenApiSchemaCatalog();
-        using var loader = new KubernetesOpenApiSchemaLoader(catalog, NullLogger.Instance);
+        using var loader = new KubernetesOpenApiSchemaLoader(catalog, new DebugLogger());
 
         var loaded = await loader.EnsureAsync(
             (k8s.Kubernetes)cluster.Client!, "fake", TestContext.Current.CancellationToken);
@@ -116,12 +117,37 @@ public sealed class KubernetesOpenApiSchemaLoaderTests
             TestContext.Current.CancellationToken);
         await cluster.Cluster.Connect().WaitAsync(TestContext.Current.CancellationToken);
         var catalog = new KubernetesOpenApiSchemaCatalog();
-        using var loader = new KubernetesOpenApiSchemaLoader(catalog, NullLogger.Instance);
+        using var loader = new KubernetesOpenApiSchemaLoader(catalog, new DebugLogger());
 
         var loaded = await loader.EnsureAsync(
             (k8s.Kubernetes)cluster.Client!, "fake", TestContext.Current.CancellationToken);
 
         loaded.ShouldBeFalse();
+    }
+
+    private sealed class DebugLogger : ILogger
+    {
+        public IDisposable BeginScope<TState>(TState state) where TState : notnull => NullScope.Instance;
+
+        public bool IsEnabled(LogLevel logLevel) => logLevel >= LogLevel.Debug;
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        {
+        }
+
+        private sealed class NullScope : IDisposable
+        {
+            public static readonly NullScope Instance = new();
+
+            public void Dispose()
+            {
+            }
+        }
     }
 
     private sealed class InvalidOpenApiIndexHandler : DelegatingHandler
