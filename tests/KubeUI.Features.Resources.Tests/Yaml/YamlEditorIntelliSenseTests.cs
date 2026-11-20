@@ -36,6 +36,7 @@ public sealed class YamlEditorIntelliSenseTests
 
         var panel = control.ShouldBeOfType<StackPanel>();
         var typeText = panel.Children[1].ShouldBeOfType<TextBlock>().Text;
+        typeText.ShouldNotBeNull();
         typeText.ShouldBe("System.Collections.Generic.List<k8s.Models.V1OwnerReference>");
         typeText.ShouldNotContain("Version=");
         typeText.ShouldNotContain("Culture=");

@@ -22,7 +22,7 @@ public sealed class PodLogExportServiceTests
             .ReturnsAsync(file.Object);
         PodLogExportService service = new(platform.Object);
 
-        await service.ExportAsync("api.log", "first\nsecond");
+        await service.ExportAsync("api.log", "first\nsecond", TestContext.Current.CancellationToken);
 
         Encoding.UTF8.GetString(output.ToArray()).ShouldBe("first\nsecond");
         capturedOptions.ShouldNotBeNull();
@@ -43,7 +43,7 @@ public sealed class PodLogExportServiceTests
             .ReturnsAsync((IStorageFile?)null);
         PodLogExportService service = new(platform.Object);
 
-        await service.ExportAsync("api.log", "content");
+        await service.ExportAsync("api.log", "content", TestContext.Current.CancellationToken);
 
         platform.VerifyAll();
     }

@@ -27,7 +27,7 @@ public sealed class PropertiesView : ViewBase<V1ConfigMap>, IResourcePropertiesR
             .Value(vm.BinaryData?.Count ?? 0);
         _immutableProperty = new PropertyItem()
             .Key(ResourcesLanguageManager.Instance.ConfigMapPropertiesView_Immutable.CurrentValue()!)
-            .Value(vm.Immutable);
+            .Value((object?)vm.Immutable ?? string.Empty);
 
         return new StackPanel()
             .Children(

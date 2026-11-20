@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using KubeUI.Features.AI.Agents;
 using KubeUI.Features.AI.Mcp;
@@ -111,7 +112,7 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
                     TrustedMcpServers = new HashSet<string>(StringComparer.Ordinal) { "kubeui" }
                 }, _turnCancellation.Token);
             }
-            catch (Exception exception)
+            catch (Exception)
             {
                 mcpCredential?.Dispose();
                 _mcpCredentialLease = null;
@@ -130,6 +131,7 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
                     Messages.Add(new AgentChatMessage(
                         AiLanguageManager.Instance.AgentChatView_Tool.CurrentValue()!,
                         string.Format(
+                            CultureInfo.CurrentCulture,
                             AiLanguageManager.Instance.AgentChatView_ToolStartedFormat.CurrentValue()!,
                             toolStarted.Title ?? toolStarted.Name ?? toolStarted.ToolCallId,
                             FormatInput(toolStarted.RawInput))));
@@ -148,6 +150,7 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
                     Messages.Add(new AgentChatMessage(
                         AiLanguageManager.Instance.AgentChatView_Tool.CurrentValue()!,
                         string.Format(
+                            CultureInfo.CurrentCulture,
                             AiLanguageManager.Instance.AgentChatView_ToolCompletedFormat.CurrentValue()!,
                             succeeded
                                 ? AiLanguageManager.Instance.AgentChatView_ToolSucceeded.CurrentValue()!
@@ -159,7 +162,7 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
                         AiLanguageManager.Instance.AgentChatView_Plan.CurrentValue()!,
                         string.Join(
                             Environment.NewLine,
-                            plan.Entries.Select(entry => string.Format(AiLanguageManager.Instance.AgentChatView_PlanStepFormat.CurrentValue()!, entry.Content)))));
+                            plan.Entries.Select(entry => string.Format(CultureInfo.CurrentCulture, AiLanguageManager.Instance.AgentChatView_PlanStepFormat.CurrentValue()!, entry.Content)))));
                 else if (item is Completed)
                     break;
             }
@@ -179,7 +182,10 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
         {
             try
             {
-                await promptTask.ConfigureAwait(false);
+                if (promptTask is not null)
+                {
+                    await promptTask.ConfigureAwait(false);
+                }
             }
             catch
             {
@@ -268,7 +274,7 @@ public sealed partial class AgentChatViewModel : ViewModelBase, IAsyncDisposable
         var raw = element.GetRawText();
         return string.IsNullOrWhiteSpace(raw)
             ? string.Empty
-            : string.Format(AiLanguageManager.Instance.AgentChatView_ToolInputFormat.CurrentValue()!, raw);
+            : string.Format(CultureInfo.CurrentCulture, AiLanguageManager.Instance.AgentChatView_ToolInputFormat.CurrentValue()!, raw);
     }
 
     private void MessagesOnCollectionChanged(object? _, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)

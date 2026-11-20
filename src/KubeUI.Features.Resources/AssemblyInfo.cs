@@ -6,4 +6,3 @@
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Dock.Controls.DeferredContentControl.DeferredContentControl), true)]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(SvcSystems.UI.Terminal.Terminal), true)]
 [assembly: GenerateMarkupExtensionsForAssembly(typeof(Ursa.Controls.Anchor), true)]
-[assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Xaml.Interactivity.EventTriggerBase), true)]

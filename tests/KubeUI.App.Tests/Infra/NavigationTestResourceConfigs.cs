@@ -5,12 +5,10 @@ using Avalonia.Styling;
 using CommunityToolkit.Mvvm.Input;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
-using KubernetesClient.Informer.Client;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Resources;
 using KubeUI.Features.Resources.Common;
 using KubeUI.Features.Resources.List;
-using KubeUI.Kubernetes;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.App.Tests.Infra;

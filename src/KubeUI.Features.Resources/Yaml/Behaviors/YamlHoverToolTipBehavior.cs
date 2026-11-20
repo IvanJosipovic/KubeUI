@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Primitives.PopupPositioning;
 using Avalonia.Input;
@@ -318,7 +319,7 @@ public sealed class YamlHoverToolTipBehavior : Behavior<TextEditor>
         return TryShowHoverTooltipAtOffset(offset, onlyWhenOpen);
     }
 
-    private bool TryCreateDocumentationTip(int offset, out Control? tip)
+    private bool TryCreateDocumentationTip(int offset, [NotNullWhen(true)] out Control? tip)
     {
         tip = null;
 

@@ -9,7 +9,7 @@ namespace KubeUI.Features.AI.Chat;
 /// </summary>
 public sealed class AgentChatView : KubeUIView<AgentChatViewModel>
 {
-    private ScrollViewer? _conversationScrollViewer = null!;
+    private ScrollViewer _conversationScrollViewer = null!;
     private bool _conversationIsAtEnd = true;
 
     protected override object Build(AgentChatViewModel vm)
@@ -41,7 +41,8 @@ public sealed class AgentChatView : KubeUIView<AgentChatViewModel>
                         new TextBlock()
                             .Text(AiLanguageManager.Instance.AgentChatView_AgentLabel.ToBinding()),
                         new TextBlock()
-                            .Text(vm, x => x.SelectedAgent.Name))
+                            // Binding path: a null SelectedAgent is tolerated by Avalonia at runtime.
+                            .Text(vm, x => x.SelectedAgent!.Name))
                     .Row(0),
                 new ScrollViewer()
                     .Ref(out _conversationScrollViewer)
@@ -80,7 +81,7 @@ public sealed class AgentChatView : KubeUIView<AgentChatViewModel>
     {
         if (_conversationScrollViewer is not null)
             _conversationScrollViewer.PropertyChanged -= ConversationScrollViewerOnPropertyChanged;
-        _conversationScrollViewer = null;
+        _conversationScrollViewer = null!;
         base.OnDetachedFromVisualTree(e);
     }
 

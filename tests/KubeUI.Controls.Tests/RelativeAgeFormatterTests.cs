@@ -1,3 +1,4 @@
+using System.Globalization;
 using KubeUI.Controls.Presentation;
 using Shouldly;
 
@@ -39,9 +40,10 @@ public sealed class RelativeAgeFormatterTests
         var previousDayUtc = DateTime.SpecifyKind(previousDayLocal, DateTimeKind.Local).ToUniversalTime();
 
         RelativeAgeFormatter.FormatPrettyLastSeen(null, now).ShouldBeEmpty();
+        // The formatter renders local clock/date text with the current culture; match that UI display.
         RelativeAgeFormatter.FormatPrettyLastSeen(sameDayUtc, now)
-            .ShouldContain($"({sameDayLocal.ToString("t")})");
+            .ShouldContain($"({sameDayLocal.ToString("t", CultureInfo.CurrentCulture)})");
         RelativeAgeFormatter.FormatPrettyLastSeen(previousDayUtc, now)
-            .ShouldContain($"({previousDayLocal.ToString("g")})");
+            .ShouldContain($"({previousDayLocal.ToString("g", CultureInfo.CurrentCulture)})");
     }
 }

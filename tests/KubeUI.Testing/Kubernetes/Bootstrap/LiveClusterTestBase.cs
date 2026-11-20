@@ -38,5 +38,7 @@ public abstract class LiveClusterTestBase : IAsyncLifetime
             _generator = null;
             _cluster = null;
         }
+
+        GC.SuppressFinalize(this);
     }
 }

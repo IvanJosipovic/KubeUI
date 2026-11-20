@@ -53,7 +53,8 @@ public sealed class TerminalHandlerTests
             TestContext.Current.CancellationToken);
 
         exitStatus.ExitCode.ShouldBe(0u);
-        var output = await handler.GetOutputAsync(TerminalRequests.Output("session", terminalId));
+        var output = await handler.GetOutputAsync(
+            TerminalRequests.Output("session", terminalId), TestContext.Current.CancellationToken);
         output.Truncated.ShouldBeFalse();
         output.Output.ShouldNotBeNullOrWhiteSpace();
         output.ExitStatus.ShouldNotBeNull().ExitCode.ShouldBe(0u);
@@ -72,7 +73,8 @@ public sealed class TerminalHandlerTests
             TerminalRequests.WaitForExit("session", terminalId),
             TestContext.Current.CancellationToken);
 
-        var output = await handler.GetOutputAsync(TerminalRequests.Output("session", terminalId));
+        var output = await handler.GetOutputAsync(
+            TerminalRequests.Output("session", terminalId), TestContext.Current.CancellationToken);
         output.Truncated.ShouldBeTrue();
         output.Output.Length.ShouldBeLessThanOrEqualTo(16);
     }
@@ -115,7 +117,8 @@ public sealed class TerminalHandlerTests
             TerminalRequests.WaitForExit("session", terminalId),
             TestContext.Current.CancellationToken);
 
-        await handler.ReleaseAsync(TerminalRequests.Release("session", terminalId));
+        await handler.ReleaseAsync(
+            TerminalRequests.Release("session", terminalId), TestContext.Current.CancellationToken);
 
         await Should.ThrowAsync<InvalidOperationException>(() => handler.GetOutputAsync(
             TerminalRequests.Output("session", terminalId)).AsTask());

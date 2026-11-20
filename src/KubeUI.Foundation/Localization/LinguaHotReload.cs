@@ -1,6 +1,7 @@
 #if DEBUG
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Avalonia.Threading;
 using Irihi.Lingua;
@@ -28,6 +29,7 @@ public static class LinguaHotReload<TManager> where TManager : ILinguaHotReload
     /// Refreshes the manager if it participated in the metadata update.
     /// </summary>
     /// <param name="updatedTypes">Changed types, or null for a global update.</param>
+    [SuppressMessage("Design", "CA1000:Do not declare static members on generic types", Justification = "Public API contract; the static generic bridge is intentional. Revisit in next major version.")]
     public static void UpdateApplication(Type[]? updatedTypes)
         => LinguaHotReload.UpdateApplication<TManager>(updatedTypes, static () => TManager.Reload());
 }

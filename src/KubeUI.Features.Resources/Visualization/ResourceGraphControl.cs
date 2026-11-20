@@ -541,7 +541,8 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
                 {
                     await Dispatcher.UIThread.InvokeAsync(
                         RefitAfterViewportLayout,
-                        DispatcherPriority.Background);
+                        DispatcherPriority.Background,
+                        cancellationToken);
                     _zoomAfterGeneration = _layoutPending;
                 }
 

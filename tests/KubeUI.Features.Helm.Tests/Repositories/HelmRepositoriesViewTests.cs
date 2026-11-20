@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
@@ -37,7 +38,7 @@ public sealed class HelmRepositoriesViewTests
         using var window = Application.Current.CreateTestWindow(content: view);
         window.Show();
         await WaitForAsync(() => view.GetVisualDescendants().OfType<Label>()
-            .Any(label => Equals(label.Content, string.Format(HelmLanguageManager.Instance.HelmRepositoriesView_ItemsFormat.CurrentValue()!, 1))));
+            .Any(label => Equals(label.Content, string.Format(CultureInfo.InvariantCulture, HelmLanguageManager.Instance.HelmRepositoriesView_ItemsFormat.CurrentValue()!, 1))));
 
         var buttons = view.GetVisualDescendants().OfType<Button>().ToArray();
         var add = buttons.Single(button => ReferenceEquals(button.Command, viewModel.NewRepositoryCommand));
@@ -61,7 +62,7 @@ public sealed class HelmRepositoriesViewTests
         Click(window, refresh);
         await viewModel.RefreshCommand.ExecutionTask!.WaitAsync(TestContext.Current.CancellationToken);
         await WaitForAsync(() => view.GetVisualDescendants().OfType<Label>()
-            .Any(label => Equals(label.Content, string.Format(HelmLanguageManager.Instance.HelmRepositoriesView_ItemsFormat.CurrentValue()!, 0))));
+            .Any(label => Equals(label.Content, string.Format(CultureInfo.InvariantCulture, HelmLanguageManager.Instance.HelmRepositoriesView_ItemsFormat.CurrentValue()!, 0))));
         viewModel.ItemCount.ShouldBe(0);
         viewModel.Status.ShouldBeEmpty();
     }

@@ -1,3 +1,5 @@
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Shouldly;
@@ -156,18 +158,89 @@ public sealed class ProjectBoundaryTests
     public void External_markup_extension_assemblies_have_one_generator_owner()
     {
         var sourceRoot = Path.Combine(FindRepositoryRoot(), "src");
-        var declarations = Directory.EnumerateFiles(sourceRoot, "*.cs", SearchOption.AllDirectories)
+        var sources = Directory.EnumerateFiles(sourceRoot, "*.cs", SearchOption.AllDirectories).ToArray();
+        var cache = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        var declarations = sources
             .SelectMany(path => Regex.Matches(File.ReadAllText(path),
                     @"GenerateMarkupExtensionsForAssembly\(typeof\((?<type>[^)]+)\)")
-                .Select(match => (Path: path, Type: match.Groups["type"].Value.Trim())));
+                .Select(match => (Path: path, Assembly: NormalizeAssembly(ResolveAnchorAssembly(match.Groups["type"].Value.Trim(), cache)))))
+            .Concat(sources
+                .SelectMany(path => Regex.Matches(File.ReadAllText(path), @"GenerateMarkupExtensionsForAvalonia\(true\)")
+                    .Select(_ => (Path: path, Assembly: "Avalonia"))));
 
         var duplicates = declarations
-            .GroupBy(static item => item.Type, StringComparer.Ordinal)
+            .GroupBy(static item => item.Assembly, StringComparer.OrdinalIgnoreCase)
             .Where(static group => group.Count() > 1)
             .Select(static group => $"{group.Key}: {string.Join(", ", group.Select(item => Path.GetRelativePath(FindRepositoryRoot(), item.Path)))}")
             .ToArray();
 
-        duplicates.ShouldBeEmpty("Each external markup-extension assembly must have one source generator owner.");
+        duplicates.ShouldBeEmpty("Each markup-extension assembly must have one public source generator owner.");
+    }
+
+    private static string NormalizeAssembly(string assembly)
+        => assembly == "Avalonia" || assembly.StartsWith("Avalonia.", StringComparison.Ordinal)
+            ? "Avalonia"
+            : assembly;
+
+    private static string ResolveAnchorAssembly(string typeName, Dictionary<string, string> cache)
+    {
+        if (cache.TryGetValue(typeName, out var cached))
+        {
+            return cached;
+        }
+
+        var separator = typeName.LastIndexOf('.');
+        var simpleName = separator >= 0 ? typeName[(separator + 1)..] : typeName;
+        var @namespace = separator >= 0 ? typeName[..separator] : string.Empty;
+
+        var resolved = typeName;
+        foreach (var path in Directory.EnumerateFiles(AppContext.BaseDirectory, "*.dll"))
+        {
+            try
+            {
+                using var stream = File.OpenRead(path);
+                using var peReader = new PEReader(stream);
+                if (!peReader.HasMetadata)
+                {
+                    continue;
+                }
+
+                var reader = peReader.GetMetadataReader();
+                foreach (var handle in reader.TypeDefinitions)
+                {
+                    var definition = reader.GetTypeDefinition(handle);
+                    if (reader.GetString(definition.Name) != simpleName)
+                    {
+                        continue;
+                    }
+
+                    if (@namespace.Length > 0 && reader.GetString(definition.Namespace) != @namespace)
+                    {
+                        continue;
+                    }
+
+                    resolved = reader.GetString(reader.GetAssemblyDefinition().Name);
+                    break;
+                }
+            }
+            catch (BadImageFormatException)
+            {
+                // Skip native images and assemblies without CLI metadata.
+            }
+            catch (IOException)
+            {
+                // Skip files that cannot be read.
+            }
+
+            if (resolved != typeName)
+            {
+                break;
+            }
+        }
+
+        cache[typeName] = resolved;
+        return resolved;
     }
 
     private static Dictionary<string, ProjectReferences> LoadProjectGraph()

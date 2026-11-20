@@ -73,7 +73,8 @@ public sealed class ContainerClassTests
         var result = container.QueryTop(
             resource => string.Equals(resource.Metadata?.NamespaceProperty, "default", StringComparison.Ordinal),
             comparer,
-            1);
+            1,
+            TestContext.Current.CancellationToken);
 
         result.Select(resource => resource.Metadata?.Name).ShouldBe(["alpha"]);
 
@@ -86,7 +87,7 @@ public sealed class ContainerClassTests
             scanOrder.Add(resource, scanOrder.Count);
             lastScanned = resource;
             return true;
-        }, latestFirst, 1);
+        }, latestFirst, 1, TestContext.Current.CancellationToken);
 
         replacementResult.Single().ShouldBe(lastScanned);
     }

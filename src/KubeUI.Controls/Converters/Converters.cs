@@ -28,7 +28,7 @@ public static class Converters
         {
             if (value != null && value != AvaloniaProperty.UnsetValue)
             {
-                return string.Format(Format, value);
+                return string.Format(CultureInfo.CurrentCulture, Format, value);
             }
             return string.Empty;
         });

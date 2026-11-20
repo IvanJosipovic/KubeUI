@@ -206,7 +206,7 @@ public sealed class ResourceFeatureConfigTests
         var config = (V1StatefulSetConfig)workspace.GetResourceConfig(GroupApiVersionKind.From<V1StatefulSet>());
         var action = config.GetCustomMenuItems(new[] { manual, rolling })
             .Single(item => item.Title == ResourcesLanguageManager.Instance.V1StatefulSetConfig_MenuItem_Restart.CurrentValue()!);
-        var command = action.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
+        var command = action.Command.ShouldBeAssignableTo<IAsyncRelayCommand>().ShouldNotBeNull();
         command.CanExecute(action.CommandParameter).ShouldBeTrue();
 
         await command.ExecuteAsync(action.CommandParameter).WaitAsync(TestContext.Current.CancellationToken);
@@ -250,7 +250,7 @@ public sealed class ResourceFeatureConfigTests
         await workspace.Runtime.Permissions.UpdateCanI<TResource>(Verb.Patch, "default");
         var config = (TConfig)workspace.GetResourceConfig(GroupApiVersionKind.From<TResource>());
         var action = config.GetCustomMenuItems(new[] { resource }).Single(item => item.Title == restartTitle);
-        var command = action.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
+        var command = action.Command.ShouldBeAssignableTo<IAsyncRelayCommand>().ShouldNotBeNull();
         var parameters = action.CommandParameter.ShouldBeAssignableTo<IList>();
         string? dialogContent = null;
         ((TestApp)Application.Current!).ConfigureContentDialog = settings => dialogContent = settings.Content?.ToString();
@@ -277,7 +277,7 @@ public sealed class ResourceFeatureConfigTests
         var pod = new V1Pod { Metadata = new V1ObjectMeta { Name = "edit-test", NamespaceProperty = "default" } };
         var action = config.GetDefaultMenuItems(new[] { pod })
             .Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_Edit.CurrentValue()!);
-        var command = action.Command.ShouldBeAssignableTo<IRelayCommand>();
+        var command = action.Command.ShouldBeAssignableTo<IRelayCommand>().ShouldNotBeNull();
         command.CanExecute(action.CommandParameter).ShouldBeTrue();
         command.CanExecute(new List<V1Pod> { pod, pod }).ShouldBeFalse();
 
@@ -306,7 +306,7 @@ public sealed class ResourceFeatureConfigTests
         var pod = new V1Pod { Metadata = new V1ObjectMeta { Name = "edit-existing", NamespaceProperty = "default" } };
         var defaultActions = config.GetDefaultMenuItems(new[] { pod }).ToArray();
         defaultActions.Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_ViewYaml.CurrentValue()!)
-            .Command.ShouldBeAssignableTo<IRelayCommand>().Execute(defaultActions.Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_ViewYaml.CurrentValue()!).CommandParameter);
+            .Command.ShouldBeAssignableTo<IRelayCommand>().ShouldNotBeNull().Execute(defaultActions.Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_ViewYaml.CurrentValue()!).CommandParameter);
 
         var factory = Application.Current.GetRequiredTestService<IFactory>();
         var bottomDock = factory.GetDockable<IToolDock>("BottomDock").ShouldNotBeNull();
@@ -315,7 +315,7 @@ public sealed class ResourceFeatureConfigTests
         try
         {
             defaultActions.Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_Edit.CurrentValue()!)
-                .Command.ShouldBeAssignableTo<IRelayCommand>().Execute(
+                .Command.ShouldBeAssignableTo<IRelayCommand>().ShouldNotBeNull().Execute(
                     defaultActions.Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_Edit.CurrentValue()!).CommandParameter);
 
             bottomDock.VisibleDockables!.OfType<ResourceYamlViewModel>()
@@ -338,7 +338,7 @@ public sealed class ResourceFeatureConfigTests
         var action = config.GetDefaultMenuItems(new[] { pod })
             .Single(item => item.Title == ResourcesLanguageManager.Instance.ResourceConfigBase_MenuItem_Edit.CurrentValue()!);
 
-        action.Command.ShouldBeAssignableTo<IRelayCommand>().CanExecute(action.CommandParameter).ShouldBeFalse();
+        action.Command.ShouldBeAssignableTo<IRelayCommand>().ShouldNotBeNull().CanExecute(action.CommandParameter).ShouldBeFalse();
     }
 
     [AvaloniaFact]
@@ -385,7 +385,7 @@ public sealed class ResourceFeatureConfigTests
             deployment,
             new V1Deployment { Metadata = new V1ObjectMeta { Name = "missing-namespace" } },
         }).Single(item => item.Title == ResourcesLanguageManager.Instance.ScalableWorkloadConfig_Scale.CurrentValue()!);
-        var command = action.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
+        var command = action.Command.ShouldBeAssignableTo<IAsyncRelayCommand>().ShouldNotBeNull();
         var parameters = action.CommandParameter.ShouldBeAssignableTo<IList>();
         command.CanExecute(parameters).ShouldBeTrue();
         var requestedReplicas = 2.5m;
@@ -431,7 +431,7 @@ public sealed class ResourceFeatureConfigTests
             deployment,
             new V1Deployment { Metadata = new V1ObjectMeta { Name = "missing-namespace" } },
         }).Single(item => item.Title == ResourcesLanguageManager.Instance.V1DeploymentConfig_Pause.CurrentValue()!);
-        var pauseCommand = pause.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
+        var pauseCommand = pause.Command.ShouldBeAssignableTo<IAsyncRelayCommand>().ShouldNotBeNull();
         pauseCommand.CanExecute(pause.CommandParameter).ShouldBeTrue();
 
         await pauseCommand.ExecuteAsync(pause.CommandParameter).WaitAsync(TestContext.Current.CancellationToken);
@@ -442,7 +442,7 @@ public sealed class ResourceFeatureConfigTests
         paused.Spec.Replicas.ShouldBe(2);
 
         var resume = config.GetCustomMenuItems(new[] { paused }).Single(item => item.Title == ResourcesLanguageManager.Instance.V1DeploymentConfig_Resume.CurrentValue()!);
-        var resumeCommand = resume.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
+        var resumeCommand = resume.Command.ShouldBeAssignableTo<IAsyncRelayCommand>().ShouldNotBeNull();
         resumeCommand.CanExecute(resume.CommandParameter).ShouldBeTrue();
         await resumeCommand.ExecuteAsync(resume.CommandParameter).WaitAsync(TestContext.Current.CancellationToken);
 
@@ -464,7 +464,7 @@ public sealed class ResourceFeatureConfigTests
             cronJob,
             new V1CronJob { Metadata = new V1ObjectMeta { Name = "missing-namespace" } },
         }).Single(item => item.Title == ResourcesLanguageManager.Instance.V1CronJobConfig_Suspend.CurrentValue()!);
-        var command = action.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
+        var command = action.Command.ShouldBeAssignableTo<IAsyncRelayCommand>().ShouldNotBeNull();
         var parameters = action.CommandParameter.ShouldBeAssignableTo<IList>();
         command.CanExecute(parameters).ShouldBeTrue();
 
@@ -493,7 +493,7 @@ public sealed class ResourceFeatureConfigTests
             pod,
             new V1Pod { Metadata = new V1ObjectMeta { Name = "missing-namespace" } },
         }).Single(item => item.Title == ResourcesLanguageManager.Instance.V1PodConfig_Evict.CurrentValue()!);
-        var command = action.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
+        var command = action.Command.ShouldBeAssignableTo<IAsyncRelayCommand>().ShouldNotBeNull();
         var parameters = action.CommandParameter.ShouldBeAssignableTo<IList>();
         command.CanExecute(parameters).ShouldBeTrue();
 
@@ -792,7 +792,7 @@ public sealed class ResourceFeatureConfigTests
         var cronJob = CreateCronJob("volsync", "immich-rclone-backup");
 
         var startItem = config.GetCustomMenuItems(new[] { cronJob }).Single(item => item.Title == "Start");
-        var command = startItem.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
+        var command = startItem.Command.ShouldBeAssignableTo<IAsyncRelayCommand>().ShouldNotBeNull();
         var commandParameter = startItem.CommandParameter.ShouldBeAssignableTo<IList>();
 
         command.CanExecute(commandParameter).ShouldBeTrue();
@@ -836,7 +836,7 @@ public sealed class ResourceFeatureConfigTests
         var cronJob = CreateCronJob("volsync", "immich-rclone-backup");
 
         var startItem = config.GetCustomMenuItems(new[] { cronJob }).Single(item => item.Title == "Start");
-        var command = startItem.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
+        var command = startItem.Command.ShouldBeAssignableTo<IAsyncRelayCommand>().ShouldNotBeNull();
         var commandParameter = startItem.CommandParameter.ShouldBeAssignableTo<IList>();
 
         command.CanExecute(commandParameter).ShouldBeFalse();
@@ -870,7 +870,7 @@ public sealed class ResourceFeatureConfigTests
         var cronJob = CreateCronJob("volsync", "immich-rclone-backup");
 
         var startItem = config.GetCustomMenuItems(new[] { cronJob }).Single(item => item.Title == "Start");
-        var command = startItem.Command.ShouldBeAssignableTo<IAsyncRelayCommand>();
+        var command = startItem.Command.ShouldBeAssignableTo<IAsyncRelayCommand>().ShouldNotBeNull();
         var commandParameter = startItem.CommandParameter.ShouldBeAssignableTo<IList>();
 
         command.CanExecute(commandParameter).ShouldBeTrue();

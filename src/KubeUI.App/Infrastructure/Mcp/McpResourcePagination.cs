@@ -92,7 +92,7 @@ internal static class McpResourceCursorCodec
             || !string.Equals(cursor.Kind, kind, StringComparison.Ordinal)
             || !string.Equals(cursor.Namespace, @namespace, StringComparison.Ordinal))
         {
-            throw new ArgumentException("The cursor does not match this resource query.", "cursor");
+            throw new ArgumentException("The cursor does not match this resource query.", nameof(cursor));
         }
     }
 

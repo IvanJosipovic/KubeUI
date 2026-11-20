@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -390,12 +391,15 @@ internal static class Program
 
     private static class NativeEnvironment
     {
-        [DllImport("libc", EntryPoint = "setenv", CharSet = CharSet.Ansi)]
-        private static extern int SetEnv(string name, string value, int overwrite);
+        [DllImport("libc", EntryPoint = "setenv")]
+        private static extern int SetEnv(byte[] name, byte[] value, int overwrite);
 
         internal static void SetVariable(string name, string value)
         {
-            if (SetEnv(name, value, overwrite: 1) != 0)
+            // setenv expects NUL-terminated UTF-8 byte strings on Unix.
+            var nameBytes = Encoding.UTF8.GetBytes(name + "\0");
+            var valueBytes = Encoding.UTF8.GetBytes(value + "\0");
+            if (SetEnv(nameBytes, valueBytes, overwrite: 1) != 0)
                 throw new InvalidOperationException($"Failed to set native environment variable '{name}'.");
         }
     }

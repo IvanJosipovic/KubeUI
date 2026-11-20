@@ -65,7 +65,7 @@ public sealed class AcpAdapterTests
                 ToolCallId = "call-1",
                 Title = "",
                 Name = "kubeui_get",
-                RawInput = JsonDocument.Parse("""{"server":"kubeui","tool":"kubeui_get"}""").RootElement,
+                RawInput = JsonElement.Parse("""{"server":"kubeui","tool":"kubeui_get"}"""),
                 Meta = new Dictionary<string, JsonElement>
                 {
                     ["is_mcp_tool_call"] = JsonSerializer.SerializeToElement(true)
@@ -117,7 +117,7 @@ public sealed class AcpAdapterTests
                 ToolCallId = "call-1",
                 Title = "",
                 Name = "kubeui_get",
-                RawInput = JsonDocument.Parse("""{"server":"kubeui","tool":"kubeui_get"}""").RootElement,
+                RawInput = JsonElement.Parse("""{"server":"kubeui","tool":"kubeui_get"}"""),
                 Meta = new Dictionary<string, JsonElement>
                 {
                     ["is_mcp_tool_call"] = JsonSerializer.SerializeToElement(true)
@@ -138,7 +138,7 @@ public sealed class AcpAdapterTests
                 ToolCallId = "call-1",
                 Title = "",
                 Name = "kubeui_get",
-                RawInput = JsonDocument.Parse("""{"server":"other","tool":"kubeui_get"}""").RootElement,
+                RawInput = JsonElement.Parse("""{"server":"other","tool":"kubeui_get"}"""),
                 Meta = new Dictionary<string, JsonElement>
                 {
                     ["is_mcp_tool_call"] = JsonSerializer.SerializeToElement(true)
@@ -159,7 +159,7 @@ public sealed class AcpAdapterTests
                 ToolCallId = "call-1",
                 Title = "",
                 Name = "kubeui_get",
-                RawInput = JsonDocument.Parse("""{"server":"kubeui"}""").RootElement,
+                RawInput = JsonElement.Parse("""{"server":"kubeui"}"""),
                 Meta = new Dictionary<string, JsonElement>
                 {
                     ["is_mcp_tool_call"] = JsonSerializer.SerializeToElement(true)
@@ -180,7 +180,7 @@ public sealed class AcpAdapterTests
                 ToolCallId = "call-1",
                 Title = "",
                 Name = "kubeui_get",
-                RawInput = JsonDocument.Parse("""{"server":"kubeui","tool":"kubeui_get"}""").RootElement,
+                RawInput = JsonElement.Parse("""{"server":"kubeui","tool":"kubeui_get"}"""),
                 Meta = new Dictionary<string, JsonElement>
                 {
                     ["is_mcp_tool_call"] = JsonSerializer.SerializeToElement("true")
@@ -251,7 +251,7 @@ public sealed class AcpAdapterTests
                 ToolCallId = "call-1",
                 Title = "",
                 Name = "kubeui_get",
-                RawInput = JsonDocument.Parse("""{"server":"kubeui","tool":"kubeui_get"}""").RootElement,
+                RawInput = JsonElement.Parse("""{"server":"kubeui","tool":"kubeui_get"}"""),
                 Meta = new Dictionary<string, JsonElement>
                 {
                     ["is_mcp_tool_call"] = JsonSerializer.SerializeToElement(true)

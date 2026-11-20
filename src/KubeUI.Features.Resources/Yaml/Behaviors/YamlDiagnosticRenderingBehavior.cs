@@ -135,6 +135,11 @@ public sealed class YamlDiagnosticRenderingBehavior : Behavior<TextEditor>
 
     private void UpdateValidationDiagnostics()
     {
+        if (_renderer is null)
+        {
+            return;
+        }
+
         _renderer.Update(AssociatedObject?.Document, _currentViewModel?.ValidationDiagnostics ?? []);
     }
 }

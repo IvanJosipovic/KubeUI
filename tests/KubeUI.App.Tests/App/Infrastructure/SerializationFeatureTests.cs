@@ -71,6 +71,7 @@ public sealed class SerializationFeatureTests
             var metadata = configuration.JsonSerializerOptions.GetTypeInfo(modelType);
             var model = JsonSerializer.Deserialize("{}", metadata)
                 .ShouldBeAssignableTo<IKubernetesObject<V1ObjectMeta>>();
+            model.ShouldNotBeNull();
             model.ApiVersion = string.IsNullOrEmpty(resource.Kind.Group)
                 ? resource.Kind.ApiVersion
                 : $"{resource.Kind.Group}/{resource.Kind.ApiVersion}";
@@ -79,6 +80,7 @@ public sealed class SerializationFeatureTests
 
             var restored = JsonSerializer.Deserialize(serializer.Serialize(model), metadata)
                 .ShouldBeAssignableTo<IKubernetesObject<V1ObjectMeta>>();
+            restored.ShouldNotBeNull();
             restored.ApiVersion.ShouldBe(model.ApiVersion);
             restored.Kind.ShouldBe(model.Kind);
             restored.Metadata.Name.ShouldBe(model.Metadata.Name);

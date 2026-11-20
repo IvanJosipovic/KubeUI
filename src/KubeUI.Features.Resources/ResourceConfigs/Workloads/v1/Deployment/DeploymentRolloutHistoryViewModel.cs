@@ -162,7 +162,7 @@ public sealed partial class DeploymentRolloutHistoryViewModel : ViewModelBase, I
         var result = await _dialogService.ShowContentDialogAsync(this, new ContentDialogSettings
         {
             Title = ResourcesLanguageManager.Instance.DeploymentRolloutHistoryViewModel_UndoTitle.CurrentValue()!,
-            Content = string.Format(ResourcesLanguageManager.Instance.DeploymentRolloutHistoryViewModel_UndoContent.CurrentValue()!, Deployment.Name(), target.Revision, target.ReplicaSetName),
+            Content = string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.DeploymentRolloutHistoryViewModel_UndoContent.CurrentValue()!, Deployment.Name(), target.Revision, target.ReplicaSetName),
             PrimaryButtonText = ResourcesLanguageManager.Instance.DeploymentRolloutHistoryViewModel_Undo.CurrentValue()!,
             SecondaryButtonText = FoundationLanguageManager.Instance.Shared_Cancel.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary,

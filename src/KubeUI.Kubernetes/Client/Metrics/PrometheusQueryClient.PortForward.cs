@@ -22,8 +22,10 @@ public sealed partial class PrometheusQueryClient
             return;
         }
 
+        var client = cluster.Client ?? throw new InvalidOperationException("Cluster client is not connected.");
+
         var services = await k8s.CoreV1OperationsExtensions.ListNamespacedServiceAsync(
-            cluster.Client.CoreV1,
+            client.CoreV1,
             endpoint.Namespace,
             cancellationToken: cancellationToken)
             .ConfigureAwait(false);

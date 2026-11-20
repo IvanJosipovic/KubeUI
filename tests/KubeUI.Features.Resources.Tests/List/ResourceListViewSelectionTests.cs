@@ -94,6 +94,7 @@ public sealed class ResourceListViewSelectionTests
 
         var factory = Application.Current.GetRequiredTestService<IFactory>();
         var layout = factory.CreateLayout();
+        layout.ShouldNotBeNull();
         factory.InitLayout(layout);
         var documents = factory.GetDockable<IDocumentDock>("Documents")!;
         using var window = Application.Current.CreateTestWindow(content: new DockControl { Layout = layout });

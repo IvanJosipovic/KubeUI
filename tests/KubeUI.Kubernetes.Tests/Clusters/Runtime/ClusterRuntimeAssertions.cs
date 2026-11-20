@@ -807,7 +807,7 @@ public abstract class ClusterRuntimeAssertions
             try
             {
                 await client.ListNamespacedAsync<GenericKubernetesObject>(
-                    "default").WaitAsync(cancellationToken);
+                    "default", cancel: cancellationToken);
                 return;
             }
             catch (HttpOperationException exception) when (

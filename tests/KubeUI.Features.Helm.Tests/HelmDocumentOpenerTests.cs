@@ -41,7 +41,7 @@ public sealed class HelmDocumentOpenerTests
             charts.SelectedRepository.ShouldBeNull();
             await charts.RefreshCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
             charts.SelectedRepository.ShouldBe("bitnami");
-            documents.VisibleDockables.ShouldContain(charts);
+            documents.VisibleDockables.ShouldNotBeNull().ShouldContain(charts);
             documents.ActiveDockable.ShouldBeSameAs(charts);
         }
         finally

@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Humanizer;
@@ -206,6 +207,7 @@ public class CustomResourceConfig : ResourceConfig<GenericKubernetesObject>, ICl
     /// <exception cref="InvalidOperationException">
     /// The definition does not expose a served storage version.
     /// </exception>
+    [SuppressMessage("Naming", "CA1725:Parameter names should match base declaration", Justification = "Public API contract; renaming would break named-argument callers. Revisit in next major version.")]
     public void Configure(V1CustomResourceDefinition crd)
     {
         ArgumentNullException.ThrowIfNull(crd);

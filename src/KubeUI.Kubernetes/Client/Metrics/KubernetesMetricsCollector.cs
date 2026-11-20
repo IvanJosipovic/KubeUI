@@ -33,11 +33,20 @@ internal sealed class KubernetesMetricsCollector(
     {
         if (cluster.Client is not k8s.Kubernetes kube || !await CanUseMetricsServerAsync(cluster, kube, cancellationToken).ConfigureAwait(false))
         {
-            logger.LogInformation("Kubernetes Metrics Server is not available for cluster {Name}.", cluster.Name);
+            // Avoid allocating the logging args array when information logging is disabled.
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("Kubernetes Metrics Server is not available for cluster {Name}.", cluster.Name);
+            }
+
             return false;
         }
 
-        logger.LogInformation("Kubernetes Metrics Server metrics activated for cluster {Name}.", cluster.Name);
+        // Avoid allocating the logging args array when information logging is disabled.
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation("Kubernetes Metrics Server metrics activated for cluster {Name}.", cluster.Name);
+        }
         var cancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var timer = new PeriodicTimer(TimeSpan.FromSeconds(30));
         _cancellation = cancellation;
@@ -343,7 +352,11 @@ internal sealed class KubernetesMetricsCollector(
         var apiGroups = await cluster.Client!.Apis.GetAPIVersionsAsync(cancellationToken).ConfigureAwait(false);
         var available = apiGroups.Groups.Any(static group => group.Name == "metrics.k8s.io")
             && podResponse.Status.Allowed && nodeResponse.Status.Allowed;
-        logger.LogDebug("Kubernetes Metrics Server detection for cluster {Name}: result={Result}.", cluster.Name, available);
+        // Avoid allocating the logging args array when debug logging is disabled.
+        if (logger.IsEnabled(LogLevel.Debug))
+        {
+            logger.LogDebug("Kubernetes Metrics Server detection for cluster {Name}: result={Result}.", cluster.Name, available);
+        }
         return available;
     }
 

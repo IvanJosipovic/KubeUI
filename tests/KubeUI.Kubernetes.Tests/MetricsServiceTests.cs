@@ -33,7 +33,7 @@ public sealed class MetricsServiceTests
         cluster.Metrics.KubernetesNodeMetrics.ShouldBeEmpty();
         cluster.Metrics.GetAllKubernetesPodMetricsSnapshot().ShouldBeEmpty();
         cluster.Metrics.GetAllKubernetesNodeMetricsSnapshot().ShouldBeEmpty();
-        (await cluster.Metrics.QueryPrometheusAsync(CreateRequest())).ShouldBe(MetricResultSet.BackendUnavailableResult);
+        (await cluster.Metrics.QueryPrometheusAsync(CreateRequest(), TestContext.Current.CancellationToken)).ShouldBe(MetricResultSet.BackendUnavailableResult);
     }
 
     [Fact]
@@ -67,7 +67,7 @@ public sealed class MetricsServiceTests
         using var service = CreateMetricsService(settings, queryClient);
         await using var cluster = CreateCluster("prom-cluster", service, settings);
 
-        await service.InitializeAsync(cluster);
+        await service.InitializeAsync(cluster, TestContext.Current.CancellationToken);
 
         service.IsMetricsAvailable.ShouldBeTrue();
         service.ActiveMetricsBackend.Type.ShouldBe(MetricsServiceType.Prometheus);
@@ -90,7 +90,7 @@ public sealed class MetricsServiceTests
         using var service = CreateMetricsService(settings, queryClient);
         await using var cluster = CreateCluster("azure-prom-cluster", service, settings);
 
-        await service.InitializeAsync(cluster);
+        await service.InitializeAsync(cluster, TestContext.Current.CancellationToken);
 
         service.ActiveMetricsBackend.ShouldBe(ActiveMetricsBackend.Prometheus(PrometheusProviderKind.AzureMonitor));
         queryClient.PrepareCalls.ShouldBe(1);
@@ -110,7 +110,7 @@ public sealed class MetricsServiceTests
         using var client = CreateFakeClient(api);
         await using var cluster = CreateCluster("metrics-server-cluster", service, settings, client);
 
-        await service.InitializeAsync(cluster);
+        await service.InitializeAsync(cluster, TestContext.Current.CancellationToken);
 
         service.IsMetricsAvailable.ShouldBeTrue();
         service.ActiveMetricsBackend.ShouldBe(ActiveMetricsBackend.KubernetesMetricsServer);
@@ -129,7 +129,7 @@ public sealed class MetricsServiceTests
         using var client = CreateFakeClient(api);
         await using var cluster = CreateCluster("explicit-prom-cluster", service, settings, client);
 
-        await service.InitializeAsync(cluster);
+        await service.InitializeAsync(cluster, TestContext.Current.CancellationToken);
 
         service.IsMetricsAvailable.ShouldBeFalse();
         service.ActiveMetricsBackend.ShouldBe(ActiveMetricsBackend.None);
@@ -147,7 +147,7 @@ public sealed class MetricsServiceTests
         using var client = CreateFakeClient(api, includeMetricsData: true);
         await using var cluster = CreateCluster("metrics-server-data-cluster", service, settings, client);
 
-        await service.InitializeAsync(cluster);
+        await service.InitializeAsync(cluster, TestContext.Current.CancellationToken);
 
         service.KubernetesPodMetrics.ShouldHaveSingleItem();
         var podMetric = service.KubernetesPodMetrics[0];
@@ -180,7 +180,7 @@ public sealed class MetricsServiceTests
         var retained = now.AddMinutes(-30);
         var latest = now.AddMinutes(-1);
 
-        await service.InitializeAsync(cluster);
+        await service.InitializeAsync(cluster, TestContext.Current.CancellationToken);
 
         service.KubernetesPodMetrics.Add(CreatePodMetrics(older, "10m"));
         service.KubernetesPodMetrics.Add(CreatePodMetrics(retained, "50m"));
@@ -245,7 +245,7 @@ public sealed class MetricsServiceTests
         using var client = CreateFakeClient(api);
         await using var cluster = CreateCluster("metrics-server-cluster", service, settings, client);
 
-        await service.InitializeAsync(cluster);
+        await service.InitializeAsync(cluster, TestContext.Current.CancellationToken);
 
         service.IsMetricsAvailable.ShouldBeFalse();
         service.ActiveMetricsBackend.ShouldBe(ActiveMetricsBackend.None);
@@ -285,7 +285,7 @@ public sealed class MetricsServiceTests
         using var client = CreateFakeClient(api);
         await using var cluster = CreateCluster("auto-metrics-cluster", service, settings, client);
 
-        await service.InitializeAsync(cluster);
+        await service.InitializeAsync(cluster, TestContext.Current.CancellationToken);
 
         service.ActiveMetricsBackend.ShouldBe(ActiveMetricsBackend.Prometheus(PrometheusProviderKind.Operator));
         queryClient.PreparedEndpoint!.Namespace.ShouldBe("monitoring");
@@ -318,7 +318,7 @@ public sealed class MetricsServiceTests
         using var client = CreateFakeClient(api);
         await using var cluster = CreateCluster("auto-openshift-cluster", service, settings, client);
 
-        await service.InitializeAsync(cluster);
+        await service.InitializeAsync(cluster, TestContext.Current.CancellationToken);
 
         service.ActiveMetricsBackend.ShouldBe(ActiveMetricsBackend.Prometheus(PrometheusProviderKind.OpenShift));
         queryClient.PreparedEndpoint!.ServiceName.ShouldBe("prometheus-k8s");
@@ -341,7 +341,7 @@ public sealed class MetricsServiceTests
         using var client = CreateFakeClient(api);
         await using var cluster = CreateCluster("auto-metrics-cluster", service, settings, client);
 
-        await service.InitializeAsync(cluster);
+        await service.InitializeAsync(cluster, TestContext.Current.CancellationToken);
 
         service.IsMetricsAvailable.ShouldBeTrue();
         service.ActiveMetricsBackend.ShouldBe(ActiveMetricsBackend.KubernetesMetricsServer);
@@ -362,9 +362,9 @@ public sealed class MetricsServiceTests
 
         using var service = CreateMetricsService(settings, queryClient);
         await using var cluster = CreateCluster("prom-cluster", service, settings);
-        await service.InitializeAsync(cluster);
+        await service.InitializeAsync(cluster, TestContext.Current.CancellationToken);
 
-        var result = await service.QueryPrometheusAsync(CreateRequest());
+        var result = await service.QueryPrometheusAsync(CreateRequest(), TestContext.Current.CancellationToken);
 
         result.IsEmpty.ShouldBeFalse();
         queryClient.QueryCalls.ShouldBe(1);
@@ -403,10 +403,10 @@ public sealed class MetricsServiceTests
         });
         using var service = CreateMetricsService(settings, queryClient);
         await using var cluster = CreateCluster("prom-cluster", service, settings);
-        await service.InitializeAsync(cluster);
+        await service.InitializeAsync(cluster, TestContext.Current.CancellationToken);
         var request = CreateRequest(stepSeconds: 300, frames: 3);
 
-        var result = await service.QueryPrometheusAsync(request);
+        var result = await service.QueryPrometheusAsync(request, TestContext.Current.CancellationToken);
 
         result.Metrics["cpuUsage"].Single().Points.Select(static point => point.Timestamp)
             .ShouldBe([DateTimeOffset.FromUnixTimeSeconds(0), DateTimeOffset.FromUnixTimeSeconds(300), DateTimeOffset.FromUnixTimeSeconds(600)]);
@@ -444,13 +444,13 @@ public sealed class MetricsServiceTests
         });
         using var service = CreateMetricsService(settings, queryClient);
         await using var cluster = CreateCluster("prom-cluster", service, settings);
-        await service.InitializeAsync(cluster);
+        await service.InitializeAsync(cluster, TestContext.Current.CancellationToken);
         var request = CreateRequest(
             stepSeconds: 12 * 60 * 60,
             frames: 121,
             rangeSeconds: 60 * 24 * 60 * 60);
 
-        var result = await service.QueryPrometheusAsync(request);
+        var result = await service.QueryPrometheusAsync(request, TestContext.Current.CancellationToken);
 
         result.Metrics["cpuUsage"].Single().Points.Select(static point => point.Timestamp)
             .ShouldBe([DateTimeOffset.FromUnixTimeSeconds(0), DateTimeOffset.FromUnixTimeSeconds(12 * 60 * 60)]);
@@ -471,11 +471,11 @@ public sealed class MetricsServiceTests
 
         using var service = CreateMetricsService(settings, queryClient);
         await using var cluster = CreateCluster("prom-cluster", service, settings);
-        await service.InitializeAsync(cluster);
+        await service.InitializeAsync(cluster, TestContext.Current.CancellationToken);
         var request = CreateRequest();
 
-        _ = await service.QueryPrometheusAsync(request);
-        _ = await service.QueryPrometheusAsync(request);
+        _ = await service.QueryPrometheusAsync(request, TestContext.Current.CancellationToken);
+        _ = await service.QueryPrometheusAsync(request, TestContext.Current.CancellationToken);
 
         queryClient.QueryCalls.ShouldBe(1);
     }
@@ -499,11 +499,11 @@ public sealed class MetricsServiceTests
 
         using var service = CreateMetricsService(settings, queryClient);
         await using var cluster = CreateCluster("prom-cluster", service, settings);
-        await service.InitializeAsync(cluster);
+        await service.InitializeAsync(cluster, TestContext.Current.CancellationToken);
         var request = CreateRequest();
 
-        var first = await service.QueryPrometheusAsync(request);
-        var second = await service.QueryPrometheusAsync(request);
+        var first = await service.QueryPrometheusAsync(request, TestContext.Current.CancellationToken);
+        var second = await service.QueryPrometheusAsync(request, TestContext.Current.CancellationToken);
 
         first.IsEmpty.ShouldBeTrue();
         first.HadRequestFailures.ShouldBeTrue();
@@ -525,7 +525,7 @@ public sealed class MetricsServiceTests
 
         using var service = CreateMetricsService(settings, queryClient);
         await using var cluster = CreateCluster("prom-cluster", service, settings);
-        await service.InitializeAsync(cluster);
+        await service.InitializeAsync(cluster, TestContext.Current.CancellationToken);
 
         using var cancellation = new CancellationTokenSource();
         var request = service.QueryPrometheusAsync(CreateRequest(), cancellation.Token);
@@ -549,8 +549,8 @@ public sealed class MetricsServiceTests
 
         using var service = CreateMetricsService(settings, queryClient);
         await using var cluster = CreateCluster("prom-cluster", service, settings);
-        await service.InitializeAsync(cluster);
-        var request = service.QueryPrometheusAsync(CreateRequest());
+        await service.InitializeAsync(cluster, TestContext.Current.CancellationToken);
+        var request = service.QueryPrometheusAsync(CreateRequest(), TestContext.Current.CancellationToken);
         await queryClient.QueryStarted.Task.WaitAsync(TestContext.Current.CancellationToken);
         var resetCallsBeforeStop = queryClient.ResetCalls;
 

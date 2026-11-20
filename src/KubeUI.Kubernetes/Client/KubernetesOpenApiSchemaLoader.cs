@@ -314,7 +314,12 @@ public sealed class KubernetesOpenApiSchemaLoader : IDisposable
                     // A partial catalog is published so available schemas still work, but the
                     // load is not marked attempted: hover clears its cache and tries again.
                     activity?.SetStatus(ActivityStatusCode.Error, "Some OpenAPI documents were unavailable.");
-                    _logger.LogDebug("Some Kubernetes OpenAPI v3 schema documents failed for {name}.", clusterName);
+                    if (_logger.IsEnabled(LogLevel.Debug))
+                    {
+                        _logger.LogDebug(
+                            "Some Kubernetes OpenAPI v3 schema documents failed for {ClusterName}.",
+                            clusterName);
+                    }
                     return false;
                 }
 
@@ -327,7 +332,13 @@ public sealed class KubernetesOpenApiSchemaLoader : IDisposable
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
-                _logger.LogDebug(ex, "Unable to load Kubernetes OpenAPI v3 schemas for {name}.", clusterName);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug(
+                        ex,
+                        "Unable to load Kubernetes OpenAPI v3 schemas for {ClusterName}.",
+                        clusterName);
+                }
 
                 // Report the failure instead of completing successfully. Callers that cache this
                 // task (YAML hover) must be able to drop it and retry on the next interaction.

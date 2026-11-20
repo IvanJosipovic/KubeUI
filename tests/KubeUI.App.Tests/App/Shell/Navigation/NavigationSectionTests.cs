@@ -278,7 +278,7 @@ public sealed class NavigationSectionTests
     [InlineData("notcrossplane.io", false)]
     [InlineData("Crossplane.io", false)]
     [InlineData(null, false)]
-    public void crossplane_section_matches_exact_group_and_dot_boundary_subgroups(string group, bool expected)
+    public void crossplane_section_matches_exact_group_and_dot_boundary_subgroups(string? group, bool expected)
     {
         var provider = new CrossplaneNavigationSectionProvider();
 
@@ -690,8 +690,9 @@ public sealed class NavigationSectionTests
     private static IResourceConfig CreateResourceConfig(string? group, string apiVersion = "v1")
     {
         var config = new Mock<IResourceConfig>();
+        // A null group is intentional: navigation providers must not treat it as a custom-resource group.
         config.SetupGet(resource => resource.Kind)
-            .Returns(new GroupApiVersionKind(group, apiVersion, "TestResource", "testresources"));
+            .Returns(new GroupApiVersionKind(group!, apiVersion, "TestResource", "testresources"));
         return config.Object;
     }
 

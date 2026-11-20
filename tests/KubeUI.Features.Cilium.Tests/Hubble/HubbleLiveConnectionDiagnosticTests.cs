@@ -37,7 +37,7 @@ public sealed class HubbleLiveFlowViewDiagnosticTests(ITestOutputHelper output) 
             "Workspace state: connected={0}; status={1}; lastError={2}; CRD permissionsLoaded={3}; CRD listWatch={4}",
             workspace.Runtime.Connected,
             workspace.Runtime.Status,
-            workspace.Runtime.LastError,
+            workspace.Runtime.LastError ?? string.Empty,
             crdConfig.PermissionsLoaded,
             crdConfig.CanListAndWatch);
         await TestWait.UntilAsync(

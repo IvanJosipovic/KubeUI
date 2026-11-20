@@ -129,12 +129,12 @@ public sealed class HubbleConnection : IHubbleConnection
     }
 
     private IObservable<FlowViewModel> CreateFlowObservable(IReadOnlyList<string>? namespaces)
-        => Observable.Create<FlowViewModel>((observer, token) => ReadFlowsAsync(observer, token, namespaces));
+        => Observable.Create<FlowViewModel>((observer, token) => ReadFlowsAsync(observer, namespaces, token));
 
     private async Task ReadFlowsAsync(
         IObserver<FlowViewModel> observer,
-        CancellationToken subscriptionToken,
-        IReadOnlyList<string>? namespaces)
+        IReadOnlyList<string>? namespaces,
+        CancellationToken subscriptionToken)
     {
         using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(
             subscriptionToken,
@@ -171,10 +171,14 @@ public sealed class HubbleConnection : IHubbleConnection
                 }
                 else if (response.NodeStatus != null)
                 {
-                    _logger.LogDebug(
-                        "Node status: {Node} - {State}",
-                        response.NodeName,
-                        response.NodeStatus.StateChange);
+                    // Avoid allocating the logging arguments when debug logging is disabled.
+                    if (_logger.IsEnabled(LogLevel.Debug))
+                    {
+                        _logger.LogDebug(
+                            "Node status: {Node} - {State}",
+                            response.NodeName,
+                            response.NodeStatus.StateChange);
+                    }
                 }
             }
 

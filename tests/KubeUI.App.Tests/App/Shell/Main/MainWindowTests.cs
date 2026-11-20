@@ -73,7 +73,8 @@ public sealed class MainWindowTests
             var template = window.WindowDecorationsTheme!.Setters.OfType<Setter>()
                 .Single(setter => setter.Property == WindowDrawnDecorations.TemplateProperty)
                 .Value.ShouldBeAssignableTo<IWindowDrawnDecorationsTemplate>();
-            var result = ((TemplateResult<WindowDrawnDecorationsContent>)((ITemplate)template).Build());
+            template.ShouldNotBeNull();
+            var result = ((ITemplate)template).Build().ShouldBeOfType<TemplateResult<WindowDrawnDecorationsContent>>();
             foreach (var name in new[] { "PART_MinimizeButton", "PART_MaximizeButton", "PART_CloseButton" })
             {
                 var button = result.NameScope.Find<Button>(name).ShouldNotBeNull();
@@ -103,7 +104,8 @@ public sealed class MainWindowTests
             var template = window.WindowDecorationsTheme!.Setters.OfType<Setter>()
                 .Single(setter => setter.Property == WindowDrawnDecorations.TemplateProperty)
                 .Value.ShouldBeAssignableTo<IWindowDrawnDecorationsTemplate>();
-            var result = (TemplateResult<WindowDrawnDecorationsContent>)((ITemplate)template).Build();
+            template.ShouldNotBeNull();
+            var result = ((ITemplate)template).Build().ShouldBeOfType<TemplateResult<WindowDrawnDecorationsContent>>();
             var button = result.NameScope.Find<Button>("PART_MaximizeButton").ShouldNotBeNull();
             var path = ((Viewbox)button.Content!).Child.ShouldBeOfType<Avalonia.Controls.Shapes.Path>();
             var normal = path.Data.ShouldNotBeNull();
@@ -130,8 +132,10 @@ public sealed class MainWindowTests
             var template = window.WindowDecorationsTheme!.Setters.OfType<Setter>()
                 .Single(setter => setter.Property == WindowDrawnDecorations.TemplateProperty)
                 .Value.ShouldBeAssignableTo<IWindowDrawnDecorationsTemplate>();
-            var overlay = ((TemplateResult<WindowDrawnDecorationsContent>)((ITemplate)template).Build())
-                .Result.Overlay.ShouldBeAssignableTo<Control>();
+            template.ShouldNotBeNull();
+            var result = ((ITemplate)template).Build().ShouldBeOfType<TemplateResult<WindowDrawnDecorationsContent>>();
+            var overlay = result.Result.Overlay.ShouldBeAssignableTo<Control>();
+            overlay.ShouldNotBeNull();
             overlay.Height = 30;
             var layer = new Grid().Children(overlay);
             layer.Measure(new Size(800, 600));
@@ -157,8 +161,10 @@ public sealed class MainWindowTests
             var template = window.WindowDecorationsTheme!.Setters.OfType<Setter>()
                 .Single(setter => setter.Property == WindowDrawnDecorations.TemplateProperty)
                 .Value.ShouldBeAssignableTo<IWindowDrawnDecorationsTemplate>();
-            var overlay = ((TemplateResult<WindowDrawnDecorationsContent>)((ITemplate)template).Build())
-                .Result.Overlay.ShouldBeAssignableTo<Panel>();
+            template.ShouldNotBeNull();
+            var result = ((ITemplate)template).Build().ShouldBeOfType<TemplateResult<WindowDrawnDecorationsContent>>();
+            var overlay = result.Result.Overlay.ShouldBeAssignableTo<Panel>();
+            overlay.ShouldNotBeNull();
             WindowDecorationProperties.GetElementRole(overlay).ShouldBe(WindowDecorationsElementRole.TitleBar);
             overlay.Background.ShouldNotBeNull();
         }
@@ -183,7 +189,8 @@ public sealed class MainWindowTests
                 .Single(setter => setter.Property == WindowDrawnDecorations.TemplateProperty)
                 .Value
                 .ShouldBeAssignableTo<IWindowDrawnDecorationsTemplate>();
-            var result = (TemplateResult<WindowDrawnDecorationsContent>)((ITemplate)template).Build();
+            template.ShouldNotBeNull();
+            var result = ((ITemplate)template).Build().ShouldBeOfType<TemplateResult<WindowDrawnDecorationsContent>>();
             var overlay = result.Result.Overlay.ShouldNotBeNull();
             var titleBar = overlay is Panel { Name: "PART_TitleBar" } rootTitleBar
                 ? rootTitleBar
@@ -195,7 +202,7 @@ public sealed class MainWindowTests
                 .Single(text => text.Text == AppLanguageManager.Instance.MainWindow_Title.CurrentValue()!);
             title.TextAlignment.ShouldBe(TextAlignment.Center);
             title.Margin.ShouldBe(new Thickness(0));
-            WindowDecorationProperties.GetElementRole(title.Parent.ShouldBeAssignableTo<Visual>())
+            WindowDecorationProperties.GetElementRole(title.Parent.ShouldBeAssignableTo<Visual>().ShouldNotBeNull())
                 .ShouldBe(WindowDecorationsElementRole.TitleBar);
 
             var applicationIcon = overlay.GetVisualDescendants()
@@ -276,7 +283,9 @@ public sealed class MainWindowTests
                 .Single(setter => setter.Property == WindowDrawnDecorations.TemplateProperty)
                 .Value
                 .ShouldBeAssignableTo<IWindowDrawnDecorationsTemplate>();
-            var overlay = ((TemplateResult<WindowDrawnDecorationsContent>)((ITemplate)template).Build())
+            template.ShouldNotBeNull();
+            var overlay = ((ITemplate)template).Build()
+                .ShouldBeOfType<TemplateResult<WindowDrawnDecorationsContent>>()
                 .Result.Overlay.ShouldNotBeNull();
             var options = overlay.GetVisualDescendants()
                 .OfType<Button>()

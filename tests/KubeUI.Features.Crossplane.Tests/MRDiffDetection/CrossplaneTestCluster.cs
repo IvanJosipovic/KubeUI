@@ -51,7 +51,7 @@ internal static class CrossplaneTestCluster
                 await cluster.Cluster.CreateAsync(pod, cancellationToken);
             }
 
-            await WaitForResourcesAsync(cluster, cancellationToken, GroupApiVersionKind.From<V1Pod>(), pods.Select(pod => pod.Name()));
+            await WaitForResourcesAsync(cluster, GroupApiVersionKind.From<V1Pod>(), pods.Select(pod => pod.Name()), cancellationToken);
             return new CrossplaneClusterFixture(cluster);
         }
         catch
@@ -82,10 +82,10 @@ internal static class CrossplaneTestCluster
     /// are seeded by the view model under test.
     /// </summary>
     public static async Task<CrossplaneClusterFixture> CreateWithProviderAsync(
-        CancellationToken cancellationToken,
         V1Pod[] pods,
         string providerName = "provider-demo",
-        string? widgetUid = null)
+        string? widgetUid = null,
+        CancellationToken cancellationToken = default)
     {
         var config = TestClusterConfig.Fake();
         config.Name = "test-cluster";
@@ -138,36 +138,36 @@ internal static class CrossplaneTestCluster
 
             await CreateCustomResourceAsync(
                 cluster,
-                cancellationToken,
                 ProviderKind,
                 new GenericKubernetesObject
                 {
                     ApiVersion = "pkg.crossplane.io/v1",
                     Kind = "Provider",
                     Metadata = new() { Name = providerName },
-                });
+                },
+                cancellationToken);
             await CreateCustomResourceAsync(
                 cluster,
-                cancellationToken,
                 WidgetKind,
                 new GenericKubernetesObject
                 {
                     ApiVersion = "example.com/v1",
                     Kind = "Widget",
                     Metadata = new() { Uid = widgetUid ?? "uid-1", Name = "widget-one", NamespaceProperty = "default" },
-                });
+                },
+                cancellationToken);
             foreach (var pod in pods)
             {
                 await cluster.Cluster.CreateAsync(pod, cancellationToken);
             }
 
-            await WaitForResourcesAsync(cluster, cancellationToken, ProviderKind, [providerName]);
-            await WaitForResourcesAsync(cluster, cancellationToken, WidgetKind, ["widget-one"]);
+            await WaitForResourcesAsync(cluster, ProviderKind, [providerName], cancellationToken);
+            await WaitForResourcesAsync(cluster, WidgetKind, ["widget-one"], cancellationToken);
             await WaitForResourcesAsync(
                 cluster,
-                cancellationToken,
                 GroupApiVersionKind.From<V1Pod>(),
-                pods.Select(pod => pod.Name()));
+                pods.Select(pod => pod.Name()),
+                cancellationToken);
             return new CrossplaneClusterFixture(cluster);
         }
         catch
@@ -202,56 +202,56 @@ internal static class CrossplaneTestCluster
     /// </summary>
     public static Task CreateCustomResourceAsync(
         CrossplaneClusterFixture fixture,
-        CancellationToken cancellationToken,
         GroupApiVersionKind kind,
-        GenericKubernetesObject resource)
-        => CreateCustomResourceAsync(fixture.Cluster, cancellationToken, kind, resource);
+        GenericKubernetesObject resource,
+        CancellationToken cancellationToken = default)
+        => CreateCustomResourceAsync(fixture.Cluster, kind, resource, cancellationToken);
 
     public static async Task CreateCustomResourceAsync(
         TestCluster cluster,
-        CancellationToken cancellationToken,
         GroupApiVersionKind kind,
-        GenericKubernetesObject resource)
+        GenericKubernetesObject resource,
+        CancellationToken cancellationToken = default)
     {
         using var client = new GenericClient(cluster.Cluster.Client!, kind.Group, kind.ApiVersion, kind.PluralName, false);
         if (string.IsNullOrEmpty(resource.Metadata?.NamespaceProperty))
         {
-            await client.CreateAsync(resource).WaitAsync(cancellationToken);
+            await client.CreateAsync(resource, cancellationToken);
             return;
         }
 
-        await client.CreateNamespacedAsync(resource, resource.Metadata.NamespaceProperty).WaitAsync(cancellationToken);
+        await client.CreateNamespacedAsync(resource, resource.Metadata.NamespaceProperty, cancellationToken);
     }
 
     /// <summary>Deletes a custom resource through the production client so the informer observes the change.</summary>
     public static Task DeleteCustomResourceAsync(
         CrossplaneClusterFixture fixture,
-        CancellationToken cancellationToken,
         GroupApiVersionKind kind,
-        GenericKubernetesObject resource)
-        => DeleteCustomResourceAsync(fixture.Cluster, cancellationToken, kind, resource);
+        GenericKubernetesObject resource,
+        CancellationToken cancellationToken = default)
+        => DeleteCustomResourceAsync(fixture.Cluster, kind, resource, cancellationToken);
 
     public static async Task DeleteCustomResourceAsync(
         TestCluster cluster,
-        CancellationToken cancellationToken,
         GroupApiVersionKind kind,
-        GenericKubernetesObject resource)
+        GenericKubernetesObject resource,
+        CancellationToken cancellationToken = default)
     {
         using var client = new GenericClient(cluster.Cluster.Client!, kind.Group, kind.ApiVersion, kind.PluralName, false);
         if (string.IsNullOrEmpty(resource.Metadata?.NamespaceProperty))
         {
-            await client.DeleteAsync<GenericKubernetesObject>(resource.Metadata!.Name).WaitAsync(cancellationToken);
+            await client.DeleteAsync<GenericKubernetesObject>(resource.Metadata!.Name, cancellationToken);
             return;
         }
 
-        await client.DeleteNamespacedAsync<GenericKubernetesObject>(resource.Metadata!.NamespaceProperty, resource.Metadata.Name).WaitAsync(cancellationToken);
+        await client.DeleteNamespacedAsync<GenericKubernetesObject>(resource.Metadata!.NamespaceProperty, resource.Metadata.Name, cancellationToken);
     }
 
     private static async Task WaitForResourcesAsync(
         TestCluster cluster,
-        CancellationToken cancellationToken,
         GroupApiVersionKind kind,
-        IEnumerable<string> names)
+        IEnumerable<string> names,
+        CancellationToken cancellationToken = default)
     {
         var expected = names.ToHashSet(StringComparer.Ordinal);
         try

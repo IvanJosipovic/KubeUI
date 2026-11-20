@@ -1,6 +1,7 @@
 #nullable enable
 
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Reactive.Subjects;
 using BenchmarkDotNet.Attributes;
 using DynamicData;
@@ -95,7 +96,11 @@ public class ResourceListPipelineBenchmarks : IDisposable
         _cache.Dispose();
     }
 
-    public void Dispose() => Cleanup();
+    public void Dispose()
+    {
+        Cleanup();
+        GC.SuppressFinalize(this);
+    }
 
     private void ResetCache()
     {
@@ -129,7 +134,7 @@ public class ResourceListPipelineBenchmarks : IDisposable
             {
                 Name = name,
                 NamespaceProperty = $"ns-{index % 8}",
-                ResourceVersion = index.ToString()
+                ResourceVersion = index.ToString(CultureInfo.InvariantCulture)
             }
         };
     }

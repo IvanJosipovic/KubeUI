@@ -67,7 +67,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
     private MetricPanelViewModel? _selectedPanel;
 
     /// <summary>Notifies bindings that a plain CLR property on this control has changed.</summary>
-    public event PropertyChangedEventHandler? PropertyChanged;
+    public new event PropertyChangedEventHandler? PropertyChanged;
 
     public ObservableCollection<MetricTabViewModel> Tabs { get; } = [];
 
@@ -503,7 +503,11 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
                 }
                 catch (OperationCanceledException)
                 {
-                    _logger.LogDebug("Metrics refresh canceled for cluster {ClusterName}.", _cluster?.Runtime.Name);
+                    // Avoid allocating the logging arguments when debug logging is disabled.
+                    if (_logger.IsEnabled(LogLevel.Debug))
+                    {
+                        _logger.LogDebug("Metrics refresh canceled for cluster {ClusterName}.", _cluster?.Runtime.Name);
+                    }
                 }
                 catch (Exception ex)
                 {

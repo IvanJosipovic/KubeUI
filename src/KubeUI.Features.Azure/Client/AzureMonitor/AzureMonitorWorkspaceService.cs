@@ -114,10 +114,15 @@ public sealed class AzureMonitorWorkspaceService : IAzureMonitorWorkspaceService
             });
         }
 
-        _logger.LogInformation(
-            "Discovered {WorkspaceCount} Azure Monitor Prometheus workspace(s) in subscription {SubscriptionId}.",
-            workspaces.Count,
-            subscriptionId);
+        // Avoid allocating the logging arguments when information logging is disabled.
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation(
+                "Discovered {WorkspaceCount} Azure Monitor Prometheus workspace(s) in subscription {SubscriptionId}.",
+                workspaces.Count,
+                subscriptionId);
+        }
+
         return workspaces;
     }
 
@@ -130,7 +135,12 @@ public sealed class AzureMonitorWorkspaceService : IAzureMonitorWorkspaceService
             if (_prometheusAccessToken is { } cachedToken
                 && cachedToken.ExpiresOn > DateTimeOffset.UtcNow.Add(s_tokenRefreshBuffer))
             {
-                _logger.LogTrace("Reusing cached Azure Monitor Prometheus access token, expiring at {ExpiresOn:u}.", cachedToken.ExpiresOn);
+                // Avoid allocating the logging arguments when trace logging is disabled.
+                if (_logger.IsEnabled(LogLevel.Trace))
+                {
+                    _logger.LogTrace("Reusing cached Azure Monitor Prometheus access token, expiring at {ExpiresOn:u}.", cachedToken.ExpiresOn);
+                }
+
                 return new PrometheusAccessToken(cachedToken.Token, cachedToken.ExpiresOn);
             }
 
@@ -141,10 +151,15 @@ public sealed class AzureMonitorWorkspaceService : IAzureMonitorWorkspaceService
                     .GetTokenAsync(new TokenRequestContext([PrometheusScope]), cancellationToken)
                     .ConfigureAwait(false);
                 _prometheusAccessToken = token;
-                _logger.LogDebug(
-                    "Acquired Azure Monitor Prometheus access token expiring at {ExpiresOn:u} in {ElapsedMilliseconds}ms.",
-                    token.ExpiresOn,
-                    (long)System.Diagnostics.Stopwatch.GetElapsedTime(refreshStarted).TotalMilliseconds);
+                // Avoid allocating the logging arguments and measuring elapsed time when debug logging is disabled.
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug(
+                        "Acquired Azure Monitor Prometheus access token expiring at {ExpiresOn:u} in {ElapsedMilliseconds}ms.",
+                        token.ExpiresOn,
+                        (long)System.Diagnostics.Stopwatch.GetElapsedTime(refreshStarted).TotalMilliseconds);
+                }
+
                 return new PrometheusAccessToken(token.Token, token.ExpiresOn);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -200,12 +215,22 @@ public sealed class AzureMonitorWorkspaceService : IAzureMonitorWorkspaceService
         }
         catch (FormatException ex)
         {
-            _logger.LogDebug(ex, "The Azure access token could not be decoded while reading the '{ClaimName}' claim.", claimName);
+            // Avoid allocating the logging arguments when debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug(ex, "The Azure access token could not be decoded while reading the '{ClaimName}' claim.", claimName);
+            }
+
             return null;
         }
         catch (JsonException ex)
         {
-            _logger.LogDebug(ex, "The Azure access token payload could not be parsed while reading the '{ClaimName}' claim.", claimName);
+            // Avoid allocating the logging arguments when debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug(ex, "The Azure access token payload could not be parsed while reading the '{ClaimName}' claim.", claimName);
+            }
+
             return null;
         }
     }

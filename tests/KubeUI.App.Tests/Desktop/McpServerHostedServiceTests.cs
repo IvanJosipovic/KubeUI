@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Net.Sockets;
 using System.Text;
@@ -283,7 +284,7 @@ public sealed class McpServerHostTests
             using var client = new HttpClient();
             using var request = CreateInitializeRequest(settings);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", CreateExternalToken(host));
-            request.Headers.TryAddWithoutValidation("Origin", origin.Replace("62888", port.ToString(), StringComparison.Ordinal));
+            request.Headers.TryAddWithoutValidation("Origin", origin.Replace("62888", port.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal));
 
             using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 

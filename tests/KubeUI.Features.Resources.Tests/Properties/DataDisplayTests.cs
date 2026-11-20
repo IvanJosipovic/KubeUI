@@ -350,9 +350,9 @@ public sealed class DataDisplayTests
         display.ViewModel.EditMode.ShouldBeTrue();
         display.ViewModel.HasActionSuccessResult.ShouldBeTrue();
         var patchRequest = harness.Recorder.Requests.Single(request => request.Method == HttpMethod.Patch);
-        var patch = JsonNode.Parse(patchRequest.Body!).AsObject();
+        var patch = JsonNode.Parse(patchRequest.Body!).ShouldBeOfType<JsonObject>();
         patch.Count.ShouldBe(1);
-        var data = patch["data"].AsObject();
+        var data = patch["data"].ShouldBeOfType<JsonObject>();
         data["config"].ShouldBeNull();
         data["renamed"]!.GetValue<string>().ShouldBe("updated-value");
         data["added"]!.GetValue<string>().ShouldBe("added-value");
