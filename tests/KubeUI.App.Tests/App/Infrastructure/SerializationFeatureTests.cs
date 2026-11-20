@@ -202,6 +202,18 @@ public sealed class SerializationFeatureTests
     }
 
     [Fact]
+    public void null_preview_features_fall_back_to_defaults()
+    {
+        SettingsPersistenceData settings = new();
+        settings.Settings.PreviewFeatures = null!;
+
+        using var host = Program.CreateHostBuilder(
+            [], includeOptionalServices: false, settingsOverride: settings).Build();
+
+        AssertCapabilities(host, disableJsonReflection: false, disableYamlReflection: false);
+    }
+
+    [Fact]
     public void application_instances_keep_independent_serialization_settings()
     {
         SettingsPersistenceData settings = new();

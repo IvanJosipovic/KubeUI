@@ -42,7 +42,8 @@ public interface IClusterRuntime
     Task Connect();
     /// <summary>Reapplies the current cluster metrics settings when the cluster is connected.</summary>
     Task ReinitializeMetricsAsync() => Task.CompletedTask;
-    Task EnsureOpenApiSchemasAsync();
+    /// <summary>Ensures OpenAPI schemas are loaded and reports whether they are available.</summary>
+    Task<bool> EnsureOpenApiSchemasAsync();
     Task Disconnect();
     Task DeleteResource<T>(T item) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     Task DryRunYaml(Stream stream);

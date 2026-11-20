@@ -79,7 +79,7 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
 
     /// <summary>Gets the localized node and edge counts displayed above the graph.</summary>
     public string GraphSummary => string.Format(
-        System.Globalization.CultureInfo.CurrentCulture,
+        CultureInfo.CurrentCulture,
         CiliumLanguageManager.Instance.ServiceMapView_GraphCountsFormat.CurrentValue()!,
         Graph?.NodeCount ?? 0,
         Graph?.EdgeCount ?? 0);

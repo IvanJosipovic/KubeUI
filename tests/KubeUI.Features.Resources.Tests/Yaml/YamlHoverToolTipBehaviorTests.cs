@@ -17,13 +17,36 @@ public sealed class YamlHoverToolTipBehaviorTests
         var firstResult = await behavior.EnsureSchemaLoadAsync(() =>
         {
             attempts++;
-            return Task.FromException(new InvalidOperationException("schema load failed"));
+            return Task.FromException<bool>(new InvalidOperationException("schema load failed"));
         });
 
         var secondResult = await behavior.EnsureSchemaLoadAsync(() =>
         {
             attempts++;
-            return Task.CompletedTask;
+            return Task.FromResult(true);
+        });
+
+        firstResult.ShouldBeFalse();
+        secondResult.ShouldBeTrue();
+        attempts.ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task EnsureSchemaLoadAsync_RetriesAfterQuietFailure()
+    {
+        var behavior = new YamlHoverToolTipBehavior();
+        var attempts = 0;
+
+        var firstResult = await behavior.EnsureSchemaLoadAsync(() =>
+        {
+            attempts++;
+            return Task.FromResult(false);
+        });
+
+        var secondResult = await behavior.EnsureSchemaLoadAsync(() =>
+        {
+            attempts++;
+            return Task.FromResult(true);
         });
 
         firstResult.ShouldBeFalse();
