@@ -16,15 +16,15 @@ public sealed class PropertiesView : ViewBase<V1Lease>
                     .Value(vm.Spec.HolderIdentity),
                 new PropertyItem()
                     .Key(ResourcesLanguageManager.Instance.LeasePropertiesView_Lease_Duration_Seconds.CurrentValue()!)
-                    .Value(vm.Spec.LeaseDurationSeconds),
+                    .Value((object?)vm.Spec.LeaseDurationSeconds ?? string.Empty),
                 new PropertyItem()
                     .Key(ResourcesLanguageManager.Instance.LeasePropertiesView_Acquire_Time.CurrentValue()!)
-                    .Value(vm.Spec.AcquireTime),
+                    .Value((object?)vm.Spec.AcquireTime ?? string.Empty),
                 new PropertyItem()
                     .Key(ResourcesLanguageManager.Instance.LeasePropertiesView_Renew_Time.CurrentValue()!)
-                    .Value(vm.Spec.RenewTime),
+                    .Value((object?)vm.Spec.RenewTime ?? string.Empty),
                 new PropertyItem()
                     .Key(ResourcesLanguageManager.Instance.LeasePropertiesView_Lease_Transitions.CurrentValue()!)
-                    .Value(vm.Spec.LeaseTransitions));
+                    .Value((object?)vm.Spec.LeaseTransitions ?? string.Empty));
     }
 }

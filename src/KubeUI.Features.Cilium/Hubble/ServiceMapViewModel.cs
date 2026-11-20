@@ -1,4 +1,5 @@
 using System.Collections.Specialized;
+using System.Globalization;
 using System.Reactive.Linq;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -78,7 +79,7 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
 
     /// <summary>Gets the localized node and edge counts displayed above the graph.</summary>
     public string GraphSummary => string.Format(
-        System.Globalization.CultureInfo.CurrentCulture,
+        CultureInfo.CurrentCulture,
         CiliumLanguageManager.Instance.ServiceMapView_GraphCountsFormat.CurrentValue()!,
         Graph?.NodeCount ?? 0,
         Graph?.EdgeCount ?? 0);
@@ -162,7 +163,7 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unable to initialize Hubble service map");
-            ConnectionStatus = string.Format(CiliumLanguageManager.Instance.ServiceMapView_StatusErrorFormat.CurrentValue()!, ex.Message);
+            ConnectionStatus = string.Format(CultureInfo.CurrentCulture, CiliumLanguageManager.Instance.ServiceMapView_StatusErrorFormat.CurrentValue()!, ex.Message);
             IsConnected = false;
         }
     }
@@ -573,7 +574,8 @@ public sealed partial class ServiceMapViewModel : ViewModelBase, IInitializeClus
     }
 
     public void Dispose()
-        => _ = DisposeAsync();
+        // Dispose is synchronous: observe the async cleanup via Task without blocking the UI thread.
+        => _ = DisposeAsync().AsTask();
 
     /// <summary>Stops graph refresh and releases the Hubble connection.</summary>
     public async ValueTask DisposeAsync()

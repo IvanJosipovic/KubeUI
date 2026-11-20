@@ -22,7 +22,7 @@ elseif (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) {
 
 New-Item -ItemType Directory -Path $videoDirectory -Force | Out-Null
 
-dotnet build $recordingProject --configuration Release --tl:off -clp:ErrorsOnly
+dotnet build $recordingProject --configuration Release
 if ($LASTEXITCODE -ne 0) { throw 'Documentation recording build failed.' }
 
 $oldVideos = @(Get-ChildItem -LiteralPath $videoDirectory -Filter '*.mp4' -File)

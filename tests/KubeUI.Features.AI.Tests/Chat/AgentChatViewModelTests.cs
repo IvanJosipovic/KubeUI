@@ -46,7 +46,7 @@ public sealed class AgentChatViewModelTests
         logger.Verify(log => log.Log(
             LogLevel.Error,
             It.IsAny<EventId>(),
-            It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains("agent test", StringComparison.Ordinal)),
+            It.Is<It.IsAnyType>((state, _) => state!.ToString() != null && state.ToString()!.Contains("agent test", StringComparison.Ordinal)),
             exception,
             It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
         await vm.DisposeAsync();
@@ -60,7 +60,7 @@ public sealed class AgentChatViewModelTests
 
         await vm.SendCommand.ExecuteAsync(null);
 
-        session.Prompt.ShouldContain("KubeUI MCP");
+        session.Prompt.ShouldNotBeNull().ShouldContain("KubeUI MCP");
         session.Prompt.ShouldContain("FullApiVersion");
         session.Prompt.ShouldContain("pkg.crossplane.io/v1");
         session.Prompt.ShouldContain("ask for approval");
@@ -129,7 +129,7 @@ public sealed class AgentChatViewModelTests
             {
                 ToolCallId = "call-1",
                 Title = "kubernetes.get",
-                RawInput = JsonDocument.Parse("""{"namespace":"default"}""").RootElement
+                RawInput = JsonElement.Parse("""{"namespace":"default"}""")
             })),
             TurnCompleted()
         ]);

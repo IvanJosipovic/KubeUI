@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using Avalonia.Collections;
@@ -341,7 +342,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
                             Title = c.Name,
                             Items = [.. c.Ports?.Select(p => new MenuItemViewModel()
                             {
-                            Title = string.Format(ResourcesLanguageManager.Instance.V1PodConfig_MenuItem_PortFormat.CurrentValue()!, p.Name, p.ContainerPort),
+                            Title = string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.V1PodConfig_MenuItem_PortFormat.CurrentValue()!, p.Name, p.ContainerPort),
                                 Command = PortForwardCommand,
                                 CommandParameter = new ArrayList { selectedItem, p },
                             }).ToList() ?? []],
@@ -382,7 +383,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
         var result = await _dialogService.ShowContentDialogAsync(this, new ContentDialogSettings
         {
             Title = ResourcesLanguageManager.Instance.V1PodConfig_EvictTitle.CurrentValue()!,
-            Content = string.Format(ResourcesLanguageManager.Instance.V1PodConfig_EvictContent.CurrentValue()!, pods.Count),
+            Content = string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.V1PodConfig_EvictContent.CurrentValue()!, pods.Count),
             PrimaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_Delete_Primary.CurrentValue()!,
             SecondaryButtonText = FoundationLanguageManager.Instance.Shared_Cancel.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary,
@@ -409,7 +410,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
             catch (Exception ex)
             {
                 failures.Add(ex);
-                ResourceUtilities.HandleException(_logger, _notificationManager, ex, string.Format(ResourcesLanguageManager.Instance.V1PodConfig_EvictError.CurrentValue()!, pod.Namespace(), pod.Name()), sendNotification: true);
+                ResourceUtilities.HandleException(_logger, _notificationManager, ex, string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.V1PodConfig_EvictError.CurrentValue()!, pod.Namespace(), pod.Name()), sendNotification: true);
             }
         }
 
@@ -636,7 +637,7 @@ public sealed partial class V1PodConfig : ResourceConfig<V1Pod>
             ContentDialogSettings settings = new()
             {
                 Title = ResourcesLanguageManager.Instance.ResourceListView_PortForward_Title.CurrentValue()!,
-                Content = string.Format(ResourcesLanguageManager.Instance.ResourceListView_PortForward_Content.CurrentValue()!, containerPort.ContainerPort, pf.LocalPort),
+                Content = string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.ResourceListView_PortForward_Content.CurrentValue()!, containerPort.ContainerPort, pf.LocalPort),
                 PrimaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_PortForward_Primary.CurrentValue()!,
                 SecondaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_PortForward_Secondary.CurrentValue()!,
                 DefaultButton = FAContentDialogButton.Secondary

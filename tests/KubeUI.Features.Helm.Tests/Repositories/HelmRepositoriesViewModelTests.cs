@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Dock.Model.Core;
@@ -60,7 +61,7 @@ public sealed class HelmRepositoriesViewModelTests : IDisposable
             var leading = repositoryHeader.Leading.ShouldBeOfType<Button>();
             leading.Command.ShouldBeSameAs(repositories.NewRepositoryCommand);
             var count = repositoryHeader.Middle.ShouldBeOfType<Label>();
-            count.Content.ShouldBe(string.Format(HelmLanguageManager.Instance.HelmRepositoriesView_ItemsFormat.CurrentValue()!, 1));
+            count.Content.ShouldBe(string.Format(CultureInfo.InvariantCulture, HelmLanguageManager.Instance.HelmRepositoriesView_ItemsFormat.CurrentValue()!, 1));
             var leadingPosition = leading.TranslatePoint(default, repositoryHeader)!.Value;
             leadingPosition.X.ShouldBe(2);
             var countPosition = count.TranslatePoint(default, repositoryHeader)!.Value;
@@ -77,7 +78,7 @@ public sealed class HelmRepositoriesViewModelTests : IDisposable
             helm.Setup(service => service.ListRepositoriesAsync(It.IsAny<HelmConnection>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync([]);
             await repositories.RefreshCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
-            count.Content.ShouldBe(string.Format(HelmLanguageManager.Instance.HelmRepositoriesView_ItemsFormat.CurrentValue()!, 0));
+            count.Content.ShouldBe(string.Format(CultureInfo.InvariantCulture, HelmLanguageManager.Instance.HelmRepositoriesView_ItemsFormat.CurrentValue()!, 0));
         }
         finally
         {

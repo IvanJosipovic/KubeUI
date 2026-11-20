@@ -76,7 +76,11 @@ public static class ResourceUtilities
             }
         }
 
-        logger.LogError(exception, message);
+        // Avoid allocating the logging arguments when error logging is disabled.
+        if (logger.IsEnabled(LogLevel.Error))
+        {
+            logger.LogError(exception, "{Message}", message);
+        }
     }
 
     /// <summary>Gets the innermost useful message from a wrapped exception.</summary>

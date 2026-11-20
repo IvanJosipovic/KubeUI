@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace KubeUI.Controls.Presentation;
 
 /// <summary>Formats UTC timestamps as compact relative ages for shared UI presentation.</summary>
@@ -59,8 +61,8 @@ public static class RelativeAgeFormatter
         var normalized = NormalizeUtc(timestampUtc.Value);
         var local = normalized.ToLocalTime();
         var localText = local.Date == utcNow.ToLocalTime().Date
-            ? local.ToString("t")
-            : local.ToString("g");
+            ? local.ToString("t", CultureInfo.CurrentCulture)
+            : local.ToString("g", CultureInfo.CurrentCulture);
 
         return $"{FormatPrettyAge(normalized, utcNow)} ago ({localText})";
     }

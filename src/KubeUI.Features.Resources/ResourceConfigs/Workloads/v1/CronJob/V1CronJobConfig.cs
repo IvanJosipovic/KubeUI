@@ -1,3 +1,4 @@
+using System.Globalization;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
@@ -58,7 +59,7 @@ public sealed partial class V1CronJobConfig : ResourceConfig<V1CronJob>
             {
                 Key = "last-schedule",
                 Name = ResourcesLanguageManager.Instance.V1CronJobConfig_Last_Schedule.CurrentValue()!,
-                Display = x => x.Status?.LastScheduleTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
+                Display = x => x.Status?.LastScheduleTime?.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.CurrentCulture) ?? "",
                 Field = x => x.Status.LastScheduleTime,
             },
             AgeColumn(),
@@ -118,7 +119,7 @@ public sealed partial class V1CronJobConfig : ResourceConfig<V1CronJob>
         var result = await _dialogService.ShowContentDialogAsync(this, new ContentDialogSettings
         {
             Title = suspended ? ResourcesLanguageManager.Instance.V1CronJobConfig_SuspendTitle.CurrentValue()! : ResourcesLanguageManager.Instance.V1CronJobConfig_ResumeTitle.CurrentValue()!,
-            Content = string.Format(suspended ? ResourcesLanguageManager.Instance.V1CronJobConfig_SuspendContent.CurrentValue()! : ResourcesLanguageManager.Instance.V1CronJobConfig_ResumeContent.CurrentValue()!, cronJobs.Count),
+            Content = string.Format(CultureInfo.CurrentCulture, suspended ? ResourcesLanguageManager.Instance.V1CronJobConfig_SuspendContent.CurrentValue()! : ResourcesLanguageManager.Instance.V1CronJobConfig_ResumeContent.CurrentValue()!, cronJobs.Count),
             PrimaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_Delete_Primary.CurrentValue()!,
             SecondaryButtonText = FoundationLanguageManager.Instance.Shared_Cancel.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary,
@@ -140,7 +141,7 @@ public sealed partial class V1CronJobConfig : ResourceConfig<V1CronJob>
             catch (Exception ex)
             {
                 failures.Add(ex);
-                ResourceUtilities.HandleException(_logger, _notificationManager, ex, string.Format(suspended ? ResourcesLanguageManager.Instance.V1CronJobConfig_SuspendError.CurrentValue()! : ResourcesLanguageManager.Instance.V1CronJobConfig_ResumeError.CurrentValue()!, cronJob.Namespace(), cronJob.Name()), sendNotification: true);
+                ResourceUtilities.HandleException(_logger, _notificationManager, ex, string.Format(CultureInfo.CurrentCulture, suspended ? ResourcesLanguageManager.Instance.V1CronJobConfig_SuspendError.CurrentValue()! : ResourcesLanguageManager.Instance.V1CronJobConfig_ResumeError.CurrentValue()!, cronJob.Namespace(), cronJob.Name()), sendNotification: true);
             }
         }
 

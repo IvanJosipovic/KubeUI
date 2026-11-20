@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Globalization;
 using Avalonia.Controls.Selection;
 using Avalonia.Threading;
 using DynamicData;
@@ -146,7 +147,7 @@ public sealed partial class HelmRepositoriesViewModel : ViewModelBase, IInitiali
         var result = await _dialogService.ShowContentDialogAsync(this, new ContentDialogSettings
         {
             Title = HelmLanguageManager.Instance.HelmRepositoriesView_DeleteTitle.CurrentValue()!,
-            Content = string.Format(HelmLanguageManager.Instance.HelmRepositoriesView_DeleteContent.CurrentValue()!, repository.Name),
+            Content = string.Format(CultureInfo.CurrentCulture, HelmLanguageManager.Instance.HelmRepositoriesView_DeleteContent.CurrentValue()!, repository.Name),
             PrimaryButtonText = HelmLanguageManager.Instance.HelmRepositoriesView_Delete.CurrentValue()!,
             SecondaryButtonText = FoundationLanguageManager.Instance.Shared_Cancel.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary

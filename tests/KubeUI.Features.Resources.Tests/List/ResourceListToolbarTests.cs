@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
@@ -78,7 +79,7 @@ public sealed class ResourceListToolbarTests
 
     private static bool HasCount(Control view, int count)
         => view.GetVisualDescendants().OfType<Label>()
-            .Any(label => Equals(label.Content, string.Format(ResourcesLanguageManager.Instance.ResourceListView_ItemsFormat.CurrentValue()!, count)));
+            .Any(label => Equals(label.Content, string.Format(CultureInfo.InvariantCulture, ResourcesLanguageManager.Instance.ResourceListView_ItemsFormat.CurrentValue()!, count)));
 
     private static V1Pod Pod(string name)
         => new()

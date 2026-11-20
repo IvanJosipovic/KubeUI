@@ -42,17 +42,62 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
     }
 
     [Fact]
+    public async Task EnsureOpenApiSchemasAsync_reports_false_without_a_kubernetes_client()
+    {
+        var config = new TestClusterConfig { ThrowOnConnect = true };
+        await using var scope = await new TestClusterGenerator().CreateAsync(
+            config,
+            TestContext.Current.CancellationToken);
+
+        await scope.Cluster.Connect();
+
+        scope.Cluster.Client.ShouldBeNull();
+        (await scope.Cluster.EnsureOpenApiSchemasAsync()).ShouldBeFalse();
+    }
+
+    [Fact]
     public async Task DisconnectStopsAllResourceInformerTasks()
     {
         await using var clusterScope = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
         var cluster = clusterScope.Cluster;
         await cluster.Connect();
 
-        await cluster.SeedResource<V1Pod>(waitForReady: true);
+        await cluster.SeedResource<V1Pod>(waitForReady: true, cancellationToken: TestContext.Current.CancellationToken);
         await cluster.Disconnect();
 
         cluster.ActiveResourceInformerTaskCount.ShouldBe(0);
     }
+    [Fact]
+    public async Task DisconnectDisposesClientAfterInformerTasksComplete()
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        var watchStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseWatch = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        await using var scope = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig(),
+            TestContext.Current.CancellationToken);
+        DisposeTrackingKubernetes? trackedClient = null;
+        scope.Cluster.KubernetesClientFactory = configuration => trackedClient = new DisposeTrackingKubernetes(
+            configuration,
+            new BlockingPodWatchHandler(watchStarted, releaseWatch.Task, timeout.Token),
+            scope.FakeApi!.CreateClient("system:admin", useRoleBasedAuthorization: false));
+
+        await scope.Cluster.Connect();
+        await scope.Cluster.Permissions.UpdateCanI<V1Pod>(Verb.List);
+        await scope.Cluster.Permissions.UpdateCanI<V1Pod>(Verb.Watch);
+        await scope.Cluster.SeedResource<V1Pod>(false, TestContext.Current.CancellationToken);
+
+        await watchStarted.Task.WaitAsync(timeout.Token);
+        var disconnect = scope.Cluster.Disconnect();
+        trackedClient.ShouldNotBeNull();
+        trackedClient.Disposed.ShouldBeFalse();
+
+        releaseWatch.TrySetResult();
+        await disconnect.WaitAsync(timeout.Token);
+        trackedClient.Disposed.ShouldBeTrue();
+    }
+
     [Fact]
     public async Task CancellingAsWatchStartsStopsInformer()
     {
@@ -75,7 +120,7 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
         {
             workerStarted.SetResult();
             releaseWorker.Wait(TestContext.Current.CancellationToken);
-        });
+        }, TestContext.Current.CancellationToken);
         try
         {
             await workerStarted.Task.WaitAsync(TestContext.Current.CancellationToken);
@@ -106,7 +151,7 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
         var activeInformerTaskCountBeforeSeeding = cluster.ActiveResourceInformerTaskCount;
 
         await cluster.Connect();
-        await cluster.SeedResource<V1Pod>(waitForReady: true);
+        await cluster.SeedResource<V1Pod>(waitForReady: true, cancellationToken: TestContext.Current.CancellationToken);
 
         cluster.ActiveResourceInformerTaskCount.ShouldBeGreaterThan(activeInformerTaskCountBeforeSeeding);
     }
@@ -212,7 +257,7 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
 
         try
         {
-            var seedTask = cluster.SeedResource<V1Pod>(waitForReady: true);
+            var seedTask = cluster.SeedResource<V1Pod>(waitForReady: true, cancellationToken: TestContext.Current.CancellationToken);
 
             await TestWait.NextPollAsync(
                 TimeSpan.FromMilliseconds(50),
@@ -258,6 +303,48 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
                 cancellation.Cancel();
                 WatchStarted.TrySetResult();
             }
+        }
+    }
+
+    private sealed class DisposeTrackingKubernetes(
+        k8s.KubernetesClientConfiguration configuration,
+        params DelegatingHandler[] handlers) : k8s.Kubernetes(configuration, handlers)
+    {
+        public bool Disposed { get; private set; }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Disposed = true;
+            }
+
+            base.Dispose(disposing);
+        }
+    }
+
+    private sealed class BlockingPodWatchHandler(
+        TaskCompletionSource started,
+        Task gate,
+        CancellationToken testToken) : DelegatingHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            var uri = request.RequestUri;
+            if (uri is not null
+                && uri.AbsolutePath.EndsWith("/pods", StringComparison.Ordinal)
+                && uri.Query.Contains("watch=true", StringComparison.OrdinalIgnoreCase))
+            {
+                started.TrySetResult();
+                // Hold the request until the test releases it. Observing the request token here
+                // would let disconnect abort the watch immediately, so the test could no longer
+                // verify that dispose waits for informer tasks to unwind.
+                await gate.WaitAsync(testToken);
+            }
+
+            return await base.SendAsync(request, cancellationToken);
         }
     }
 
@@ -332,7 +419,7 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
             new TestClusterConfig { Type = backend },
             TestContext.Current.CancellationToken);
         await harness.Cluster.Connect();
-        await harness.Cluster.SeedResource<V1Namespace>(true);
+        await harness.Cluster.SeedResource<V1Namespace>(true, TestContext.Current.CancellationToken);
 
         var created = await harness.CreateAsync(
             new V1Namespace { Metadata = new V1ObjectMeta { Name = "refresh-test" } },

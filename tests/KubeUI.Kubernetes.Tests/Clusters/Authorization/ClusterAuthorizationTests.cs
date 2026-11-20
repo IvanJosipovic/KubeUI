@@ -547,7 +547,7 @@ public sealed class ClusterAuthorizationTests
         var cluster = harness.Cluster;
 
         var kind = GroupApiVersionKind.From<V1Pod>();
-        await cluster.SeedResource<V1Pod>(waitForReady: true);
+        await cluster.SeedResource<V1Pod>(waitForReady: true, cancellationToken: TestContext.Current.CancellationToken);
         cluster.Objects.ContainsKey(kind).ShouldBeTrue();
 
         var invalidateSeededResourceMethod = typeof(Cluster).GetMethod("InvalidateSeededResource", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -602,7 +602,7 @@ public sealed class ClusterAuthorizationTests
         harness.FakeApi.OpenApiV3IndexFailuresRemaining = 0;
 
         await harness.Cluster.EnsureOpenApiSchemasAsync();
-        await harness.Cluster.SeedResource<V1Pod>();
+        await harness.Cluster.SeedResource<V1Pod>(false, TestContext.Current.CancellationToken);
 
         harness.Cluster.ModelCatalog.OpenApiSchemas
             .GetSchema(GroupApiVersionKind.From<V1Pod>())

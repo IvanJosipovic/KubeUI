@@ -19,8 +19,8 @@ public sealed class ClusterResourceChangeFeedTests
         await runtime.Permissions.UpdatePermissionsAllNamespaceAsync<V1Service>(Verb.Watch);
         await runtime.Permissions.UpdatePermissionsAllNamespaceAsync<V1Secret>(Verb.List);
         await runtime.Permissions.UpdatePermissionsAllNamespaceAsync<V1Secret>(Verb.Watch);
-        await runtime.SeedResource<V1Service>(true);
-        await runtime.SeedResource<V1Secret>(true);
+        await runtime.SeedResource<V1Service>(true, TestContext.Current.CancellationToken);
+        await runtime.SeedResource<V1Secret>(true, TestContext.Current.CancellationToken);
         V1Service existingService = new()
         {
             ApiVersion = "v1",

@@ -56,7 +56,7 @@ public sealed class TypographyTests
     [AvaloniaFact]
     public void Code_typography_resources_define_shared_font_and_size()
     {
-        Application.Current.TryGetResource("KubeUICodeFontFamily", ThemeVariant.Default, out var fontFamily);
+        Application.Current!.TryGetResource("KubeUICodeFontFamily", ThemeVariant.Default, out var fontFamily);
         Application.Current.TryGetResource("KubeUICodeFontSize", ThemeVariant.Default, out var fontSize);
 
         fontFamily.ShouldBeOfType<FontFamily>().Name.ShouldBe("Cascadia Mono");
@@ -66,7 +66,7 @@ public sealed class TypographyTests
     [AvaloniaFact]
     public void Application_typography_resources_define_shared_ui_roles()
     {
-        Application.Current.TryGetResource("KubeUIAppFontFamily", ThemeVariant.Default, out var appFontFamily);
+        Application.Current!.TryGetResource("KubeUIAppFontFamily", ThemeVariant.Default, out var appFontFamily);
         Application.Current.TryGetResource("KubeUIAppFontSize", ThemeVariant.Default, out var appFontSize);
         Application.Current.TryGetResource("KubeUITitleFontSize", ThemeVariant.Default, out var titleFontSize);
         Application.Current.TryGetResource("KubeUIMetadataFontSize", ThemeVariant.Default, out var metadataFontSize);

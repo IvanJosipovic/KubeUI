@@ -25,13 +25,14 @@ public sealed class AvaloniaAgentPermissionServiceTests
             .ReturnsAsync(FAContentDialogResult.Primary);
         var service = new AvaloniaAgentPermissionService(new DialogService(manager.Object));
 
-        var result = await service.RequestPermissionAsync(new AgentPermissionRequest("write_file", "test.txt", true));
+        var result = await service.RequestPermissionAsync(
+            new AgentPermissionRequest("write_file", "test.txt", true), TestContext.Current.CancellationToken);
 
         result.Allowed.ShouldBeTrue();
         captured.ShouldNotBeNull();
         captured!.PrimaryButtonText.ShouldBe("Allow");
         captured.SecondaryButtonText.ShouldBe("Deny");
-        captured.Content!.ToString().ShouldContain("write_file");
+        captured.Content!.ToString()!.ShouldContain("write_file");
     }
 
     [Fact]
@@ -46,9 +47,10 @@ public sealed class AvaloniaAgentPermissionServiceTests
             .ReturnsAsync(FAContentDialogResult.Secondary);
         var service = new AvaloniaAgentPermissionService(new DialogService(manager.Object));
 
-        var result = await service.RequestPermissionAsync(new AgentPermissionRequest("run_process", "cmd.exe", true));
+        var result = await service.RequestPermissionAsync(
+            new AgentPermissionRequest("run_process", "cmd.exe", true), TestContext.Current.CancellationToken);
 
         result.Allowed.ShouldBeFalse();
-        result.Reason.ShouldContain("denied");
+        result.Reason.ShouldNotBeNull().ShouldContain("denied");
     }
 }

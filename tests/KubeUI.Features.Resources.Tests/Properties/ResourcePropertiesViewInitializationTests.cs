@@ -178,6 +178,7 @@ public sealed class ResourcePropertiesViewInitializationTests
         var services = Application.Current.GetTestServices();
         var factory = services.GetRequiredService<IFactory>();
         var layout = factory.CreateLayout();
+        layout.ShouldNotBeNull();
         factory.InitLayout(layout);
         var rightDock = factory.GetDockable<IToolDock>("RightDock")!;
         using var workspace = await Application.Current.CreateClusterAsync();

@@ -5,8 +5,9 @@ namespace KubeUI.Features.Resources.Yaml.Behaviors;
 
 internal sealed class YamlDiagnosticRenderer : IBackgroundRenderer, ITextViewConnect
 {
-    private IPen _diagnosticPen;
-    private IBrush _diagnosticBrush;
+    // Both are assigned by UpdateBrush(brush) from the constructor.
+    private IPen _diagnosticPen = null!;
+    private IBrush _diagnosticBrush = null!;
 
     public YamlDiagnosticRenderer(IBrush brush)
     {

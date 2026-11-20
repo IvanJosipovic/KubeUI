@@ -33,7 +33,11 @@ public class ViewLocatorBenchmarks : IDisposable
     [GlobalCleanup]
     public void Cleanup() => Dispose();
 
-    public void Dispose() => _app?.Dispose();
+    public void Dispose()
+    {
+        _app?.Dispose();
+        GC.SuppressFinalize(this);
+    }
 
     [Benchmark]
     public int ScanGeneratedFactories()

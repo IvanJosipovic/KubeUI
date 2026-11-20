@@ -1,4 +1,5 @@
 using System.Collections.Specialized;
+using System.Globalization;
 using KubeUI.Controls.Presentation;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Kubernetes;
@@ -262,6 +263,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
             }
 
             var accountText = string.Format(
+                CultureInfo.CurrentCulture,
                 ClustersLanguageManager.Instance.ClusterSettingsView_AzureMonitorSignedInFormat.CurrentValue()!,
                 auth.Username ?? "(unknown)",
                 auth.TenantId ?? "(unknown)");
@@ -376,6 +378,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
                 MetricsServiceType.KubernetesMetricsServer => ClustersLanguageManager.Instance.ClusterSettingsView_ActiveMetricsServiceMetricsServer.CurrentValue()!,
                 MetricsServiceType.Prometheus when Cluster.Runtime.Metrics.ActiveMetricsBackend.PrometheusProviderKind is { } provider
                     => string.Format(
+                        CultureInfo.CurrentCulture,
                         ClustersLanguageManager.Instance.ClusterSettingsView_ActiveMetricsServicePrometheusFormat.CurrentValue()!,
                         ClustersLanguageManager.Instance.ClusterSettingsView_MetricsServicePrometheus.CurrentValue(),
                         GetPrometheusProviderLabel(provider)),
@@ -392,6 +395,7 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
     public bool CanRefreshPermissions => !IsRefreshingPermissions;
 
     public string ClusterTitle => string.Format(
+        CultureInfo.CurrentCulture,
         ClustersLanguageManager.Instance.ClusterSettingsView_TitleFormat.CurrentValue()!,
         Cluster?.Runtime.Name);
 
@@ -417,9 +421,12 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
     [RelayCommand]
     private void AddNamespace()
     {
-        if (!string.IsNullOrEmpty(Namespace) && !ClusterSettings.Namespaces.Contains(Namespace))
+        if (!string.IsNullOrEmpty(Namespace)
+            && ClusterSettings is { } settings
+            && settings.Namespaces is { } namespaces
+            && !namespaces.Contains(Namespace))
         {
-            ClusterSettings.Namespaces.Add(Namespace);
+            namespaces.Add(Namespace);
 
             SettingsService.SaveSettings();
 
@@ -430,9 +437,12 @@ public sealed partial class ClusterSettingsViewModel : ViewModelBase, IInitializ
     [RelayCommand]
     private void RemoveNamespace(string ns)
     {
-        if (!string.IsNullOrEmpty(ns) && ClusterSettings.Namespaces.Contains(ns))
+        if (!string.IsNullOrEmpty(ns)
+            && ClusterSettings is { } settings
+            && settings.Namespaces is { } namespaces
+            && namespaces.Contains(ns))
         {
-            ClusterSettings.Namespaces.Remove(ns);
+            namespaces.Remove(ns);
 
             SettingsService.SaveSettings();
         }

@@ -281,12 +281,16 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        _logger.LogDebug(
-            "Navigation runtime state event received for {ClusterName}: {PropertyName}; Connected={Connected}; Status={Status}",
-            runtime.Name,
-            e.PropertyName,
-            runtime.Connected,
-            runtime.Status);
+        // Guard avoids allocating the params array when Debug logging is disabled.
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug(
+                "Navigation runtime state event received for {ClusterName}: {PropertyName}; Connected={Connected}; Status={Status}",
+                runtime.Name,
+                e.PropertyName,
+                runtime.Connected,
+                runtime.Status);
+        }
 
         if (e.PropertyName == nameof(IClusterRuntime.Name) && Dispatcher.UIThread.CheckAccess())
         {
@@ -298,13 +302,21 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         {
             if (!_clusterNavigation.TryGetWorkspace(runtime, out var cluster))
             {
-                _logger.LogDebug("Navigation runtime state event ignored for unknown runtime {ClusterName}", runtime.Name);
+                // Guard avoids allocating the params array when Debug logging is disabled.
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Navigation runtime state event ignored for unknown runtime {ClusterName}", runtime.Name);
+                }
                 return;
             }
 
             if (!_clusterNavigation.TryGetNode(cluster, out var node))
             {
-                _logger.LogDebug("Navigation runtime state event ignored because node is missing for {ClusterName}", runtime.Name);
+                // Guard avoids allocating the params array when Debug logging is disabled.
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Navigation runtime state event ignored because node is missing for {ClusterName}", runtime.Name);
+                }
                 return;
             }
 
@@ -373,14 +385,18 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
 
     private void OnClusterResourceConfigProcessed(ClusterWorkspace cluster, IClusterResourceConfig resourceConfig)
     {
-        _logger.LogDebug(
-            "Navigation resource config event received for {ClusterName}: {ResourceKind}; PermissionsLoaded={PermissionsLoaded}; CanListAndWatch={CanListAndWatch}; Connected={Connected}; Status={Status}",
-            cluster.Runtime.Name,
-            resourceConfig.Kind,
-            resourceConfig.PermissionsLoaded,
-            resourceConfig.CanListAndWatch,
-            cluster.Runtime.Connected,
-            cluster.Runtime.Status);
+        // Guard avoids allocating the params array when Debug logging is disabled.
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug(
+                "Navigation resource config event received for {ClusterName}: {ResourceKind}; PermissionsLoaded={PermissionsLoaded}; CanListAndWatch={CanListAndWatch}; Connected={Connected}; Status={Status}",
+                cluster.Runtime.Name,
+                resourceConfig.Kind,
+                resourceConfig.PermissionsLoaded,
+                resourceConfig.CanListAndWatch,
+                cluster.Runtime.Connected,
+                cluster.Runtime.Status);
+        }
 
         ApplyOnUiThread(cluster);
     }
@@ -413,10 +429,14 @@ public sealed partial class NavigationViewModel : ViewModelBase, IDisposable
         }
 
         _treeBuilder.Reconcile(node);
-        _logger.LogDebug(
-            "Navigation reconciled for {ClusterName}: Items={Items}",
-            cluster.Runtime.Name,
-            node.NavigationItems.Count);
+        // Guard avoids allocating the params array when Debug logging is disabled.
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug(
+                "Navigation reconciled for {ClusterName}: Items={Items}",
+                cluster.Runtime.Name,
+                node.NavigationItems.Count);
+        }
     }
 
     private void OnClusterCustomResourceDefinitionChanged(ClusterWorkspace cluster)

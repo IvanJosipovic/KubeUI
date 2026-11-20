@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.VisualTree;
 using Humanizer;
 using k8s;
@@ -75,12 +76,14 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
 
     protected abstract bool IsMemoryMetric { get; }
 
+    [SuppressMessage("Naming", "CA1716:Identifiers should not match keywords", Justification = "Protected API contract; renaming a parameter is a breaking change for derived types. Revisit in next major version.")]
     protected abstract MetricResultSet CaptureMetricsServerHistory(
         ClusterWorkspace cluster,
         TResource resource,
         DateTimeOffset start,
         DateTimeOffset end);
 
+    [SuppressMessage("Naming", "CA1716:Identifiers should not match keywords", Justification = "Protected API contract; renaming a parameter is a breaking change for derived types. Revisit in next major version.")]
     protected abstract MetricRequest CreatePrometheusRequest(TResource resource, DateTimeOffset end);
 
     protected abstract double? GetMetricLimit(TResource resource);
@@ -549,7 +552,7 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
     private string FormatValue(double value)
     {
         return IsMemoryMetric
-            ? ((long)value).Bytes().Humanize()
+            ? ((long)value).Bytes().Humanize(System.Globalization.CultureInfo.CurrentCulture)
             : $"{value:0.##}c";
     }
 

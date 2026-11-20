@@ -356,12 +356,14 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         _watchers.Clear();
     }
 
+#pragma warning disable CA2215 // The fake owns the shared backend; base.Dispose would dispose the inner handler on client disconnect and break reconnect.
     protected override void Dispose(bool disposing)
     {
         // The production Kubernetes client owns the handler it receives and disposes it when a
         // client disconnects. This fake is the shared backend owner; Shutdown is called by the
         // test harness after the final client has disconnected.
     }
+#pragma warning restore CA2215
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
@@ -718,8 +720,8 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
                     continue;
                 }
 
-                var roleRules = string.Equals(roleBinding.RoleRef?.Kind, "ClusterRole", StringComparison.Ordinal)
-                    ? GetClusterRole(roleBinding.RoleRef.Name)?.Rules
+                var roleRules = roleBinding.RoleRef is { Kind: "ClusterRole" } clusterRoleRef
+                    ? GetClusterRole(clusterRoleRef.Name)?.Rules
                     : GetRole(roleBinding.RoleRef?.Name, roleBinding.Metadata?.NamespaceProperty)?.Rules;
                 if (roleRules is not null)
                 {
@@ -753,14 +755,51 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
 
     private async Task<HttpResponseMessage> HandleResourceAsync(HttpRequestMessage request, Route route, CancellationToken cancellationToken)
     {
+        var definitionKey = DefinitionKey(route.Group, route.ApiVersion, route.PluralName);
+        if (!_definitions.TryGetValue(definitionKey, out var definition))
+        {
+            // Publish the definition and its discovery ETag together so a concurrent discovery
+            // request cannot observe the new resource with a stale validator.
+            lock (_state.DiscoveryGate)
+            {
+                if (!_definitions.TryGetValue(definitionKey, out definition))
+                {
+                    // KubeUI seeds informers for every built-in kind it knows, but a test only needs
+                    // typed registrations for the kinds it actually uses. Synthesize an empty built-in
+                    // definition so LIST/WATCH succeeds instead of faulting on a 404. Unknown groups,
+                    // versions and CRDs still 404; CRDs are registered when their definitions are added.
+                    if (!KnownResourceMetadata.ContainsKey((route.Group, route.PluralName))
+                        && !KindOverrides.ContainsKey((route.Group, route.PluralName)))
+                    {
+                        return Error(HttpStatusCode.NotFound, $"the server could not find the requested resource {route.CollectionPath}");
+                    }
+
+                    if (!SupportedBuiltInApiVersions.TryGetValue(route.Group, out var versions)
+                        || !versions.Contains(route.ApiVersion, StringComparer.Ordinal))
+                    {
+                        return Error(HttpStatusCode.NotFound, $"the server could not find the requested resource {route.CollectionPath}");
+                    }
+
+                    var api = new GroupApiVersionKind(route.Group, route.ApiVersion, string.Empty, route.PluralName);
+                    definition = CreateDefinition(api, IsNamespacedResource(route.PluralName));
+                    _definitions[definitionKey] = definition;
+                    if (string.IsNullOrEmpty(route.Group))
+                    {
+                        InvalidateCoreDiscoveryETag();
+                    }
+                    else
+                    {
+                        InvalidateGroupedDiscoveryETag();
+                    }
+                }
+            }
+        }
+
+        // Authorize after resolving the definition so an explicit denial also applies to the
+        // first request for an unregistered built-in.
         if (!IsAllowed(request, route))
         {
             return Error(HttpStatusCode.Forbidden, $"forbidden: {request.Method} {route.CollectionPath}");
-        }
-
-        if (!_definitions.TryGetValue(DefinitionKey(route.Group, route.ApiVersion, route.PluralName), out var definition))
-        {
-            return Error(HttpStatusCode.NotFound, $"the server could not find the requested resource {route.CollectionPath}");
         }
 
         var collectionKey = CollectionKey(route);
@@ -2498,6 +2537,12 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         _state.GroupedDiscoveryETag = $"\"fake-discovery-groups-v{revision}\"";
     }
 
+    private void InvalidateCoreDiscoveryETag()
+    {
+        var revision = ++_state.CoreDiscoveryRevision;
+        _state.CoreDiscoveryETag = $"\"fake-discovery-core-v{revision}\"";
+    }
+
     private void RegisterPolicyResources(JsonObject resource)
     {
         var kind = resource["kind"]?.GetValue<string>();
@@ -2703,8 +2748,8 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
                     continue;
                 }
 
-                var rules = string.Equals(roleBinding.RoleRef?.Kind, "ClusterRole", StringComparison.Ordinal)
-                    ? GetClusterRole(roleBinding.RoleRef.Name)?.Rules
+                var rules = roleBinding.RoleRef is { Kind: "ClusterRole" } clusterRoleRef
+                    ? GetClusterRole(clusterRoleRef.Name)?.Rules
                     : GetRole(roleBinding.RoleRef?.Name, roleBinding.Metadata?.NamespaceProperty)?.Rules;
                 if (RulesAllow(rules, group, resource, verb, subresource, resourceName))
                 {
@@ -3088,7 +3133,8 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         public override long Length => 0;
         public override long Position { get => 0; set => throw new NotSupportedException(); }
         public override void Flush() => throw new NotSupportedException();
-        public override int Read(byte[] buffer, int offset, int count) => ReadAsync(buffer.AsMemory(offset, count), cancellationToken).GetAwaiter().GetResult();
+        // Stream.Read is synchronous, so block on a Task (never on an incomplete ValueTask directly).
+        public override int Read(byte[] buffer, int offset, int count) => ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask().GetAwaiter().GetResult();
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token = default)
         {
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, token, shutdownCancellation);
@@ -3362,7 +3408,9 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         var singular = metadata.SingularName ?? InferSingular(api.PluralName);
         var kind = KindOverrides.TryGetValue((api.Group, api.PluralName), out var knownKind)
             ? knownKind
-            : string.IsNullOrEmpty(api.Kind) ? InferKind(api.PluralName) : api.Kind;
+            : metadata.ListKind is { Length: > 4 } metadataListKind && metadataListKind.EndsWith("List", StringComparison.Ordinal)
+                ? metadataListKind[..^4]
+                : string.IsNullOrEmpty(api.Kind) ? InferKind(api.PluralName) : api.Kind;
         var listKind = metadata.ListKind ?? kind + "List";
         var subresources = metadata.Subresources ?? [];
         var normalizedApi = new GroupApiVersionKind(api.Group, api.ApiVersion, kind, api.PluralName);
@@ -3385,6 +3433,32 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
     {
         public static ResourceMetadata Default { get; } = new();
     }
+
+    // Versions the fake advertises for built-in groups. Synthesis must not invent a definition
+    // for a version a real API server would reject with 404.
+    private static readonly Dictionary<string, string[]> SupportedBuiltInApiVersions = new(StringComparer.Ordinal)
+    {
+        [""] = ["v1"],
+        ["admissionregistration.k8s.io"] = ["v1"],
+        ["apiextensions.k8s.io"] = ["v1"],
+        ["apiregistration.k8s.io"] = ["v1"],
+        ["apps"] = ["v1"],
+        ["authentication.k8s.io"] = ["v1"],
+        ["authorization.k8s.io"] = ["v1"],
+        ["autoscaling"] = ["v1", "v2"],
+        ["batch"] = ["v1"],
+        ["certificates.k8s.io"] = ["v1"],
+        ["coordination.k8s.io"] = ["v1"],
+        ["discovery.k8s.io"] = ["v1"],
+        ["events.k8s.io"] = ["v1"],
+        ["flowcontrol.apiserver.k8s.io"] = ["v1"],
+        ["networking.k8s.io"] = ["v1"],
+        ["node.k8s.io"] = ["v1"],
+        ["policy"] = ["v1"],
+        ["rbac.authorization.k8s.io"] = ["v1"],
+        ["scheduling.k8s.io"] = ["v1"],
+        ["storage.k8s.io"] = ["v1"],
+    };
 
     private static readonly ResourceSubresource StatusSubresource = new(
         "status",
@@ -3506,6 +3580,7 @@ public sealed class FakeKubernetesHttpApi : DelegatingHandler
         public string CoreDiscoveryETag = "\"fake-discovery-core-v1\"";
         public string GroupedDiscoveryETag = "\"fake-discovery-groups-v1\"";
         public long GroupedDiscoveryRevision = 1;
+        public long CoreDiscoveryRevision = 1;
         public long ResourceVersion;
         public int ServiceIpCounter;
     }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -51,7 +52,7 @@ public sealed class HelmReleasePreviewService : IHelmReleasePreviewService
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseNamespace);
         _visualizationService.OpenScope(cluster, new VisualizationScope(
             releaseNamespace,
-            string.Format(HelmLanguageManager.Instance.HelmReleasePreviewService_ReleaseTitle.CurrentValue()!, releaseName, releaseNamespace),
+            string.Format(CultureInfo.CurrentCulture, HelmLanguageManager.Instance.HelmReleasePreviewService_ReleaseTitle.CurrentValue()!, releaseName, releaseNamespace),
             new ResourceAnnotationSelector(new Dictionary<string, string>
             {
                 ["meta.helm.sh/release-name"] = releaseName,

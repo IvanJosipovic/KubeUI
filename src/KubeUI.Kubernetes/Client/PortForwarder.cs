@@ -14,13 +14,14 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
     private readonly HashSet<Socket> _activeSockets = [];
     private readonly Lock _activeSocketsGate = new();
 
-    public string Name { get; private set; }
+    // Set by SetPod/SetService before the forwarder is exposed to consumers.
+    public string Name { get; private set; } = null!;
 
     public string Namespace { get; }
 
     public int Port { get; private set; }
 
-    public string Type { get; private set; }
+    public string Type { get; private set; } = null!;
 
     [ObservableProperty]
     public partial int LocalPort { get; set; }
@@ -444,6 +445,7 @@ public partial class PortForwarder : ObservableObject, IEquatable<PortForwarder>
     public void Dispose()
     {
         Stop();
+        GC.SuppressFinalize(this);
     }
 
     public override bool Equals(object? obj)

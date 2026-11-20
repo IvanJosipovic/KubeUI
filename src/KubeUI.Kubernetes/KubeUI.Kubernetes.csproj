@@ -3,6 +3,8 @@
   <PropertyGroup>
     <DebugType>embedded</DebugType>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Generated YamlDotNet static context: undocumented members and obsolete Kubernetes model members. First-party CS0618 must stay a warning. -->
+    <NoWarn>$(NoWarn);CS1591;CS0618</NoWarn>
     <IsTrimmable>true</IsTrimmable>
     <Nullable>enable</Nullable>
     <WarningsAsErrors>$(WarningsAsErrors);IL2026;IL2055;IL2057;IL2060;IL2062;IL2067;IL2070;IL2072;IL2075;IL2087;IL2090;IL2091</WarningsAsErrors>

@@ -14,10 +14,8 @@ namespace KubeUI.Features.Resources
         /// <summary>Gets where this kind's model comes from.</summary>
         ResourceOrigin Origin { get; }
 
-        new
-
-                /// <summary>Gets the defining CRD for a discovered kind, or null for a built-in kind.</summary>
-                V1CustomResourceDefinition? CustomResourceDefinition => null;
+        /// <summary>Gets the defining CRD for a discovered kind, or null for a built-in kind.</summary>
+        new V1CustomResourceDefinition? CustomResourceDefinition => null;
 
         /// <summary>Gets the canonical location of this kind in cluster navigation.</summary>
         NavigationPlacement Navigation { get; }

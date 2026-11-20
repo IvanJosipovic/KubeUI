@@ -3,7 +3,9 @@ using KubeUI.Controls.Threading;
 using KubeUI.Features.Resources.List.Controls;
 using KubeUI.Features.Resources.Properties.Controls;
 
+#pragma warning disable CA1716 // Public namespace is an API contract; renaming would be a breaking change.
 namespace KubeUI.Features.Resources.Core.v1.Event.Controls;
+#pragma warning restore CA1716
 
 public sealed class EventLastSeenCell : RelativeTimeCellBase
 {

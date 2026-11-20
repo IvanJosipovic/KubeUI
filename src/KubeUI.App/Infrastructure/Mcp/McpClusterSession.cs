@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
@@ -31,6 +32,8 @@ public sealed record McpResourceGraphInfo(
     IReadOnlyList<McpResourceInfo> Resources,
     IReadOnlyList<McpRelatedResourceInfo> Relationships);
 
+[SuppressMessage("Design", "CA1068:CancellationToken parameters must come last", Justification = "Public API contract; revisit in next major version.")]
+[SuppressMessage("Naming", "CA1716:Identifiers should not match keywords", Justification = "Public API contract; renaming a parameter is a breaking change. Revisit in next major version.")]
 public interface IMcpClusterSession
 {
     Task<IClusterRuntime> GetConnectedClusterAsync(string? clusterName);
@@ -65,7 +68,11 @@ internal sealed class McpClusterSession(
             ?? throw new InvalidOperationException($"Cluster {runtime.Name} was not found.");
         if (!workspace.Runtime.Connected)
         {
-            logger.LogInformation("Connecting cluster {ClusterName} for MCP request", workspace.Runtime.Name);
+            // Guard avoids allocating the params array when Information logging is disabled.
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("Connecting cluster {ClusterName} for MCP request", workspace.Runtime.Name);
+            }
             await workspace.Connect().ConfigureAwait(false);
         }
         else

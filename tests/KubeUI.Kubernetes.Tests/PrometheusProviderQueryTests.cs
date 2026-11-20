@@ -191,7 +191,7 @@ public sealed class PrometheusProviderQueryTests
             PrometheusBasicAuthPassword = "secret",
         };
 
-        var endpoint = await provider.TryResolveServiceAsync(client, settings);
+        var endpoint = await provider.TryResolveServiceAsync(client, settings, TestContext.Current.CancellationToken);
         header.Value = "changed-after-resolution";
 
         endpoint.ShouldNotBeNull();
@@ -210,7 +210,7 @@ public sealed class PrometheusProviderQueryTests
             PrometheusPathPrefix = "/prometheus",
         };
 
-        var endpoint = await provider.TryResolveServiceAsync(null!, settings);
+        var endpoint = await provider.TryResolveServiceAsync(null!, settings, TestContext.Current.CancellationToken);
 
         endpoint.ShouldNotBeNull();
         endpoint.DirectUrl.ShouldBe("https://prometheus.example");
@@ -232,7 +232,7 @@ public sealed class PrometheusProviderQueryTests
             PrometheusUseHttps = true,
         };
 
-        var endpoint = await provider.TryResolveServiceAsync(null!, settings);
+        var endpoint = await provider.TryResolveServiceAsync(null!, settings, TestContext.Current.CancellationToken);
 
         endpoint.ShouldNotBeNull();
         endpoint.DirectUrl.ShouldBeNull();

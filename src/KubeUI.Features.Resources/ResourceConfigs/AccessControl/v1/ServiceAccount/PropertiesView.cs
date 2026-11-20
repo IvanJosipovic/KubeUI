@@ -13,7 +13,7 @@ public sealed class PropertiesView : ViewBase<V1ServiceAccount>
             .Children(
                 new PropertyItem()
                     .Key(ResourcesLanguageManager.Instance.ServiceAccountPropertiesView_Automount_Token.CurrentValue()!)
-                    .Value(vm.AutomountServiceAccountToken),
+                    .Value((object?)vm.AutomountServiceAccountToken ?? string.Empty),
                 new PropertyItem()
                     .Key(ResourcesLanguageManager.Instance.ServiceAccountPropertiesView_Image_Pull_Secrets.CurrentValue()!)
                     .Value(vm.ImagePullSecrets.Count),

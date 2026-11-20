@@ -1,3 +1,4 @@
+using System.Globalization;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
@@ -35,7 +36,7 @@ public sealed partial class V1NodeConfig : ResourceConfig<V1Node>
                 Name = ResourcesLanguageManager.Instance.V1NodeConfig_CPU.CurrentValue()!,
                 CustomControl = typeof(MetricsHistoryCPUCellView),
                 Field = x => x?.Status ?.Capacity ?.TryGetValue("cpu", out var value) == true && value != null ? value.ToDecimal() : 0,
-                Display = x => x?.Status?.Capacity?.TryGetValue("cpu", out var value) == true && value != null ? value.ToDecimal().ToString("0.##") + "c" : "0c",
+                Display = x => x?.Status?.Capacity?.TryGetValue("cpu", out var value) == true && value != null ? value.ToDecimal().ToString("0.##", CultureInfo.CurrentCulture) + "c" : "0c",
             },
             new ResourceListColumn<V1Node, decimal>()
             {
@@ -43,14 +44,14 @@ public sealed partial class V1NodeConfig : ResourceConfig<V1Node>
                 Name = ResourcesLanguageManager.Instance.V1NodeConfig_Memory.CurrentValue()!,
                 CustomControl = typeof(MetricsHistoryMemoryCellView),
                 Field = x => x?.Status ?.Capacity ?.TryGetValue("memory", out var value) == true && value != null ? value.ToDecimal() : 0,
-                Display = x => x?.Status?.Capacity?.TryGetValue("memory", out var value) == true && value != null ? (value.ToDecimal() / 1048576 / 1024).ToString("0.##") + "Gi" : "0Gi",
+                Display = x => x?.Status?.Capacity?.TryGetValue("memory", out var value) == true && value != null ? (value.ToDecimal() / 1048576 / 1024).ToString("0.##", CultureInfo.CurrentCulture) + "Gi" : "0Gi",
             },
             new ResourceListColumn<V1Node, decimal>()
             {
                 Key = "disk",
                 Name = ResourcesLanguageManager.Instance.V1NodeConfig_Disk.CurrentValue()!,
                 Field = x => x?.Status ?.Capacity ?.TryGetValue("ephemeral-storage", out var value) == true && value != null ? value.ToDecimal() : 0,
-                Display = x => x?.Status?.Capacity?.TryGetValue("ephemeral-storage", out var value) == true && value != null ? (value.ToDecimal() / 1048576 / 1024).ToString("0.##") + "Gi" : "0Gi",
+                Display = x => x?.Status?.Capacity?.TryGetValue("ephemeral-storage", out var value) == true && value != null ? (value.ToDecimal() / 1048576 / 1024).ToString("0.##", CultureInfo.CurrentCulture) + "Gi" : "0Gi",
             },
             new ResourceListColumn<V1Node, string>()
             {
@@ -107,7 +108,7 @@ public sealed partial class V1NodeConfig : ResourceConfig<V1Node>
         ContentDialogSettings settings = new()
         {
             Title = ResourcesLanguageManager.Instance.ResourceListView_CordonNode_Title.CurrentValue()!,
-            Content = string.Format(ResourcesLanguageManager.Instance.ResourceListView_CordonNode_Content.CurrentValue()!, items.Count),
+            Content = string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.ResourceListView_CordonNode_Content.CurrentValue()!, items.Count),
             PrimaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_CordonNode_Primary.CurrentValue()!,
             SecondaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_CordonNode_Secondary.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary
@@ -129,7 +130,8 @@ public sealed partial class V1NodeConfig : ResourceConfig<V1Node>
             {
                 try
                 {
-                    await Cluster.Runtime.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Name(), item.Namespace());
+                    // Client is live while this command is executable (CanExecute checks runtime permissions).
+                    await Cluster.Runtime.Client!.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Name(), item.Namespace());
                 }
                 catch (Exception ex)
                 {
@@ -150,7 +152,7 @@ public sealed partial class V1NodeConfig : ResourceConfig<V1Node>
         ContentDialogSettings settings = new()
         {
             Title = ResourcesLanguageManager.Instance.ResourceListView_UnCordonNode_Title.CurrentValue()!,
-            Content = string.Format(ResourcesLanguageManager.Instance.ResourceListView_UnCordonNode_Content.CurrentValue()!, items.Count),
+            Content = string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.ResourceListView_UnCordonNode_Content.CurrentValue()!, items.Count),
             PrimaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_UnCordonNode_Primary.CurrentValue()!,
             SecondaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_UnCordonNode_Secondary.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary
@@ -172,7 +174,8 @@ public sealed partial class V1NodeConfig : ResourceConfig<V1Node>
             {
                 try
                 {
-                    await Cluster.Runtime.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Name(), item.Namespace());
+                    // Client is live while this command is executable (CanExecute checks runtime permissions).
+                    await Cluster.Runtime.Client!.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Name(), item.Namespace());
                 }
                 catch (Exception ex)
                 {
@@ -193,7 +196,7 @@ public sealed partial class V1NodeConfig : ResourceConfig<V1Node>
         ContentDialogSettings settings = new()
         {
             Title = ResourcesLanguageManager.Instance.ResourceListView_DrainNode_Title.CurrentValue()!,
-            Content = string.Format(ResourcesLanguageManager.Instance.ResourceListView_DrainNode_Content.CurrentValue()!, items.Count),
+            Content = string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.ResourceListView_DrainNode_Content.CurrentValue()!, items.Count),
             PrimaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_DrainNode_Primary.CurrentValue()!,
             SecondaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_DrainNode_Secondary.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary
@@ -215,7 +218,8 @@ public sealed partial class V1NodeConfig : ResourceConfig<V1Node>
             {
                 try
                 {
-                    await Cluster.Runtime.Client.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Name(), item.Namespace());
+                    // Client is live while this command is executable (CanExecute checks runtime permissions).
+                    await Cluster.Runtime.Client!.CoreV1.PatchNodeAsync(new V1Patch(patch, V1Patch.PatchType.MergePatch), item.Name(), item.Namespace());
 
                     await Cluster.Runtime.SeedResource<V1Pod>(true);
                     var pods = Cluster.Runtime.GetResourceList<V1Pod>();

@@ -417,7 +417,7 @@ public sealed partial class MRDiffDetectionViewModel : ViewModelBase, IInitializ
             return;
         }
 
-        SetStatus(string.Format(CrossplaneLanguageManager.Instance.MRDiffDetectionView_Connecting.CurrentValue()!, provider.Name), generation);
+        SetStatus(string.Format(CultureInfo.CurrentCulture, CrossplaneLanguageManager.Instance.MRDiffDetectionView_Connecting.CurrentValue()!, provider.Name), generation);
         try
         {
             SetMonitoringStatus(generation);

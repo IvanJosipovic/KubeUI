@@ -126,7 +126,8 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
         EnsureTextMateInstallation();
         _filteredDocument.UndoStack.SizeLimit = 0;
 
-        AssociatedObject.TextChanged += AssociatedObjectOnTextChanged;
+        // AssociatedObject is guaranteed non-null while the behavior is attached.
+        AssociatedObject!.TextChanged += AssociatedObjectOnTextChanged;
         AssociatedObject.DataContextChanged += AssociatedObjectOnDataContextChanged;
         AssociatedObject.AttachedToVisualTree += AssociatedObjectOnAttachedToVisualTree;
         AssociatedObject.DetachedFromVisualTree += AssociatedObjectOnDetachedFromVisualTree;
@@ -646,6 +647,11 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
 
     private void ScrollViewerOnScrollChanged(object? sender, ScrollChangedEventArgs e)
     {
+        if (_scrollViewer is null)
+        {
+            return;
+        }
+
         if (sender is not ScrollViewer)
         {
             return;

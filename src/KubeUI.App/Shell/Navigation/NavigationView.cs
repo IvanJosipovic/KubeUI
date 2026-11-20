@@ -149,7 +149,8 @@ public sealed class NavigationView : KubeUIView<NavigationViewModel>
                                 new TextBlock()
                                     .VerticalAlignment(VerticalAlignment.Center)
                                     .Margin(4, 0, 0, 0)
-                                    .Text(CompiledBinding.Create<NavigationLink, int>(x => x.Count.StreamBinding()))
+                                    // Binding path: a null Count is tolerated by Avalonia at runtime.
+                                    .Text(CompiledBinding.Create<NavigationLink, int>(x => x.Count!.StreamBinding()))
                                     .IsVisible(link, x => x.Count, BindingMode.OneWay, Converters.NotNull)
                             )
                     ),

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using KubeUI.App.Infrastructure;
 using KubeUI.App.Infrastructure.Presentation;
@@ -23,7 +24,7 @@ public sealed class AboutView() : KubeUIView<AboutViewModel>()
                     .Text(AppLanguageManager.Instance.MainWindow_Title.ToBinding()),
                 new TextBlock()
                     .HorizontalAlignment(HorizontalAlignment.Center)
-                    .Text(string.Format(AppLanguageManager.Instance.AboutView_Version_StringFormat.CurrentValue()!, vm.Version ?? AppLanguageManager.Instance.AboutView_Version_FallbackValue.CurrentValue()!)),
+                    .Text(string.Format(CultureInfo.CurrentCulture, AppLanguageManager.Instance.AboutView_Version_StringFormat.CurrentValue()!, vm.Version ?? AppLanguageManager.Instance.AboutView_Version_FallbackValue.CurrentValue()!)),
                 new TextBlock()
                     .Padding(0, 15, 0, 0)
                     .HorizontalAlignment(HorizontalAlignment.Center)

@@ -13,7 +13,7 @@ public sealed class PropertiesView : ViewBase<V2HorizontalPodAutoscaler>
             .Children(
                 new PropertyItem()
                     .Key(ResourcesLanguageManager.Instance.HorizontalPodAutoscalerPropertiesView_Min_Replicas.CurrentValue()!)
-                    .Value(vm.Spec.MinReplicas),
+                    .Value((object?)vm.Spec.MinReplicas ?? string.Empty),
                 new PropertyItem()
                     .Key(ResourcesLanguageManager.Instance.HorizontalPodAutoscalerPropertiesView_Max_Replicas.CurrentValue()!)
                     .Value(vm.Spec.MaxReplicas),
@@ -22,12 +22,12 @@ public sealed class PropertiesView : ViewBase<V2HorizontalPodAutoscaler>
                     .Value(vm.Spec.Metrics.Count),
                 new PropertyItem()
                     .Key(FoundationLanguageManager.Instance.Shared_Current_Replicas.CurrentValue()!)
-                    .Value(vm.Status.CurrentReplicas),
+                    .Value((object?)vm.Status.CurrentReplicas ?? string.Empty),
                 new PropertyItem()
                     .Key(FoundationLanguageManager.Instance.Shared_Desired_Replicas.CurrentValue()!)
                     .Value(vm.Status.DesiredReplicas),
                 new PropertyItem()
                     .Key(FoundationLanguageManager.Instance.Shared_Observed_Generation.CurrentValue()!)
-                    .Value(vm.Status.ObservedGeneration));
+                    .Value((object?)vm.Status.ObservedGeneration ?? string.Empty));
     }
 }

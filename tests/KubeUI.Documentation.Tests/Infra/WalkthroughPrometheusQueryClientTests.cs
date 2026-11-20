@@ -1,3 +1,4 @@
+using System.Globalization;
 using KubeUI.Kubernetes;
 
 namespace KubeUI.Documentation.Tests.Infra;
@@ -19,7 +20,7 @@ public sealed class WalkthroughPrometheusQueryClientTests
     public void Featured_pod_queries_return_deterministic_range_values(string metric)
     {
         var client = new WalkthroughPrometheusQueryClient();
-        var start = DateTimeOffset.Parse("2026-09-29T11:00:00Z");
+        var start = DateTimeOffset.Parse("2026-09-29T11:00:00Z", CultureInfo.InvariantCulture);
         var options = new Dictionary<string, string>
         {
             ["namespace"] = "default",
@@ -28,7 +29,7 @@ public sealed class WalkthroughPrometheusQueryClientTests
         };
         var query = new ExternalPrometheusProvider().BuildQuery(MetricCategory.Pods, metric, options);
 
-        var result = client.Query(query, start, start.AddHours(1), 60);
+        var result = client.Query(query, start, start.AddHours(1), 60, TestContext.Current.CancellationToken);
         var series = Assert.Single(result.Data.Result);
 
         Assert.Equal("success", result.Status);
@@ -57,7 +58,7 @@ public sealed class WalkthroughPrometheusQueryClientTests
     public void Every_pod_in_the_list_has_an_hour_of_timestamped_usage(string metric)
     {
         var client = new WalkthroughPrometheusQueryClient();
-        var start = DateTimeOffset.Parse("2026-09-29T11:00:00Z");
+        var start = DateTimeOffset.Parse("2026-09-29T11:00:00Z", CultureInfo.InvariantCulture);
         var query = new ExternalPrometheusProvider().BuildQuery(
             MetricCategory.Pods, metric,
             new Dictionary<string, string>
@@ -67,7 +68,7 @@ public sealed class WalkthroughPrometheusQueryClientTests
                 ["selector"] = "pod, namespace",
             });
 
-        var result = client.Query(query, start, start.AddHours(1), 60);
+        var result = client.Query(query, start, start.AddHours(1), 60, TestContext.Current.CancellationToken);
         var expectedPods = KubeUIWalkthroughRecorder.CreateDemoResources().Resources
             .OfType<k8s.Models.V1Pod>()
             .Select(pod => pod.Metadata.Name)
@@ -86,7 +87,7 @@ public sealed class WalkthroughPrometheusQueryClientTests
     public void Pod_selector_excludes_nonmatching_pods()
     {
         var client = new WalkthroughPrometheusQueryClient();
-        var start = DateTimeOffset.Parse("2026-09-29T11:00:00Z");
+        var start = DateTimeOffset.Parse("2026-09-29T11:00:00Z", CultureInfo.InvariantCulture);
         var query = new ExternalPrometheusProvider().BuildQuery(
             MetricCategory.Pods, "cpuUsage",
             new Dictionary<string, string>
@@ -95,7 +96,7 @@ public sealed class WalkthroughPrometheusQueryClientTests
                 ["pods"] = "web-02-.*",
             });
 
-        var result = client.Query(query, start, start.AddMinutes(1), 60);
+        var result = client.Query(query, start, start.AddMinutes(1), 60, TestContext.Current.CancellationToken);
 
         Assert.NotEmpty(result.Data.Result);
         Assert.All(result.Data.Result, series => Assert.StartsWith("web-02-", series.Metric["pod"]));
@@ -106,15 +107,16 @@ public sealed class WalkthroughPrometheusQueryClientTests
     public void Unknown_prometheus_query_fails_explicitly()
     {
         var client = new WalkthroughPrometheusQueryClient();
-        var now = DateTimeOffset.Parse("2026-09-29T11:00:00Z");
+        var now = DateTimeOffset.Parse("2026-09-29T11:00:00Z", CultureInfo.InvariantCulture);
 
-        Assert.Throws<InvalidOperationException>(() => client.Query("unsupported query", now, now, 60));
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-            client.Query("unsupported query", now.AddMinutes(1), now, 60));
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-            client.Query("unsupported query", now, now, 0));
         Assert.Throws<InvalidOperationException>(() =>
-            client.Query("container_cpu_usage_seconds_total", now, now, 60));
+            client.Query("unsupported query", now, now, 60, TestContext.Current.CancellationToken));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            client.Query("unsupported query", now.AddMinutes(1), now, 60, TestContext.Current.CancellationToken));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            client.Query("unsupported query", now, now, 0, TestContext.Current.CancellationToken));
+        Assert.Throws<InvalidOperationException>(() =>
+            client.Query("container_cpu_usage_seconds_total", now, now, 60, TestContext.Current.CancellationToken));
         using var cancelled = new CancellationTokenSource();
         cancelled.Cancel();
         Assert.Throws<OperationCanceledException>(() =>

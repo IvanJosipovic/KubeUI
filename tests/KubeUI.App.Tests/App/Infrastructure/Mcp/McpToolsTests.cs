@@ -60,7 +60,7 @@ public sealed class McpToolsTests
         var expected = new McpResourcePage(
             [new McpResourceInfo("v1", "Pod", "api", "default", true)],
             "next-page");
-        session.Setup(x => x.ListResourcesAsync("dev", "v1", "Pod", "default", 10))
+        session.Setup(x => x.ListResourcesAsync("dev", "v1", "Pod", "default", 10, It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
         var tools = new McpTools(
             new Mock<IClusterRuntimeCatalog>().Object,
@@ -69,7 +69,8 @@ public sealed class McpToolsTests
             new Mock<ISettingsService>().Object,
             identityAccessor: CreateInternalIdentityAccessor());
 
-        var resources = await tools.ListResources("dev", "v1", "Pod", "default", 10);
+        var resources = await tools.ListResources("dev", "v1", "Pod", "default", 10,
+            cancellationToken: TestContext.Current.CancellationToken);
 
         resources.Resources.ShouldBe([
             new McpResourceInfo("v1", "Pod", "api", "default", true)
@@ -123,8 +124,10 @@ public sealed class McpToolsTests
             new Mock<ISettingsService>(MockBehavior.Strict).Object,
             identityAccessor: CreateExternalIdentityAccessor("dev"));
 
-        var page = await tools.ListResources(null, "v1", "Pod", cursor: cursor);
-        var explicitPage = await tools.ListResources("dev", "v1", "Pod", cursor: explicitCursor);
+        var page = await tools.ListResources(null, "v1", "Pod", cursor: cursor,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var explicitPage = await tools.ListResources("dev", "v1", "Pod", cursor: explicitCursor,
+            cancellationToken: TestContext.Current.CancellationToken);
 
         page.ShouldBe(expected);
         explicitPage.ShouldBe(expected);
@@ -238,7 +241,8 @@ public sealed class McpToolsTests
             identityAccessor: CreateExternalIdentityAccessor("dev"));
 
         var discovered = await tools.ListSupportedResources("dev");
-        var events = await tools.ListEvents("dev", "default");
+        var events = await tools.ListEvents("dev", "default",
+            cancellationToken: TestContext.Current.CancellationToken);
 
         discovered.ShouldBe(supportedResources);
         events.Events.ShouldBeEmpty();
@@ -279,7 +283,8 @@ public sealed class McpToolsTests
             .ReturnsAsync(new McpEventPage([kubernetesEvent], null));
         var tools = CreateTools(session);
 
-        var result = await tools.ListEvents("dev", "default");
+        var result = await tools.ListEvents("dev", "default",
+            cancellationToken: TestContext.Current.CancellationToken);
         var json = JsonSerializer.Serialize(result, McpToolJsonSerializationContext.CreateSerializerOptions());
 
         json.ShouldContain("\"reason\":\"FailedScheduling\"");
@@ -327,7 +332,8 @@ public sealed class McpToolsTests
             .ReturnsAsync(expected);
         var tools = CreateTools(session);
 
-        var result = await tools.ListEvents("dev", "default", 10, cursor);
+        var result = await tools.ListEvents("dev", "default", 10, cursor,
+            cancellationToken: TestContext.Current.CancellationToken);
 
         result.ShouldBe(expected);
         session.VerifyAll();
@@ -349,7 +355,8 @@ public sealed class McpToolsTests
             new Mock<ISettingsService>(MockBehavior.Strict).Object,
             identityAccessor: CreateExternalIdentityAccessor("dev"));
 
-        (await tools.ListResources(null, "v1", "Pod")).Resources.ShouldBeEmpty();
+        (await tools.ListResources(null, "v1", "Pod",
+            cancellationToken: TestContext.Current.CancellationToken)).Resources.ShouldBeEmpty();
         catalog.Verify(x => x.GetDefault(), Times.Once);
         session.VerifyAll();
     }
@@ -518,11 +525,12 @@ public sealed class McpToolsTests
         {
             new McpRelatedResourceInfo("apps/v1", "ReplicaSet", "api", "default", "Owner", null)
         };
-        session.Setup(x => x.ListRelatedResourcesAsync("dev", "v1", "Pod", "api", "default", 25))
+        session.Setup(x => x.ListRelatedResourcesAsync("dev", "v1", "Pod", "api", "default", 25, It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
         var tools = CreateTools(session);
 
-        var actual = await tools.ListRelatedResources("dev", "v1", "Pod", "api", "default", 25);
+        var actual = await tools.ListRelatedResources("dev", "v1", "Pod", "api", "default", 25,
+            cancellationToken: TestContext.Current.CancellationToken);
 
         actual.ShouldBe(expected);
         session.VerifyAll();
@@ -535,11 +543,12 @@ public sealed class McpToolsTests
         var expected = new McpResourceGraphInfo(
             [new McpResourceInfo("v1", "Pod", "api", "default", true)],
             [new McpRelatedResourceInfo("apps/v1", "ReplicaSet", "api", "default", "Owner", null)]);
-        session.Setup(x => x.GetResourceGraphAsync("dev", "v1", "Pod", "api", "default", 25))
+        session.Setup(x => x.GetResourceGraphAsync("dev", "v1", "Pod", "api", "default", 25, It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
         var tools = CreateTools(session);
 
-        var actual = await tools.GetResourceGraph("dev", "v1", "Pod", "api", "default", 25);
+        var actual = await tools.GetResourceGraph("dev", "v1", "Pod", "api", "default", 25,
+            cancellationToken: TestContext.Current.CancellationToken);
 
         actual.ShouldBe(expected);
         session.VerifyAll();
@@ -771,7 +780,8 @@ public sealed class McpToolsTests
         }
         else
         {
-            (await tools.GetPodLogs("dev", "default", "api")).ShouldBe(new string('x', byteCount));
+            (await tools.GetPodLogs("dev", "default", "api",
+                cancellationToken: TestContext.Current.CancellationToken)).ShouldBe(new string('x', byteCount));
         }
     }
 
