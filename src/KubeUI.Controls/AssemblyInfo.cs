@@ -1,4 +1,4 @@
-using Avalonia.Markup.Declarative;
+using SVCSystems.Avalonia.CSharpUI;
 
-[assembly: GenerateMarkupExtensionsForAvalonia(false)]
-[assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Svg.Skia.SvgImage), true)]
+
+[assembly: SVCSystems.Avalonia.CSharpUI.GeneratePublicMarkupExtensions]

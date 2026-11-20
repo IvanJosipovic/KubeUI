@@ -158,7 +158,7 @@ public sealed class ProjectBoundaryTests
         var sourceRoot = Path.Combine(FindRepositoryRoot(), "src");
         var declarations = Directory.EnumerateFiles(sourceRoot, "*.cs", SearchOption.AllDirectories)
             .SelectMany(path => Regex.Matches(File.ReadAllText(path),
-                    @"GenerateMarkupExtensionsForAssembly\(typeof\((?<type>[^)]+)\)")
+                    @"GeneratePublicMarkupExtensions\(typeof\((?<type>[^)]+)\)")
                 .Select(match => (Path: path, Type: match.Groups["type"].Value.Trim())));
 
         var duplicates = declarations

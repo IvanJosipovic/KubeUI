@@ -1,3 +1,4 @@
+using Path = System.IO.Path;
 ﻿using System.Text;
 using k8s;
 using k8s.Models;

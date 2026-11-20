@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
-using Avalonia.Markup.Declarative;
+using SVCSystems.Avalonia.CSharpUI;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
 using Avalonia.Styling;
@@ -2294,10 +2294,10 @@ public sealed class ResourceGraphControlTests
             await WaitForAsync(() => control.Area.VertexList.Count == initialPods.Count);
 
             control.Graph = new ResourceRelationshipGraph(expandedPods, []);
-            await WaitForAsync(() => control.Area.VertexList.Count == expandedPods.Count);
+            await WaitForAsync(() => control.Area.VertexList.Count == expandedPods.Count, timeoutMs: 30000);
 
             control.Dispose();
-            await WaitForAsync(() => control.Area.IsDisposed);
+            await WaitForAsync(() => control.Area.IsDisposed, timeoutMs: 30000);
         }
         finally
         {

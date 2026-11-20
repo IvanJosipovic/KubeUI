@@ -1,4 +1,4 @@
-using Avalonia.Markup.Declarative;
+using SVCSystems.Avalonia.CSharpUI;
 
-[assembly: GenerateMarkupExtensionsForAvalonia(true)]
-[assembly: GenerateMarkupExtensionsForAssembly(typeof(Avalonia.Input.IInputElement), true)]
+
+[assembly: SVCSystems.Avalonia.CSharpUI.GeneratePublicMarkupExtensions]

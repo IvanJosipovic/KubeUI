@@ -6,11 +6,8 @@ using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Markup.Declarative;
+using SVCSystems.Avalonia.CSharpUI;
 using Avalonia.Threading;
-#if DEBUG
-using Declarative.Avalonia.AgentTools;
-#endif
 using KubeUI.App;
 using KubeUI.Features.AI.Diagnostics;
 using KubeUI.Features.AI.Mcp;
@@ -31,7 +28,6 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Velopack;
 
-[assembly: GenerateMarkupExtensionsForAvalonia(false)]
 
 namespace KubeUI.Desktop;
 
@@ -87,33 +83,27 @@ internal static class Program
             .ConfigureFonts(fontManager => fontManager.AddFontCollection(new CascadiaMonoFontCollection()))
             .WithInterFont()
             .UseServiceProvider(services)
-            .UseComponentControlFactory(type => CreateComponentControl(type, services))
+            .UseControlFactory(type => CreateComponentControl(type, services))
             .UseViewInitializationStrategy(ViewInitializationStrategy.Lazy);
 #if DEBUG
         if (enableDevelopmentTools)
         {
-            builder = builder
-                .UseHotReload()
-                .UseAgentInspector(o =>
-                {
-                    o.EnableInteraction = true;
-                    o.Services = services;
-                });
+            builder = builder.UseHotReload();
         }
 #endif
         return builder;
     }
 
     /// <summary>
-    /// Creates a declarative component control from the application's service provider.
+    /// Creates a CSharpUI component control from the application's service provider.
     /// </summary>
-    /// <param name="type">Component control type requested by the declarative view factory.</param>
+    /// <param name="type">Component control type requested by the CSharpUI view factory.</param>
     /// <param name="services">Application services used to construct the control.</param>
     /// <returns>The created control.</returns>
     [UnconditionalSuppressMessage(
         "Trimming",
         "IL2067",
-        Justification = "Avalonia.Markup.Declarative exposes the component factory as an unannotated Func<Type, Control>. KubeUI declares no ComponentBase types, so this reflection path is unreachable; all views are resolved through the generated ViewLocator factories.")]
+        Justification = "SVCSystems.Avalonia.CSharpUI exposes the control factory as an unannotated Func<Type, Control>. KubeUI declares no ComponentBase types, so this reflection path is unreachable; all views are resolved through the generated ViewLocator factories.")]
     private static Control CreateComponentControl(Type type, IServiceProvider services)
         => (Control)ActivatorUtilities.CreateInstance(services, type);
 

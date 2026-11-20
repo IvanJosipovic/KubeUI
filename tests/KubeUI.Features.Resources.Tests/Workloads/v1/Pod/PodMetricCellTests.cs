@@ -1000,6 +1000,11 @@ public sealed class PodMetricCellTests
             ToolTip.GetTip(bar),
             Canvas.GetLeft(bar),
             Canvas.GetTop(bar))).ToArray();
+        await TestWait.UntilAsync(
+            () => !cell.IsHistoryLoadPending,
+            timeout: TimeSpan.FromSeconds(5),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
         fixture.TimeProvider.Advance(TimeSpan.FromSeconds(30));
         fixture.RefreshClock.Tick();
         await WaitForMetricTooltipAsync(cell, "0.45c");

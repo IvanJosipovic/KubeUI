@@ -18,7 +18,7 @@ public static class LinguaObservableExtensions
     /// Use only where an observable cannot be bound: structural strings (table column keys, navigation names,
     /// resource-config metadata), one-shot messages, comparisons, and URIs. Live control properties must bind the
     /// observable instead, via <see cref="Avalonia.AvaloniaObjectExtensions.ToBinding{T}(IObservable{T})"/>
-    /// and a declarative property extension accepting a <see cref="Avalonia.Data.BindingBase"/>.
+    /// and a CSharpUI property extension accepting a <see cref="Avalonia.Data.BindingBase"/>.
     /// Every call site of this method is a known non-reactive site; it forms the audit list for culture-change refresh work.
     /// </remarks>
     public static string? CurrentValue(this IObservable<string?> source)

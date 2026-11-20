@@ -595,6 +595,11 @@ public class ClusterWorkspaceTests
 
         var container = GetSeededContainer(workspace.Runtime, GroupApiVersionKind.From<V1Pod>());
         container.ShouldNotBeNull();
+        await TestWait.UntilAsync(
+            () => container is IResourceContainer { IsSeeded: true },
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
 
         var informers = GetInformers(container);
         informers.Count.ShouldBe(1);

@@ -12,7 +12,7 @@
     <Using Include="Avalonia.Data" />
     <Using Include="Avalonia.Interactivity" />
     <Using Include="Avalonia.Layout" />
-    <Using Include="Avalonia.Markup.Declarative" />
+    <Using Include="SVCSystems.Avalonia.CSharpUI" />
     <Using Include="Avalonia.Media" />
     <Using Include="Avalonia.Threading" />
     <Using Include="CommunityToolkit.Mvvm.ComponentModel" />
@@ -38,7 +38,7 @@
   <ItemGroup>
     <PackageReference Include="SvcSystems.AI.AgentClientProtocol" />
     <PackageReference Include="Irihi.Lingua" />
-    <PackageReference Include="Avalonia.Markup.Declarative" />
+    <PackageReference Include="SVCSystems.Avalonia.CSharpUI" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="FluentAvaloniaUI" />
     <PackageReference Include="HanumanInstitute.MvvmDialogs.Avalonia.Fluent" />

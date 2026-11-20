@@ -64,7 +64,7 @@ public sealed partial class VisualizationView : KubeUIView<VisualizationViewMode
                     .Classes("ClearButton")
                     .ToolTip_Tip(ResourcesLanguageManager.Instance.VisualizationView_ResourceTypesTooltip.ToBinding())
                     .ItemsSource(vm, x => x.ResourceTypes)
-                    .SelectedItems(vm, x => x.SelectedResourceTypes)
+                    .BindValue(Ursa.Controls.MultiComboBox.SelectedItemsProperty, CompiledBinding.Create<VisualizationViewModel, IList>(x => x.SelectedResourceTypes, source: vm, mode: BindingMode.OneWay))
                     .IsEnabled(vm, x => x.HasResourceTypes),
                 new NamespaceScopePicker()
                     .BindValue(NamespaceScopePicker.NamespacesProperty, CompiledBinding.Create<VisualizationViewModel, IEnumerable>(x => x.Cluster.Runtime.Namespaces, source: vm, mode: BindingMode.OneWay))

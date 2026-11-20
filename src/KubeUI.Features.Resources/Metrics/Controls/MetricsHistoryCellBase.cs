@@ -73,6 +73,9 @@ public abstract class MetricsHistoryCellBase<TResource> : UserControl, IInitiali
 
     public ClusterWorkspace? Cluster { get; private set; }
 
+    /// <summary>Whether a metrics history request is still in flight, including its completion on the UI thread.</summary>
+    internal bool IsHistoryLoadPending => _metricsServerCancellation is not null || _prometheusCancellation is not null;
+
     protected abstract bool IsMemoryMetric { get; }
 
     protected abstract MetricResultSet CaptureMetricsServerHistory(
