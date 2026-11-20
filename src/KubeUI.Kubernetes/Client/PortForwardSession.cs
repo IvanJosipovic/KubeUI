@@ -1,8 +1,10 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Net.WebSockets;
 using k8s;
 
 namespace KubeUI.Kubernetes;
 
+[SuppressMessage("Naming", "CA1716:Identifiers should not match keywords", Justification = "Public API contract; renaming a parameter is a breaking change. Revisit in next major version.")]
 public interface IPortForwardSessionFactory
 {
     Task<IPortForwardSession> CreateAsync(string podName, string @namespace, int port);

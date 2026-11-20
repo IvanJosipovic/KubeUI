@@ -1,3 +1,4 @@
+using System.Globalization;
 using FluentAvalonia.UI.Controls;
 using FluentIcons.Common;
 using HanumanInstitute.MvvmDialogs;
@@ -128,7 +129,7 @@ public sealed partial class V1DeploymentConfig : ScalableWorkloadConfig<V1Deploy
 
         var result = await _dialogService.ShowContentDialogAsync(this, new ContentDialogSettings
         {
-            Title = string.Format(paused ? ResourcesLanguageManager.Instance.V1DeploymentConfig_PauseTitle.CurrentValue()! : ResourcesLanguageManager.Instance.V1DeploymentConfig_ResumeTitle.CurrentValue()!, deployments.Count),
+            Title = string.Format(CultureInfo.CurrentCulture, paused ? ResourcesLanguageManager.Instance.V1DeploymentConfig_PauseTitle.CurrentValue()! : ResourcesLanguageManager.Instance.V1DeploymentConfig_ResumeTitle.CurrentValue()!, deployments.Count),
             Content = paused ? ResourcesLanguageManager.Instance.V1DeploymentConfig_PauseContent.CurrentValue()! : ResourcesLanguageManager.Instance.V1DeploymentConfig_ResumeContent.CurrentValue()!,
             PrimaryButtonText = paused ? ResourcesLanguageManager.Instance.V1DeploymentConfig_Pause.CurrentValue()! : ResourcesLanguageManager.Instance.V1DeploymentConfig_Resume.CurrentValue()!,
             SecondaryButtonText = FoundationLanguageManager.Instance.Shared_Cancel.CurrentValue()!,
@@ -151,7 +152,7 @@ public sealed partial class V1DeploymentConfig : ScalableWorkloadConfig<V1Deploy
             catch (Exception ex)
             {
                 failures.Add(ex);
-                ResourceUtilities.HandleException(_logger, _notificationManager, ex, string.Format(paused ? ResourcesLanguageManager.Instance.V1DeploymentConfig_PauseError.CurrentValue()! : ResourcesLanguageManager.Instance.V1DeploymentConfig_ResumeError.CurrentValue()!, deployment.Namespace(), deployment.Name()), sendNotification: true);
+                ResourceUtilities.HandleException(_logger, _notificationManager, ex, string.Format(CultureInfo.CurrentCulture, paused ? ResourcesLanguageManager.Instance.V1DeploymentConfig_PauseError.CurrentValue()! : ResourcesLanguageManager.Instance.V1DeploymentConfig_ResumeError.CurrentValue()!, deployment.Namespace(), deployment.Name()), sendNotification: true);
             }
         }
 

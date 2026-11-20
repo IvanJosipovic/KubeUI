@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Text.Json;
 using Avalonia.Collections;
 using Avalonia.Controls.Notifications;
@@ -31,9 +32,13 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
     where T : class, IKubernetesObject<V1ObjectMeta>, new()
 {
     protected IServiceProvider ServiceProvider { get; private set; } = null!;
+    [SuppressMessage("Design", "CA1051:Do not declare visible instance fields", Justification = "Protected fields are part of the derived-class API contract; revisit in next major version.")]
     protected ILogger<ResourceConfigBase<T>> _logger = null!;
+    [SuppressMessage("Design", "CA1051:Do not declare visible instance fields", Justification = "Protected fields are part of the derived-class API contract; revisit in next major version.")]
     protected IDialogService _dialogService = null!;
+    [SuppressMessage("Design", "CA1051:Do not declare visible instance fields", Justification = "Protected fields are part of the derived-class API contract; revisit in next major version.")]
     protected INotificationManager _notificationManager = null!;
+    [SuppressMessage("Design", "CA1051:Do not declare visible instance fields", Justification = "Protected fields are part of the derived-class API contract; revisit in next major version.")]
     protected IFactory _factory = null!;
     private IPodLogsLauncher _podLogsLauncher = null!;
     private ResourcePropertiesCoordinator _propertiesCoordinator = null!;
@@ -88,7 +93,8 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
     /// <inheritdoc />
     public virtual V1CustomResourceDefinition? CustomResourceDefinition => null;
 
-    public ClusterWorkspace Cluster { get; private set; }
+    // Assigned by Initialize(cluster) before any command or action reads it.
+    public ClusterWorkspace Cluster { get; private set; } = null!;
 
     public virtual string Name => Kind.Kind.Humanize(LetterCasing.Title).Pluralize();
 
@@ -359,7 +365,12 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
         }
         catch (Exception ex)
         {
-            _logger.LogDebug(ex, "Unable to evaluate cached list/watch permissions for {Kind}", Kind);
+            // Avoid allocating the logging arguments when debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug(ex, "Unable to evaluate cached list/watch permissions for {Kind}", Kind);
+            }
+
             CanListAndWatch = false;
         }
 
@@ -450,7 +461,7 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
         ContentDialogSettings settings = new()
         {
             Title = ResourcesLanguageManager.Instance.ResourceListView_Delete_Title.CurrentValue()!,
-            Content = string.Format(ResourcesLanguageManager.Instance.ResourceListView_Delete_Content.CurrentValue()!, items.Count),
+            Content = string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.ResourceListView_Delete_Content.CurrentValue()!, items.Count),
             PrimaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_Delete_Primary.CurrentValue()!,
             SecondaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_Delete_Secondary.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary
@@ -470,7 +481,11 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
                 }
                 catch (JsonException ex)
                 {
-                    _logger.LogWarning(ex, $"JsonException occurred while deleting resource {item.Namespace()}/{item.Name()}");
+                    // Avoid evaluating the resource names and allocating log arguments when warning logging is disabled.
+                    if (_logger.IsEnabled(LogLevel.Warning))
+                    {
+                        _logger.LogWarning(ex, "JsonException occurred while deleting resource {Namespace}/{Name}", item.Namespace(), item.Name());
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -596,7 +611,7 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
         ContentDialogSettings settings = new()
         {
             Title = ResourcesLanguageManager.Instance.ResourceListView_Restart_Title.CurrentValue()!,
-            Content = string.Format(ResourcesLanguageManager.Instance.ResourceListView_Restart_Content.CurrentValue()!, restartableItems.Count),
+            Content = string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.ResourceListView_Restart_Content.CurrentValue()!, restartableItems.Count),
             PrimaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_Restart_Primary.CurrentValue()!,
             SecondaryButtonText = ResourcesLanguageManager.Instance.ResourceListView_Restart_Secondary.CurrentValue()!,
             DefaultButton = FAContentDialogButton.Secondary
@@ -638,7 +653,11 @@ public abstract partial class ResourceConfigBase<[DynamicallyAccessedMembers(Dyn
                 }
                 catch (JsonException ex)
                 {
-                    _logger.LogWarning(ex, $"JsonException occurred while deleting resource {item.Namespace()}/{item.Name()}");
+                    // Avoid evaluating the resource names and allocating log arguments when warning logging is disabled.
+                    if (_logger.IsEnabled(LogLevel.Warning))
+                    {
+                        _logger.LogWarning(ex, "JsonException occurred while deleting resource {Namespace}/{Name}", item.Namespace(), item.Name());
+                    }
                 }
                 catch (Exception ex)
                 {

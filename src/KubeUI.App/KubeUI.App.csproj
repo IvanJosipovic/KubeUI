@@ -4,6 +4,9 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsTrimmable>true</IsTrimmable>
     <WarningsAsErrors>$(WarningsAsErrors);IL2091</WarningsAsErrors>
+    <!-- CSharpUI copies referenced-control XML docs into generated code; LiveCharts generic type
+         names contain commas that produce malformed cref elements in those generated comments. -->
+    <NoWarn>$(NoWarn);CS1570</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -65,12 +68,6 @@
     <ProjectReference Include="..\KubeUI.Features.Crossplane\KubeUI.Features.Crossplane.csproj" />
     <ProjectReference Include="..\KubeUI.Features.GatewayApi\KubeUI.Features.GatewayApi.csproj" />
     <ProjectReference Include="..\KubeUI.Features.Helm\KubeUI.Features.Helm.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(Configuration)' == 'Release'">
-    <EmbeddedResource Include="ILLink.Substitutions.xml">
-      <LogicalName>ILLink.Substitutions.xml</LogicalName>
-    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>

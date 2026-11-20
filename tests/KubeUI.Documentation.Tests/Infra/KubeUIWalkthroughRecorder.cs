@@ -139,8 +139,10 @@ internal static class KubeUIWalkthroughRecorder
             .SingleOrDefault(setter => setter.Property == WindowDrawnDecorations.TemplateProperty)
             ?.Value as ITemplate
             ?? throw new InvalidOperationException("The recording window decorations template was not found.");
-        var result = (TemplateResult<WindowDrawnDecorationsContent>)template.Build();
-        return result.Result.Overlay
+        var built = template.Build()
+            ?? throw new InvalidOperationException("The recording window decorations template produced no result.");
+        var result = (TemplateResult<WindowDrawnDecorationsContent>)built;
+        return result.Result?.Overlay
             ?? throw new InvalidOperationException("The recording window decorations template has no overlay.");
     }
 
@@ -1364,7 +1366,9 @@ internal static class KubeUIWalkthroughRecorder
                 WalkthroughActionKind.Click => (editor, null),
                 WalkthroughActionKind.SetText => (editor, async () =>
                 {
-                    view.ViewModel.YamlDocument.Text = action.Value!;
+                    var viewModel = view.ViewModel
+                        ?? throw new InvalidOperationException("The YAML view has no view model.");
+                    viewModel.YamlDocument.Text = action.Value!;
                     editor.CaretOffset = editor.Document!.TextLength;
                     editor.TextArea.Focus();
                     await WaitForUiAsync();
@@ -1421,11 +1425,13 @@ internal static class KubeUIWalkthroughRecorder
         if (action.Target == "helm-chart-search" && action.Kind == WalkthroughActionKind.SetText)
         {
             var chartsView = await WaitForControlAsync<HelmChartsView>(root, view => view.IsVisible);
+            var chartsViewModel = chartsView.ViewModel
+                ?? throw new InvalidOperationException("The Helm charts view has no view model.");
             return (chartsView.GetVisualDescendants().OfType<TextBox>().First(textBox =>
                     textBox.DataContext is HelmChartsViewModel),
                 async () =>
                 {
-                    chartsView.ViewModel.SearchText = action.Value!;
+                    chartsViewModel.SearchText = action.Value!;
                     await WaitForConditionAsync(() => root.GetVisualDescendants().OfType<TableViewRow>()
                         .Any(row => row.IsVisible
                             && row.DataContext is HelmChartSearchResult chart
@@ -1480,12 +1486,15 @@ internal static class KubeUIWalkthroughRecorder
                 return (GetHelmValuesEditor(root), null);
             case "helm-editor-preview":
                 var previewView = await WaitForControlAsync<HelmReleaseEditorView>(root, view => view.IsVisible);
-                return (FindCommandButton(previewView, previewView.ViewModel.PreviewCommand), action.ReadyWhen is { } previewReady
+                var previewViewModel = previewView.ViewModel
+                    ?? throw new InvalidOperationException("The Helm release editor view has no view model.");
+                return (FindCommandButton(previewView, previewViewModel.PreviewCommand), action.ReadyWhen is { } previewReady
                     ? () => WaitForConditionAsync(() => previewReady(root))
                     : null);
             case "helm-editor-save":
                 var saveEditor = await WaitForControlAsync<HelmReleaseEditorView>(root, view => view.IsVisible);
-                var saveViewModel = saveEditor.ViewModel;
+                var saveViewModel = saveEditor.ViewModel
+                    ?? throw new InvalidOperationException("The Helm release editor view has no view model.");
                 return (FindCommandButton(saveEditor, saveViewModel.SaveCommand), () => WaitForConditionAsync(
                     () => GetDocumentDock(root).VisibleDockables?.Contains(saveViewModel) != true));
             case "context-menu-item":
@@ -1508,25 +1517,32 @@ internal static class KubeUIWalkthroughRecorder
             case "logs-controller":
                 var logsView = await WaitForControlAsync<PodLogsView>(
                     root,
-                    view => view.IsVisible && view.ViewModel.CanJumpToController);
-                var logsViewModel = logsView.ViewModel;
+                    view => view.IsVisible && view.ViewModel?.CanJumpToController == true);
+                var logsViewModel = logsView.ViewModel
+                    ?? throw new InvalidOperationException("The pod logs view has no view model.");
                 return (
                     FindCommandButton(root, logsViewModel.JumpToControlledByLogsCommand),
                     () => WaitForConditionAsync(() => logsViewModel.Object?.Kind == action.Value));
             case "yaml-edit-mode":
                 var editView = GetYamlView(root);
-                return (FindCommandButton(editView, editView.ViewModel.SetEditModeCommand),
-                    () => WaitForConditionAsync(() => editView.ViewModel.EditMode));
+                var editViewModel = editView.ViewModel
+                    ?? throw new InvalidOperationException("The YAML view has no view model.");
+                return (FindCommandButton(editView, editViewModel.SetEditModeCommand),
+                    () => WaitForConditionAsync(() => editViewModel.EditMode));
             case "yaml-dry-run":
                 var dryRunView = GetYamlView(root);
-                return (FindCommandButton(dryRunView, dryRunView.ViewModel.DryRunCommand),
+                var dryRunViewModel = dryRunView.ViewModel
+                    ?? throw new InvalidOperationException("The YAML view has no view model.");
+                return (FindCommandButton(dryRunView, dryRunViewModel.DryRunCommand),
                     () => WaitForConditionAsync(() =>
-                        dryRunView.ViewModel.HasActionFailureResult || dryRunView.ViewModel.HasActionSuccessResult));
+                        dryRunViewModel.HasActionFailureResult || dryRunViewModel.HasActionSuccessResult));
             case "yaml-save":
                 var saveView = GetYamlView(root);
-                return (FindCommandButton(saveView, saveView.ViewModel.SaveCommand), async () =>
+                var yamlSaveViewModel = saveView.ViewModel
+                    ?? throw new InvalidOperationException("The YAML view has no view model.");
+                return (FindCommandButton(saveView, yamlSaveViewModel.SaveCommand), async () =>
                 {
-                    await WaitForConditionAsync(() => saveView.ViewModel.HasActionSuccessResult);
+                    await WaitForConditionAsync(() => yamlSaveViewModel.HasActionSuccessResult);
                 }
                 );
             default:
@@ -1550,7 +1566,7 @@ internal static class KubeUIWalkthroughRecorder
             var helmDataControls = string.Join(", ", root.GetVisualDescendants().OfType<Control>()
                 .Where(static candidate => candidate.IsVisible && candidate.DataContext is HelmRepository or HelmChartSearchResult or HelmRelease)
                 .Select(static candidate => $"{candidate.GetType().Name}:{candidate.DataContext?.GetType().Name}:{candidate.Bounds.Width:0}x{candidate.Bounds.Height:0}"));
-            var activeDocument = mainView?.ViewModel.Factory.GetDockable<IDocumentDock>("Documents")?.ActiveDockable;
+            var activeDocument = mainView?.ViewModel?.Factory.GetDockable<IDocumentDock>("Documents")?.ActiveDockable;
             var details = activeDocument is HelmRepositoriesViewModel repositories
                 ? $" ItemCount={repositories.ItemCount}; status='{repositories.Status}'."
                 : string.Empty;
@@ -1588,7 +1604,7 @@ internal static class KubeUIWalkthroughRecorder
     {
         var mainView = root as MainView ?? root.GetVisualDescendants().OfType<MainView>().FirstOrDefault()
             ?? throw new InvalidOperationException("The main view was not found.");
-        return mainView.ViewModel.Factory.GetDockable<IDocumentDock>("Documents")
+        return mainView.ViewModel?.Factory.GetDockable<IDocumentDock>("Documents")
             ?? throw new InvalidOperationException("The document dock was not found.");
     }
 
@@ -1606,7 +1622,9 @@ internal static class KubeUIWalkthroughRecorder
             .LastOrDefault()
             ?? throw new InvalidOperationException("The Helm release editor tab was not found.");
         var mainView = root as MainView ?? root.GetVisualDescendants().OfType<MainView>().First();
-        mainView.ViewModel.Factory.SetActiveDockable(editorViewModel);
+        var mainViewModel = mainView.ViewModel
+            ?? throw new InvalidOperationException("The main view has no view model.");
+        mainViewModel.Factory.SetActiveDockable(editorViewModel);
         await WaitForControlAsync<HelmReleaseEditorView>(root, view => view.IsVisible && view.ViewModel == editorViewModel);
         var editor = await WaitForControlAsync<TextEditor>(root, control => control.Name == "ValuesYamlEditor" && control.IsVisible);
         var destination = editor.TranslatePoint(new Point(editor.Bounds.Width / 2, editor.Bounds.Height / 2), window)

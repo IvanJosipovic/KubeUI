@@ -227,7 +227,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
                 ? existing
                 : _createYamlViewer();
             viewer.InitializeReadOnly(
-                string.Format(HelmLanguageManager.Instance.HelmReleasesView_ValuesTitle.CurrentValue()!, release.Name, release.Namespace),
+                string.Format(CultureInfo.CurrentCulture, HelmLanguageManager.Instance.HelmReleasesView_ValuesTitle.CurrentValue()!, release.Name, release.Namespace),
                 id,
                 yaml);
             _factory.AddToBottom(viewer);
@@ -374,6 +374,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
             .Spacing(8)
             .Children(
                 new TextBlock().Text(string.Format(
+                    CultureInfo.CurrentCulture,
                     HelmLanguageManager.Instance.HelmReleasesView_RollbackDialog_Content.CurrentValue()!,
                     release.Name,
                     release.Namespace)),
@@ -393,6 +394,7 @@ public sealed partial class HelmReleasesViewModel : ViewModelBase, IInitializeCl
             .Spacing(8)
             .Children(
                 new TextBlock().Text(string.Format(
+                    CultureInfo.CurrentCulture,
                     HelmLanguageManager.Instance.HelmReleasesView_UninstallContent.CurrentValue()!,
                     release.Name,
                     release.Namespace)),

@@ -116,7 +116,7 @@ public partial class App : Application, IServiceProviderHost
 
     internal void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
-        RecordUnhandledException(e.ExceptionObject as Exception ?? new Exception(e.ExceptionObject?.ToString()), e.IsTerminating);
+        RecordUnhandledException(e.ExceptionObject as Exception ?? new InvalidOperationException(e.ExceptionObject?.ToString()), e.IsTerminating);
     }
 
     internal void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)

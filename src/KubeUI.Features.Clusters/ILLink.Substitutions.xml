@@ -1,6 +1,6 @@
 <linker>
-  <assembly fullname="KubeUI.Foundation">
-    <type fullname="KubeUI.App.Infrastructure.DependencyInjection.DesignTimePreview">
+  <assembly fullname="KubeUI.Features.Clusters">
+    <type fullname="KubeUI.Features.Clusters.Presentation.DesignTimePreview">
       <method signature="System.Boolean get_IsDesignMode()" body="stub" value="false" />
     </type>
   </assembly>

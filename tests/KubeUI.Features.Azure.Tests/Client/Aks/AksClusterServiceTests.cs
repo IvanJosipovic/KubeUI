@@ -38,7 +38,7 @@ public sealed class AksClusterServiceTests
     {
         AksClusterService service = new(null!);
 
-        var operation = service.GetClustersAsync(" ");
+        var operation = service.GetClustersAsync(" ", TestContext.Current.CancellationToken);
 
         await Should.ThrowAsync<ArgumentException>(() => operation);
     }

@@ -8,6 +8,7 @@ namespace KubeUI.Kubernetes.Serialization;
 // Their nested type metadata is emitted from the registered Kubernetes resource types.
 // V1DeviceAttribute, V1beta1DeviceAttribute, and V1beta2DeviceAttribute are omitted because Vecc.YamlDotNet.Analyzers.StaticGenerator
 // 18.1.0 mis-emits IList<bool?> and IList<long?> accessors for them; their metadata is still emitted from the registered device types.
+/// <summary>Static YAML metadata for Kubernetes client and KubeUI resource models.</summary>
 [YamlStaticContext]
 [YamlSerializable(typeof(GenericKubernetesObject))]
 [YamlSerializable(typeof(k8s.KubernetesObject))]
@@ -367,7 +368,6 @@ namespace KubeUI.Kubernetes.Serialization;
 [YamlSerializable(typeof(k8s.Models.V2ResourceMetricSource))]
 [YamlSerializable(typeof(k8s.Models.V2ResourceMetricStatus))]
 [YamlSerializable(typeof(k8s.KubeConfigModels.K8SConfiguration))]
-/// <summary>Static YAML metadata for Kubernetes client and KubeUI resource models.</summary>
 public partial class KubernetesYamlStaticContext : StaticContext
 {
 }

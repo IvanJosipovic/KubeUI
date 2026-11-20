@@ -149,8 +149,8 @@ file sealed class BoolToBrushConverter : IValueConverter
     public object? Convert(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
     {
         var selected = value is true ? _trueValue : _falseValue;
-        return selected is DynamicResourceExtension dre
-            ? (Application.Current?.TryGetResource(dre.ResourceKey, Application.Current.ActualThemeVariant, out var r) == true ? r : selected)
+        return selected is DynamicResourceExtension dre && dre.ResourceKey is { } key
+            ? (Application.Current?.TryGetResource(key, Application.Current.ActualThemeVariant, out var r) == true ? r : selected)
             : selected;
     }
 

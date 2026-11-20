@@ -8,7 +8,6 @@ using Avalonia.VisualTree;
 using KubeUI.App.Tests.Infra;
 using KubeUI.Controls.Layout;
 using KubeUI.Features.Cilium.Hubble;
-using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Features.Clusters.Presentation;
 using KubeUI.Testing.Utilities;
 using Microsoft.Extensions.DependencyInjection;

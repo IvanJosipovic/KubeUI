@@ -67,7 +67,8 @@ public sealed partial class VisualizationView : KubeUIView<VisualizationViewMode
                     .BindValue(Ursa.Controls.MultiComboBox.SelectedItemsProperty, CompiledBinding.Create<VisualizationViewModel, IList>(x => x.SelectedResourceTypes, source: vm, mode: BindingMode.OneWay))
                     .IsEnabled(vm, x => x.HasResourceTypes),
                 new NamespaceScopePicker()
-                    .BindValue(NamespaceScopePicker.NamespacesProperty, CompiledBinding.Create<VisualizationViewModel, IEnumerable>(x => x.Cluster.Runtime.Namespaces, source: vm, mode: BindingMode.OneWay))
+                    // The view is built only after Initialize assigns Cluster.
+                    .BindValue(NamespaceScopePicker.NamespacesProperty, CompiledBinding.Create<VisualizationViewModel, IEnumerable>(x => x.Cluster!.Runtime.Namespaces, source: vm, mode: BindingMode.OneWay))
                     .BindValue(NamespaceScopePicker.SelectedNamespacesProperty, CompiledBinding.Create<VisualizationViewModel, IList>(x => x.SelectedNamespaces, source: vm, mode: BindingMode.OneWay))
                     .BindValue(NamespaceScopePicker.IsSelectionLinkedProperty, CompiledBinding.Create<VisualizationViewModel, bool>(x => x.IsNamespaceSelectionLinked, source: vm, mode: BindingMode.TwoWay))
                     .BindValue(NamespaceScopePicker.IsSelectionEnabledProperty, CompiledBinding.Create<VisualizationViewModel, bool>(x => x.IsNamespaceSelectionEnabled, source: vm))

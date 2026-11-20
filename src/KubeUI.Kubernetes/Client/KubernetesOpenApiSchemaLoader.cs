@@ -7,7 +7,7 @@ using Microsoft.OpenApi.Reader;
 namespace KubeUI.Kubernetes;
 
 /// <summary>
-/// Coordinates one-time, retryable OpenAPI schema loading for a cluster.
+/// Coordinates one-time OpenAPI schema loading for a cluster.
 /// </summary>
 public sealed class KubernetesOpenApiSchemaLoader : IDisposable
 {
@@ -32,7 +32,8 @@ public sealed class KubernetesOpenApiSchemaLoader : IDisposable
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    private async Task LoadAsync(k8s.Kubernetes client, CancellationToken cancellationToken = default)
+    /// <summary>Loads all referenced documents; returns <see langword="false"/> when any was skipped.</summary>
+    private async Task<bool> LoadAsync(k8s.Kubernetes client, CancellationToken cancellationToken = default)
     {
         using var credentialsHandler = new KubernetesCredentialsHandler(client);
         using var authenticatedClient = new HttpClient(credentialsHandler)
@@ -51,7 +52,9 @@ public sealed class KubernetesOpenApiSchemaLoader : IDisposable
         if (!index.RootElement.TryGetProperty("paths", out var paths)
             || paths.ValueKind != JsonValueKind.Object)
         {
-            return;
+            // An index without a valid paths object is a failed load, not an empty catalog.
+            // Reporting success would make hover cache it instead of retrying after recovery.
+            return false;
         }
 
         Dictionary<string, (string? Hash, Uri Uri)> references = [];
@@ -75,6 +78,7 @@ public sealed class KubernetesOpenApiSchemaLoader : IDisposable
 
         Dictionary<string, OpenApiDocument> nextDocuments = [];
         Dictionary<string, string?> nextHashes = [];
+        var complete = true;
         lock (_cacheGate)
         {
             foreach (var reference in references)
@@ -110,6 +114,7 @@ public sealed class KubernetesOpenApiSchemaLoader : IDisposable
             using var schemaResponse = await authenticatedClient.GetAsync(reference.Value.Uri, cancellationToken).ConfigureAwait(false);
             if (!schemaResponse.IsSuccessStatusCode)
             {
+                complete = false;
                 lock (_cacheGate)
                 {
                     if (_activeDocuments.TryGetValue(reference.Key, out var previousDocument)
@@ -149,6 +154,12 @@ public sealed class KubernetesOpenApiSchemaLoader : IDisposable
                     }
                 }
             }
+            else
+            {
+                // No document means this group version is missing from the catalog; do not
+                // report the load as complete or hover will never retry it.
+                complete = false;
+            }
         }
 
         lock (_cacheGate)
@@ -172,6 +183,8 @@ public sealed class KubernetesOpenApiSchemaLoader : IDisposable
 
             _catalog.Replace(_activeDocuments.Values);
         }
+
+        return complete;
     }
 
     private static string? ParseGroupVersion(string path)
@@ -268,11 +281,12 @@ public sealed class KubernetesOpenApiSchemaLoader : IDisposable
         }
     }
 
-    /// <summary>Loads schemas once, retrying transient failures, and returns quietly when all attempts fail.</summary>
+    /// <summary>Loads schemas once, relying on transport resilience, and reports whether they are available.</summary>
     /// <param name="client">Authenticated Kubernetes client.</param>
     /// <param name="clusterName">Cluster name used for diagnostics.</param>
     /// <param name="cancellationToken">Token used to cancel loading.</param>
-    public async Task EnsureAsync(
+    /// <returns><see langword="true"/> when schemas are loaded or were already present; <see langword="false"/> when a transient failure prevented loading.</returns>
+    public async Task<bool> EnsureAsync(
         k8s.Kubernetes client,
         string clusterName,
         CancellationToken cancellationToken = default)
@@ -288,7 +302,7 @@ public sealed class KubernetesOpenApiSchemaLoader : IDisposable
         if (Volatile.Read(ref _loadAttempted) != 0 && _catalog.Count > 0)
         {
             activity?.SetTag("kubernetes.openapi.schema.load.skipped", true);
-            return;
+            return true;
         }
 
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -297,36 +311,46 @@ public sealed class KubernetesOpenApiSchemaLoader : IDisposable
             if (Volatile.Read(ref _loadAttempted) != 0 && _catalog.Count > 0)
             {
                 activity?.SetTag("kubernetes.openapi.schema.load.skipped", true);
-                return;
+                return true;
             }
 
-            const int maxAttempts = 3;
-            for (var attempt = 1; attempt <= maxAttempts; attempt++)
+            try
             {
-                try
+                var complete = await LoadAsync(client, cancellationToken).ConfigureAwait(false);
+                if (!complete)
                 {
-                    await LoadAsync(client, cancellationToken).ConfigureAwait(false);
-                    Volatile.Write(ref _loadAttempted, 1);
-                    activity?.SetTag("kubernetes.openapi.schema.count", _catalog.Count);
-                    activity?.SetStatus(ActivityStatusCode.Ok);
-                    return;
+                    // A partial catalog is published so available schemas still work, but the
+                    // load is not marked attempted: hover clears its cache and tries again.
+                    activity?.SetStatus(ActivityStatusCode.Error, "Some OpenAPI documents were unavailable.");
+                    if (_logger.IsEnabled(LogLevel.Debug))
+                    {
+                        _logger.LogDebug(
+                            "Some Kubernetes OpenAPI v3 schema documents failed for {ClusterName}.",
+                            clusterName);
+                    }
+                    return false;
                 }
-                catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+
+                Volatile.Write(ref _loadAttempted, 1);
+                activity?.SetTag("kubernetes.openapi.schema.count", _catalog.Count);
+                activity?.SetStatus(ActivityStatusCode.Ok);
+                return true;
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+                if (_logger.IsEnabled(LogLevel.Debug))
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
                     _logger.LogDebug(
                         ex,
-                        "Unable to load Kubernetes OpenAPI v3 schemas for {name} on attempt {attempt} of {maxAttempts}.",
-                        clusterName,
-                        attempt,
-                        maxAttempts);
-
-                    if (attempt < maxAttempts)
-                    {
-                        await Task.Delay(TimeSpan.FromSeconds(attempt), cancellationToken).ConfigureAwait(false);
-                    }
+                        "Unable to load Kubernetes OpenAPI v3 schemas for {ClusterName}.",
+                        clusterName);
                 }
+
+                // Report the failure instead of completing successfully. Callers that cache this
+                // task (YAML hover) must be able to drop it and retry on the next interaction.
+                return false;
             }
         }
         finally

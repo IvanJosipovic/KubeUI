@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Avalonia.Headless.XUnit;
 using Xunit.Sdk;
 using Xunit.v3;
@@ -9,7 +10,10 @@ namespace KubeUI.Documentation.Tests.Infra;
 [XunitTestCaseDiscoverer(typeof(AvaloniaTheoryDiscoverer))]
 internal sealed class DocumentationVideoTheoryAttribute : TheoryAttribute, IDataAttribute
 {
-    public DocumentationVideoTheoryAttribute()
+    public DocumentationVideoTheoryAttribute(
+        [CallerFilePath] string? sourceFilePath = null,
+        [CallerLineNumber] int sourceLineNumber = -1)
+        : base(sourceFilePath, sourceLineNumber)
     {
         if (!KubeUIWalkthroughRecorder.IsRecordingEnabled)
         {

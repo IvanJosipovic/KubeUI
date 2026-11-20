@@ -14,10 +14,11 @@ public sealed class AgentDockingTests
         var services = Application.Current.GetTestServices();
         services.GetRequiredService<ISettingsService>().Settings.McpServerEnabled = true;
         var factory = services.GetRequiredService<IFactory>();
-        var layout = factory.CreateLayout();
+        var layout = factory.CreateLayout() ?? throw new InvalidOperationException("Factory did not create a layout.");
         factory.InitLayout(layout);
 
         var chat = layout.RightPinnedDockables
+            .ShouldNotBeNull()
             .Single(dockable => dockable is AgentChatViewModel)
             .ShouldBeOfType<AgentChatViewModel>();
         var rightDock = factory.GetDockable<IToolDock>("RightDock")!;
@@ -26,7 +27,7 @@ public sealed class AgentDockingTests
         chat.GetPinnedBounds(out _, out _, out var width, out var height);
         width.ShouldBe(420);
         height.ShouldBe(0);
-        rightDock.VisibleDockables.ShouldNotContain(chat);
+        rightDock.VisibleDockables.ShouldNotBeNull().ShouldNotContain(chat);
     }
 
     [AvaloniaFact]
@@ -35,8 +36,8 @@ public sealed class AgentDockingTests
         var services = Application.Current.GetTestServices();
         services.GetRequiredService<ISettingsService>().Settings.McpServerEnabled = false;
         var factory = services.GetRequiredService<IFactory>();
-        var layout = factory.CreateLayout();
+        var layout = factory.CreateLayout() ?? throw new InvalidOperationException("Factory did not create a layout.");
 
-        layout.RightPinnedDockables.ShouldNotContain(dockable => dockable is AgentChatViewModel);
+        layout.RightPinnedDockables.ShouldNotBeNull().ShouldNotContain(dockable => dockable is AgentChatViewModel);
     }
 }

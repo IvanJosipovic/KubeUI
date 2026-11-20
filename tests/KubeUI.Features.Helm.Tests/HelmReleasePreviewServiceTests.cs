@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using AvaloniaEdit;
@@ -270,7 +271,7 @@ public sealed class HelmReleasePreviewServiceTests : IDisposable
             .ReturnsAsync("replicas: 2\nserver:\n  enabled: true\n");
         helm.Setup(service => service.TemplateVersionAsync(
                 It.IsAny<HelmConnection>(), "web", "stable/web", "1.0",
-                It.Is<IReadOnlyDictionary<string, object?>>(values => Convert.ToInt64(values["replicas"]) == 4),
+                It.Is<IReadOnlyDictionary<string, object?>>(values => Convert.ToInt64(values["replicas"], CultureInfo.InvariantCulture) == 4),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync((HelmConnection _, string _, string _, string _, IReadOnlyDictionary<string, object?> values, CancellationToken _) =>
                 $"apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: preview\ndata:\n  replicas: \"{values["replicas"]}\"\n");

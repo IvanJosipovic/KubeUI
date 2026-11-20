@@ -44,7 +44,7 @@ public sealed class PodLogStreamClientTests
             TestContext.Current.CancellationToken);
 
         stream.ShouldNotBeNull();
-        var requestUri = harness.FakeApi.RequestUris
+        var requestUri = harness.FakeApi!.RequestUris
             .Single(uri => uri?.AbsolutePath.EndsWith("/log", StringComparison.Ordinal) == true)!;
         requestUri.Query.ShouldContain("previous=true");
         requestUri.Query.ShouldContain("timestamps=true");

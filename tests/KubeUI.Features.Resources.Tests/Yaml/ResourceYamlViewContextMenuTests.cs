@@ -4,6 +4,7 @@ using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
@@ -52,7 +53,11 @@ public sealed class ResourceYamlViewContextMenuTests
 
         var contextMenu = editor.ContextMenu.ShouldBeOfType<ContextMenu>();
         OpenContextMenuWithPointer(window, editor);
-        await TestApplicationExtensions.WaitForUiAsync(TestContext.Current.CancellationToken);
+        await TestWait.UntilAsync(
+            () => contextMenu.IsOpen,
+            15000,
+            TestContext.Current.CancellationToken,
+            () => Dispatcher.UIThread.RunJobs());
 
         contextMenu.IsOpen.ShouldBeTrue();
         contextMenu.IsAttachedToVisualTree().ShouldBeTrue();

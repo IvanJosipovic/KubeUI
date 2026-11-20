@@ -433,7 +433,7 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
             _zoomControl.Mode = ZoomControlModes.Custom;
             _area.ShowAllEdgesArrows(true);
             if (_layoutPending && _attached && !_disposed)
-                await Dispatcher.UIThread.InvokeAsync(() => ApplySnapshot(_pendingGraph), DispatcherPriority.Background);
+                await Dispatcher.UIThread.InvokeAsync(() => ApplySnapshot(_pendingGraph), DispatcherPriority.Background, cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
         finally
@@ -807,11 +807,11 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
             IDictionary<ServiceMapVertex, Westermo.GraphX.Measure.Point> computedPositions;
             if (Algorithm == LayoutAlgorithmTypeEnum.CompoundFDP)
             {
-                computedPositions = ComputeCompoundLayout(cancellationToken, sizes, initialPositions);
+                computedPositions = ComputeCompoundLayout(sizes, initialPositions, cancellationToken);
             }
             else
             {
-                computedPositions = ComputeGroupedLayout(cancellationToken, vertices, sizes);
+                computedPositions = ComputeGroupedLayout(vertices, sizes, cancellationToken);
             }
 
             _positions.Clear();
@@ -825,9 +825,9 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
         }
 
         private IDictionary<ServiceMapVertex, Westermo.GraphX.Measure.Point> ComputeCompoundLayout(
-            CancellationToken cancellationToken,
             IDictionary<ServiceMapVertex, Westermo.GraphX.Measure.Size> sizes,
-            IDictionary<ServiceMapVertex, Westermo.GraphX.Measure.Point> initialPositions)
+            IDictionary<ServiceMapVertex, Westermo.GraphX.Measure.Point> initialPositions,
+            CancellationToken cancellationToken)
         {
             var borders = Graph.Vertices.ToDictionary(
                 static vertex => vertex,
@@ -854,9 +854,9 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
         }
 
         private IDictionary<ServiceMapVertex, Westermo.GraphX.Measure.Point> ComputeGroupedLayout(
-            CancellationToken cancellationToken,
             ServiceMapVertex[] vertices,
-            IDictionary<ServiceMapVertex, Westermo.GraphX.Measure.Size> sizes)
+            IDictionary<ServiceMapVertex, Westermo.GraphX.Measure.Size> sizes,
+            CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var groupKeys = vertices
@@ -931,15 +931,15 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
             };
             groupedLayout.Compute(cancellationToken);
 
-            return ArrangeGroups(cancellationToken, groupedLayout.VertexPositions, groupKeys, groupMembers, sizes);
+            return ArrangeGroups(groupedLayout.VertexPositions, groupKeys, groupMembers, sizes, cancellationToken);
         }
 
         private IDictionary<ServiceMapVertex, Westermo.GraphX.Measure.Point> ArrangeGroups(
-            CancellationToken cancellationToken,
             IDictionary<ServiceMapVertex, Westermo.GraphX.Measure.Point> groupPositions,
             string[] groupKeys,
             IReadOnlyDictionary<string, ServiceMapVertex[]> groupMembers,
-            IDictionary<ServiceMapVertex, Westermo.GraphX.Measure.Size> sizes)
+            IDictionary<ServiceMapVertex, Westermo.GraphX.Measure.Size> sizes,
+            CancellationToken cancellationToken)
         {
             var groupBounds = new Dictionary<string, Westermo.GraphX.Measure.Rect>(StringComparer.Ordinal);
             for (var groupIndex = 0; groupIndex < groupKeys.Length; groupIndex++)

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -514,7 +515,7 @@ public sealed class MetricsControlTests
     [AvaloniaFact]
     public async Task metrics_control_renders_prometheus_series_and_preserves_sample_dates()
     {
-        var firstTimestamp = DateTimeOffset.Parse("2026-01-02T03:04:05+00:00");
+        var firstTimestamp = DateTimeOffset.Parse("2026-01-02T03:04:05+00:00", CultureInfo.InvariantCulture);
         var queryClient = new FakePrometheusQueryClient();
         var successResponse = CreateSuccessResponse(firstTimestamp, 1.25, 2.5);
         queryClient.ResponseFactory = query => query.Contains("container_cpu_usage_seconds_total", StringComparison.Ordinal)
@@ -554,7 +555,7 @@ public sealed class MetricsControlTests
     public async Task node_properties_metrics_request_is_scoped_to_selected_node()
     {
         var queryClient = new FakePrometheusQueryClient();
-        var timestamp = DateTimeOffset.Parse("2026-01-02T03:04:05+00:00");
+        var timestamp = DateTimeOffset.Parse("2026-01-02T03:04:05+00:00", CultureInfo.InvariantCulture);
         queryClient.ResponseFactory = query => query switch
         {
             var value when value.Contains("node_cpu_seconds_total", StringComparison.Ordinal) => CreateNodeSuccessResponse(timestamp, "instance", "node-a"),
@@ -590,7 +591,7 @@ public sealed class MetricsControlTests
     public async Task resource_snapshot_update_does_not_queue_an_immediate_metrics_refresh()
     {
         var queryClient = new FakePrometheusQueryClient();
-        var timestamp = DateTimeOffset.Parse("2026-01-02T03:04:05+00:00");
+        var timestamp = DateTimeOffset.Parse("2026-01-02T03:04:05+00:00", CultureInfo.InvariantCulture);
         queryClient.ResponseFactory = query => query switch
         {
             var value when value.Contains("node_cpu_seconds_total", StringComparison.Ordinal) => CreateNodeSuccessResponse(timestamp, "instance", "node-a"),
@@ -690,7 +691,7 @@ public sealed class MetricsControlTests
     public async Task metrics_control_orders_series_by_name_and_draws_usage_above_requests()
     {
         var queryClient = new FakePrometheusQueryClient();
-        var successResponse = CreateSuccessResponse(DateTimeOffset.Parse("2026-01-02T03:04:05+00:00"), 1.25, 2.5);
+        var successResponse = CreateSuccessResponse(DateTimeOffset.Parse("2026-01-02T03:04:05+00:00", CultureInfo.InvariantCulture), 1.25, 2.5);
         queryClient.ResponseFactory = query => query.Contains("container_cpu_usage_seconds_total", StringComparison.Ordinal)
             || query.Contains("kube_pod_container_resource_requests", StringComparison.Ordinal)
             ? successResponse

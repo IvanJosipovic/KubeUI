@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using AvaloniaEdit.Document;
 using FluentAvalonia.UI.Controls;
@@ -33,6 +34,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IClusterWorkspaceCon
 
     private IKubernetesObject<V1ObjectMeta>? _object;
 
+    [SuppressMessage("Naming", "CA1720:Identifier contains type name", Justification = "Public API contract; renaming is a breaking change. Revisit in next major version.")]
     public IKubernetesObject<V1ObjectMeta>? Object
     {
         get => _object;
@@ -127,11 +129,13 @@ public partial class ResourceYamlViewModel : ViewModelBase, IClusterWorkspaceCon
         AttachValidationDocument(YamlDocument);
     }
 
+    [SuppressMessage("Naming", "CA1720:Identifier contains type name", Justification = "Public API contract; renaming is a breaking change. Revisit in next major version.")]
     public void Initialize(ClusterWorkspace cluster, IKubernetesObject<V1ObjectMeta> @object)
     {
         Initialize(cluster, @object, resourceKind: null);
     }
 
+    [SuppressMessage("Naming", "CA1720:Identifier contains type name", Justification = "Public API contract; renaming is a breaking change. Revisit in next major version.")]
     public void Initialize<T>(ClusterWorkspace cluster, T @object)
         where T : class, IKubernetesObject<V1ObjectMeta>, new()
     {
@@ -395,6 +399,7 @@ public partial class ResourceYamlViewModel : ViewModelBase, IClusterWorkspaceCon
         {
             Cluster.Runtime.OnChange -= Cluster_OnChange;
         }
+        GC.SuppressFinalize(this);
     }
 
     private void AttachValidationDocument(TextDocument? document)

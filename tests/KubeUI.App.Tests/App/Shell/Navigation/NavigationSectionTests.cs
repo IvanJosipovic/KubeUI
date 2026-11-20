@@ -7,6 +7,7 @@ using KubeUI.App.Services.Settings;
 using KubeUI.App.Shell.Navigation;
 using KubeUI.App.Tests.Infra;
 using KubeUI.Desktop;
+using KubeUI.Features.Cilium;
 using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Features.Clusters.Workspace;
 using KubeUI.Features.Crossplane;
@@ -224,6 +225,7 @@ public sealed class NavigationSectionTests
             config => config.Resources = [CreateCiliumCrd("cilium.io")],
             connect: false);
         await workspace.Connect();
+        (await workspace.Runtime.IsCiliumInstalledAsync(TestContext.Current.CancellationToken)).ShouldBeTrue();
 
         using var node = new ClusterNavigationNode(workspace);
         var provider = new HubbleNavigationSectionProvider(enabled: false);
@@ -278,7 +280,7 @@ public sealed class NavigationSectionTests
     [InlineData("notcrossplane.io", false)]
     [InlineData("Crossplane.io", false)]
     [InlineData(null, false)]
-    public void crossplane_section_matches_exact_group_and_dot_boundary_subgroups(string group, bool expected)
+    public void crossplane_section_matches_exact_group_and_dot_boundary_subgroups(string? group, bool expected)
     {
         var provider = new CrossplaneNavigationSectionProvider();
 
@@ -690,8 +692,9 @@ public sealed class NavigationSectionTests
     private static IResourceConfig CreateResourceConfig(string? group, string apiVersion = "v1")
     {
         var config = new Mock<IResourceConfig>();
+        // A null group is intentional: navigation providers must not treat it as a custom-resource group.
         config.SetupGet(resource => resource.Kind)
-            .Returns(new GroupApiVersionKind(group, apiVersion, "TestResource", "testresources"));
+            .Returns(new GroupApiVersionKind(group!, apiVersion, "TestResource", "testresources"));
         return config.Object;
     }
 

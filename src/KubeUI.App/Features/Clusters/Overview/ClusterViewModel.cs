@@ -77,7 +77,7 @@ public sealed partial class ClusterViewModel : ViewModelBase, IInitializeCluster
     {
         get
         {
-            if (Application.Current.ActualThemeVariant == ThemeVariant.Dark)
+            if (Application.Current?.ActualThemeVariant == ThemeVariant.Dark)
             {
                 return "#FFFFFF";
             }

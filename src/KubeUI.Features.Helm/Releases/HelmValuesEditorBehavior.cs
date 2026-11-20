@@ -17,7 +17,8 @@ internal sealed class HelmValuesEditorBehavior : Behavior<TextEditor>
     protected override void OnAttached()
     {
         base.OnAttached();
-        AssociatedObject.DataContextChanged += DataContextChanged;
+        // Avalonia sets AssociatedObject before OnAttached; it stays non-null until OnDetaching.
+        AssociatedObject!.DataContextChanged += DataContextChanged;
         AssociatedObject.TextChanged += EditorTextChanged;
         AssociatedObject.LayoutUpdated += LayoutUpdated;
         SetViewModel(AssociatedObject.DataContext as HelmReleaseEditorViewModel);
@@ -25,7 +26,7 @@ internal sealed class HelmValuesEditorBehavior : Behavior<TextEditor>
 
     protected override void OnDetaching()
     {
-        AssociatedObject.DataContextChanged -= DataContextChanged;
+        AssociatedObject!.DataContextChanged -= DataContextChanged;
         AssociatedObject.TextChanged -= EditorTextChanged;
         AssociatedObject.LayoutUpdated -= LayoutUpdated;
         SetViewModel(null);
@@ -37,7 +38,7 @@ internal sealed class HelmValuesEditorBehavior : Behavior<TextEditor>
     }
 
     private void DataContextChanged(object? sender, EventArgs args)
-        => SetViewModel(AssociatedObject.DataContext as HelmReleaseEditorViewModel);
+        => SetViewModel(AssociatedObject!.DataContext as HelmReleaseEditorViewModel);
 
     private void SetViewModel(HelmReleaseEditorViewModel? viewModel)
     {
@@ -66,13 +67,13 @@ internal sealed class HelmValuesEditorBehavior : Behavior<TextEditor>
     {
         if (!_updatingEditor && _viewModel is not null)
         {
-            _viewModel.ValuesYaml = AssociatedObject.Text;
+            _viewModel.ValuesYaml = AssociatedObject!.Text;
         }
     }
 
     private void UpdateEditor(string text)
     {
-        if (string.Equals(AssociatedObject.Text, text, StringComparison.Ordinal))
+        if (string.Equals(AssociatedObject!.Text, text, StringComparison.Ordinal))
         {
             return;
         }
@@ -118,7 +119,8 @@ internal sealed class HelmValuesEditorBehavior : Behavior<TextEditor>
 
     private void AttachScrollViewers()
     {
-        _editorScrollViewer = AssociatedObject.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
-        _formScrollViewer = AssociatedObject.GetVisualAncestors().OfType<ScrollViewer>().FirstOrDefault();
+        var owner = AssociatedObject!;
+        _editorScrollViewer = owner.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
+        _formScrollViewer = owner.GetVisualAncestors().OfType<ScrollViewer>().FirstOrDefault();
     }
 }

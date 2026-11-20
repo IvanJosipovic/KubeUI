@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Globalization;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using Avalonia.Controls.Selection;
@@ -177,7 +178,7 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
                 CiliumLanguageManager.Instance.FlowListView_ColumnTimestamp.CurrentValue()!,
                 typeof(DateTime),
                 flow => flow.Timestamp,
-                flow => flow.Timestamp.ToString("HH:mm:ss.fff")),
+                flow => flow.Timestamp.ToString("HH:mm:ss.fff", CultureInfo.CurrentCulture)),
             new DynamicTableViewColumn<FlowViewModel>(
                 "Verdict",
                 CiliumLanguageManager.Instance.FlowListView_ColumnVerdict.CurrentValue()!,
@@ -561,7 +562,8 @@ public sealed partial class FlowListViewModel : ViewModelBase, IInitializeCluste
     }
 
     public void Dispose()
-        => _ = DisposeAsync();
+        // Dispose is synchronous: observe the async cleanup via Task without blocking the UI thread.
+        => _ = DisposeAsync().AsTask();
 
     /// <summary>Stops flow collection and releases the connection and table resources.</summary>
     public async ValueTask DisposeAsync()

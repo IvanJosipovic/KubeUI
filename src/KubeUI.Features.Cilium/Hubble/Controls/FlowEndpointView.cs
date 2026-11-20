@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia;
 using SVCSystems.Avalonia.CSharpUI;
 using Avalonia.Media;
@@ -57,7 +58,7 @@ public sealed class FlowEndpointView : StackPanel
 
             if (e.Identity.HasValue)
             {
-                var identityStr = e.Identity.Value.ToString();
+                var identityStr = e.Identity.Value.ToString(CultureInfo.InvariantCulture);
                 Children.Add(new TextBlock
                 {
                     Text = $"id: {identityStr[..Math.Min(8, identityStr.Length)]}",

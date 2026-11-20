@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using k8s.KubeConfigModels;
@@ -29,7 +30,8 @@ public sealed class ImportAksClusterViewModelTests
 
         await viewModel.ImportCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
         viewModel.StatusMessage.ShouldBe(string.Format(
-            ClustersLanguageManager.Instance.ImportAksClusterView_Imported.CurrentValue(),
+            CultureInfo.InvariantCulture,
+            ClustersLanguageManager.Instance.ImportAksClusterView_Imported.CurrentValue()!,
             clusterName));
         runtimeCatalog.Clusters.Select(x => x.Name).ShouldContain(clusterName);
         await WaitForAsync(() => catalog.Clusters.Any(x => x.Runtime.Name == clusterName));

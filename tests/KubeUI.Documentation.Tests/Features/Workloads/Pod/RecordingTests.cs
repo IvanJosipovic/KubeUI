@@ -40,7 +40,7 @@ public sealed class RecordingTests
             .SelectPodLogs(
                 WalkthroughDemoResources.FeaturedPodName,
                 root => root.GetVisualDescendants().OfType<PodLogsView>()
-                    .Any(view => view.IsVisible && view.ViewModel.Object?.Kind == V1Pod.KubeKind))
+                    .Any(view => view.IsVisible && view.ViewModel?.Object?.Kind == V1Pod.KubeKind))
             .Speak(
                 "Pod logs arrive as a live stream. Move up to the owning ReplicaSet.",
                 root => HasLogsForScope(
@@ -90,13 +90,18 @@ public sealed class RecordingTests
         IReadOnlyList<string>? unexpectedLines = null)
     {
         var logsView = root.GetVisualDescendants().OfType<PodLogsView>()
-            .FirstOrDefault(view => view.IsVisible && view.ViewModel.Object?.Kind == resourceKind);
+            .FirstOrDefault(view => view.IsVisible && view.ViewModel?.Object?.Kind == resourceKind);
         if (logsView is null)
         {
             return false;
         }
 
         var viewModel = logsView.ViewModel;
+        if (viewModel is null)
+        {
+            return false;
+        }
+
         if (!string.IsNullOrWhiteSpace(viewModel.ConnectionError))
         {
             throw new InvalidOperationException($"Pod log stream failed: {viewModel.ConnectionError}");

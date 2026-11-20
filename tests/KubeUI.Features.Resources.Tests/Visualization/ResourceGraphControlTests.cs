@@ -588,6 +588,7 @@ public sealed class ResourceGraphControlTests
 
         var factory = Application.Current.GetRequiredTestService<IFactory>();
         var layout = factory.CreateLayout();
+        layout.ShouldNotBeNull();
         factory.InitLayout(layout);
         var documents = factory.GetDockable<IDocumentDock>("Documents");
         documents.ShouldNotBeNull();
@@ -600,7 +601,7 @@ public sealed class ResourceGraphControlTests
         await WaitForAsync(() => firstView.Graph!.Resources.Any(resource => resource.Name() == pod.Name()));
 
         factory.CloseDockable(firstView);
-        documents.VisibleDockables.ShouldNotContain(firstView);
+        documents.VisibleDockables.ShouldNotBeNull().ShouldNotContain(firstView);
 
         var reopenedView = Application.Current.GetRequiredTestService<VisualizationViewModel>();
         reopenedView.Initialize(cluster);
@@ -1258,7 +1259,7 @@ public sealed class ResourceGraphControlTests
         await cluster.Runtime.DeleteAsync(intermediate, TestContext.Current.CancellationToken);
 
         await WaitForAsync(() => viewModel.Graph!.Relationships.Contains(direct));
-        viewModel.Graph.Resources.ShouldNotContain(resource => resource.Name() == intermediate.Name());
+        viewModel.Graph.ShouldNotBeNull().Resources.ShouldNotContain(resource => resource.Name() == intermediate.Name());
         builder.BuildCount.ShouldBeGreaterThan(1);
     }
 
@@ -2676,7 +2677,7 @@ public sealed class ResourceGraphControlTests
             while (!_initialBuild.Task.IsCompleted)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                await TestApplicationExtensions.WaitForUiAsync();
+                await TestApplicationExtensions.WaitForUiAsync(cancellationToken);
                 if (DateTime.UtcNow >= deadline)
                 {
                     throw new TimeoutException("Timed out waiting for the initial visualization build.");

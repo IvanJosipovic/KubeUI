@@ -11,7 +11,7 @@ public class StringEqualsConverter : IValueConverter
     {
         if (value is string sourceText && parameter is string equalsText && targetType.IsAssignableTo(typeof(bool)))
         {
-            return sourceText.Equals(equalsText, StringComparison.InvariantCultureIgnoreCase);
+            return sourceText.Equals(equalsText, StringComparison.OrdinalIgnoreCase);
         }
 
         return new BindingNotification(new InvalidCastException(), BindingErrorType.Error);

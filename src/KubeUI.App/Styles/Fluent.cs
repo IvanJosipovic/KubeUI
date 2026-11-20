@@ -109,7 +109,7 @@ public sealed class Fluent : AvaloniaStyles
         return styles;
     }
 
-    private static Style CreateMarkdownCodeStyle(Func<Selector, Selector> selector)
+    private static Style CreateMarkdownCodeStyle(Func<Selector?, Selector> selector)
     {
         var style = new Style(selector);
         style.Setters.Add(new Setter(TextElement.FontFamilyProperty, new DynamicResourceExtension(Typography.CodeFontFamilyResourceKey)));

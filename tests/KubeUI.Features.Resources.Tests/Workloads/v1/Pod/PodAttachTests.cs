@@ -37,7 +37,7 @@ public sealed class PodAttachTests
         };
 
         var items = config.GetCustomMenuItems(new[] { pod }).ToList();
-        var attachMenu = items.Single(x => x.Title?.Equals("Attach") == true);
+        var attachMenu = items.Single(x => x.Title?.Equals("Attach", StringComparison.Ordinal) == true);
 
         attachMenu.Items.ShouldNotBeNull();
 

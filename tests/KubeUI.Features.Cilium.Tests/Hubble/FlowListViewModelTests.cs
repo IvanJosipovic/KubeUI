@@ -1,10 +1,10 @@
+using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using k8s.Models;
 using KubeUI.App.Tests.Infra;
-using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Testing.Utilities;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -23,8 +23,8 @@ public sealed class FlowListViewModelTests
             Mock.Of<IHubbleConnectionFactory>());
         viewModel.OnFlowsReceived(
         [
-            Flow("selected-flow", DateTime.Parse("2026-10-23T10:00:02Z")),
-            Flow("other-flow", DateTime.Parse("2026-10-23T10:00:01Z"))
+            Flow("selected-flow", DateTime.Parse("2026-10-23T10:00:02Z", CultureInfo.InvariantCulture)),
+            Flow("other-flow", DateTime.Parse("2026-10-23T10:00:01Z", CultureInfo.InvariantCulture))
         ]);
 
         await TestWait.UntilAsync(
@@ -56,9 +56,9 @@ public sealed class FlowListViewModelTests
 
         await Task.Run(() => viewModel.OnFlowsReceived(
         [
-            Flow("middle", DateTimeOffset.Parse("2026-10-23T10:00:02Z").UtcDateTime),
-            Flow("oldest", DateTimeOffset.Parse("2026-10-23T10:00:01Z").UtcDateTime),
-            Flow("newest", DateTimeOffset.Parse("2026-10-23T10:00:03Z").UtcDateTime)
+            Flow("middle", DateTimeOffset.Parse("2026-10-23T10:00:02Z", CultureInfo.InvariantCulture).UtcDateTime),
+            Flow("oldest", DateTimeOffset.Parse("2026-10-23T10:00:01Z", CultureInfo.InvariantCulture).UtcDateTime),
+            Flow("newest", DateTimeOffset.Parse("2026-10-23T10:00:03Z", CultureInfo.InvariantCulture).UtcDateTime)
         ]), TestContext.Current.CancellationToken);
 
         await TestWait.UntilAsync(
@@ -85,9 +85,9 @@ public sealed class FlowListViewModelTests
         viewModel.MaxFlows = 3;
         viewModel.OnFlowsReceived(
         [
-            Flow("old-forwarded", DateTime.Parse("2026-10-23T10:00:01Z")),
-            Flow("dropped-one", DateTime.Parse("2026-10-23T10:00:02Z"), verdict: FlowVerdict.Dropped),
-            Flow("dropped-two", DateTime.Parse("2026-10-23T10:00:03Z"), verdict: FlowVerdict.Dropped)
+            Flow("old-forwarded", DateTime.Parse("2026-10-23T10:00:01Z", CultureInfo.InvariantCulture)),
+            Flow("dropped-one", DateTime.Parse("2026-10-23T10:00:02Z", CultureInfo.InvariantCulture), verdict: FlowVerdict.Dropped),
+            Flow("dropped-two", DateTime.Parse("2026-10-23T10:00:03Z", CultureInfo.InvariantCulture), verdict: FlowVerdict.Dropped)
         ]);
 
         await TestWait.UntilAsync(
@@ -106,10 +106,10 @@ public sealed class FlowListViewModelTests
 
         viewModel.OnFlowsReceived(
         [
-            Flow("new-forwarded-one", DateTime.Parse("2026-10-23T10:00:04Z")),
-            Flow("new-forwarded-two", DateTime.Parse("2026-10-23T10:00:05Z")),
-            Flow("new-forwarded-three", DateTime.Parse("2026-10-23T10:00:06Z")),
-            Flow("dropped-three", DateTime.Parse("2026-10-23T10:00:07Z"), verdict: FlowVerdict.Dropped)
+            Flow("new-forwarded-one", DateTime.Parse("2026-10-23T10:00:04Z", CultureInfo.InvariantCulture)),
+            Flow("new-forwarded-two", DateTime.Parse("2026-10-23T10:00:05Z", CultureInfo.InvariantCulture)),
+            Flow("new-forwarded-three", DateTime.Parse("2026-10-23T10:00:06Z", CultureInfo.InvariantCulture)),
+            Flow("dropped-three", DateTime.Parse("2026-10-23T10:00:07Z", CultureInfo.InvariantCulture), verdict: FlowVerdict.Dropped)
         ]);
 
         await TestWait.UntilAsync(

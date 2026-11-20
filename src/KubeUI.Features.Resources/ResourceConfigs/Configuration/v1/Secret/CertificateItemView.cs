@@ -75,12 +75,12 @@ public sealed partial class CertificateItemView : UserControl, IDeclarativeViewB
 
     private static StackPanel CreateKeyTemplate(RSA key)
     {
-        return CreateKeyTemplate(key.KeyExchangeAlgorithm, key.SignatureAlgorithm, key.KeySize);
+        return CreateKeyTemplate(key.KeyExchangeAlgorithm ?? string.Empty, key.SignatureAlgorithm, key.KeySize);
     }
 
     private static StackPanel CreateKeyTemplate(ECDsa key)
     {
-        return CreateKeyTemplate(key.KeyExchangeAlgorithm, key.SignatureAlgorithm, key.KeySize);
+        return CreateKeyTemplate(key.KeyExchangeAlgorithm ?? string.Empty, key.SignatureAlgorithm, key.KeySize);
     }
 
     private static ItemsControl CreateSanList(IEnumerable<string> values, string key)

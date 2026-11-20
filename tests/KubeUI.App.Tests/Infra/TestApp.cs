@@ -73,7 +73,11 @@ public class TestApp : KubeUIApplication, IDisposable
         Dispose();
     }
 
-    public void Dispose() => DisposeCoreAsync().GetAwaiter().GetResult();
+    public void Dispose()
+    {
+        DisposeCoreAsync().GetAwaiter().GetResult();
+        GC.SuppressFinalize(this);
+    }
 
     private async Task DisposeCoreAsync()
     {

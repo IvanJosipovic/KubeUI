@@ -13,7 +13,6 @@ using FluentIcons.Avalonia;
 using KubernetesClient.Informer.Client;
 using KubeUI.App.Tests.Infra;
 using KubeUI.Features.Cilium.Hubble;
-using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Features.Cilium.Hubble.Controls;
 using KubeUI.Features.Resources.Contracts;
 using KubeUI.Features.Resources.Icons;
@@ -165,11 +164,11 @@ public sealed class ServiceMapViewTests
             .ToArray();
         labels.ShouldContain("Deployment");
         labels.ShouldContain("frontend");
-        labels.ShouldContain(static label => label.Contains("In 3", StringComparison.Ordinal));
-        labels.ShouldContain(static label => label.Contains("Out 2", StringComparison.Ordinal));
+        labels.ShouldContain(static label => label != null && label!.Contains("In 3", StringComparison.Ordinal));
+        labels.ShouldContain(static label => label != null && label!.Contains("Out 2", StringComparison.Ordinal));
         labels.ShouldContain("→ 443 • TCP");
         labels.ShouldContain("→ 53 • UDP");
-        labels.Count(static label => label?.StartsWith("→ ", StringComparison.Ordinal) == true).ShouldBe(2);
+        labels.Count(static label => label != null && label!.StartsWith("→ ", StringComparison.Ordinal)).ShouldBe(2);
         iconService.RequestedKinds.ShouldContain(new GroupApiVersionKind("apps", "v1", "Deployment", string.Empty));
         var externalNode = graphControl.Area.VertexList.Single(pair => pair.Key.Id == "world/dns").Value;
         externalNode.GetVisualDescendants().OfType<Image>().ShouldBeEmpty();
@@ -232,7 +231,8 @@ public sealed class ServiceMapViewTests
     {
         var services = Application.Current.GetTestServices();
         var factory = services.GetRequiredService<IFactory>();
-        factory.InitLayout(factory.CreateLayout());
+        var layout = factory.CreateLayout() ?? throw new InvalidOperationException("Factory did not create a layout.");
+        factory.InitLayout(layout);
         var rightDock = factory.GetDockable<IToolDock>("RightDock")!;
         await using var viewModel = services.GetRequiredService<ServiceMapViewModel>();
 
@@ -333,7 +333,8 @@ public sealed class ServiceMapViewTests
         properties[CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_EgressFlows.CurrentValue()!].ShouldBe("5");
         properties[CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_AllowedFlows.CurrentValue()!].ShouldBe("7");
         properties[CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_DeniedFlows.CurrentValue()!].ShouldBe("1");
-        var accessPoints = properties[CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_AccessPoints.CurrentValue()!];
+        var accessPoints = properties[CiliumLanguageManager.Instance.ServiceMapNodePropertiesView_AccessPoints.CurrentValue()!]
+            .ShouldNotBeNull();
         accessPoints.ShouldContain("TCP:8080");
         accessPoints.ShouldContain("4 flows");
         accessPoints.ShouldContain("HTTP");
@@ -480,8 +481,9 @@ public sealed class ServiceMapViewTests
             .OfType<EdgeControl>()
             .First()
             .GeometryBounds;
+        var previousLayout = graphControl.LayoutTask;
         graphControl.LayoutAlgorithm = LayoutAlgorithmTypeEnum.SimpleRandom;
-        await graphControl.LayoutTask!.WaitAsync(TestContext.Current.CancellationToken);
+        await WaitForLayoutAfterChangeAsync(graphControl, previousLayout, TestContext.Current.CancellationToken);
         var afterLayout = graphControl.Area.GetVertexPositions();
         afterLayout.Any(pair => pair.Value != beforeLayout[pair.Key]).ShouldBeTrue();
         graphControl.Area.GetVisualDescendants()
@@ -494,19 +496,22 @@ public sealed class ServiceMapViewTests
             if (algorithm == LayoutAlgorithmTypeEnum.Custom)
                 continue;
 
+            var previous = graphControl.LayoutTask;
             graphControl.LayoutAlgorithm = algorithm;
-            await graphControl.LayoutTask!.WaitAsync(TestContext.Current.CancellationToken);
+            await WaitForLayoutAfterChangeAsync(graphControl, previous, TestContext.Current.CancellationToken);
             graphControl.ActiveExternalLayoutAlgorithm.ShouldBe(algorithm);
             graphControl.Area.GetVertexPositions().Values
                 .ShouldAllBe(static position => double.IsFinite(position.X) && double.IsFinite(position.Y));
         }
 
+        var previousCompound = graphControl.LayoutTask;
         graphControl.LayoutAlgorithm = LayoutAlgorithmTypeEnum.CompoundFDP;
-        await graphControl.LayoutTask!.WaitAsync(TestContext.Current.CancellationToken);
+        await WaitForLayoutAfterChangeAsync(graphControl, previousCompound, TestContext.Current.CancellationToken);
         foreach (var algorithm in Enum.GetValues<EdgeRoutingAlgorithmTypeEnum>())
         {
+            var previousRouting = graphControl.LayoutTask;
             graphControl.EdgeRoutingAlgorithm = algorithm;
-            await graphControl.LayoutTask!.WaitAsync(TestContext.Current.CancellationToken);
+            await WaitForLayoutAfterChangeAsync(graphControl, previousRouting, TestContext.Current.CancellationToken);
             graphControl.GraphXEdgeCount.ShouldBe(graph.Edges.Count);
             graphControl.Area.LogicCore!.DefaultEdgeRoutingAlgorithm.ShouldBe(algorithm);
         }
@@ -889,7 +894,7 @@ public sealed class ServiceMapViewTests
         viewModel.EdgeRoutingAlgorithm.ShouldBe(EdgeRoutingAlgorithmTypeEnum.None);
         graphControl.EdgeRoutingAlgorithm.ShouldBe(EdgeRoutingAlgorithmTypeEnum.None);
         graphControl.Area.LogicCore!.DefaultEdgeRoutingAlgorithm.ShouldBe(EdgeRoutingAlgorithmTypeEnum.None);
-        layoutSelector.ItemsSource.ShouldBeAssignableTo<IEnumerable<LayoutAlgorithmTypeEnum>>().Count()
+        layoutSelector.ItemsSource.ShouldBeAssignableTo<IEnumerable<LayoutAlgorithmTypeEnum>>().ShouldNotBeNull().Count()
             .ShouldBe(Enum.GetValues<LayoutAlgorithmTypeEnum>().Length - 1);
         layoutSelector.SelectedItem = LayoutAlgorithmTypeEnum.Circular;
         viewModel.LayoutAlgorithm.ShouldBe(LayoutAlgorithmTypeEnum.Circular);
@@ -934,13 +939,13 @@ public sealed class ServiceMapViewTests
         graphControl.GraphXVertexCount.ShouldBe(2);
         graphControl.GraphXEdgeCount.ShouldBe(1);
         var serverVertex = graphControl.Area.VertexList.Values
-            .Single(vertex => ((ServiceMapGraphControl.ServiceMapVertex)vertex.DataContext!).Node.Id == "team-b/server");
+            .Single(vertex => ((ServiceMapGraphControl.ServiceMapVertex)vertex.DataContext!).Node?.Id == "team-b/server");
         var serverNodeBorder = serverVertex.GetVisualDescendants()
             .OfType<Border>()
             .Single(border => border.Classes.Contains("ServiceMapNode"));
-        ToolTip.GetTip(serverNodeBorder)!.ToString().ShouldContain("TCP:8080");
+        ToolTip.GetTip(serverNodeBorder)!.ToString()!.ShouldContain("TCP:8080");
         ToolTip.GetTip(graphControl.Area.GetVisualDescendants().OfType<EdgeControl>().Single())
-            .ShouldBe(CiliumLanguageManager.Instance.ServiceMapGraphControl_EdgeTooltipFormat.CurrentValue()
+            .ShouldBe(CiliumLanguageManager.Instance.ServiceMapGraphControl_EdgeTooltipFormat.CurrentValue()!
                 .Replace("{0}", "2", StringComparison.Ordinal)
                 .Replace("{1}", "TCP 8080 (2)", StringComparison.Ordinal));
         emptyState.IsVisible.ShouldBeFalse();
@@ -983,13 +988,13 @@ public sealed class ServiceMapViewTests
             () => graphControl.Area.GetVisualDescendants()
                 .OfType<Border>()
                 .Any(border => border.Classes.Contains("ServiceMapNode")
-                    && ToolTip.GetTip(border)?.ToString().Contains("TCP:8443", StringComparison.Ordinal) == true),
+                    && ToolTip.GetTip(border)?.ToString()?.Contains("TCP:8443", StringComparison.Ordinal) == true),
             timeoutMs: 5_000,
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
 
         var updatedServerVertex = graphControl.Area.VertexList.Values
-            .Single(vertex => ((ServiceMapGraphControl.ServiceMapVertex)vertex.DataContext!).Node.Id == "team-b/server");
+            .Single(vertex => ((ServiceMapGraphControl.ServiceMapVertex)vertex.DataContext!).Node?.Id == "team-b/server");
         var updatedNodeBorder = updatedServerVertex.GetVisualDescendants()
             .OfType<Border>()
             .Single(border => border.Classes.Contains("ServiceMapNode"));
@@ -1006,6 +1011,27 @@ public sealed class ServiceMapViewTests
             bitmap.Save(screenshotPath, PngBitmapEncoderOptions.Default);
         }
 
+    }
+
+    private static async Task WaitForLayoutAfterChangeAsync(ServiceMapGraphControl control, Task? previous, CancellationToken cancellationToken)
+    {
+        if (ReferenceEquals(control.LayoutTask, previous))
+        {
+            // The value did not change, so no relayout was queued.
+            if (control.LayoutTask is { } current)
+            {
+                await current.WaitAsync(cancellationToken);
+            }
+
+            return;
+        }
+
+        await TestWait.UntilAsync(
+            () => control.LayoutTask?.IsCompleted == true,
+            timeoutMs: 10_000,
+            cancellationToken: cancellationToken,
+            beforePoll: () => Dispatcher.UIThread.RunJobs());
+        await control.LayoutTask!.WaitAsync(cancellationToken);
     }
 
     private sealed class RecordingResourceIconService : IResourceIconService

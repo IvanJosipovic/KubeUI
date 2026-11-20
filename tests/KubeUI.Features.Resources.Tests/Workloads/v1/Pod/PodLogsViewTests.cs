@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -695,7 +696,7 @@ public sealed class PodLogsViewTests
             filterToggle!.IsChecked = true;
 
             await WaitForAsync(() => editor.Document.Text == "keep keep first\nkeepable\nKEEP second keep");
-            var expectedMatchCount = string.Format(SR.SearchXMatches, 5);
+            var expectedMatchCount = string.Format(CultureInfo.InvariantCulture, SR.SearchXMatches, 5);
             await WaitForAsync(
                 () => searchPanel.GetVisualDescendants()
                     .OfType<TextBlock>()
@@ -705,7 +706,7 @@ public sealed class PodLogsViewTests
 
             filterToggle.IsChecked = false;
             await WaitForAsync(() => ReferenceEquals(editor.Document, viewModel.Logs));
-            var expectedSearchPosition = string.Format(SR.SearchXOfY, 1, 5);
+            var expectedSearchPosition = string.Format(CultureInfo.InvariantCulture, SR.SearchXOfY, 1, 5);
             await WaitForAsync(
                 () => searchPanel.GetVisualDescendants()
                     .OfType<TextBlock>()

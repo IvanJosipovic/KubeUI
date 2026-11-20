@@ -142,17 +142,20 @@ public class SettingsService : ObservableObject, ISettingsService, IClusterSetti
 
     public virtual void ApplySettings()
     {
-        switch (Appearance.Theme)
+        if (Application.Current is { } application)
         {
-            case LocalThemeVariant.Default:
-                Application.Current.RequestedThemeVariant = ThemeVariant.Default;
-                break;
-            case LocalThemeVariant.Dark:
-                Application.Current.RequestedThemeVariant = ThemeVariant.Dark;
-                break;
-            case LocalThemeVariant.Light:
-                Application.Current.RequestedThemeVariant = ThemeVariant.Light;
-                break;
+            switch (Appearance.Theme)
+            {
+                case LocalThemeVariant.Default:
+                    application.RequestedThemeVariant = ThemeVariant.Default;
+                    break;
+                case LocalThemeVariant.Dark:
+                    application.RequestedThemeVariant = ThemeVariant.Dark;
+                    break;
+                case LocalThemeVariant.Light:
+                    application.RequestedThemeVariant = ThemeVariant.Light;
+                    break;
+            }
         }
 
         if (Application.Current is not null)

@@ -1,4 +1,3 @@
-﻿using SVCSystems.Avalonia.CSharpUI;
+using SVCSystems.Avalonia.CSharpUI;
 
-
-[assembly: SVCSystems.Avalonia.CSharpUI.GeneratePublicMarkupExtensions]
+[assembly: GeneratePublicMarkupExtensions]

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
@@ -29,7 +30,7 @@ public sealed class PodMetricCellTests
     [Fact]
     public async Task prometheus_history_index_sums_container_series_by_pod_and_keeps_unlabeled_series()
     {
-        var timestamp = DateTimeOffset.Parse("2026-10-08T12:00:00Z");
+        var timestamp = DateTimeOffset.Parse("2026-10-08T12:00:00Z", CultureInfo.InvariantCulture);
         var result = new MetricResultSet
         {
             Metrics = new Dictionary<string, IReadOnlyList<MetricSeries>>(StringComparer.Ordinal)
@@ -99,7 +100,7 @@ public sealed class PodMetricCellTests
     [Fact]
     public void history_buckets_keep_peak_values_and_classify_warning_and_limit_samples()
     {
-        var end = DateTimeOffset.Parse("2026-09-23T12:00:00Z");
+        var end = DateTimeOffset.Parse("2026-09-23T12:00:00Z", CultureInfo.InvariantCulture);
         var start = end - MetricsHistoryBuckets.History;
         MetricPoint[] points =
         [
@@ -126,7 +127,7 @@ public sealed class PodMetricCellTests
     [Fact]
     public void history_bucket_edges_stay_fixed_between_refreshes()
     {
-        var end = DateTimeOffset.Parse("2026-09-23T12:02:00Z");
+        var end = DateTimeOffset.Parse("2026-09-23T12:02:00Z", CultureInfo.InvariantCulture);
         MetricPoint[] initialPoints = [new(end.AddSeconds(-15), 0.1)];
         MetricPoint[] updatedPoints = [.. initialPoints, new MetricPoint(end.AddSeconds(15), 0.2)];
 
@@ -972,7 +973,7 @@ public sealed class PodMetricCellTests
     {
         await using var fixture = await MetricCellFixture.CreateAsync(new FakePrometheusQueryClient());
         var pod = CreatePod(cpuLimit: "1");
-        var now = DateTimeOffset.Parse("2026-09-23T12:02:00Z");
+        var now = DateTimeOffset.Parse("2026-09-23T12:02:00Z", CultureInfo.InvariantCulture);
         fixture.UseMetricsServerSamples(CreatePodMetricSample(pod, now.AddMinutes(-2).UtcDateTime, "100m"));
         fixture.TimeProvider.SetUtcNow(now);
         var cell = fixture.CreateCpuCell(pod);
@@ -1249,11 +1250,11 @@ public sealed class PodMetricCellTests
             beforePoll: () => Dispatcher.UIThread.RunJobs());
     }
 
-    private static bool IsThemeBrush(IBrush brush, string resourceKey)
+    private static bool IsThemeBrush(IBrush? brush, string resourceKey)
     {
         foreach (var themeVariant in new[] { ThemeVariant.Light, ThemeVariant.Dark })
         {
-            Application.Current.TryGetResource(resourceKey, themeVariant, out var resource).ShouldBeTrue();
+            Application.Current!.TryGetResource(resourceKey, themeVariant, out var resource).ShouldBeTrue();
             var expectedColor = resource switch
             {
                 ISolidColorBrush expectedBrush => expectedBrush.Color,
@@ -1272,7 +1273,7 @@ public sealed class PodMetricCellTests
 
     private static bool TooltipShowsPercentage(Control bar, double fraction)
         => ToolTip.GetTip(bar)?.ToString()?.Contains(
-            fraction.ToString("P0", System.Globalization.CultureInfo.CurrentCulture),
+            fraction.ToString("P0", CultureInfo.CurrentCulture),
             StringComparison.Ordinal) == true;
 
     private static V1Pod CreatePod(string name = "metrics-pod", string cpuLimit = "500m")
@@ -1453,8 +1454,8 @@ public sealed class PodMetricCellTests
             {
                 ["cpuUsage"] =
                 [
-                    CreateNodeSeries("cpuUsage", firstNode, double.Parse(firstCpu, System.Globalization.CultureInfo.InvariantCulture)),
-                    CreateNodeSeries("cpuUsage", secondNode, double.Parse(secondCpu, System.Globalization.CultureInfo.InvariantCulture)),
+                    CreateNodeSeries("cpuUsage", firstNode, double.Parse(firstCpu, CultureInfo.InvariantCulture)),
+                    CreateNodeSeries("cpuUsage", secondNode, double.Parse(secondCpu, CultureInfo.InvariantCulture)),
                 ],
                 ["memoryUsage"] =
                 [

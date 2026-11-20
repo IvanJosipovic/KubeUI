@@ -1,4 +1,5 @@
 using System.Collections.Specialized;
+using System.Globalization;
 using System.Reactive.Linq;
 using k8s;
 using k8s.Models;
@@ -42,7 +43,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
     public partial IKubernetesObject<V1ObjectMeta>? RootResource { get; set; }
 
     public string RootResourceDisplay => _scope?.ResourceDisplay ?? (RootResource == null
-        ? IsPreview ? string.Format(ResourcesLanguageManager.Instance.VisualizationView_HelmPreviewTitle.CurrentValue()!, PreviewTitle) : string.Empty
+        ? IsPreview ? string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.VisualizationView_HelmPreviewTitle.CurrentValue()!, PreviewTitle) : string.Empty
         : $"Resource: {RootResource.ApiVersion}/{RootResource.Kind} {RootResource.Namespace()}/{RootResource.Name()}");
 
     public bool IsRootResourceDisplayVisible => _scope is not null || IsPreview || RootResource != null;
@@ -168,12 +169,16 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         IsNamespaceSelectionLinked = !isNamespaceRoot;
         SelectRootNamespace(rootResource);
         Id = nameof(VisualizationViewModel) + "-" + cluster.Title + "-" + (rootResource?.Uid() ?? "null");
-        _logger?.LogDebug(
-            "Visualization initialized for cluster {Cluster}, root {Root}, linked namespaces {Linked}, selected namespaces {Namespaces}",
-            cluster.Title,
-            rootResource?.Name(),
-            IsNamespaceSelectionLinked,
-            SelectedNamespaces.Select(namespaceResource => namespaceResource.Name()));
+        // Avoid evaluating the log arguments when debug logging is disabled or there is no logger.
+        if (_logger?.IsEnabled(LogLevel.Debug) == true)
+        {
+            _logger!.LogDebug(
+                "Visualization initialized for cluster {Cluster}, root {Root}, linked namespaces {Linked}, selected namespaces {Namespaces}",
+                cluster.Title,
+                rootResource?.Name(),
+                IsNamespaceSelectionLinked,
+                SelectedNamespaces.Select(namespaceResource => namespaceResource.Name()));
+        }
 
         _initializationCancellation?.Cancel();
         var initializationVersion = Interlocked.Increment(ref _initializationVersion);
@@ -289,7 +294,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
         RootResource = null;
         IsNamespaceSelectionLinked = false;
         Cluster = cluster;
-        Title = string.Format(ResourcesLanguageManager.Instance.VisualizationView_HelmPreviewTitle.CurrentValue()!, releaseName);
+        Title = string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.VisualizationView_HelmPreviewTitle.CurrentValue()!, releaseName);
         Id = $"{nameof(VisualizationViewModel)}-{cluster.Title}-helm-preview-{Guid.NewGuid():N}";
         OnPropertyChanged(nameof(SelectedNamespaces));
         Run();
@@ -328,11 +333,15 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
                 }
 
                 _resourceStore.Replace(state.ResourcesByKey, state.ResourcesByOwnerUid);
-                _logger?.LogDebug(
-                    "Visualization snapshot loaded with {ResourceCount} resources across types {ResourceTypes}; selected namespaces {Namespaces}",
-                    _resourceStore.Count,
-                    state.ResourcesByKey.Keys.Select(key => key.Kind).Distinct(StringComparer.Ordinal),
-                    SelectedNamespaces.Select(namespaceResource => namespaceResource.Name()));
+                // Avoid evaluating the log arguments when debug logging is disabled or there is no logger.
+                if (_logger?.IsEnabled(LogLevel.Debug) == true)
+                {
+                    _logger!.LogDebug(
+                        "Visualization snapshot loaded with {ResourceCount} resources across types {ResourceTypes}; selected namespaces {Namespaces}",
+                        _resourceStore.Count,
+                        state.ResourcesByKey.Keys.Select(key => key.Kind).Distinct(StringComparer.Ordinal),
+                        SelectedNamespaces.Select(namespaceResource => namespaceResource.Name()));
+                }
                 foreach (var resourceKind in state.RequiredSeedKinds)
                 {
                     RequireSeed(Cluster!, resourceKind);
@@ -517,12 +526,16 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
 
             Graph = application.FilteredGraph;
             Error = null;
-            _logger?.LogDebug(
-                "Visualization graph applied: complete {CompleteCount}, filtered {FilteredCount}, selected types {SelectedTypes}, namespaces {Namespaces}",
-                application.CompleteGraph.Resources.Count,
-                application.FilteredGraph.Resources.Count,
-                SelectedResourceTypes,
-                SelectedNamespaces.Select(namespaceResource => namespaceResource.Name()));
+            // Avoid evaluating the log arguments when debug logging is disabled or there is no logger.
+            if (_logger?.IsEnabled(LogLevel.Debug) == true)
+            {
+                _logger!.LogDebug(
+                    "Visualization graph applied: complete {CompleteCount}, filtered {FilteredCount}, selected types {SelectedTypes}, namespaces {Namespaces}",
+                    application.CompleteGraph.Resources.Count,
+                    application.FilteredGraph.Resources.Count,
+                    SelectedResourceTypes,
+                    SelectedNamespaces.Select(namespaceResource => namespaceResource.Name()));
+            }
         });
     }
 
@@ -938,7 +951,7 @@ public sealed partial class VisualizationViewModel : ViewModelBase, IInitializeC
             return;
         }
 
-        if (!_resourceStore.TryGet(pending.Key, out var resource))
+        if (!_resourceStore.TryGet(pending.Key, out var resource) || resource is null)
         {
             StartPendingIncrementalChange();
             return;

@@ -1,3 +1,4 @@
+using System.Globalization;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
 using HanumanInstitute.MvvmDialogs.Avalonia.Fluent;
@@ -22,11 +23,13 @@ public sealed class AvaloniaAgentPermissionService(IDialogService dialogService)
             : AiLanguageManager.Instance.AvaloniaAgentPermissionService_NonDestructive.CurrentValue()!;
         var content = string.IsNullOrWhiteSpace(request.RequestingClient)
             ? string.Format(
+                CultureInfo.CurrentCulture,
                 AiLanguageManager.Instance.AvaloniaAgentPermissionService_ContentFormat.CurrentValue()!,
                 request.Action,
                 resource,
                 operationImpact)
             : string.Format(
+                CultureInfo.CurrentCulture,
                 AiLanguageManager.Instance.AvaloniaAgentPermissionService_ContentWithRequesterFormat.CurrentValue()!,
                 request.RequestingClient,
                 request.Action,

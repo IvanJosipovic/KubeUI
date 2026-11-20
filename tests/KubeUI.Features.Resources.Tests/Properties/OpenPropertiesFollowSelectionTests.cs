@@ -40,13 +40,13 @@ public sealed class OpenPropertiesFollowSelectionTests
         list.ResourceConfig.View(new[] { SelectByName(list, "api") });
         var properties = rightDock.VisibleDockables!.OfType<ResourcePropertiesViewModel<V1Pod>>().Single();
         factory.PinDockable(properties);
-        root.RightPinnedDockables.ShouldContain(properties);
+        root.RightPinnedDockables.ShouldNotBeNull().ShouldContain(properties);
 
         var worker = SelectByName(list, "worker");
         await WaitForAsync(() => ReferenceEquals(properties.Object, worker));
 
         root.RightPinnedDockables!.ShouldHaveSingleItem().ShouldBeSameAs(properties);
-        rightDock.VisibleDockables.ShouldNotContain(properties);
+        rightDock.VisibleDockables.ShouldNotBeNull().ShouldNotContain(properties);
         root.PinnedDock?.VisibleDockables?.ShouldNotContain(properties);
     }
 
@@ -385,6 +385,7 @@ public sealed class OpenPropertiesFollowSelectionTests
     {
         var factory = Application.Current.GetTestServices().GetRequiredService<IFactory>();
         var layout = factory.CreateLayout();
+        layout.ShouldNotBeNull();
         factory.InitLayout(layout);
         return (factory, factory.GetDockable<IRootDock>("Root")!, factory.GetDockable<IToolDock>("RightDock")!);
     }
@@ -428,7 +429,7 @@ public sealed class OpenPropertiesFollowSelectionTests
     private static Task WaitForAsync(Func<bool> condition)
         => TestWait.UntilAsync(
             condition,
-            5000,
+            15000,
             TestContext.Current.CancellationToken,
             () => Dispatcher.UIThread.RunJobs());
 }

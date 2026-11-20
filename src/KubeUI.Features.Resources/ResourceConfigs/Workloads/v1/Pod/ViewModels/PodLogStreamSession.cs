@@ -349,7 +349,7 @@ internal sealed class PodLogStreamSession : IDisposable
 
                 var isLastReader = CompleteReader();
                 if (((streamEnded && appendedOutput) || transientReadFailure)
-                    && ShouldReconnectAfterStreamEnd(reader, option, resolution.Pod, cancellationToken, isLastReader))
+                    && ShouldReconnectAfterStreamEnd(reader, option, resolution.Pod, isLastReader, cancellationToken))
                 {
                     ScheduleReconnect();
                 }
@@ -373,8 +373,8 @@ internal sealed class PodLogStreamSession : IDisposable
         StreamReader reader,
         PodLogReadOptions option,
         V1Pod resolvedPod,
-        CancellationToken cancellationToken,
-        bool isLastReader)
+        bool isLastReader,
+        CancellationToken cancellationToken)
     {
         return option.Follow
             && !option.Previous

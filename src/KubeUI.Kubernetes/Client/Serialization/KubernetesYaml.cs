@@ -146,16 +146,17 @@ internal static class KubernetesYaml
         }
     }
 
-    public static IDeserializer StrictDeserializer => s_threadLocalStrictDeserializer.Value;
+    // Each ThreadLocal is created with a value factory, so Value is never null.
+    public static IDeserializer StrictDeserializer => s_threadLocalStrictDeserializer.Value!;
 
-    public static IDeserializer Deserializer => s_threadLocalDeserializer.Value;
+    public static IDeserializer Deserializer => s_threadLocalDeserializer.Value!;
 
     public static IDeserializer GetDeserializer(bool strict = false)
     {
         return strict ? StrictDeserializer : Deserializer;
     }
 
-    public static IValueSerializer Serializer => s_threadLocalSerializer.Value;
+    public static IValueSerializer Serializer => s_threadLocalSerializer.Value!;
 
     internal static IDeserializer CreateDeserializer(bool allowReflection, bool strict) => allowReflection
         ? strict
@@ -252,7 +253,9 @@ internal static class KubernetesYaml
 
         public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
         {
-            if (parser?.Current is Scalar scalar)
+            ArgumentNullException.ThrowIfNull(parser);
+
+            if (parser.Current is Scalar scalar)
             {
                 try
                 {
@@ -985,12 +988,10 @@ internal static class KubernetesYaml
     }
 
     /// <summary>
-    /// Load a collection of objects from a stream asynchronously
-    ///
-    /// caller is responsible for closing the stream
+    /// Load a collection of objects from a file asynchronously.
     /// </summary>
-    /// <param name="stream">
-    /// The stream to load the objects from.
+    /// <param name="fileName">
+    /// The file to load the objects from.
     /// </param>
     /// <param name="typeMap">
     /// A map from apiVersion/kind to Type. For example "v1/Pod" -> typeof(V1Pod).
@@ -1023,6 +1024,7 @@ internal static class KubernetesYaml
     /// <param name="typeMap">
     /// A map from apiVersion/kind to Type. For example "v1/Pod" -> typeof(V1Pod).
     /// </param>
+    /// <param name="strict">Whether to reject unknown fields.</param>
     /// <returns>collection of objects</returns>
     public static List<object> LoadAllFromString(string content, IDictionary<string, Type> typeMap, bool strict = false)
     {
@@ -1104,7 +1106,7 @@ internal static class KubernetesYaml
         parser.Consume<StreamStart>();
         var ix = 0;
         var results = new List<object>();
-        var deserializer = configuredDeserializer ?? (strict ? s_threadLocalStrictDeserializer.Value : s_threadLocalDeserializer.Value);
+        var deserializer = configuredDeserializer ?? (strict ? StrictDeserializer : Deserializer);
         while (parser.Accept<DocumentStart>(out _))
         {
             var objType = types[ix++];
@@ -1115,7 +1117,8 @@ internal static class KubernetesYaml
             }
 
             var obj = deserializer.Deserialize(parser, objType);
-            results.Add(obj);
+            // A resolved document type always yields an object; empty documents are skipped above.
+            results.Add(obj!);
         }
 
         return results;
@@ -1137,39 +1140,39 @@ internal static class KubernetesYaml
     public static TValue Deserialize<TValue>(string yaml, bool strict = false)
     {
         using var reader = new StringReader(yaml);
-        var deserializer = strict ? s_threadLocalStrictDeserializer.Value : s_threadLocalDeserializer.Value;
+        var deserializer = strict ? StrictDeserializer : Deserializer;
         return deserializer.Deserialize<TValue>(new MergingParser(new Parser(reader)));
     }
 
     public static TValue Deserialize<TValue>(Stream yaml, bool strict = false)
     {
         using var reader = new StreamReader(yaml);
-        var deserializer = strict ? s_threadLocalStrictDeserializer.Value : s_threadLocalDeserializer.Value;
+        var deserializer = strict ? StrictDeserializer : Deserializer;
         return deserializer.Deserialize<TValue>(new MergingParser(new Parser(reader)));
     }
 
     public static object? Deserialize(string yaml, Type type, bool strict = false)
     {
         using var reader = new StringReader(yaml);
-        var deserializer = strict ? s_threadLocalStrictDeserializer.Value : s_threadLocalDeserializer.Value;
+        var deserializer = strict ? StrictDeserializer : Deserializer;
         return deserializer.Deserialize(new MergingParser(new Parser(reader)), type);
     }
 
     public static object? Deserialize(IParser parser, Type type, bool strict = false)
     {
-        var deserializer = strict ? s_threadLocalStrictDeserializer.Value : s_threadLocalDeserializer.Value;
+        var deserializer = strict ? StrictDeserializer : Deserializer;
         return deserializer.Deserialize(parser, type);
     }
 
     public static object? Deserialize(IParser parser, bool strict = false)
     {
-        var deserializer = strict ? s_threadLocalStrictDeserializer.Value : s_threadLocalDeserializer.Value;
+        var deserializer = strict ? StrictDeserializer : Deserializer;
         return deserializer.Deserialize(parser);
     }
 
     public static string SerializeAll(IEnumerable<object> values)
     {
-        var serializer = s_threadLocalSerializer.Value;
+        var serializer = Serializer;
         if (values == null)
         {
             return "";
@@ -1194,7 +1197,7 @@ internal static class KubernetesYaml
         return stringBuilder.ToString();
     }
 
-    public static string Serialize(object value) => Serialize(value, s_threadLocalSerializer.Value);
+    public static string Serialize(object value) => Serialize(value, Serializer);
 
     internal static string Serialize(object value, IValueSerializer serializer)
     {

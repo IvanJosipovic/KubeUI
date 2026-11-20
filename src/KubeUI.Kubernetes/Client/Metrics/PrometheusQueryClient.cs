@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -187,19 +188,28 @@ public sealed partial class PrometheusQueryClient : IPrometheusQueryClient, IDis
                 throw new InvalidOperationException("Prometheus service endpoint is incomplete.");
             }
 
-            _logger.LogDebug(
-                "Prepared Prometheus transport for cluster {Name} using local port-forward to service {Namespace}/{Service}:{Port}.",
-                cluster.Name,
-                endpoint.Namespace,
-                endpoint.ServiceName,
-                endpoint.ServicePort);
+            // Avoid allocating the logging args array when debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug(
+                    "Prepared Prometheus transport for cluster {Name} using local port-forward to service {Namespace}/{Service}:{Port}.",
+                    cluster.Name,
+                    endpoint.Namespace,
+                    endpoint.ServiceName,
+                    endpoint.ServicePort);
+            }
+
             return;
         }
 
-        _logger.LogDebug(
-            "Prepared Prometheus transport for cluster {Name} using direct URL {DirectUrl}.",
-            cluster.Name,
-            endpoint.DirectUrl);
+        // Avoid allocating the logging args array when debug logging is disabled.
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug(
+                "Prepared Prometheus transport for cluster {Name} using direct URL {DirectUrl}.",
+                cluster.Name,
+                endpoint.DirectUrl);
+        }
     }
 
     private static string CreateEndpointKey(Cluster cluster, ResolvedPrometheusEndpoint endpoint)
@@ -223,7 +233,7 @@ public sealed partial class PrometheusQueryClient : IPrometheusQueryClient, IDis
             endpoint.ProviderKind,
             endpoint.Namespace ?? string.Empty,
             endpoint.ServiceName ?? string.Empty,
-            endpoint.ServicePort?.ToString() ?? string.Empty,
+            endpoint.ServicePort?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
             endpoint.DirectUrl ?? string.Empty,
             endpoint.UseHttps,
             endpoint.PathPrefix,
