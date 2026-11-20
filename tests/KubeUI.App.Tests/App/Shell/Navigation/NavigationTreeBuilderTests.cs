@@ -131,7 +131,8 @@ public sealed class NavigationTreeBuilderTests
             .ToArray();
         documentLinks.Length.ShouldBe(documentCount);
         // Re-reconciling an unchanged tree must preserve link instances instead of rebuilding.
-        var expectedByReference = expectedLinks.ToDictionary(link => link, _ => true, ReferenceEqualityComparer.Instance);
+        var expectedByReference = expectedLinks.ToDictionary<NavigationLink, NavigationLink, bool>(
+            link => link, _ => true, ReferenceEqualityComparer.Instance);
         documentLinks.ShouldAllBe(link => expectedByReference.ContainsKey(link));
     }
 

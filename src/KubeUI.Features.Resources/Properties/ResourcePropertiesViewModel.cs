@@ -26,6 +26,7 @@ public sealed partial class ResourcePropertiesViewModel<[DynamicallyAccessedMemb
     /// <summary>Raised after this view model is permanently discarded.</summary>
     public event EventHandler? Disposed;
 
+    [SuppressMessage("Naming", "CA1720:Identifier contains type name", Justification = "Public API contract; renaming is a breaking change. Revisit in next major version.")]
     public T? Object
     {
         get => _object;

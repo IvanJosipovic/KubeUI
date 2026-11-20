@@ -220,7 +220,9 @@ public sealed class ApplicationShutdownTests
 
     private sealed class TestApp(IServiceProvider services) : KubeUI.App.App(services), IDisposable
     {
-        public bool TelemetryWasFlushed => services.GetRequiredService<RecordingTelemetryFlusher>().FlushCount > 0;
+        // Use the base class's Services property instead of the primary-constructor parameter,
+        // which would otherwise be both captured as state and forwarded to the base constructor.
+        public bool TelemetryWasFlushed => Services.GetRequiredService<RecordingTelemetryFlusher>().FlushCount > 0;
 
         public void Dispose() => DisposeApplication();
     }

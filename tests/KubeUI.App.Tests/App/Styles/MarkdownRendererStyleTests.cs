@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia.Headless.XUnit;
 using Avalonia.Media;
 using Avalonia.Styling;
@@ -73,7 +74,7 @@ public sealed class MarkdownRendererStyleTests
         var application = Application.Current!;
         var expectedFontFamily = GetResource(application, Typography.AppFontFamilyResourceKey)
             .ShouldBeOfType<FontFamily>();
-        var expectedFontSize = Convert.ToDouble(GetResource(application, Typography.AppFontSizeResourceKey));
+        var expectedFontSize = Convert.ToDouble(GetResource(application, Typography.AppFontSizeResourceKey), CultureInfo.InvariantCulture);
 
         var renderer = new MarkdownRenderer
         {
@@ -95,7 +96,7 @@ public sealed class MarkdownRendererStyleTests
         var application = Application.Current!;
         var expectedCodeFontFamily = GetResource(application, Typography.CodeFontFamilyResourceKey)
             .ShouldBeOfType<FontFamily>();
-        var expectedCodeFontSize = Convert.ToDouble(GetResource(application, Typography.CodeFontSizeResourceKey));
+        var expectedCodeFontSize = Convert.ToDouble(GetResource(application, Typography.CodeFontSizeResourceKey), CultureInfo.InvariantCulture);
 
         var renderer = new MarkdownRenderer
         {

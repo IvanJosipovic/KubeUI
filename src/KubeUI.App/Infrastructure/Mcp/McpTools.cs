@@ -20,6 +20,7 @@ public sealed record McpClusterInfo(string Name, bool IsDefault, bool Connected,
 /// <param name="settingsService">Provides current KubeUI settings.</param>
 /// <param name="permissionService">Optional service for approving protected operations.</param>
 /// <param name="resourceNavigationService">Optional service for opening KubeUI resource views.</param>
+/// <param name="identityAccessor">Optional accessor for MCP request identity.</param>
 /// <param name="mcpServerState">Runtime state used to report the active MCP endpoint.</param>
 [McpServerToolType]
 public sealed class McpTools(
@@ -263,7 +264,7 @@ public sealed class McpTools(
 
         return clusterCatalog.GetDefault()?.Name
             ?? clusterCatalog.Clusters.FirstOrDefault()?.Name
-            ?? throw new ArgumentException("The cursor does not match this resource query.", "cursor");
+            ?? throw new ArgumentException("The cursor does not match this resource query.", nameof(clusterName));
     }
 
     private void EnsureClusterAllowed(string? clusterName)

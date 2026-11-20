@@ -604,6 +604,7 @@ public class ResourceYamlViewModelTests
         using var cluster = await Application.Current.CreateClusterAsync();
         var factory = Application.Current.GetRequiredTestService<IFactory>();
         var layout = factory.CreateLayout();
+        layout.ShouldNotBeNull();
         factory.InitLayout(layout);
         var documents = factory.GetDockable<IDocumentDock>("Documents");
         documents.ShouldNotBeNull();
@@ -719,6 +720,7 @@ public class ResourceYamlViewModelTests
         using var cluster = await Application.Current.CreateClusterAsync();
         var factory = Application.Current.GetRequiredTestService<IFactory>();
         var layout = factory.CreateLayout();
+        layout.ShouldNotBeNull();
         factory.InitLayout(layout);
         var documents = factory.GetDockable<IDocumentDock>("Documents");
         documents.ShouldNotBeNull();
@@ -1295,7 +1297,7 @@ public class ResourceYamlViewModelTests
 
         var surface = popup.Child.ShouldBeOfType<ContentControl>();
         surface.IsHitTestVisible.ShouldBeFalse();
-        Application.Current.TryGetResource("SystemRegionBrush", Application.Current.ActualThemeVariant, out var background).ShouldBeTrue();
+        Application.Current!.TryGetResource("SystemRegionBrush", Application.Current!.ActualThemeVariant, out var background).ShouldBeTrue();
         surface.Background.ShouldBe(background);
         surface.Foreground.ShouldNotBeNull();
     }
@@ -1378,6 +1380,7 @@ public class ResourceYamlViewModelTests
 
         var factory = Application.Current.GetRequiredTestService<IFactory>();
         var layout = factory.CreateLayout();
+        layout.ShouldNotBeNull();
         factory.InitLayout(layout);
         var documents = factory.GetDockable<IDocumentDock>("Documents").ShouldNotBeNull();
         var dockControl = new DockControl { Layout = layout };
@@ -1424,6 +1427,7 @@ public class ResourceYamlViewModelTests
         var factory = Application.Current.GetRequiredTestService<IFactory>();
         var previousLayout = mainViewModel.Layout;
         var layout = factory.CreateLayout();
+        layout.ShouldNotBeNull();
         factory.InitLayout(layout);
         mainViewModel.Layout = layout;
 
@@ -1477,6 +1481,7 @@ public class ResourceYamlViewModelTests
         var factory = Application.Current.GetRequiredTestService<IFactory>();
         var previousLayout = mainViewModel.Layout;
         var layout = factory.CreateLayout();
+        layout.ShouldNotBeNull();
         factory.InitLayout(layout);
         mainViewModel.Layout = layout;
 
@@ -3605,6 +3610,7 @@ public class ResourceYamlViewModelTests
         GetDiagnosticMessages(editor).ShouldContain(message => message.Contains("expected", StringComparison.OrdinalIgnoreCase));
         vm.HasActionFailureResult.ShouldBeTrue();
         vm.ActionResultTitle.ShouldBe("Validation failed");
+        vm.ActionResultMessage.ShouldNotBeNull();
         vm.ActionResultMessage.ShouldContain("expected");
         var actionBar = view.FindControl<FAInfoBar>("ActionResultBar");
         actionBar.ShouldNotBeNull();
@@ -3651,6 +3657,7 @@ public class ResourceYamlViewModelTests
         vm.ValidationDiagnostics[0].Message.ShouldContain("unknownField");
         vm.HasActionFailureResult.ShouldBeTrue();
         vm.ActionResultTitle.ShouldBe("Validation failed");
+        vm.ActionResultMessage.ShouldNotBeNull();
         vm.ActionResultMessage.ShouldContain("unknownField");
 
         var editor = view.FindControl<TextEditor>("Editor");
@@ -3696,6 +3703,7 @@ public class ResourceYamlViewModelTests
         vm.ValidationDiagnostics[0].Message.ShouldContain("MadeUpKind");
         vm.HasActionFailureResult.ShouldBeTrue();
         vm.ActionResultTitle.ShouldBe("Validation failed");
+        vm.ActionResultMessage.ShouldNotBeNull();
         vm.ActionResultMessage.ShouldContain("MadeUpKind");
 
         var editor = view.FindControl<TextEditor>("Editor");
@@ -3741,6 +3749,7 @@ public class ResourceYamlViewModelTests
 
         vm.HasActionFailureResult.ShouldBeTrue();
         vm.ActionResultTitle.ShouldBe("Save failed");
+        vm.ActionResultMessage.ShouldNotBeNull();
         vm.ActionResultMessage.ShouldContain("line");
         vm.ActionResultMessage.ShouldContain("column");
         var actionBar = view.FindControl<FAInfoBar>("ActionResultBar");
@@ -4434,7 +4443,8 @@ public class ResourceYamlViewModelTests
 
         object?[] args = [point, 0];
         var resolved = (bool)method.Invoke(behavior, args)!;
-        return resolved ? (int)args[1] : null;
+        // The reflected method writes an int into args[1] whenever it reports success.
+        return resolved ? (int)args[1]! : null;
     }
 
     private static object? TryCreateHoverDocumentationTip(TextEditor editor, int offset)

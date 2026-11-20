@@ -47,7 +47,7 @@ public sealed class PortForwarderListViewModelTests
         await WaitUntilAsync(() => Items(viewModel).Length == 0);
 
         var dialog = dialogs.ShouldHaveSingleItem();
-        dialog.Content!.ToString().ShouldContain("default/api:8080");
+        dialog.Content!.ToString().ShouldNotBeNull().ShouldContain("default/api:8080");
         workspace.Runtime.PortForwarders.ShouldBeEmpty();
     }
 

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia.Controls.Templates;
 using k8s.Models;
 using KubeUI.Controls.Converters;
@@ -118,7 +119,7 @@ public sealed class PropertiesView : ViewBase<V1Pod>
                     .Value(container.Ports ?? [])
                     .ItemTemplate(new FuncDataTemplate<V1ContainerPort>((port, _) =>
                         new SelectableTextBlock()
-                            .Text(port.ContainerPort.ToString()))),
+                            .Text(port.ContainerPort.ToString(CultureInfo.CurrentCulture)))),
                 new CollectionItem()
                     .Key(ResourcesLanguageManager.Instance.PodPropertiesView_Environment.CurrentValue()!)
                     .Value(container.Env ?? [])
@@ -163,7 +164,7 @@ public sealed class PropertiesView : ViewBase<V1Pod>
                     .Value(container.Ports ?? [])
                     .ItemTemplate(new FuncDataTemplate<V1ContainerPort>((port, _) =>
                         new SelectableTextBlock()
-                            .Text(port.ContainerPort.ToString()))),
+                            .Text(port.ContainerPort.ToString(CultureInfo.CurrentCulture)))),
                 new CollectionItem()
                     .Key(ResourcesLanguageManager.Instance.PodPropertiesView_Environment.CurrentValue()!)
                     .Value(container.Env ?? [])

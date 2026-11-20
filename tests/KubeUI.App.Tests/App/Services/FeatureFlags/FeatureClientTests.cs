@@ -61,7 +61,8 @@ public sealed class FeatureClientTests
     [Fact]
     public void settings_provider_resolves_flags_when_features_is_explicitly_null()
     {
-        var settings = new AppSettings { PreviewFeatures = null };
+        // Null is intentional here: the provider must fall back for an unset/null feature collection.
+        var settings = new AppSettings { PreviewFeatures = null! };
         var settingsService = new Mock<ISettingsService>();
         settingsService.SetupGet(service => service.Settings).Returns(settings);
         var client = CreateClient(new SettingsFeatureProvider(settingsService.Object));

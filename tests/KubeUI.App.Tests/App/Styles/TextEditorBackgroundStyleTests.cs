@@ -29,7 +29,7 @@ public sealed class TextEditorBackgroundStyleTests
                 Dispatcher.UIThread.RunJobs();
 
                 application.TryGetResource("SystemAltHighColor", variant, out var resource).ShouldBeTrue();
-                editor.Background.ShouldBeAssignableTo<ISolidColorBrush>().Color.ShouldBe(resource.ShouldBeOfType<Color>());
+                editor.Background.ShouldBeAssignableTo<ISolidColorBrush>().ShouldNotBeNull().Color.ShouldBe(resource.ShouldBeOfType<Color>());
             }
         }
         finally

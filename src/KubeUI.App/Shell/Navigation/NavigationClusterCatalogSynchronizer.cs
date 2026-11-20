@@ -70,11 +70,15 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
 
     private void OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        _logger.LogDebug(
-            "Navigation cluster catalog event: {Action}; NewItems={NewItems}; OldItems={OldItems}",
-            e.Action,
-            e.NewItems?.Count ?? 0,
-            e.OldItems?.Count ?? 0);
+        // Guard avoids allocating the params array when Debug logging is disabled.
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug(
+                "Navigation cluster catalog event: {Action}; NewItems={NewItems}; OldItems={OldItems}",
+                e.Action,
+                e.NewItems?.Count ?? 0,
+                e.OldItems?.Count ?? 0);
+        }
 
         switch (e.Action)
         {
@@ -109,7 +113,11 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
 
     public void Reload()
     {
-        _logger.LogDebug("Navigation cluster catalog reload started; ExistingNodes={Nodes}", _nodesByWorkspace.Count);
+        // Guard avoids allocating the params array when Debug logging is disabled.
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Navigation cluster catalog reload started; ExistingNodes={Nodes}", _nodesByWorkspace.Count);
+        }
 
         foreach (var workspace in _trackedWorkspaces.ToArray())
         {
@@ -123,7 +131,11 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
             Track(workspace);
         }
 
-        _logger.LogDebug("Navigation cluster catalog reload completed; Nodes={Nodes}", _nodesByWorkspace.Count);
+        // Guard avoids allocating the params array when Debug logging is disabled.
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Navigation cluster catalog reload completed; Nodes={Nodes}", _nodesByWorkspace.Count);
+        }
     }
 
     private void Track(ClusterWorkspace workspace)
@@ -192,11 +204,19 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
     {
         if (_nodesByWorkspace.ContainsKey(workspace))
         {
-            _logger.LogDebug("Navigation cluster node add ignored because node already exists: {ClusterName}", workspace.Runtime.Name);
+            // Guard avoids allocating the params array when Debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Navigation cluster node add ignored because node already exists: {ClusterName}", workspace.Runtime.Name);
+            }
             return;
         }
 
-        _logger.LogDebug("Navigation cluster node adding: {ClusterName}; Connected={Connected}; Status={Status}", workspace.Runtime.Name, workspace.Runtime.Connected, workspace.Runtime.Status);
+        // Guard avoids allocating the params array when Debug logging is disabled.
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Navigation cluster node adding: {ClusterName}; Connected={Connected}; Status={Status}", workspace.Runtime.Name, workspace.Runtime.Connected, workspace.Runtime.Status);
+        }
 
         _subscribe(workspace);
         _workspacesByRuntime[workspace.Runtime] = workspace;
@@ -211,18 +231,30 @@ internal sealed class NavigationClusterCatalogSynchronizer : IDisposable
         _nodesByWorkspace.Add(workspace, node);
         _reconcile(workspace);
 
-        _logger.LogDebug("Navigation cluster node added: {ClusterName}; Items={Items}", workspace.Runtime.Name, node.NavigationItems.Count);
+        // Guard avoids allocating the params array when Debug logging is disabled.
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Navigation cluster node added: {ClusterName}; Items={Items}", workspace.Runtime.Name, node.NavigationItems.Count);
+        }
     }
 
     private void Remove(ClusterWorkspace workspace)
     {
         if (!_nodesByWorkspace.Remove(workspace, out var node))
         {
-            _logger.LogDebug("Navigation cluster node removal ignored because node is missing: {ClusterName}", workspace.Runtime.Name);
+            // Guard avoids allocating the params array when Debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Navigation cluster node removal ignored because node is missing: {ClusterName}", workspace.Runtime.Name);
+            }
             return;
         }
 
-        _logger.LogDebug("Navigation cluster node removing: {ClusterName}; Items={Items}", workspace.Runtime.Name, node.NavigationItems.Count);
+        // Guard avoids allocating the params array when Debug logging is disabled.
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Navigation cluster node removing: {ClusterName}; Items={Items}", workspace.Runtime.Name, node.NavigationItems.Count);
+        }
 
         _unsubscribe(workspace);
         _workspacesByRuntime.Remove(workspace.Runtime);

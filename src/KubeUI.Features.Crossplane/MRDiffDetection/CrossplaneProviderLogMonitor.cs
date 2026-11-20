@@ -172,7 +172,11 @@ public sealed class CrossplaneProviderLogMonitor : IDisposable
             }
             catch (Exception ex) when (!callbackFailed)
             {
-                _logger.LogDebug(ex, "Crossplane provider log stream ended for {Pod}/{Container}", pod.Metadata?.Name, containerName);
+                // Avoid allocating the logging arguments when debug logging is disabled.
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug(ex, "Crossplane provider log stream ended for {Pod}/{Container}", pod.Metadata?.Name, containerName);
+                }
             }
 
             if (previous || cancellationToken.IsCancellationRequested)

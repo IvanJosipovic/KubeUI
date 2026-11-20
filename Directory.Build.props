@@ -11,6 +11,10 @@
     <EnableAvaloniaXamlCompilation>false</EnableAvaloniaXamlCompilation>
 
     <WarningsAsErrors>$(WarningsAsErrors);CA1001;NU1510</WarningsAsErrors>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- AOT/trim diagnostics are tracked in the separate KubeUI-eng change "AOT/trim warning readiness".
+         Remove these exceptions when that change lands. -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);IL2026;IL2046;IL3050;IL2067;YDNG001;DI0005</WarningsNotAsErrors>
 
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>

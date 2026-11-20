@@ -143,7 +143,7 @@ public sealed class KubernetesOpenApiSchemaCatalog
             return null;
         }
 
-        return propertyName is not null && schema.Properties.TryGetValue(propertyName, out var property)
+        return propertyName is not null && schema.Properties is not null && schema.Properties.TryGetValue(propertyName, out var property)
             ? property.Description
             : schema.Description;
     }

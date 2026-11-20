@@ -65,8 +65,9 @@ public sealed class RecordingTests
             .Speak(
                 "Hovering over imagePullPolicy gives me context for the field. To see the values I can use, I'll open completion after clearing the mistake.",
                 readyWhen: control => control is ResourceYamlView yamlView
-                    && yamlView.ViewModel.HasActionFailureResult
-                    && yamlView.ViewModel.ActionResultMessage?.Contains(
+                    && yamlView.ViewModel is { } vm
+                    && vm.HasActionFailureResult
+                    && vm.ActionResultMessage?.Contains(
                         "imagePullPolicy",
                         StringComparison.Ordinal) == true)
             .HoverYamlHeader("imagePullPolicy")

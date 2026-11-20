@@ -63,7 +63,12 @@ internal static class MetricsControlPrometheusBackend
             var series = CreateSeries(panel, result);
             if (series.Count == 0)
             {
-                logger.LogDebug("Prometheus metrics panel {PanelTitle} for tab {TabTitle} returned no series for cluster {ClusterName}.", panel.Title, tabTitle, cluster.Runtime.Name);
+                // Avoid allocating the logging arguments when debug logging is disabled.
+                if (logger.IsEnabled(LogLevel.Debug))
+                {
+                    logger.LogDebug("Prometheus metrics panel {PanelTitle} for tab {TabTitle} returned no series for cluster {ClusterName}.", panel.Title, tabTitle, cluster.Runtime.Name);
+                }
+
                 return (null, result.HadRequestFailures);
             }
 
@@ -121,7 +126,12 @@ internal static class MetricsControlPrometheusBackend
             var series = CreateSeries(panel, result);
             if (series.Count == 0)
             {
-                logger.LogDebug("Prometheus metrics panel {PanelTitle} for tab {TabTitle} returned no series for container {ContainerName} in pod {PodName} on cluster {ClusterName}.", panel.Title, tabTitle, container?.Name, pod?.Name(), cluster.Runtime.Name);
+                // Avoid allocating the logging arguments when debug logging is disabled.
+                if (logger.IsEnabled(LogLevel.Debug))
+                {
+                    logger.LogDebug("Prometheus metrics panel {PanelTitle} for tab {TabTitle} returned no series for container {ContainerName} in pod {PodName} on cluster {ClusterName}.", panel.Title, tabTitle, container?.Name, pod?.Name(), cluster.Runtime.Name);
+                }
+
                 return (null, result.HadRequestFailures);
             }
 

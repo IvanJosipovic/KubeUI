@@ -37,7 +37,7 @@ public sealed class AzureMonitorPrometheusProviderTests
             AzureMonitorQueryEndpoint = "https://amw.eastus.prometheus.monitor.azure.com",
         };
 
-        var endpoint = await provider.TryResolveServiceAsync(null!, settings);
+        var endpoint = await provider.TryResolveServiceAsync(null!, settings, TestContext.Current.CancellationToken);
 
         endpoint.ShouldNotBeNull();
         endpoint.ProviderKind.ShouldBe(PrometheusProviderKind.AzureMonitor);
@@ -59,7 +59,7 @@ public sealed class AzureMonitorPrometheusProviderTests
             AzureMonitorQueryEndpoint = endpointUrl,
         };
 
-        var endpoint = await provider.TryResolveServiceAsync(null!, settings);
+        var endpoint = await provider.TryResolveServiceAsync(null!, settings, TestContext.Current.CancellationToken);
 
         endpoint.ShouldBeNull();
     }

@@ -95,12 +95,20 @@ public sealed partial class MainViewModel : ViewModelBase
     {
         factory.ActiveDockableChanged += (_, args) =>
         {
-            _logger.LogDebug($"[ActiveDockableChanged] Title='{args.Dockable?.Title}'");
+            // Guard avoids allocating the params array when Debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("[ActiveDockableChanged] Title='{Title}'", args.Dockable?.Title);
+            }
         };
 
         factory.FocusedDockableChanged += (_, args) =>
         {
-            _logger.LogDebug($"[FocusedDockableChanged] Title='{args.Dockable?.Title}'");
+            // Guard avoids allocating the params array when Debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("[FocusedDockableChanged] Title='{Title}'", args.Dockable?.Title);
+            }
         };
 
         factory.DockableAdded += (_, args) =>
@@ -120,7 +128,11 @@ public sealed partial class MainViewModel : ViewModelBase
                 Dispatcher.UIThread.Invoke(() => bottomSplitter.CanResize = true);
             }
 
-            _logger.LogDebug($"[DockableAdded] Title='{args.Dockable?.Title}'");
+            // Guard avoids allocating the params array when Debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("[DockableAdded] Title='{Title}'", args.Dockable?.Title);
+            }
         };
 
         factory.DockableRemoved += (_, args) =>
@@ -140,42 +152,74 @@ public sealed partial class MainViewModel : ViewModelBase
                 Dispatcher.UIThread.Invoke(() => bottomSplitter.CanResize = false);
             }
 
-            _logger.LogDebug($"[DockableRemoved] Title='{args.Dockable?.Title}'");
+            // Guard avoids allocating the params array when Debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("[DockableRemoved] Title='{Title}'", args.Dockable?.Title);
+            }
         };
 
         factory.DockableClosed += (_, args) =>
         {
-            _logger.LogDebug($"[DockableClosed] Title='{args.Dockable?.Title}'");
+            // Guard avoids allocating the params array when Debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("[DockableClosed] Title='{Title}'", args.Dockable?.Title);
+            }
         };
 
         factory.DockableMoved += (_, args) =>
         {
-            _logger.LogDebug($"[DockableMoved] Title='{args.Dockable?.Title}'");
+            // Guard avoids allocating the params array when Debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("[DockableMoved] Title='{Title}'", args.Dockable?.Title);
+            }
         };
 
         factory.DockableSwapped += (_, args) =>
         {
-            _logger.LogDebug($"[DockableSwapped] Title='{args.Dockable?.Title}'");
+            // Guard avoids allocating the params array when Debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("[DockableSwapped] Title='{Title}'", args.Dockable?.Title);
+            }
         };
 
         factory.DockablePinned += (_, args) =>
         {
-            _logger.LogDebug($"[DockablePinned] Title='{args.Dockable?.Title}'");
+            // Guard avoids allocating the params array when Debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("[DockablePinned] Title='{Title}'", args.Dockable?.Title);
+            }
         };
 
         factory.DockableUnpinned += (_, args) =>
         {
-            _logger.LogDebug($"[DockableUnpinned] Title='{args.Dockable?.Title}'");
+            // Guard avoids allocating the params array when Debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("[DockableUnpinned] Title='{Title}'", args.Dockable?.Title);
+            }
         };
 
         factory.WindowOpened += (_, args) =>
         {
-            _logger.LogDebug($"[WindowOpened] Title='{args.Window?.Title}'");
+            // Guard avoids allocating the params array when Debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("[WindowOpened] Title='{Title}'", args.Window?.Title);
+            }
         };
 
         factory.WindowClosed += (_, args) =>
         {
-            _logger.LogDebug($"[WindowClosed] Title='{args.Window?.Title}'");
+            // Guard avoids allocating the params array when Debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("[WindowClosed] Title='{Title}'", args.Window?.Title);
+            }
         };
 
         factory.WindowClosing += (_, args) =>
@@ -184,17 +228,29 @@ public sealed partial class MainViewModel : ViewModelBase
 #if false
                 args.Cancel = true;
 #endif
-            _logger.LogDebug($"[WindowClosing] Title='{args.Window?.Title}', Cancel={args.Cancel}");
+            // Guard avoids allocating the params array when Debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("[WindowClosing] Title='{Title}', Cancel={Cancel}", args.Window?.Title, args.Cancel);
+            }
         };
 
         factory.WindowAdded += (_, args) =>
         {
-            _logger.LogDebug($"[WindowAdded] Title='{args.Window?.Title}'");
+            // Guard avoids allocating the params array when Debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("[WindowAdded] Title='{Title}'", args.Window?.Title);
+            }
         };
 
         factory.WindowRemoved += (_, args) =>
         {
-            _logger.LogDebug($"[WindowRemoved] Title='{args.Window?.Title}'");
+            // Guard avoids allocating the params array when Debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("[WindowRemoved] Title='{Title}'", args.Window?.Title);
+            }
         };
 
         factory.WindowMoveDragBegin += (_, args) =>
@@ -203,17 +259,29 @@ public sealed partial class MainViewModel : ViewModelBase
 #if false
                 args.Cancel = true;
 #endif
-            _logger.LogDebug($"[WindowMoveDragBegin] Title='{args.Window?.Title}', Cancel={args.Cancel}, X='{args.Window?.X}', Y='{args.Window?.Y}'");
+            // Guard avoids allocating the params array when Debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("[WindowMoveDragBegin] Title='{Title}', Cancel={Cancel}, X='{X}', Y='{Y}'", args.Window?.Title, args.Cancel, args.Window?.X, args.Window?.Y);
+            }
         };
 
         factory.WindowMoveDrag += (_, args) =>
         {
-            _logger.LogDebug($"[WindowMoveDrag] Title='{args.Window?.Title}', X='{args.Window?.X}', Y='{args.Window?.Y}");
+            // Guard avoids allocating the params array when Debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("[WindowMoveDrag] Title='{Title}', X='{X}', Y='{Y}", args.Window?.Title, args.Window?.X, args.Window?.Y);
+            }
         };
 
         factory.WindowMoveDragEnd += (_, args) =>
         {
-            _logger.LogDebug($"[WindowMoveDragEnd] Title='{args.Window?.Title}', X='{args.Window?.X}', Y='{args.Window?.Y}");
+            // Guard avoids allocating the params array when Debug logging is disabled.
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("[WindowMoveDragEnd] Title='{Title}', X='{X}', Y='{Y}", args.Window?.Title, args.Window?.X, args.Window?.Y);
+            }
         };
     }
 

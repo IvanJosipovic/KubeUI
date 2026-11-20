@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using DynamicData;
 using k8s;
 using k8s.KubeConfigModels;
@@ -6,6 +7,7 @@ using KubernetesClient.Informer.Client;
 
 namespace KubeUI.Kubernetes;
 
+[SuppressMessage("Naming", "CA1716:Identifiers should not match keywords", Justification = "Public API contract; renaming a parameter is a breaking change. Revisit in next major version.")]
 public interface IClusterRuntime
 {
     IReadOnlyDictionary<GroupApiVersionKind, object> Objects { get; }

@@ -55,7 +55,8 @@ public sealed class YamlEditorBehaviorTests
             folding.IsInstalled.ShouldBeTrue();
             highlighting.IsInstalled.ShouldBeTrue();
 
-            Application.Current.RequestedThemeVariant = ThemeVariant.Dark;
+            // Application is initialized by the headless test harness.
+            Application.Current!.RequestedThemeVariant = ThemeVariant.Dark;
             Dispatcher.UIThread.RunJobs();
             highlighting.IsInstalled.ShouldBeTrue();
 

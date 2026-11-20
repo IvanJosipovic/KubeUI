@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Globalization;
 using Dock.Model.Core;
 using FluentAvalonia.UI.Controls;
 using HanumanInstitute.MvvmDialogs;
@@ -429,6 +430,7 @@ public sealed partial class HelmReleaseEditorViewModel : ViewModelBase, INotifyD
                 ? HelmLanguageManager.Instance.HelmReleaseEditorView_ConfirmUpgradeTitle.CurrentValue()!
                 : HelmLanguageManager.Instance.HelmReleaseEditorView_ConfirmInstallTitle.CurrentValue()!,
             Content = string.Format(
+                CultureInfo.CurrentCulture,
                 _editing
                     ? HelmLanguageManager.Instance.HelmReleaseEditorView_ConfirmUpgradeContent.CurrentValue()!
                     : HelmLanguageManager.Instance.HelmReleaseEditorView_ConfirmInstallContent.CurrentValue()!,

@@ -39,13 +39,9 @@ internal sealed class WalkthroughPrometheusQueryClient : IPrometheusQueryClient
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (stepSeconds <= 0 || start > end)
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(stepSeconds);
+        if (start > end)
         {
-            if (stepSeconds <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(stepSeconds));
-            }
-
             throw new ArgumentOutOfRangeException(nameof(start), "Prometheus range start must not follow its end.");
         }
 

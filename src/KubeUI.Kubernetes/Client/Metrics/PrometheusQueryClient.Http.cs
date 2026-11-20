@@ -125,7 +125,7 @@ public sealed partial class PrometheusQueryClient
                     throw new InvalidOperationException($"Prometheus header '{header.Name}' is controlled by the HTTP transport and cannot be configured.");
                 }
 
-                if (header.Value.IndexOf('\r') >= 0 || header.Value.IndexOf('\n') >= 0)
+                if (header.Value.Contains('\r') || header.Value.Contains('\n'))
                 {
                     throw new InvalidOperationException($"Prometheus header '{header.Name}' contains an invalid line break.");
                 }

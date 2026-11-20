@@ -33,7 +33,7 @@ internal sealed class FakeHelmClient : IHelmClient
     public List<(string? Keyword, bool Versions, bool Devel)> SearchRepoCalls { get; } = [];
     public List<(string Name, string? NamespaceName, int Revision)> GetManifestCalls { get; } = [];
     public string? TemplateVersion { get; private set; }
-    public JsonElement Values { get; set; } = JsonDocument.Parse("{}").RootElement.Clone();
+    public JsonElement Values { get; set; } = JsonElement.Parse("{}");
     public bool ThrowOnUninstall { get; init; }
 
     /// <summary>Gets or sets how many list calls block until <see cref="Release"/> is set.</summary>

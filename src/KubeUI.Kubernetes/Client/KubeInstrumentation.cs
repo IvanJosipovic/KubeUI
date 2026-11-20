@@ -26,5 +26,6 @@ public class KubeInstrumentation : IDisposable
     public void Dispose()
     {
         Source.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
@@ -190,7 +191,7 @@ public sealed class HelmEditorViewModelTests : IDisposable
             var chartSelector = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
                 .OfType<ComboBox>().Single(control => control.Name == "Chart");
             DataValidationErrors.GetHasErrors(chartSelector).ShouldBeTrue();
-            DataValidationErrors.GetErrors(chartSelector).Cast<string>()
+            DataValidationErrors.GetErrors(chartSelector)!.Cast<string>()
                 .ShouldContain(GetFieldError(editor, nameof(HelmReleaseEditorViewModel.SelectedChart)));
             textEditor.Text = "replicas: 4\nserver:\n  enabled: true\n";
             editor.ValuesYaml.ShouldBe(textEditor.Text);
@@ -207,7 +208,7 @@ public sealed class HelmEditorViewModelTests : IDisposable
                 preview.SetupSequence(service => service.PreviewVersionAsync(workspace,
                         It.Is<HelmConnection>(connection => connection.Namespace == "apps"),
                         "web", reference, "1.0",
-                        It.Is<IReadOnlyDictionary<string, object?>>(values => Convert.ToInt64(values["replicas"]) == 4),
+                        It.Is<IReadOnlyDictionary<string, object?>>(values => Convert.ToInt64(values["replicas"], CultureInfo.InvariantCulture) == 4),
                         It.IsAny<CancellationToken>()))
                     .ThrowsAsync(new InvalidOperationException("Chart reference cannot be resolved"))
                     .Returns(Task.CompletedTask);
@@ -649,13 +650,13 @@ public sealed class HelmEditorViewModelTests : IDisposable
         await editor.PreviewCommand.ExecuteAsync(null);
         preview.Verify(service => service.PreviewVersionAsync(workspace,
             It.Is<HelmConnection>(connection => connection.Namespace == "apps"), "web", "bitnami/nginx", "2.0.0",
-            It.Is<IReadOnlyDictionary<string, object?>>(values => Convert.ToInt64(values["replicas"]) == 5),
+            It.Is<IReadOnlyDictionary<string, object?>>(values => Convert.ToInt64(values["replicas"], CultureInfo.InvariantCulture) == 5),
             It.IsAny<CancellationToken>()), Times.Once);
         editor.SaveCommand.CanExecute(null).ShouldBeTrue();
         await editor.SaveCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);
         helm.Verify(service => service.UpgradeAsync(
             It.Is<HelmConnection>(connection => connection.Namespace == "apps"), "web", "bitnami/nginx",
-            It.Is<IReadOnlyDictionary<string, object?>>(values => Convert.ToInt64(values["replicas"]) == 5),
+            It.Is<IReadOnlyDictionary<string, object?>>(values => Convert.ToInt64(values["replicas"], CultureInfo.InvariantCulture) == 5),
             false, false, true, TimeSpan.FromMinutes(5), It.IsAny<CancellationToken>(), "2.0.0"), Times.Once);
         releaseChanges.ShouldBe(1);
     }
@@ -694,7 +695,7 @@ public sealed class HelmEditorViewModelTests : IDisposable
             var valuesEditor = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
                 .OfType<TextEditor>().Single();
             DataValidationErrors.GetHasErrors(valuesEditor).ShouldBeTrue();
-            DataValidationErrors.GetErrors(valuesEditor).Cast<string>()
+            DataValidationErrors.GetErrors(valuesEditor)!.Cast<string>()
                 .ShouldContain(GetFieldError(editor, nameof(HelmReleaseEditorViewModel.ValuesYaml)));
         }
         finally
@@ -832,7 +833,7 @@ public sealed class HelmEditorViewModelTests : IDisposable
             var versionSelector = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view)
                 .OfType<ComboBox>().Single(control => control.Name == "ChartVersion");
             DataValidationErrors.GetHasErrors(versionSelector).ShouldBeTrue();
-            DataValidationErrors.GetErrors(versionSelector).Cast<string>()
+            DataValidationErrors.GetErrors(versionSelector)!.Cast<string>()
                 .ShouldContain(HelmLanguageManager.Instance.HelmReleaseEditorView_VersionRequired.CurrentValue());
         }
         finally

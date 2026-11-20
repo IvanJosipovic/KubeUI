@@ -158,6 +158,7 @@ public sealed class MainViewModelTests
         await TestApplicationExtensions.WaitForUiAsync();
 
         var floatingDocuments = tool.Owner.ShouldBeAssignableTo<IDocumentDock>();
+        floatingDocuments.ShouldNotBeNull();
         floatingDocuments.ActiveDockable.ShouldBeSameAs(tool);
         tool.Owner.ShouldNotBeSameAs(bottomDock);
         factory.FindRoot(tool)!.Window!.Host!.ShouldBeOfType<HostWindow>().IsToolWindow.ShouldBeFalse();
@@ -193,7 +194,7 @@ public sealed class MainViewModelTests
         factory.AddToBottom(secondViewer).ShouldBeTrue();
 
         factory.GetDockable<IToolDock>("BottomDock").ShouldBeSameAs(bottomDock);
-        bottomDock.VisibleDockables.ShouldContain(secondViewer);
+        bottomDock.VisibleDockables.ShouldNotBeNull().ShouldContain(secondViewer);
         splitter.CanResize.ShouldBeTrue();
     }
 
@@ -224,6 +225,7 @@ public sealed class MainViewModelTests
         var vm = CreateViewModel();
         var factory = Application.Current.GetRequiredTestService<IFactory>();
         var layout = factory.CreateLayout();
+        layout.ShouldNotBeNull();
         factory.InitLayout(layout);
         vm.Layout = layout;
 

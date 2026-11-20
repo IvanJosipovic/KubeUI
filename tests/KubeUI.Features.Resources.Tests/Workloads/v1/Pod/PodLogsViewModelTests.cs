@@ -2743,6 +2743,7 @@ public sealed class PodLogsViewModelTests
 
         exportService.SuggestedFileName.ShouldStartWith("kubeui-logs-2-resources-");
         exportService.SuggestedFileName.ShouldEndWith(".log");
+        exportService.Content.ShouldNotBeNull();
         exportService.Content.ShouldContain("# KubeUI multi-resource log export");
         exportService.Content.ShouldContain("# Resources: 2");
         exportService.Content.ShouldContain("# - Pod/default/first");
@@ -4788,8 +4789,10 @@ public sealed class PodLogsViewModelTests
         {
         }
 
+        // This fake stream always completes reads synchronously (a cached result or a fault),
+        // so blocking the synchronous Stream.Read path via a Task is safe here.
         public override int Read(byte[] destination, int offset, int count)
-            => ReadAsync(destination.AsMemory(offset, count)).GetAwaiter().GetResult();
+            => ReadAsync(destination.AsMemory(offset, count)).AsTask().GetAwaiter().GetResult();
 
         public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
         {

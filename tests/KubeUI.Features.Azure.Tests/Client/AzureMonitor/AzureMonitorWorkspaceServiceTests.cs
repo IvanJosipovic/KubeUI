@@ -16,7 +16,7 @@ public sealed class AzureMonitorWorkspaceServiceTests
         var credential = new FakeTokenCredential(token);
         using var service = new AzureMonitorWorkspaceService(credential);
 
-        var status = await service.GetAuthenticationStatusAsync();
+        var status = await service.GetAuthenticationStatusAsync(TestContext.Current.CancellationToken);
 
         status.AzureCliSignedIn.ShouldBeTrue();
         status.Username.ShouldBe("dev@example.com");
@@ -29,7 +29,7 @@ public sealed class AzureMonitorWorkspaceServiceTests
     {
         using var service = new AzureMonitorWorkspaceService(new FakeTokenCredential("unused", new CredentialUnavailableException("az login required")));
 
-        var status = await service.GetAuthenticationStatusAsync();
+        var status = await service.GetAuthenticationStatusAsync(TestContext.Current.CancellationToken);
 
         status.AzureCliSignedIn.ShouldBeFalse();
         status.Username.ShouldBeNull();
@@ -52,7 +52,7 @@ public sealed class AzureMonitorWorkspaceServiceTests
         var credential = new FakeTokenCredential("prometheus-token");
         using var service = new AzureMonitorWorkspaceService(credential);
 
-        var token = await service.GetPrometheusAccessTokenAsync();
+        var token = await service.GetPrometheusAccessTokenAsync(TestContext.Current.CancellationToken);
 
         token.Token.ShouldBe("prometheus-token");
         credential.RequestedScopes.ShouldBe(["https://prometheus.monitor.azure.com/.default"]);
@@ -64,8 +64,8 @@ public sealed class AzureMonitorWorkspaceServiceTests
         var credential = new FakeTokenCredential("prometheus-token");
         using var service = new AzureMonitorWorkspaceService(credential);
 
-        var firstToken = await service.GetPrometheusAccessTokenAsync();
-        var secondToken = await service.GetPrometheusAccessTokenAsync();
+        var firstToken = await service.GetPrometheusAccessTokenAsync(TestContext.Current.CancellationToken);
+        var secondToken = await service.GetPrometheusAccessTokenAsync(TestContext.Current.CancellationToken);
 
         secondToken.ShouldBe(firstToken);
         credential.TokenRequestCount.ShouldBe(1);
@@ -82,7 +82,7 @@ public sealed class AzureMonitorWorkspaceServiceTests
             releaseAcquisition: releaseAcquisition);
         using var service = new AzureMonitorWorkspaceService(credential);
 
-        var firstRequest = service.GetPrometheusAccessTokenAsync().AsTask();
+        var firstRequest = service.GetPrometheusAccessTokenAsync(TestContext.Current.CancellationToken).AsTask();
         await acquisitionStarted.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
         var concurrentRequests = Enumerable.Range(0, 7)
             .Select(_ => service.GetPrometheusAccessTokenAsync().AsTask())

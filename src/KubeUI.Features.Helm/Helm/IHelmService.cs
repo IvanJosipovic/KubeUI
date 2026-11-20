@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Helm.NET;
 using KubeUI.Features.Helm.Helm;
@@ -11,6 +12,7 @@ namespace KubeUI.Features.Helm.Helm;
 /// Implementations serialize native Helm calls because the underlying shim and default repository configuration are
 /// process-wide, and surface Helm failures as <see cref="HelmActionException"/>.
 /// </remarks>
+[SuppressMessage("Design", "CA1068:CancellationToken parameters must come last", Justification = "Public API contract; revisit in next major version.")]
 public interface IHelmService
 {
     /// <summary>Lists chart versions from cached repository indexes, optionally for one repository.</summary>

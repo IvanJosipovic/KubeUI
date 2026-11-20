@@ -27,10 +27,12 @@ internal static partial class McpToolAuditFilter
     {
         filters.AddCallToolFilter(next => async (context, cancellationToken) =>
         {
-            var identity = context.Services.GetRequiredService<McpRequestIdentityAccessor>().Current;
+            // MCP tool filter contexts always supply a service provider.
+            var services = context.Services!;
+            var identity = services.GetRequiredService<McpRequestIdentityAccessor>().Current;
             var toolName = context.Params.Name;
-            var logger = context.Services.GetRequiredService<ILoggerFactory>().CreateLogger("KubeUI.Mcp.Audit");
-            var timeProvider = context.Services.GetRequiredService<TimeProvider>();
+            var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("KubeUI.Mcp.Audit");
+            var timeProvider = services.GetRequiredService<TimeProvider>();
 
             var outcome = await ExecuteAsync(
                 identity,
@@ -123,7 +125,12 @@ internal static partial class McpToolAuditFilter
         }
         finally
         {
-            LogToolCompleted(logger, toolName, clientId, outcome, timeProvider.GetElapsedTime(started).TotalMilliseconds);
+            // Skip measuring the elapsed time when the completion audit is not logged.
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                var elapsedMilliseconds = timeProvider.GetElapsedTime(started).TotalMilliseconds;
+                LogToolCompleted(logger, toolName, clientId, outcome, elapsedMilliseconds);
+            }
         }
     }
 

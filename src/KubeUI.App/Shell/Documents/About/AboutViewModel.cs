@@ -15,7 +15,7 @@ public sealed partial class AboutViewModel : ViewModelBase
     {
         var version = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
-        if (version.Contains('+'))
+        if (version is not null && version.Contains('+'))
         {
             version = version[..version.IndexOf('+')];
         }

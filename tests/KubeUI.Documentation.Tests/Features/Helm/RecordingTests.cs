@@ -31,9 +31,9 @@ public sealed class RecordingTests
             .Speak(
                 "Repositories is where you add, edit, and remove chart sources. This cluster has the official Prometheus Community repository configured; I'll browse its charts.",
                 root => root is MainView main
-                    && main.ViewModel.Factory.GetDockable<IDocumentDock>("Documents")?.ActiveDockable is HelmRepositoriesViewModel,
+                    && main.ViewModel?.Factory.GetDockable<IDocumentDock>("Documents")?.ActiveDockable is HelmRepositoriesViewModel,
                 root => root is MainView main
-                    ? $"Active document: {main.ViewModel.Factory.GetDockable<IDocumentDock>("Documents")?.ActiveDockable?.GetType().Name ?? "none"}; visible docs: {string.Join(", ", main.ViewModel.Factory.GetDockable<IDocumentDock>("Documents")?.VisibleDockables?.Select(item => item.GetType().Name) ?? [])}"
+                    ? $"Active document: {main.ViewModel?.Factory.GetDockable<IDocumentDock>("Documents")?.ActiveDockable?.GetType().Name ?? "none"}; visible docs: {string.Join(", ", main.ViewModel?.Factory.GetDockable<IDocumentDock>("Documents")?.VisibleDockables?.Select(item => item.GetType().Name) ?? [])}"
                     : $"Root: {root.GetType().Name}")
             .RightClickHelmRepository(repositoryName)
             .SelectHelmContextMenuItem(
@@ -50,17 +50,19 @@ public sealed class RecordingTests
             .Speak(
                 "The install form carries the real repository, chart, current version, and published values forward. I'll name this release prometheus.",
                 root => root.GetVisualDescendants().OfType<HelmReleaseEditorView>().Any(view =>
-                    view.IsVisible
-                    && view.ViewModel.SelectedVersion is not null
-                    && view.ViewModel.Chart == "prometheus-community/prometheus"
-                    && view.ViewModel.ValuesYaml.Contains("replicaCount: 1", StringComparison.Ordinal)))
+                    view.ViewModel is { } vm
+                    && view.IsVisible
+                    && vm.SelectedVersion is not null
+                    && vm.Chart == "prometheus-community/prometheus"
+                    && vm.ValuesYaml.Contains("replicaCount: 1", StringComparison.Ordinal)))
             .HoverHelmEditorField("ChartVersion")
             .SetHelmReleaseName("prometheus")
             .Speak("Before installing, I'll preview resources rendered from the actual Prometheus chart.")
             .PreviewHelmRelease(root => root.GetVisualDescendants().OfType<VisualizationView>().Any(view =>
-                view.IsVisible
-                && view.ViewModel.IsPreview
-                && view.ViewModel.Graph is { Resources.Count: >= 2 }))
+                view.ViewModel is { } vm
+                && view.IsVisible
+                && vm.IsPreview
+                && vm.Graph is { Resources.Count: >= 2 }))
             .Speak("The preview shows what this chart will create with its current values. I'll return to the form and install Prometheus.")
             .ReturnToHelmReleaseEditor()
             .SaveHelmRelease()
@@ -69,29 +71,30 @@ public sealed class RecordingTests
             .Speak(
                 "The Prometheus release appears here with its status and namespace. I'll open its upgrade form.",
                 root => root.GetVisualDescendants().OfType<HelmReleasesView>().Any(view =>
-                    view.IsVisible && view.ViewModel.ItemCount == 1))
+                    view.ViewModel is { } vm && view.IsVisible && vm.ItemCount == 1))
             .RightClickHelmRelease("prometheus")
             .SelectHelmContextMenuItem(
                 "Upgrade",
                 root => root.GetVisualDescendants().OfType<HelmReleaseEditorView>().Any(view =>
-                    view.IsVisible && view.ViewModel.IsUpgrade))
+                    view.ViewModel is { } vm && view.IsVisible && vm.IsUpgrade))
             .Speak(
                 "Upgrade starts with the chart's saved values. I'll increase the Prometheus server replica count from one to two.",
                 root => root.GetVisualDescendants().OfType<HelmReleaseEditorView>().Any(view =>
-                    view.IsVisible
-                    && view.ViewModel.IsUpgrade
-                    && view.ViewModel.ValuesYaml.Contains("replicaCount: 1", StringComparison.Ordinal)))
+                    view.ViewModel is { } vm
+                    && view.IsVisible
+                    && vm.IsUpgrade
+                    && vm.ValuesYaml.Contains("replicaCount: 1", StringComparison.Ordinal)))
             .ClickHelmValuesEditor()
             .ReplaceHelmReplicaValue("2")
             .Speak("The values editor contains valid YAML with replicas set to two. I'll save the upgrade.")
             .SaveHelmRelease()
             .Speak("I'll confirm the upgraded release is back in the list.")
             .SelectHelmRelease("prometheus", root => root.GetVisualDescendants().OfType<HelmReleasesView>().Any(view =>
-                view.IsVisible && view.ViewModel.SelectedRelease?.Revision == 2))
+                view.ViewModel is { } vm && view.IsVisible && vm.SelectedRelease?.Revision == 2))
             .Speak(
                 "Upgrade is complete. Prometheus has the updated replica count.",
                 root => root.GetVisualDescendants().OfType<HelmReleasesView>().Any(view =>
-                    view.IsVisible && view.ViewModel.SelectedRelease?.Revision == 2))
+                    view.ViewModel is { } vm && view.IsVisible && vm.SelectedRelease?.Revision == 2))
             .RecordAsync();
     }
 }

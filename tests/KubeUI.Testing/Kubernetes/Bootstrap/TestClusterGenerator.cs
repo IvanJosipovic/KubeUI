@@ -578,7 +578,7 @@ public sealed class TestClusterGenerator
         using var genericClient = client.GetGenericClient<T>();
         if (string.IsNullOrEmpty(resource.Namespace()))
         {
-            await genericClient.CreateAsync(resource).WaitAsync(cancellationToken).ConfigureAwait(false);
+            await genericClient.CreateAsync(resource, cancellationToken).ConfigureAwait(false);
             return;
         }
 

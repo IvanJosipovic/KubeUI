@@ -36,6 +36,7 @@ public class Instrumentation : IDisposable, IClusterInstrumentation
     {
         Meter.Dispose();
         Source.Dispose();
+        GC.SuppressFinalize(this);
     }
 }
 

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 using FluentIcons.Common;
 using k8s.Models;
@@ -193,13 +194,13 @@ internal static class ResourceMetricsCatalog
 
         if (selector == null)
         {
-            return new ResourceMetricsDescriptor([], string.Format(ResourcesLanguageManager.Instance.ResourceMetricsCatalog_NoPodsForWorkload.CurrentValue()!, workloadName));
+            return new ResourceMetricsDescriptor([], string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.ResourceMetricsCatalog_NoPodsForWorkload.CurrentValue()!, workloadName));
         }
 
         var matchingPods = await GetMatchingPodsAsync(cluster, ns, selector).ConfigureAwait(false);
         if (matchingPods.Count == 0)
         {
-            return new ResourceMetricsDescriptor([], string.Format(ResourcesLanguageManager.Instance.ResourceMetricsCatalog_NoPodsForWorkload.CurrentValue()!, workloadName));
+            return new ResourceMetricsDescriptor([], string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.ResourceMetricsCatalog_NoPodsForWorkload.CurrentValue()!, workloadName));
         }
 
         // kube-state-metrics may not expose these Kubernetes labels as kube_pod_labels. Use the
@@ -230,7 +231,7 @@ internal static class ResourceMetricsCatalog
                     MetricPanel(ResourcesLanguageManager.Instance.Shared_Filesystem.CurrentValue()!, MetricCategory.WorkloadPods, options, ("fsUsage", ResourcesLanguageManager.Instance.Shared_Usage.CurrentValue()!), ("fsReads", ResourcesLanguageManager.Instance.Shared_Reads.CurrentValue()!), ("fsWrites", ResourcesLanguageManager.Instance.Shared_Writes.CurrentValue()!)),
                 ]),
             ],
-            string.Format(ResourcesLanguageManager.Instance.ResourceMetricsCatalog_NoPrometheusWorkload.CurrentValue()!, workloadName));
+            string.Format(CultureInfo.CurrentCulture, ResourcesLanguageManager.Instance.ResourceMetricsCatalog_NoPrometheusWorkload.CurrentValue()!, workloadName));
     }
 
     /// <summary>Builds a Prometheus label matcher for a Kubernetes label selector.</summary>

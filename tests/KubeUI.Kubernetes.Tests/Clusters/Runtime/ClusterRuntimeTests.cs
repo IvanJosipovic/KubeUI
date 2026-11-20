@@ -48,7 +48,7 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
         var cluster = clusterScope.Cluster;
         await cluster.Connect();
 
-        await cluster.SeedResource<V1Pod>(waitForReady: true);
+        await cluster.SeedResource<V1Pod>(waitForReady: true, cancellationToken: TestContext.Current.CancellationToken);
         await cluster.Disconnect();
 
         cluster.ActiveResourceInformerTaskCount.ShouldBe(0);
@@ -75,7 +75,7 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
         {
             workerStarted.SetResult();
             releaseWorker.Wait(TestContext.Current.CancellationToken);
-        });
+        }, TestContext.Current.CancellationToken);
         try
         {
             await workerStarted.Task.WaitAsync(TestContext.Current.CancellationToken);
@@ -106,7 +106,7 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
         var activeInformerTaskCountBeforeSeeding = cluster.ActiveResourceInformerTaskCount;
 
         await cluster.Connect();
-        await cluster.SeedResource<V1Pod>(waitForReady: true);
+        await cluster.SeedResource<V1Pod>(waitForReady: true, cancellationToken: TestContext.Current.CancellationToken);
 
         cluster.ActiveResourceInformerTaskCount.ShouldBeGreaterThan(activeInformerTaskCountBeforeSeeding);
     }
@@ -212,7 +212,7 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
 
         try
         {
-            var seedTask = cluster.SeedResource<V1Pod>(waitForReady: true);
+            var seedTask = cluster.SeedResource<V1Pod>(waitForReady: true, cancellationToken: TestContext.Current.CancellationToken);
 
             await TestWait.NextPollAsync(
                 TimeSpan.FromMilliseconds(50),
@@ -332,7 +332,7 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
             new TestClusterConfig { Type = backend },
             TestContext.Current.CancellationToken);
         await harness.Cluster.Connect();
-        await harness.Cluster.SeedResource<V1Namespace>(true);
+        await harness.Cluster.SeedResource<V1Namespace>(true, TestContext.Current.CancellationToken);
 
         var created = await harness.CreateAsync(
             new V1Namespace { Metadata = new V1ObjectMeta { Name = "refresh-test" } },

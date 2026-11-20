@@ -104,11 +104,12 @@ public sealed class DynamicTableViewBackgroundStyleTests
                 var altHighColor = altHighColorValue.ShouldBeOfType<Color>();
                 foreach (var header in headers)
                 {
-                    header.Background.ShouldBeAssignableTo<ISolidColorBrush>().Color.ShouldBe(altHighColor);
+                    header.Background.ShouldBeAssignableTo<ISolidColorBrush>().ShouldNotBeNull().Color.ShouldBe(altHighColor);
                     header.GetVisualDescendants()
                         .OfType<ContentPresenter>()
                         .Single(presenter => ReferenceEquals(presenter.Content, header.Content))
                         .Background.ShouldBeAssignableTo<ISolidColorBrush>()
+                        .ShouldNotBeNull()
                         .Color.ShouldBe(altHighColor);
                 }
             }

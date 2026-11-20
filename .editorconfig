@@ -155,7 +155,15 @@ csharp_space_between_square_brackets = false
 space_within_single_line_array_initializer_braces = true
 
 #Net Analyzer
-dotnet_analyzer_diagnostic.category-Performance.severity = none #error - Uncomment when all violations are fixed.
+# Performance rules parked during the warning cleanup. Re-enable individually.
+dotnet_diagnostic.CA1848.severity = none
+dotnet_diagnostic.CA1859.severity = none
+dotnet_diagnostic.CA1852.severity = none
+dotnet_diagnostic.CA1860.severity = none
+dotnet_diagnostic.CA1861.severity = none
+dotnet_diagnostic.CA1863.severity = none
+dotnet_diagnostic.CA1830.severity = none
+dotnet_diagnostic.CA1806.severity = none
 dotnet_diagnostic.CA2000.severity = error
 
 # CS0649: Field 'field' is never assigned to, and will always have its default value 'value'
@@ -260,6 +268,13 @@ dotnet_diagnostic.IDE0022.severity = none
 
 # IDE0330: Use 'System.Threading.Lock'
 dotnet_diagnostic.IDE0330.severity = error
+
+# xUnit and benchmark method names intentionally use descriptive underscores.
+[tests/**/*.cs]
+dotnet_diagnostic.CA1707.severity = none
+
+[benchmarks/**/*.cs]
+dotnet_diagnostic.CA1707.severity = none
 
 [*.g.cs]
 generated_code = true

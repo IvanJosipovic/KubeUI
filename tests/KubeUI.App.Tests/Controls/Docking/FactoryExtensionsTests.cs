@@ -29,7 +29,7 @@ public sealed class FactoryExtensionsTests
             live.ShouldBeSameAs(document);
             updates.ShouldBe(1);
             document.Title.ShouldBe("after");
-            documents.VisibleDockables.ShouldContain(document);
+            documents.VisibleDockables.ShouldNotBeNull().ShouldContain(document);
             documents.ActiveDockable.ShouldBeSameAs(document);
         }
         finally

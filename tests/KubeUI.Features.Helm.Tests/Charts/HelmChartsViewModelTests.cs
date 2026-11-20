@@ -131,7 +131,7 @@ public sealed class HelmChartsViewModelTests : IDisposable
             await TestWait.UntilAsync(() => charts.ItemCount == 2,
                 TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
             var table = controls.OfType<DynamicTableView>().Single();
-            var menu = table.ContextMenuItemsFactory!([new HelmChartSearchResult("second/web", "web", "3.0")])
+            var menu = table.ContextMenuItemsFactory!([new HelmChartSearchResult("second/web", "web", "3.0")])!
                 .Cast<MenuItem>().Single();
             menu.Header.ShouldBe(HelmLanguageManager.Instance.HelmChartsView_Install.CurrentValue());
             menu.Command.ShouldBeSameAs(charts.InstallChartCommand);
