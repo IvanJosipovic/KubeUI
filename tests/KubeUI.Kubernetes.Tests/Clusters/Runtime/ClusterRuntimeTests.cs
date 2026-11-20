@@ -157,6 +157,30 @@ public sealed class ClusterRuntimeTests : ClusterRuntimeAssertions
     }
 
     [Fact]
+    public async Task SeedingAfterPermissionInvalidationStillCreatesInformer()
+    {
+        await using var clusterScope = await new TestClusterGenerator().CreateAsync(new TestClusterConfig(), TestContext.Current.CancellationToken);
+        var cluster = clusterScope.Cluster;
+        await cluster.Connect();
+
+        // The workspace establishes these before a resource list view seeds.
+        await cluster.Permissions.UpdateCanI<V1Pod>(Verb.List);
+        await cluster.Permissions.UpdateCanI<V1Pod>(Verb.Watch);
+
+        // Simulate a permission refresh replacing the cache after the resource config was
+        // evaluated but before the list view seeded the resource.
+        cluster.Permissions.InvalidatePermissions();
+        cluster.Permissions.CanI<V1Pod>(Verb.List).ShouldBeFalse();
+
+        await cluster.SeedResource<V1Pod>(waitForReady: true, cancellationToken: TestContext.Current.CancellationToken);
+
+        var podKind = GroupApiVersionKind.From<V1Pod>();
+        var container = cluster.Objects[podKind].ShouldBeOfType<ContainerClass<V1Pod>>();
+        container.InformerCount.ShouldBe(1);
+        cluster.Permissions.CanI<V1Pod>(Verb.List).ShouldBeTrue();
+    }
+
+    [Fact]
     public async Task ScenarioSeedsTypedInitialResources()
     {
         await using var clusterScope = await new TestClusterGenerator().CreateAsync(

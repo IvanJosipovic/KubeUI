@@ -645,6 +645,16 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             _logger.LogDebug("Starting seed initialization for {Type}.", typeof(T));
         }
 
+        // CanI only reads the cached authorization index and reports a cache miss as a denial.
+        // A permission refresh can replace that cache after the resource configuration was
+        // evaluated but before this seed runs. Without a refresh here the list/watch checks
+        // below would both fail, no informer would be created, and the container would stay
+        // empty forever because the seed task is cached as successfully completed. These
+        // calls reuse the existing per-generation caches and are cheap when the decisions are
+        // already known, so they only do work when the permission truth is actually missing.
+        await UpdatePermissionsAllNamespaceAsync<T>(Verb.List).ConfigureAwait(false);
+        await UpdatePermissionsAllNamespaceAsync<T>(Verb.Watch).ConfigureAwait(false);
+
         // Seeding before connect is valid; informer creation is guarded by permissions and happens after connect.
         var client = Client!;
 
