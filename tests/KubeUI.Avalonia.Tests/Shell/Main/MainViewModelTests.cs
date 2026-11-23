@@ -7,11 +7,9 @@ using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
-using KubeUI.Avalonia.Infrastructure.DependencyInjection;
 using KubeUI.Avalonia.Shell.Documents.CloudClusters.Aks;
 using KubeUI.Avalonia.Shell.Documents.Updates;
 using KubeUI.Avalonia.Shell.Main;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http;
 using Shouldly;
 
@@ -19,6 +17,63 @@ namespace KubeUI.Avalonia.Tests.Shell.Main;
 
 public sealed class MainViewModelTests
 {
+    private sealed class DisposableTool : Tool, IDisposable
+    {
+        public bool IsDisposed { get; private set; }
+        public void Dispose() => IsDisposed = true;
+    }
+
+    [AvaloniaFact]
+    public void rejected_close_does_not_dispose_tool()
+    {
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var dock = factory.GetDockable<IToolDock>("BottomDock")!;
+        using var tool = new DisposableTool { Id = "RejectedClose", CanClose = false };
+        factory.AddDockable(dock, tool);
+
+        factory.CloseDockable(tool);
+
+        tool.IsDisposed.ShouldBeFalse();
+        dock.VisibleDockables.ShouldContain(tool);
+        factory.RemoveDockable(tool, false);
+    }
+
+    [AvaloniaFact]
+    public void canceled_close_does_not_dispose_tool()
+    {
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var dock = factory.GetDockable<IToolDock>("BottomDock")!;
+        using var tool = new DisposableTool { Id = "CanceledClose", CanClose = true };
+        factory.AddDockable(dock, tool);
+        void Cancel(object? sender, Dock.Model.Core.Events.DockableClosingEventArgs args) => args.Cancel = true;
+        factory.DockableClosing += Cancel;
+        try
+        {
+            factory.CloseDockable(tool);
+            tool.IsDisposed.ShouldBeFalse();
+            dock.VisibleDockables.ShouldContain(tool);
+        }
+        finally
+        {
+            factory.DockableClosing -= Cancel;
+            factory.RemoveDockable(tool, false);
+        }
+    }
+
+    [AvaloniaFact]
+    public void successful_close_disposes_tool()
+    {
+        var factory = Application.Current.GetRequiredTestService<IFactory>();
+        var dock = factory.GetDockable<IToolDock>("BottomDock")!;
+        using var tool = new DisposableTool { Id = "SuccessfulClose", CanClose = true };
+        factory.AddDockable(dock, tool);
+
+        factory.CloseDockable(tool);
+
+        tool.IsDisposed.ShouldBeTrue();
+        dock.VisibleDockables.ShouldNotContain(tool);
+    }
+
     private MainViewModel CreateViewModel()
     {
         return Application.Current.GetTestServices().GetRequiredService<MainViewModel>()
@@ -158,6 +213,7 @@ public sealed class MainViewModelTests
         await TestApplicationExtensions.WaitForUiAsync();
 
         var floatingDocuments = tool.Owner.ShouldBeAssignableTo<IDocumentDock>();
+        factory.FindDockableById(tool.Id).ShouldBeSameAs(tool);
         floatingDocuments.ActiveDockable.ShouldBeSameAs(tool);
         tool.Owner.ShouldNotBeSameAs(bottomDock);
         factory.FindRoot(tool)!.Window!.Host!.ShouldBeOfType<HostWindow>().IsToolWindow.ShouldBeFalse();

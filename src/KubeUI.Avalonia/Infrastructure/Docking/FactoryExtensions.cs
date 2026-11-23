@@ -7,13 +7,9 @@ public static class FactoryExtensions
 {
     public static IDockable? FindDockableById(this IFactory factory, string id)
     {
-        return factory.Find(x => string.Equals(x.Id, id, StringComparison.Ordinal)).FirstOrDefault()
-            ?? factory.GetDockable<IDocumentDock>("Documents")?.VisibleDockables?
-                .FirstOrDefault(x => string.Equals(x.Id, id, StringComparison.Ordinal))
-            ?? factory.GetDockable<IToolDock>("RightDock")?.VisibleDockables?
-                .FirstOrDefault(x => string.Equals(x.Id, id, StringComparison.Ordinal))
-            ?? factory.GetDockable<IToolDock>("BottomDock")?.VisibleDockables?
-                .FirstOrDefault(x => string.Equals(x.Id, id, StringComparison.Ordinal));
+        var root = factory.GetDockable<IRootDock>("Root");
+        return (root is null ? null : factory.FindDockable(root, x => string.Equals(x.Id, id, StringComparison.Ordinal)))
+            ?? factory.Find(x => string.Equals(x.Id, id, StringComparison.Ordinal)).FirstOrDefault();
     }
 
     public static bool AddToDocuments(this IFactory factory, IDockable vm)

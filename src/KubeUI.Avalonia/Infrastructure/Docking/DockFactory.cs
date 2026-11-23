@@ -46,6 +46,7 @@ public class DockFactory : Factory
             Alignment = Alignment.Left,
             CanDrag = false,
             CanClose = false,
+            IsCollapsable = false,
             Dock = DockMode.Left,
             Id = "LeftDock",
             Proportion = 0.2,
@@ -57,6 +58,7 @@ public class DockFactory : Factory
             Alignment = Alignment.Right,
             CanDrag = false,
             CanClose = false,
+            IsCollapsable = false,
             Dock = DockMode.Right,
             Id = "RightDock",
             Proportion = 0.2,
@@ -68,6 +70,7 @@ public class DockFactory : Factory
             Alignment = Alignment.Bottom,
             CanDrag = false,
             CanClose = false,
+            IsCollapsable = false,
             Id = "BottomDock",
             Proportion = 0.4,
             VisibleDockables = CreateList<IDockable>()
@@ -172,16 +175,16 @@ public class DockFactory : Factory
     }
 
     /// <summary>
-    /// Runs dispose on closed Dockables
+    /// Disposes dockables after Dock confirms their closure.
     /// </summary>
     /// <param name="dockable"></param>
-    public override void CloseDockable(IDockable dockable)
+    public override void OnDockableClosed(IDockable? dockable)
     {
         try
         {
-            base.CloseDockable(dockable);
+            base.OnDockableClosed(dockable);
 
-            if (dockable is IDisposable disp)
+            if (dockable is IDisposable disp && !(dockable is ITool && HideToolsOnClose) && !(dockable is IDocument && HideDocumentsOnClose))
             {
                 disp.Dispose();
             }
@@ -189,28 +192,6 @@ public class DockFactory : Factory
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error closing dockable");
-        }
-    }
-
-    /// <summary>
-    /// Keeps non-closeable layout docks available during structural cleanup.
-    /// </summary>
-    /// <param name="dockable">The dockable being removed.</param>
-    /// <param name="collapse">Whether empty parent docks may collapse.</param>
-    public override void RemoveDockable(IDockable dockable, bool collapse)
-    {
-        try
-        {
-            if (!dockable.CanClose)
-            {
-                return;
-            }
-
-            base.RemoveDockable(dockable, collapse);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error removing dockable");
         }
     }
 
@@ -280,34 +261,5 @@ public class DockFactory : Factory
         MoveDockable(sourceDock, _documentDock, dockable, targetDockable);
         SetActiveDockable(dockable);
         SetFocusedDockable(_documentDock, dockable);
-    }
-
-    public override void SplitToDock(IDock dock, IDockable dockable, DockOperation operation)
-    {
-        try
-        {
-            var orgProportion = dockable.Proportion;
-
-            base.SplitToDock(dock, dockable, operation);
-
-            //Fixes proportion of dockable when splitting
-            if (dock.Owner is ProportionalDock)
-            {
-                if (orgProportion == 1 || double.IsNaN(orgProportion))
-                {
-                    dockable.Proportion = 0.5;
-                    dock.Proportion = 0.5;
-                }
-                else
-                {
-                    dock.Proportion = 1 - orgProportion;
-                    dockable.Proportion = orgProportion;
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error splitting dockable");
-        }
     }
 }
