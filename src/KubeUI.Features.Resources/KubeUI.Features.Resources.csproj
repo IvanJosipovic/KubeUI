@@ -38,7 +38,6 @@
     <Using Include="Microsoft.Extensions.DependencyInjection" />
     <Using Include="Microsoft.Extensions.Logging" />
     <Using Include="SvcSystems.Avalonia.DynamicTableView" />
-    <Using Include="PropertyGenerator.Avalonia" />
     <Using Include="System.Collections" />
     <Using Include="System.Collections.ObjectModel" />
     <Using Include="System.ComponentModel" />
@@ -87,9 +86,6 @@
     <PackageReference Include="Irihi.Ursa.Themes.Semi" />
     <PackageReference Include="JsonPathLINQ" />
     <PackageReference Include="ServiceScan.SourceGenerator" PrivateAssets="all" />
-    <PackageReference Include="PropertyGenerator.Avalonia">
-      <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
-    </PackageReference>
     <PackageReference Include="Svg.Controls.Skia.Avalonia" />
     <PackageReference Include="SvcSystems.Avalonia.DynamicTableView" />
     <PackageReference Include="SvcSystems.UI.Terminal" />

@@ -18,12 +18,12 @@ using Westermo.GraphX.Logic.Models;
 
 namespace KubeUI.Features.Resources.Visualization;
 
-public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphControlFactory
+public sealed partial class ResourceGraphControl : UserControl, IDisposable, IGraphControlFactory
 {
-    public static readonly DirectProperty<ResourceGraphControl, ResourceRelationshipGraph?> GraphProperty =
-        AvaloniaProperty.RegisterDirect<ResourceGraphControl, ResourceRelationshipGraph?>(nameof(Graph), control => control.Graph, (control, value) => control.Graph = value);
+    /// <summary>Gets or sets the immutable relationship graph to render.</summary>
+    [GeneratedDirectProperty]
+    public partial ResourceRelationshipGraph? Graph { get; set; }
 
-    private ResourceRelationshipGraph? _graph;
     private readonly GraphArea<ResourceGraphVertex, ResourceGraphEdge, BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge>> _area;
     private readonly GXLogicCore<ResourceGraphVertex, ResourceGraphEdge, BidirectionalGraph<ResourceGraphVertex, ResourceGraphEdge>> _logicCore;
     private readonly ZoomControl _zoomControl;
@@ -44,24 +44,13 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
     private bool _disposed;
     private bool _graphXDisposed;
 
-    public ResourceRelationshipGraph? Graph
+    /// <inheritdoc />
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
-        get => _graph;
-        set
+        base.OnPropertyChanged(change);
+
+        if (change.Property == GraphProperty && !_isDetached)
         {
-            if (ReferenceEquals(_graph, value))
-            {
-                return;
-            }
-
-            _graph = value;
-            RaisePropertyChanged(GraphProperty, null, value);
-
-            if (_isDetached)
-            {
-                return;
-            }
-
             RebuildGraph();
         }
     }
@@ -141,7 +130,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
         CancellationTokenSource cancellation = new();
         _graphPreparationCancellation = cancellation;
         var version = Interlocked.Increment(ref _graphPreparationVersion);
-        var graph = _graph;
+        var graph = Graph;
         var cluster = _viewModel?.Cluster;
         _ = PrepareGraphAsync(graph, cluster, version, cancellation);
     }
@@ -170,7 +159,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
             _rebuildFromAttachment = false;
             if (incremental)
             {
-                ApplyGraphChanges(_graph ?? ResourceRelationshipGraph.Empty);
+                ApplyGraphChanges(Graph ?? ResourceRelationshipGraph.Empty);
                 return;
             }
 
@@ -482,7 +471,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
         base.OnDataContextChanged(e);
         _viewModel = DataContext as VisualizationViewModel;
 
-        if (_viewModel != null && _graph != null && !_isDetached)
+        if (_viewModel != null && Graph != null && !_isDetached)
         {
             RebuildGraph();
         }
@@ -645,7 +634,7 @@ public sealed class ResourceGraphControl : UserControl, IDisposable, IGraphContr
     {
         base.OnAttachedToVisualTree(e);
         _isDetached = false;
-        if (_graph != null)
+        if (Graph != null)
         {
             _rebuildFromAttachment = true;
             RebuildGraph();

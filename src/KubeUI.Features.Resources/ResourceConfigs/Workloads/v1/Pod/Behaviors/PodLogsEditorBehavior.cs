@@ -5,7 +5,6 @@ using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Search;
-using KubeUI.Controls.Platform;
 using KubeUI.Features.Resources.Infrastructure;
 using TextMateSharp.Grammars;
 using static AvaloniaEdit.TextMate.TextMate;
@@ -13,42 +12,24 @@ using static AvaloniaEdit.TextMate.TextMate;
 namespace KubeUI.Features.Resources.Workloads.v1.Pod.Behaviors;
 
 /// <summary>Provides scrolling, syntax highlighting, and search behavior for the pod log editor.</summary>
-public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeViewBase
+public sealed partial class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeViewBase
 {
     /// <summary>Gets or sets whether new output keeps the editor at the bottom. Supports two-way binding.</summary>
-    public static readonly DirectProperty<PodLogsEditorBehavior, bool> AutoScrollToBottomProperty =
-        AvaloniaProperty.RegisterDirect<PodLogsEditorBehavior, bool>(
-            nameof(AutoScrollToBottom),
-            behavior => behavior.AutoScrollToBottom,
-            (behavior, value) => behavior.AutoScrollToBottom = value,
-            true,
-            BindingMode.TwoWay);
+    [GeneratedDirectProperty(UnsetValue = true, DefaultBindingMode = BindingMode.TwoWay)]
+    public partial bool AutoScrollToBottom { get; set; } = true;
 
-    /// <summary>Identifies the two-way follow-logs request property.</summary>
-    public static readonly DirectProperty<PodLogsEditorBehavior, bool> FollowLogsRequestedProperty =
-        AvaloniaProperty.RegisterDirect<PodLogsEditorBehavior, bool>(
-            nameof(FollowLogsRequested),
-            behavior => behavior.FollowLogsRequested,
-            (behavior, value) => behavior.FollowLogsRequested = value,
-            false,
-            BindingMode.TwoWay);
+    /// <summary>Gets or sets the two-way follow-logs request.</summary>
+    [GeneratedDirectProperty(UnsetValue = false, DefaultBindingMode = BindingMode.TwoWay)]
+    public partial bool FollowLogsRequested { get; set; }
 
-    /// <summary>Identifies the two-way persisted scroll-offset property.</summary>
-    public static readonly DirectProperty<PodLogsEditorBehavior, Vector> ScrollOffsetProperty =
-        AvaloniaProperty.RegisterDirect<PodLogsEditorBehavior, Vector>(
-            nameof(ScrollOffset),
-            behavior => behavior.ScrollOffset,
-            (behavior, value) => behavior.ScrollOffset = value,
-            default,
-            BindingMode.TwoWay);
+    /// <summary>Gets or sets the two-way persisted scroll offset.</summary>
+    [GeneratedDirectProperty(DefaultBindingMode = BindingMode.TwoWay)]
+    public partial Vector ScrollOffset { get; set; }
 
     private Installation? _textMateInstallation;
     private RegistryOptions? _registryOptions;
     private ScrollViewer? _scrollViewer;
     private Vector? _pendingRestoreOffset;
-    private bool _autoScrollToBottom = true;
-    private bool _followLogsRequested;
-    private Vector _scrollOffset;
     private bool _isRestoringScrollOffset;
     private bool _suppressScrollSync;
     private bool _isStuckToBottom = true;
@@ -67,53 +48,33 @@ public sealed class PodLogsEditorBehavior : Behavior<TextEditor>, IDeclarativeVi
     private bool _filterEnabled;
     private IDisposable? _documentSubscription;
 
-    /// <summary>Gets or sets whether new output keeps the editor at the bottom.</summary>
-    public bool AutoScrollToBottom
+    /// <inheritdoc />
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
-        get => _autoScrollToBottom;
-        set => SetAndRaise(AutoScrollToBottomProperty, ref _autoScrollToBottom, value);
-    }
+        base.OnPropertyChanged(change);
 
-    /// <summary>Gets or sets the request state for resuming live log following.</summary>
-    public bool FollowLogsRequested
-    {
-        get => _followLogsRequested;
-        set
+        if (change.Property != FollowLogsRequestedProperty || !FollowLogsRequested)
         {
-            if (_followLogsRequested == value)
-            {
-                return;
-            }
-
-            SetAndRaise(FollowLogsRequestedProperty, ref _followLogsRequested, value);
-            if (value)
-            {
-                _pendingRestoreOffset = null;
-                if (_initialLayoutComplete && _scrollViewer is not null && IsAtBottom(_scrollViewer))
-                {
-                    FollowLogs();
-                    return;
-                }
-
-                if (Dispatcher.UIThread.CheckAccess()
-                    && _scrollViewer is not null
-                    && _scrollViewer.Viewport.Height > 0)
-                {
-                    FollowLogs();
-                    return;
-                }
-
-                _followLogsQueued = true;
-                Dispatcher.UIThread.Post(FollowLogs, DispatcherPriority.Loaded);
-            }
+            return;
         }
-    }
 
-    /// <summary>Gets or sets the persisted editor scroll offset.</summary>
-    public Vector ScrollOffset
-    {
-        get => _scrollOffset;
-        set => SetAndRaise(ScrollOffsetProperty, ref _scrollOffset, value);
+        _pendingRestoreOffset = null;
+        if (_initialLayoutComplete && _scrollViewer is not null && IsAtBottom(_scrollViewer))
+        {
+            FollowLogs();
+            return;
+        }
+
+        if (Dispatcher.UIThread.CheckAccess()
+            && _scrollViewer is not null
+            && _scrollViewer.Viewport.Height > 0)
+        {
+            FollowLogs();
+            return;
+        }
+
+        _followLogsQueued = true;
+        Dispatcher.UIThread.Post(FollowLogs, DispatcherPriority.Loaded);
     }
 
     internal bool IsTextMateInstalled => _textMateInstallation is not null;

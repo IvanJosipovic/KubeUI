@@ -4,21 +4,16 @@ using KubeUI.Controls.Styles;
 
 namespace KubeUI.Features.Resources.Yaml.Behaviors;
 
-public sealed class YamlDiagnosticRenderingBehavior : Behavior<TextEditor>
+public sealed partial class YamlDiagnosticRenderingBehavior : Behavior<TextEditor>
 {
-    private static readonly AttachedProperty<YamlDiagnosticRenderer?> s_rendererProperty =
-        AvaloniaProperty.RegisterAttached<YamlDiagnosticRenderingBehavior, TextEditor, YamlDiagnosticRenderer?>("Renderer");
+    [GeneratedAttachedProperty]
+    internal static partial YamlDiagnosticRenderer? GetRenderer(TextEditor element);
 
-    public static readonly AttachedProperty<IBrush?> DiagnosticBrushProperty =
-        AvaloniaProperty.RegisterAttached<YamlDiagnosticRenderingBehavior, TextEditor, IBrush?>("DiagnosticBrush");
+    [GeneratedAttachedProperty]
+    public static partial IBrush? GetDiagnosticBrush(TextEditor element);
 
     private YamlDiagnosticRenderer? _renderer;
     private ResourceYamlViewModel? _currentViewModel;
-
-    internal static YamlDiagnosticRenderer? GetRenderer(TextEditor editor)
-    {
-        return editor.GetValue(s_rendererProperty);
-    }
 
     protected override void OnAttached()
     {
@@ -30,7 +25,7 @@ public sealed class YamlDiagnosticRenderingBehavior : Behavior<TextEditor>
         }
 
         _renderer = new YamlDiagnosticRenderer(GetDiagnosticBrush());
-        AssociatedObject.SetValue(s_rendererProperty, _renderer);
+        SetRenderer(AssociatedObject, _renderer);
         AssociatedObject.TextArea.TextView.BackgroundRenderers.Add(_renderer);
         if (Application.Current != null)
         {
@@ -54,7 +49,7 @@ public sealed class YamlDiagnosticRenderingBehavior : Behavior<TextEditor>
                 AssociatedObject.TextArea.TextView.BackgroundRenderers.Remove(_renderer);
             }
 
-            AssociatedObject.ClearValue(s_rendererProperty);
+            AssociatedObject.ClearValue(RendererProperty);
         }
 
         _renderer = null;
@@ -82,7 +77,7 @@ public sealed class YamlDiagnosticRenderingBehavior : Behavior<TextEditor>
     {
         var editor = AssociatedObject
             ?? throw new InvalidOperationException("The YAML diagnostic renderer is not attached to an editor.");
-        return editor.GetValue(DiagnosticBrushProperty)
+        return GetDiagnosticBrush(editor)
             ?? ApplicationBrushResources.GetBrush("SystemControlErrorTextForegroundBrush");
     }
 

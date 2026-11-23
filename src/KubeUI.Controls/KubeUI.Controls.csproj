@@ -20,7 +20,6 @@
     <Using Include="Dock.Model.Mvvm.Controls" />
     <Using Include="CommunityToolkit.Mvvm.ComponentModel" />
     <Using Include="FluentIcons.Common" />
-    <Using Include="PropertyGenerator.Avalonia" />
     <Using Include="System.Collections" />
   </ItemGroup>
 
@@ -43,9 +42,6 @@
     <PackageReference Include="Dock.Model.Mvvm" />
     <PackageReference Include="FluentIcons.Avalonia" />
     <PackageReference Include="Irihi.Ursa" />
-    <PackageReference Include="PropertyGenerator.Avalonia">
-      <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
-    </PackageReference>
     <PackageReference Include="Svg.Controls.Skia.Avalonia" />
     <PackageReference Include="TextMateSharp" />
     <PackageReference Include="TextMateSharp.Grammars" />
