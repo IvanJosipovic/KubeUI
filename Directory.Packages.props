@@ -6,15 +6,15 @@
 
   <ItemGroup>
     <!-- Avalonia Core -->
-    <PackageVersion Include="Avalonia" Version="12.1.6" />
-    <PackageVersion Include="Avalonia.Markup.Declarative" Version="12.2.0" />
-    <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.1.6" />
-    <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.1.6" />
-    <PackageVersion Include="Avalonia.Desktop" Version="12.1.6" />
+    <PackageVersion Include="Avalonia" Version="12.2.0" />
+    <PackageVersion Include="SVCSystems.Avalonia.CSharpUI" Version="1.0.0-alpha.11" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.2.0" />
+    <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.2.0" />
+    <PackageVersion Include="Avalonia.Desktop" Version="12.2.0" />
     <PackageVersion Include="Avalonia.AvaloniaEdit" Version="12.0.0" />
     <PackageVersion Include="AvaloniaEdit.TextMate" Version="12.0.0" />
-    <PackageVersion Include="Avalonia.Headless.XUnit" Version="12.1.6" />
-    <PackageVersion Include="Avalonia.Skia" Version="12.1.6" />
+    <PackageVersion Include="Avalonia.Headless.XUnit" Version="12.2.0" />
+    <PackageVersion Include="Avalonia.Skia" Version="12.2.0" />
     
     <!-- Dock -->
     <PackageVersion Include="Dock.Model.Mvvm" Version="12.1.5" />
@@ -108,7 +108,6 @@
     <PackageVersion Include="Google.Protobuf" Version="3.36.2" />
     <PackageVersion Include="NReco.Logging.File" Version="1.4.0" />
     <PackageVersion Include="CliWrap" Version="3.10.5" />
-    <PackageVersion Include="Declarative.Avalonia.AgentTools" Version="12.2.0" />
     
     <!-- Testing -->
     <PackageVersion Include="xunit.v3.mtp-v2" Version="3.2.2" />

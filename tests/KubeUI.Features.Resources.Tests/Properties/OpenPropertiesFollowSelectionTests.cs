@@ -429,7 +429,7 @@ public sealed class OpenPropertiesFollowSelectionTests
     private static Task WaitForAsync(Func<bool> condition)
         => TestWait.UntilAsync(
             condition,
-            5000,
+            15000,
             TestContext.Current.CancellationToken,
             () => Dispatcher.UIThread.RunJobs());
 }

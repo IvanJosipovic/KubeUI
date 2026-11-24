@@ -1,7 +1,7 @@
 using System.Collections;
 using Avalonia.Controls;
 using Avalonia.Data.Converters;
-using Avalonia.Markup.Declarative;
+using SVCSystems.Avalonia.CSharpUI;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.Input;

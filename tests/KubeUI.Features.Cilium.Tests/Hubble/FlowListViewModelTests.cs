@@ -33,7 +33,10 @@ public sealed class FlowListViewModelTests
             cancellationToken: TestContext.Current.CancellationToken,
             beforePoll: () => Dispatcher.UIThread.RunJobs());
 
-        viewModel.SelectionModel.Select(0);
+        var items = viewModel.TableSource.Items.Cast<FlowViewModel>().ToArray();
+        var selectedIndex = Array.FindIndex(items, static flow => flow.Uuid == "selected-flow");
+        selectedIndex.ShouldBeGreaterThanOrEqualTo(0);
+        viewModel.SelectionModel.Select(selectedIndex);
         viewModel.CaptureSelectionState();
         viewModel.SelectionModel.Clear();
         viewModel.RestoreSelectionState();

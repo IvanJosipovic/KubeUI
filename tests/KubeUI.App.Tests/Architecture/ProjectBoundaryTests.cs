@@ -155,7 +155,7 @@ public sealed class ProjectBoundaryTests
     }
 
     [Fact]
-    public void External_markup_extension_assemblies_have_one_generator_owner()
+    public void Public_markup_extension_controls_have_one_publisher()
     {
         var sourceRoot = Path.Combine(FindRepositoryRoot(), "src");
         var sources = Directory.EnumerateFiles(sourceRoot, "*.cs", SearchOption.AllDirectories).ToArray();
@@ -163,11 +163,8 @@ public sealed class ProjectBoundaryTests
 
         var declarations = sources
             .SelectMany(path => Regex.Matches(File.ReadAllText(path),
-                    @"GenerateMarkupExtensionsForAssembly\(typeof\((?<type>[^)]+)\)")
-                .Select(match => (Path: path, Assembly: NormalizeAssembly(ResolveAnchorAssembly(match.Groups["type"].Value.Trim(), cache)))))
-            .Concat(sources
-                .SelectMany(path => Regex.Matches(File.ReadAllText(path), @"GenerateMarkupExtensionsForAvalonia\(true\)")
-                    .Select(_ => (Path: path, Assembly: "Avalonia"))));
+                    @"GeneratePublicMarkupExtensions\(typeof\((?<type>[^)]+)\)")
+                .Select(match => (Path: path, Assembly: NormalizeAssembly(ResolveAnchorAssembly(match.Groups["type"].Value.Trim(), cache)))));
 
         var duplicates = declarations
             .GroupBy(static item => item.Assembly, StringComparer.OrdinalIgnoreCase)

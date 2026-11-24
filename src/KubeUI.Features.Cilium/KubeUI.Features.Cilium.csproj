@@ -13,7 +13,7 @@
     <Using Include="Avalonia.Controls.Templates" />
     <Using Include="Avalonia.Data" />
     <Using Include="Avalonia.Layout" />
-    <Using Include="Avalonia.Markup.Declarative" />
+    <Using Include="SVCSystems.Avalonia.CSharpUI" />
     <Using Include="Avalonia.Media" />
     <Using Include="Avalonia.Styling" />
     <Using Include="Avalonia.Threading" />
@@ -65,7 +65,7 @@
   <ItemGroup>
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Irihi.Lingua" />
-    <PackageReference Include="Avalonia.Markup.Declarative" />
+    <PackageReference Include="SVCSystems.Avalonia.CSharpUI" />
     <PackageReference Include="CommunityToolkit.Mvvm" PrivateAssets="all" />
     <PackageReference Include="DynamicData" />
     <PackageReference Include="Grpc.Net.Client" />

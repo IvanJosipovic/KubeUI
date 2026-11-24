@@ -22,9 +22,9 @@
     <Using Include="KubeUI.Features.Resources.Assets" />
   </ItemGroup>
 
-  <Target Name="DisableDeclarativeAnalyzer" BeforeTargets="CoreCompile">
+  <Target Name="DisableCSharpUISourceGenerator" BeforeTargets="CoreCompile">
     <ItemGroup>
-      <Analyzer Remove="@(Analyzer)" Condition="'%(Filename)' == 'Avalonia.Markup.Declarative.SourceGenerator'" />
+      <Analyzer Remove="@(Analyzer)" Condition="'%(Filename)' == 'SVCSystems.Avalonia.CSharpUI.SourceGenerator'" />
     </ItemGroup>
   </Target>
 

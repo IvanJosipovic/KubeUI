@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Using Include="Avalonia.Markup.Declarative" />
+    <Using Include="SVCSystems.Avalonia.CSharpUI" />
     <Using Include="FluentIcons.Common" />
     <Using Include="KubeUI.Features.GatewayApi.Assets" />
     <Using Include="KubeUI.Foundation.Localization" />
@@ -34,7 +34,7 @@
   <ItemGroup>
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Irihi.Lingua" />
-    <PackageReference Include="Avalonia.Markup.Declarative" />
+    <PackageReference Include="SVCSystems.Avalonia.CSharpUI" />
     <PackageReference Include="FluentIcons.Avalonia" />
     <PackageReference Include="ServiceScan.SourceGenerator" PrivateAssets="all" />
   </ItemGroup>

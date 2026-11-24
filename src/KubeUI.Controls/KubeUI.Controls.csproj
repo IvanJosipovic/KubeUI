@@ -15,12 +15,13 @@
     <Using Include="Avalonia.Data" />
     <Using Include="Avalonia.Media" />
     <Using Include="Avalonia.Layout" />
-    <Using Include="Avalonia.Markup.Declarative" />
+    <Using Include="SVCSystems.Avalonia.CSharpUI" />
     <Using Include="Avalonia.Styling" />
     <Using Include="Dock.Model.Mvvm.Controls" />
     <Using Include="CommunityToolkit.Mvvm.ComponentModel" />
     <Using Include="FluentIcons.Common" />
     <Using Include="PropertyGenerator.Avalonia" />
+    <Using Include="PropertyGenerator.Avalonia.GeneratedDirectPropertyAttribute" Alias="GeneratedDirectProperty" />
     <Using Include="System.Collections" />
   </ItemGroup>
 
@@ -36,7 +37,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia.Markup.Declarative" />
+    <PackageReference Include="SVCSystems.Avalonia.CSharpUI" />
     <PackageReference Include="Avalonia.AvaloniaEdit" />
     <PackageReference Include="AvaloniaEdit.TextMate" />
     <PackageReference Include="CommunityToolkit.Mvvm" />

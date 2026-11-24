@@ -13,8 +13,6 @@ using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.Themes;
 
-[assembly: GenerateMarkupExtensionsForAvalonia(false)]
-[assembly: GenerateMarkupExtensionsForAssembly(typeof(LiveChartsCore.SkiaSharpView.Avalonia.PieChart), true)]
 
 namespace KubeUI.App;
 

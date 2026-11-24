@@ -30,7 +30,7 @@
 
   <Target Name="DisableAnalyzers" BeforeTargets="CoreCompile">
     <ItemGroup>
-      <Analyzer Remove="@(Analyzer)" Condition="'%(Filename)' == 'Avalonia.Markup.Declarative.SourceGenerator'" />
+      <Analyzer Remove="@(Analyzer)" Condition="'%(Filename)' == 'SVCSystems.Avalonia.CSharpUI.SourceGenerator'" />
     </ItemGroup>
   </Target>
 </Project>

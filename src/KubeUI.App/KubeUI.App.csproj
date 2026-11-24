@@ -4,6 +4,9 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsTrimmable>true</IsTrimmable>
     <WarningsAsErrors>$(WarningsAsErrors);IL2091</WarningsAsErrors>
+    <!-- CSharpUI copies referenced-control XML docs into generated code; LiveCharts generic type
+         names contain commas that produce malformed cref elements in those generated comments. -->
+    <NoWarn>$(NoWarn);CS1570;CS1584;CS1658</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,7 +16,7 @@
     <Using Include="Avalonia.Data" />
     <Using Include="Avalonia.Interactivity" />
     <Using Include="Avalonia.Layout" />
-    <Using Include="Avalonia.Markup.Declarative" />
+    <Using Include="SVCSystems.Avalonia.CSharpUI" />
     <Using Include="Avalonia.Media" />
     <Using Include="Avalonia.Styling" />
     <Using Include="Avalonia.Threading" />
@@ -70,7 +73,7 @@
   <ItemGroup>
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.AvaloniaEdit" />
-    <PackageReference Include="Avalonia.Markup.Declarative" />
+    <PackageReference Include="SVCSystems.Avalonia.CSharpUI" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Westermo.GraphX.Controls.Avalonia.Themes.Fluent" />
     <PackageReference Include="SvcSystems.UI.Terminal" />

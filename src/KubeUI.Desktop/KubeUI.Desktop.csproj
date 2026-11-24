@@ -45,10 +45,6 @@
     <TrimmerRootDescriptor Include="ILLink.XamlRoots.xml" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
-    <PackageReference Include="Declarative.Avalonia.AgentTools" />
-  </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\KubeUI.App\KubeUI.App.csproj" />
   </ItemGroup>
@@ -60,7 +56,7 @@
 
   <Target Name="DisableAnalyzers" BeforeTargets="CoreCompile">
     <ItemGroup>
-      <Analyzer Remove="@(Analyzer)" Condition="'%(Filename)' == 'Avalonia.Markup.Declarative.SourceGenerator' Or '%(Filename)' == 'Avalonia.Generators' Or '%(Filename)' == 'Avalonia.Analyzers.VisualBasic' or '%(Filename)' == 'Avalonia.Analyzers.CSharp' or '%(Filename)' == 'CommunityToolkit.Mvvm.SourceGenerators'" />
+      <Analyzer Remove="@(Analyzer)" Condition="'%(Filename)' == 'SVCSystems.Avalonia.CSharpUI.SourceGenerator' Or '%(Filename)' == 'Avalonia.Generators' Or '%(Filename)' == 'Avalonia.Analyzers.VisualBasic' or '%(Filename)' == 'Avalonia.Analyzers.CSharp' or '%(Filename)' == 'CommunityToolkit.Mvvm.SourceGenerators'" />
     </ItemGroup>
   </Target>
 </Project>

@@ -15,7 +15,11 @@
     <!-- AOT/trim diagnostics are tracked in the separate KubeUI-eng change "AOT/trim warning readiness".
          This includes third-party ILLink diagnostics surfaced during trimmed publish.
          Remove these exceptions when that change lands. -->
-    <WarningsNotAsErrors>$(WarningsNotAsErrors);IL2026;IL2046;IL2055;IL2057;IL2060;IL2067;IL2070;IL2072;IL2075;IL2090;IL2091;IL3050;YDNG001;DI0005</WarningsNotAsErrors>
+    <!-- CSharpUI generates an internal GeneratedControlFactories class per compilation, so friend
+         assemblies see each other's copy (CS0436); the local copy always wins. SVCUIGEN007 reports
+         that the generated 'Path' factory cannot be aliased because both System.IO.Path and
+         Avalonia.Controls.Shapes.Path exist; affected files use explicit aliases instead. -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);IL2026;IL2046;IL2055;IL2057;IL2060;IL2067;IL2070;IL2072;IL2075;IL2090;IL2091;IL3050;YDNG001;DI0005;CS0436;SVCUIGEN007</WarningsNotAsErrors>
 
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>

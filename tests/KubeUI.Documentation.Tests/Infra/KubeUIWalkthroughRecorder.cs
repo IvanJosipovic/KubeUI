@@ -9,7 +9,7 @@ using Avalonia.Controls.Templates;
 using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.LogicalTree;
-using Avalonia.Markup.Declarative;
+using SVCSystems.Avalonia.CSharpUI;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Styling;

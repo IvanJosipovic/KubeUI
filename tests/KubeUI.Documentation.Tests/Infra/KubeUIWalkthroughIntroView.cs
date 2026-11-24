@@ -1,5 +1,5 @@
 using Avalonia.Controls;
-using Avalonia.Markup.Declarative;
+using SVCSystems.Avalonia.CSharpUI;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
 using Avalonia.Svg.Skia;
