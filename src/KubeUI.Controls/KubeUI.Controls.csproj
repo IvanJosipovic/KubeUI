@@ -21,6 +21,7 @@
     <Using Include="CommunityToolkit.Mvvm.ComponentModel" />
     <Using Include="FluentIcons.Common" />
     <Using Include="PropertyGenerator.Avalonia" />
+    <Using Include="PropertyGenerator.Avalonia.GeneratedDirectPropertyAttribute" Alias="GeneratedDirectProperty" />
     <Using Include="System.Collections" />
   </ItemGroup>
 

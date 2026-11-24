@@ -39,6 +39,7 @@
     <Using Include="Microsoft.Extensions.Logging" />
     <Using Include="SvcSystems.Avalonia.DynamicTableView" />
     <Using Include="PropertyGenerator.Avalonia" />
+    <Using Include="PropertyGenerator.Avalonia.GeneratedDirectPropertyAttribute" Alias="GeneratedDirectProperty" />
     <Using Include="System.Collections" />
     <Using Include="System.Collections.ObjectModel" />
     <Using Include="System.ComponentModel" />
