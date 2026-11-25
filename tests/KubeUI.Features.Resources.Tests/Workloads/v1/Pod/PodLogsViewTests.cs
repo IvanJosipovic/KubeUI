@@ -17,6 +17,7 @@ using KubeUI.Features.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Features.Resources.Workloads.v1.Pod.Views;
 using Microsoft.Extensions.Logging;
 using Shouldly;
+using TreeComboBox = Ursa.Controls.TreeComboBox;
 
 namespace KubeUI.Features.Resources.Tests.Workloads.v1.Pod;
 

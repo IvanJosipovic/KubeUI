@@ -13,6 +13,7 @@ using KubeUI.Testing.Utilities;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Ursa.Controls;
+using NumericUpDown = Avalonia.Controls.NumericUpDown;
 
 namespace KubeUI.Features.Cilium.Tests.Hubble;
 
