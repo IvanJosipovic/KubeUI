@@ -12,6 +12,9 @@
     <Using Include="Avalonia.Collections" />
     <Using Include="Avalonia.Controls" />
     <Using Include="Avalonia.Controls.Notifications" />
+    <Using Include="FluentIcons.Avalonia" />
+    <Using Include="LiveChartsGeneratedCode" />
+    <Using Include="LiveChartsCore.SkiaSharpView.Avalonia" />
     <Using Include="Avalonia.Data" />
     <Using Include="Avalonia.Interactivity" />
     <Using Include="Avalonia.Layout" />

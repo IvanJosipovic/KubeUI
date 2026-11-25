@@ -239,7 +239,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             .HorizontalAlignment(HorizontalAlignment.Stretch)
             .VerticalAlignment(VerticalAlignment.Stretch);
         chart.Bind(
-            LiveChartsGeneratedCode.SourceGenChart.SeriesProperty,
+            SourceGenChart.SeriesProperty,
             CompiledBinding.Create<MetricsControl, IEnumerable<ISeries>>(x => x.SelectedPanel!.Series, source: this));
         chart.Bind(
             SourceGenCartesianChart.XAxesProperty,

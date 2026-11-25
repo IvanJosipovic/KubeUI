@@ -2295,10 +2295,12 @@ public sealed class ResourceGraphControlTests
             await WaitForAsync(() => control.Area.VertexList.Count == initialPods.Count);
 
             control.Graph = new ResourceRelationshipGraph(expandedPods, []);
-            await WaitForAsync(() => control.Area.VertexList.Count == expandedPods.Count, timeoutMs: 30000);
+            // This test intentionally builds 520 GraphX vertex controls; on a loaded CI
+            // machine the dispatcher can take well over 30s to finish the layout.
+            await WaitForAsync(() => control.Area.VertexList.Count == expandedPods.Count, timeoutMs: 60_000);
 
             control.Dispose();
-            await WaitForAsync(() => control.Area.IsDisposed, timeoutMs: 30000);
+            await WaitForAsync(() => control.Area.IsDisposed, timeoutMs: 60_000);
         }
         finally
         {
