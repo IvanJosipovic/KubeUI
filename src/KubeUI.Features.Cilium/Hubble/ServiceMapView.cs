@@ -2,7 +2,6 @@ using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
-using SVCSystems.Avalonia.CSharpUI;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using FluentIcons.Avalonia;
 using FluentIcons.Common;
@@ -12,6 +11,7 @@ using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Features.Cilium.Hubble.Controls;
 using KubeUI.Features.Clusters.Presentation;
 using SvcSystems.Avalonia.DynamicTableView;
+using SVCSystems.Avalonia.CSharpUI;
 using Westermo.GraphX.Common.Enums;
 
 namespace KubeUI.Features.Cilium.Hubble;

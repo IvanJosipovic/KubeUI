@@ -1,8 +1,8 @@
 using Avalonia;
-using SVCSystems.Avalonia.CSharpUI;
 using Avalonia.Media;
 using KubeUI.Controls.Styles;
 using KubeUI.Features.Cilium.Hubble;
+using SVCSystems.Avalonia.CSharpUI;
 
 namespace KubeUI.Features.Cilium.Hubble.Controls;
 

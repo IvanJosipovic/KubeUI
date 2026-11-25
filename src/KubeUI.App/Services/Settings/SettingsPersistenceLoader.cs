@@ -1,5 +1,5 @@
-using Path = System.IO.Path;
 using System.Text.Json;
+using Path = System.IO.Path;
 
 namespace KubeUI.App.Services.Settings;
 

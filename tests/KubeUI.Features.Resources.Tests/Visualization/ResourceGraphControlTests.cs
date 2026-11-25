@@ -2,7 +2,6 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
-using SVCSystems.Avalonia.CSharpUI;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
 using Avalonia.Styling;
@@ -19,6 +18,7 @@ using KubeUI.Features.Resources.Icons;
 using KubeUI.Features.Resources.Visualization;
 using KubeUI.Kubernetes.Resources.Relationships;
 using Shouldly;
+using SVCSystems.Avalonia.CSharpUI;
 
 namespace KubeUI.Features.Resources.Tests.Visualization;
 

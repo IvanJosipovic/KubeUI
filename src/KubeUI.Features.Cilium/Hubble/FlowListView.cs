@@ -1,7 +1,6 @@
 using System.Collections;
 using Avalonia.Controls;
 using Avalonia.Data.Converters;
-using SVCSystems.Avalonia.CSharpUI;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.Input;
@@ -13,6 +12,7 @@ using KubeUI.Controls.Presentation;
 using KubeUI.Features.Cilium.Hubble;
 using KubeUI.Features.Clusters.Presentation;
 using SvcSystems.Avalonia.DynamicTableView;
+using SVCSystems.Avalonia.CSharpUI;
 
 namespace KubeUI.Features.Cilium.Hubble;
 

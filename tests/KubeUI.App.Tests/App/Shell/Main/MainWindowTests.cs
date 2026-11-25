@@ -9,7 +9,6 @@ using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Layout;
-using SVCSystems.Avalonia.CSharpUI;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Svg.Skia;
@@ -18,6 +17,7 @@ using Avalonia.VisualTree;
 using KubeUI.App.Infrastructure;
 using KubeUI.App.Shell.Main;
 using Shouldly;
+using SVCSystems.Avalonia.CSharpUI;
 
 namespace KubeUI.App.Tests.App.Shell;
 

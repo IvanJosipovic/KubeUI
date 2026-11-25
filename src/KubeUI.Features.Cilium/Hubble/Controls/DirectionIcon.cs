@@ -1,9 +1,9 @@
 using Avalonia;
 using Avalonia.Controls;
-using SVCSystems.Avalonia.CSharpUI;
 using Avalonia.Media;
 using KubeUI.Controls.Styles;
 using KubeUI.Features.Cilium.Hubble;
+using SVCSystems.Avalonia.CSharpUI;
 using KubeUIFlowDirection = KubeUI.Features.Cilium.Hubble.FlowDirection;
 
 namespace KubeUI.Features.Cilium.Hubble.Controls;

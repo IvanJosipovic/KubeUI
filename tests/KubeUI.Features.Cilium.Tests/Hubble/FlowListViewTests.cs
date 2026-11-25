@@ -85,7 +85,7 @@ public sealed class FlowListViewTests
 
         toolbar.GetVisualDescendants().OfType<ComboBox>().ShouldBeEmpty();
 
-        toolbar.GetVisualDescendants().OfType<Avalonia.Controls.NumericUpDown>().ShouldBeEmpty();
+        toolbar.GetVisualDescendants().OfType<NumericUpDown>().ShouldBeEmpty();
         toolbar.GetVisualDescendants().OfType<ToggleButton>().ShouldHaveSingleItem();
         toolbar.GetVisualDescendants()
             .OfType<Button>()

@@ -242,10 +242,10 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             LiveChartsGeneratedCode.SourceGenChart.SeriesProperty,
             CompiledBinding.Create<MetricsControl, IEnumerable<ISeries>>(x => x.SelectedPanel!.Series, source: this));
         chart.Bind(
-            LiveChartsGeneratedCode.SourceGenCartesianChart.XAxesProperty,
+            SourceGenCartesianChart.XAxesProperty,
             CompiledBinding.Create<MetricsControl, ICartesianAxis[]>(x => x.SelectedPanel!.XAxes, source: this));
         chart.Bind(
-            LiveChartsGeneratedCode.SourceGenCartesianChart.YAxesProperty,
+            SourceGenCartesianChart.YAxesProperty,
             CompiledBinding.Create<MetricsControl, ICartesianAxis[]>(x => x.SelectedPanel!.YAxes, source: this));
 
         var metricsGrid = new Grid()
@@ -469,7 +469,7 @@ public sealed partial class MetricsControl : UserControl, IInitializeCluster, IN
             InvalidateArrange();
             InvalidateVisual();
 
-            foreach (var chart in this.GetVisualDescendants().OfType<LiveChartsCore.SkiaSharpView.Avalonia.CartesianChart>())
+            foreach (var chart in this.GetVisualDescendants().OfType<CartesianChart>())
             {
                 chart.InvalidateMeasure();
                 chart.InvalidateArrange();

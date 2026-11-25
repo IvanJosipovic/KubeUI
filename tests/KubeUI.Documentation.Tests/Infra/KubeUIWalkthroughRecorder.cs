@@ -9,7 +9,6 @@ using Avalonia.Controls.Templates;
 using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.LogicalTree;
-using SVCSystems.Avalonia.CSharpUI;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Styling;
@@ -43,6 +42,7 @@ using KubeUI.Testing.Kubernetes.Bootstrap;
 using KubeUI.Testing.Kubernetes.Scenarios;
 using Microsoft.Extensions.DependencyInjection;
 using SvcSystems.Avalonia.DynamicTableView;
+using SVCSystems.Avalonia.CSharpUI;
 using Westermo.GraphX.Controls.Controls;
 
 namespace KubeUI.Documentation.Tests.Infra;
