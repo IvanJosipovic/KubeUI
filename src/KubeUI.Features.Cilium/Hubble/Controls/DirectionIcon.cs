@@ -1,23 +1,17 @@
 using Avalonia;
 using Avalonia.Controls;
-using SVCSystems.Avalonia.CSharpUI;
 using Avalonia.Media;
 using KubeUI.Controls.Styles;
 using KubeUI.Features.Cilium.Hubble;
+using SVCSystems.Avalonia.CSharpUI;
 using KubeUIFlowDirection = KubeUI.Features.Cilium.Hubble.FlowDirection;
 
 namespace KubeUI.Features.Cilium.Hubble.Controls;
 
-public sealed class DirectionIcon : Border
+public sealed partial class DirectionIcon : Border
 {
-    public static readonly StyledProperty<KubeUIFlowDirection> DirectionProperty =
-        AvaloniaProperty.Register<DirectionIcon, KubeUIFlowDirection>(nameof(Direction));
-
-    public KubeUIFlowDirection Direction
-    {
-        get => GetValue(DirectionProperty);
-        set => SetValue(DirectionProperty, value);
-    }
+    [GeneratedStyledProperty]
+    public partial KubeUIFlowDirection Direction { get; set; }
 
     public DirectionIcon()
     {

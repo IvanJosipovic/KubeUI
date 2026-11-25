@@ -6,7 +6,6 @@ using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using Avalonia.Controls.Selection;
 using Avalonia.Controls.Templates;
-using SVCSystems.Avalonia.CSharpUI;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -21,6 +20,7 @@ using KubeUI.Features.Resources;
 using KubeUI.Kubernetes;
 using Microsoft.Extensions.Logging;
 using SvcSystems.Avalonia.DynamicTableView;
+using SVCSystems.Avalonia.CSharpUI;
 using Controls = KubeUI.Features.Cilium.Hubble.Controls;
 using HubbleConnectionStatus = KubeUI.Features.Cilium.Hubble.ConnectionStatus;
 

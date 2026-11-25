@@ -32,22 +32,26 @@ using Westermo.GraphX.Logic.Models;
 namespace KubeUI.Features.Cilium.Hubble.Controls;
 
 /// <summary>Renders Hubble service-map snapshots through GraphX.</summary>
-public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphControlFactory
+public sealed partial class ServiceMapGraphControl : UserControl, IDisposable, IGraphControlFactory
 {
     private static readonly TimeSpan UpdateBuffer = TimeSpan.FromMilliseconds(400);
     private const float GroupOverlapGap = 160f;
 
-    public static readonly DirectProperty<ServiceMapGraphControl, ServiceMapGraph?> GraphProperty =
-        AvaloniaProperty.RegisterDirect<ServiceMapGraphControl, ServiceMapGraph?>(nameof(Graph), control => control.Graph, (control, value) => control.Graph = value);
-    public static readonly DirectProperty<ServiceMapGraphControl, LayoutAlgorithmTypeEnum> LayoutAlgorithmProperty =
-        AvaloniaProperty.RegisterDirect<ServiceMapGraphControl, LayoutAlgorithmTypeEnum>(
-            nameof(LayoutAlgorithm), control => control.LayoutAlgorithm, (control, value) => control.LayoutAlgorithm = value);
-    public static readonly DirectProperty<ServiceMapGraphControl, EdgeRoutingAlgorithmTypeEnum> EdgeRoutingAlgorithmProperty =
-        AvaloniaProperty.RegisterDirect<ServiceMapGraphControl, EdgeRoutingAlgorithmTypeEnum>(
-            nameof(EdgeRoutingAlgorithm), control => control.EdgeRoutingAlgorithm, (control, value) => control.EdgeRoutingAlgorithm = value);
-    public static readonly DirectProperty<ServiceMapGraphControl, ICommand?> ViewNodeCommandProperty =
-        AvaloniaProperty.RegisterDirect<ServiceMapGraphControl, ICommand?>(
-            nameof(ViewNodeCommand), control => control.ViewNodeCommand, (control, value) => control.ViewNodeCommand = value);
+    /// <summary>Gets or sets graph snapshot to render.</summary>
+    [GeneratedDirectProperty]
+    public partial ServiceMapGraph? Graph { get; set; }
+
+    /// <summary>Gets or sets GraphX layout algorithm used to position service nodes.</summary>
+    [GeneratedDirectProperty]
+    public partial LayoutAlgorithmTypeEnum LayoutAlgorithm { get; set; } = LayoutAlgorithmTypeEnum.CompoundFDP;
+
+    /// <summary>Gets or sets GraphX edge-routing algorithm used to draw connections.</summary>
+    [GeneratedDirectProperty]
+    public partial EdgeRoutingAlgorithmTypeEnum EdgeRoutingAlgorithm { get; set; } = EdgeRoutingAlgorithmTypeEnum.None;
+
+    /// <summary>Gets or sets command invoked by a rendered node's View context action.</summary>
+    [GeneratedDirectProperty]
+    public partial ICommand? ViewNodeCommand { get; set; }
     private readonly GraphArea<ServiceMapVertex, ServiceMapEdge, CompoundGraph<ServiceMapVertex, ServiceMapEdge>> _area;
     private readonly GXLogicCore<ServiceMapVertex, ServiceMapEdge, CompoundGraph<ServiceMapVertex, ServiceMapEdge>> _logicCore;
     private readonly ZoomControl _zoomControl;
@@ -56,10 +60,6 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
     private readonly Dictionary<string, ServiceMapVertex> _vertices = new(StringComparer.Ordinal);
     private readonly Dictionary<string, ServiceMapVertex> _groups = new(StringComparer.Ordinal);
     private readonly ServiceMapExternalLayout _externalLayout;
-    private ServiceMapGraph? _graph;
-    private LayoutAlgorithmTypeEnum _layoutAlgorithm = LayoutAlgorithmTypeEnum.CompoundFDP;
-    private EdgeRoutingAlgorithmTypeEnum _edgeRoutingAlgorithm = EdgeRoutingAlgorithmTypeEnum.None;
-    private ICommand? _viewNodeCommand;
     private ServiceMapGraph? _pendingGraph;
     private CancellationTokenSource? _bufferCancellation;
     private CancellationTokenSource? _layoutCancellation;
@@ -71,73 +71,38 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
     private bool _disposed;
     private bool _graphXDisposed;
 
-    /// <summary>Gets or sets graph snapshot to render.</summary>
-    public ServiceMapGraph? Graph
+    /// <inheritdoc />
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
-        get => _graph;
-        set
+        base.OnPropertyChanged(change);
+
+        if (change.Property == GraphProperty)
         {
-            if (ReferenceEquals(_graph, value))
-                return;
-            var old = _graph;
-            _graph = value;
-            RaisePropertyChanged(GraphProperty, old, value);
+            var value = Graph;
             _pendingGraph = value;
             if (!_hasGeneratedGraph && value is not null)
             {
                 _bufferCancellation?.Cancel();
                 ApplySnapshot(value);
-                return;
             }
-
-            QueueBufferedUpdate();
+            else
+            {
+                QueueBufferedUpdate();
+            }
         }
-    }
-
-    /// <summary>Gets or sets GraphX layout algorithm used to position service nodes.</summary>
-    public LayoutAlgorithmTypeEnum LayoutAlgorithm
-    {
-        get => _layoutAlgorithm;
-        set
+        else if (change.Property == LayoutAlgorithmProperty)
         {
-            if (_layoutAlgorithm == value)
-                return;
-            var old = _layoutAlgorithm;
-            _layoutAlgorithm = value;
-            _externalLayout.Algorithm = value;
-            RaisePropertyChanged(LayoutAlgorithmProperty, old, value);
+            _externalLayout.Algorithm = LayoutAlgorithm;
             RequestRelayout();
         }
-    }
-
-    /// <summary>Gets or sets GraphX edge-routing algorithm used to draw connections.</summary>
-    public EdgeRoutingAlgorithmTypeEnum EdgeRoutingAlgorithm
-    {
-        get => _edgeRoutingAlgorithm;
-        set
+        else if (change.Property == EdgeRoutingAlgorithmProperty)
         {
-            if (_edgeRoutingAlgorithm == value)
-                return;
-            var old = _edgeRoutingAlgorithm;
-            _edgeRoutingAlgorithm = value;
-            _logicCore.DefaultEdgeRoutingAlgorithm = value;
-            _logicCore.DefaultEdgeRoutingAlgorithmParams = CreateEdgeRoutingParameters(value);
-            RaisePropertyChanged(EdgeRoutingAlgorithmProperty, old, value);
+            _logicCore.DefaultEdgeRoutingAlgorithm = EdgeRoutingAlgorithm;
+            _logicCore.DefaultEdgeRoutingAlgorithmParams = CreateEdgeRoutingParameters(EdgeRoutingAlgorithm);
             RequestRelayout();
         }
-    }
-
-    /// <summary>Gets or sets command invoked by a rendered node's View context action.</summary>
-    public ICommand? ViewNodeCommand
-    {
-        get => _viewNodeCommand;
-        set
+        else if (change.Property == ViewNodeCommandProperty)
         {
-            if (ReferenceEquals(_viewNodeCommand, value))
-                return;
-            var old = _viewNodeCommand;
-            _viewNodeCommand = value;
-            RaisePropertyChanged(ViewNodeCommandProperty, old, value);
             foreach (var pair in _area.VertexList)
                 pair.Value.ContextMenu = CreateNodeContextMenu(pair.Key);
         }
@@ -661,7 +626,7 @@ public sealed class ServiceMapGraphControl : UserControl, IDisposable, IGraphCon
                 new MenuItem
                 {
                     Header = CiliumLanguageManager.Instance.ServiceMapGraphControl_View.CurrentValue()!,
-                    Command = _viewNodeCommand,
+                    Command = ViewNodeCommand,
                     CommandParameter = node,
                 }
             }

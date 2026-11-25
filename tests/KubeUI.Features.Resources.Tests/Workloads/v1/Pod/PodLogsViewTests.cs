@@ -17,6 +17,7 @@ using KubeUI.Features.Resources.Workloads.v1.Pod.ViewModels;
 using KubeUI.Features.Resources.Workloads.v1.Pod.Views;
 using Microsoft.Extensions.Logging;
 using Shouldly;
+using TreeComboBox = Ursa.Controls.TreeComboBox;
 
 namespace KubeUI.Features.Resources.Tests.Workloads.v1.Pod;
 
@@ -224,7 +225,7 @@ public sealed class PodLogsViewTests
         {
             Dispatcher.UIThread.RunJobs();
             var sourcesSelector = view.GetVisualDescendants()
-                .OfType<Ursa.Controls.TreeComboBox>()
+                .OfType<TreeComboBox>()
                 .Single();
             var selectionControls = sourcesSelector.Parent.ShouldBeOfType<StackPanel>();
             bool? selected = null;
@@ -276,13 +277,13 @@ public sealed class PodLogsViewTests
             sourcesSelector.PlaceholderText.ShouldBe(ResourcesLanguageManager.Instance.PodLogsView_Sources.CurrentValue()!);
             controllerButton.IsVisible.ShouldBeTrue();
             followLogsButton.Content
-                .ShouldBeOfType<FluentIcons.Avalonia.FluentIcon>()
+                .ShouldBeOfType<FluentIcon>()
                 .Icon.ShouldBe(FluentIcons.Common.Icon.ArrowDownload);
             followLogsButton.IsVisible.ShouldBeTrue();
             followLogsButton.IsEnabled.ShouldBeTrue();
             followLogsButton.IsChecked.ShouldBe(true);
             clearButton.Content
-                .ShouldBeOfType<FluentIcons.Avalonia.FluentIcon>()
+                .ShouldBeOfType<FluentIcon>()
                 .Icon.ShouldBe(FluentIcons.Common.Icon.Broom);
             actionControls.Children.OfType<Border>().ShouldBeEmpty();
             viewModel.Title.ShouldBe("Pod Logs");
@@ -965,7 +966,7 @@ public sealed class PodLogsViewTests
             Dispatcher.UIThread.RunJobs();
 
             var sourcesSelector = view.GetVisualDescendants()
-                .OfType<Ursa.Controls.TreeComboBox>()
+                .OfType<TreeComboBox>()
                 .Single();
             Control topBar = view.GetVisualDescendants()
                 .OfType<CompactToolbar>()

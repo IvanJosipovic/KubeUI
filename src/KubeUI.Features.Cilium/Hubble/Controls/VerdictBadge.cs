@@ -1,21 +1,15 @@
 using Avalonia;
-using SVCSystems.Avalonia.CSharpUI;
 using Avalonia.Media;
 using KubeUI.Controls.Styles;
 using KubeUI.Features.Cilium.Hubble;
+using SVCSystems.Avalonia.CSharpUI;
 
 namespace KubeUI.Features.Cilium.Hubble.Controls;
 
-public sealed class VerdictBadge : Border
+public sealed partial class VerdictBadge : Border
 {
-    public static readonly StyledProperty<FlowVerdict> VerdictProperty =
-        AvaloniaProperty.Register<VerdictBadge, FlowVerdict>(nameof(Verdict));
-
-    public FlowVerdict Verdict
-    {
-        get => GetValue(VerdictProperty);
-        set => SetValue(VerdictProperty, value);
-    }
+    [GeneratedStyledProperty]
+    public partial FlowVerdict Verdict { get; set; }
 
     public VerdictBadge()
     {

@@ -20,14 +20,14 @@ public partial class PortForwarderListView : KubeUIView<PortForwarderListViewMod
         }
             .GridLinesVisibility(DynamicTableViewGridLinesVisibility.All)
             .Source(vm.TableSource)
-            .ContextMenu(new ContextMenu());
+            .ContextMenu(new ContextMenu())
+            .OnDoubleTapped(e =>
+            {
+                if (FindRow(e.Source)?.DataContext is PortForwarder portForwarder && vm.OpenCommand.CanExecute(portForwarder))
+                    vm.OpenCommand.Execute(portForwarder);
+            });
         table.KeyBindings.Add(CreateSelectionKeyBinding(Key.Enter, vm, vm.OpenCommand));
         table.KeyBindings.Add(CreateSelectionKeyBinding(Key.Delete, vm, vm.RemoveCommand));
-        table.DoubleTapped += (_, e) =>
-        {
-            if (FindRow(e.Source)?.DataContext is PortForwarder portForwarder && vm.OpenCommand.CanExecute(portForwarder))
-                vm.OpenCommand.Execute(portForwarder);
-        };
         return table;
     }
 

@@ -21,6 +21,8 @@
     <Compile Include="..\KubeUI.App.Tests\Infra\LiveClusterFactAttribute.cs" Link="Infra\LiveClusterFactAttribute.cs" />
     <Compile Include="..\KubeUI.App.Tests\GlobalUsings.cs" Link="GlobalUsings.cs" />
     <Using Include="Xunit" />
+    <Using Include="AvaloniaEdit" />
+    <Using Include="FluentIcons.Avalonia" />
     <Using Include="KubeUI.Controls.Converters" />
     <Using Include="KubeUI.Controls.Presentation" />
     <Using Include="KubeUI.Controls.DependencyInjection" />

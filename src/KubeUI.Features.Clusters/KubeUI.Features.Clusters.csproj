@@ -13,6 +13,7 @@
   <ItemGroup>
     <Using Include="Avalonia" />
     <Using Include="Avalonia.Controls" />
+    <Using Include="Avalonia.Controls.Primitives" />
     <Using Include="Avalonia.Data" />
     <Using Include="Avalonia.Interactivity" />
     <Using Include="Avalonia.Layout" />

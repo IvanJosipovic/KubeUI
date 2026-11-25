@@ -11,10 +11,14 @@ public sealed class AgentChatView : KubeUIView<AgentChatViewModel>
 {
     private ScrollViewer _conversationScrollViewer = null!;
     private bool _conversationIsAtEnd = true;
+    private bool _conversationSubscribed;
 
     protected override object Build(AgentChatViewModel vm)
     {
         ArgumentNullException.ThrowIfNull(vm);
+
+        // Reload creates a new ScrollViewer; release the old control before it is replaced.
+        UnsubscribeConversationScrollViewer();
 
         var promptEditor = new TextBox()
             .Name("PromptEditor")
@@ -72,17 +76,43 @@ public sealed class AgentChatView : KubeUIView<AgentChatViewModel>
                                     .IsVisible(vm, x => x.IsBusy)
                             .Col(2)));
 
-        _conversationScrollViewer.PropertyChanged += ConversationScrollViewerOnPropertyChanged;
-
         return controls;
+    }
+
+    protected override void OnAfterInitialized()
+    {
+        base.OnAfterInitialized();
+        SubscribeConversationScrollViewer();
+    }
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        SubscribeConversationScrollViewer();
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
-        if (_conversationScrollViewer is not null)
-            _conversationScrollViewer.PropertyChanged -= ConversationScrollViewerOnPropertyChanged;
-        _conversationScrollViewer = null!;
+        UnsubscribeConversationScrollViewer();
         base.OnDetachedFromVisualTree(e);
+    }
+
+    private void SubscribeConversationScrollViewer()
+    {
+        if (_conversationScrollViewer is null || _conversationSubscribed)
+            return;
+
+        _conversationScrollViewer.PropertyChanged += ConversationScrollViewerOnPropertyChanged;
+        _conversationSubscribed = true;
+    }
+
+    private void UnsubscribeConversationScrollViewer()
+    {
+        if (_conversationScrollViewer is null || !_conversationSubscribed)
+            return;
+
+        _conversationScrollViewer.PropertyChanged -= ConversationScrollViewerOnPropertyChanged;
+        _conversationSubscribed = false;
     }
 
     private void ConversationScrollViewerOnPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
