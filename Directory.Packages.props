@@ -17,9 +17,9 @@
     <PackageVersion Include="Avalonia.Skia" Version="12.2.0" />
     
     <!-- Dock -->
-    <PackageVersion Include="Dock.Model.Mvvm" Version="12.1.5" />
-    <PackageVersion Include="Dock.Avalonia" Version="12.1.5" />
-    <PackageVersion Include="Dock.Avalonia.Themes.Fluent" Version="12.1.5" />
+    <PackageVersion Include="Dock.Model.Mvvm" Version="12.2.0" />
+    <PackageVersion Include="Dock.Avalonia" Version="12.2.0" />
+    <PackageVersion Include="Dock.Avalonia.Themes.Fluent" Version="12.2.0" />
     
     <!-- MVVM -->
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
@@ -56,7 +56,7 @@
     <!-- Kubernetes -->
     <PackageVersion Include="KubernetesClient" Version="21.0.8" />
     <PackageVersion Include="KubernetesClient.Informer" Version="2.0.0-beta.6" />
-    <PackageVersion Include="KokoroSharp.CPU" Version="0.8.4" />
+    <PackageVersion Include="KokoroSharp.CPU" Version="0.8.5" />
     
     <!-- YAML/Serialization -->
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
@@ -75,7 +75,7 @@
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="11.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="11.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="11.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="11.0.1" />
     
     <!-- OpenTelemetry -->
     <PackageVersion Include="OpenTelemetry" Version="1.21.0" />
