@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
 using Avalonia.VisualTree;
 using Dock.Model.Controls;
@@ -129,11 +130,11 @@ public sealed class HelmReleasesViewModelTests : IDisposable
         {
             window.Show();
             await TestApplicationExtensions.WaitForUiAsync();
-            var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor").ShouldNotBeNull();
+            var editor = view.FindControl<TextEditor>("Editor").ShouldNotBeNull();
             editor.IsReadOnly.ShouldBeTrue();
             editor.Text.ShouldBe(yaml.YamlDocument.Text);
             yaml.ValidationDiagnostics.ShouldBeEmpty();
-            view.FindControl<Avalonia.Controls.Primitives.ToggleButton>("HideNoisyFieldsToggle")!
+            view.FindControl<ToggleButton>("HideNoisyFieldsToggle")!
                 .IsVisible.ShouldBeFalse();
             yaml.HideNoisyFields = !yaml.HideNoisyFields;
             editor.Text.ShouldBe(yaml.YamlDocument.Text);

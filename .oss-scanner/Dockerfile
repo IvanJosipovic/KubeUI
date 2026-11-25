@@ -48,8 +48,6 @@ RUN dotnet restore KubeUI.slnx
 RUN dotnet build KubeUI.slnx \
         --configuration Release \
         --no-restore \
-        --tl:off \
-        -clp:ErrorsOnly \
         -p:DebugSymbols=true \
         -p:DebugType=portable
 

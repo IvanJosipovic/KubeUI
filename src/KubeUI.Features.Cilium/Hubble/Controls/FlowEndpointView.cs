@@ -1,31 +1,19 @@
 using System.Globalization;
 using Avalonia;
-using SVCSystems.Avalonia.CSharpUI;
 using Avalonia.Media;
 using KubeUI.Controls.Styles;
 using KubeUI.Features.Cilium.Hubble;
+using SVCSystems.Avalonia.CSharpUI;
 
 namespace KubeUI.Features.Cilium.Hubble.Controls;
 
-public sealed class FlowEndpointView : StackPanel
+public sealed partial class FlowEndpointView : StackPanel
 {
-    public static readonly StyledProperty<FlowEndpoint?> EndpointProperty =
-        AvaloniaProperty.Register<FlowEndpointView, FlowEndpoint?>(nameof(Endpoint));
+    [GeneratedStyledProperty]
+    public partial FlowEndpoint? Endpoint { get; set; }
 
-    public static readonly StyledProperty<bool> IsSourceProperty =
-        AvaloniaProperty.Register<FlowEndpointView, bool>(nameof(IsSource));
-
-    public FlowEndpoint? Endpoint
-    {
-        get => GetValue(EndpointProperty);
-        set => SetValue(EndpointProperty, value);
-    }
-
-    public bool IsSource
-    {
-        get => GetValue(IsSourceProperty);
-        set => SetValue(IsSourceProperty, value);
-    }
+    [GeneratedStyledProperty]
+    public partial bool IsSource { get; set; }
 
     public FlowEndpointView()
     {

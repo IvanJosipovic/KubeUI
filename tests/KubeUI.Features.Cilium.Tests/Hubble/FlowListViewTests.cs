@@ -13,6 +13,7 @@ using KubeUI.Testing.Utilities;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Ursa.Controls;
+using NumericUpDown = Avalonia.Controls.NumericUpDown;
 
 namespace KubeUI.Features.Cilium.Tests.Hubble;
 
@@ -85,7 +86,7 @@ public sealed class FlowListViewTests
 
         toolbar.GetVisualDescendants().OfType<ComboBox>().ShouldBeEmpty();
 
-        toolbar.GetVisualDescendants().OfType<Avalonia.Controls.NumericUpDown>().ShouldBeEmpty();
+        toolbar.GetVisualDescendants().OfType<NumericUpDown>().ShouldBeEmpty();
         toolbar.GetVisualDescendants().OfType<ToggleButton>().ShouldHaveSingleItem();
         toolbar.GetVisualDescendants()
             .OfType<Button>()
