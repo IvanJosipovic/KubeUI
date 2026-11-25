@@ -6,15 +6,15 @@ namespace KubeUI.Controls.Presentation;
 /// Renders an SVG asset from an <c>avares://KubeUI.Foundation</c> path and swaps to a second asset when the effective
 /// theme variant is dark. Use for monochrome brand icons that need an official dark-background variant.
 /// </summary>
-public sealed class ThemedSvgImage : Image
+public sealed partial class ThemedSvgImage : Image
 {
-    /// <summary>Defines the <see cref="SourcePath"/> property.</summary>
-    public static readonly StyledProperty<string?> SourcePathProperty =
-        AvaloniaProperty.Register<ThemedSvgImage, string?>(nameof(SourcePath));
+    /// <summary>Gets or sets the SVG asset path rendered in the light theme; also used as the dark-theme fallback.</summary>
+    [GeneratedStyledProperty]
+    public partial string? SourcePath { get; set; }
 
-    /// <summary>Defines the <see cref="DarkSourcePath"/> property.</summary>
-    public static readonly StyledProperty<string?> DarkSourcePathProperty =
-        AvaloniaProperty.Register<ThemedSvgImage, string?>(nameof(DarkSourcePath));
+    /// <summary>Gets or sets the SVG asset path rendered when the effective theme variant is dark.</summary>
+    [GeneratedStyledProperty]
+    public partial string? DarkSourcePath { get; set; }
 
     private static readonly Uri AppUri = new("avares://KubeUI.Foundation");
 
@@ -31,20 +31,6 @@ public sealed class ThemedSvgImage : Image
     public ThemedSvgImage()
     {
         ActualThemeVariantChanged += OnActualThemeVariantChanged;
-    }
-
-    /// <summary>Gets or sets the SVG asset path rendered in the light theme; also used as the dark-theme fallback.</summary>
-    public string? SourcePath
-    {
-        get => GetValue(SourcePathProperty);
-        set => SetValue(SourcePathProperty, value);
-    }
-
-    /// <summary>Gets or sets the SVG asset path rendered when the effective theme variant is dark.</summary>
-    public string? DarkSourcePath
-    {
-        get => GetValue(DarkSourcePathProperty);
-        set => SetValue(DarkSourcePathProperty, value);
     }
 
     /// <inheritdoc />

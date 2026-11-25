@@ -51,9 +51,7 @@
             "command": "dotnet",
             "args": [
                 "build",
-                "src/KubeUI.Desktop/KubeUI.Desktop.csproj",
-                "--tl:off",
-                "-clp:ErrorsOnly"
+                "src/KubeUI.Desktop/KubeUI.Desktop.csproj"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -70,12 +68,7 @@
             "command": "dotnet",
             "args": [
                 "test",
-                "--no-restore",
-                "--tl:off",
-                "-clp:ErrorsOnly",
-                "--hangdump",
-                "--hangdump-timeout",
-                "5m"
+                "--no-restore"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"

@@ -30,6 +30,8 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
     private bool _disposed;
     private readonly IDictionary<string, FileSystemWatcher> _fileWatchers = new Dictionary<string, FileSystemWatcher>(StringComparer.Ordinal);
     private readonly Lock _syncRoot = new();
+    private int _watcherCallbacksInFlight;
+    private readonly ManualResetEventSlim _watcherCallbacksDrained = new(initialState: true);
 
     public ObservableCollection<IClusterRuntime> Clusters { get; } = new ObservableSortedCollection<IClusterRuntime>(new ClusterComparer());
 
@@ -191,7 +193,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
     {
         ArgumentNullException.ThrowIfNull(path);
 
-        if (!File.Exists(path))
+        if (_disposed || !File.Exists(path))
         {
             return;
         }
@@ -205,6 +207,11 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
         do
         {
+            if (_disposed)
+            {
+                return;
+            }
+
             try
             {
                 var config = KubernetesClientConfiguration.LoadKubeConfig(path);
@@ -213,6 +220,11 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
             }
             catch (IOException ex)
             {
+                if (_disposed)
+                {
+                    return;
+                }
+
                 _logger.LogError(ex, "Unable to open Kube Config {Path}", path);
                 Task.Delay(1000).GetAwaiter().GetResult();
                 count++;
@@ -551,7 +563,7 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
 
         lock (_syncRoot)
         {
-            if (_fileWatchers.ContainsKey(path))
+            if (_disposed || _fileWatchers.ContainsKey(path))
             {
                 return;
             }
@@ -604,14 +616,30 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
     {
         lock (_syncRoot)
         {
-            // Watcher events can arrive after RemoveKubeConfig stopped watching the file; ignore them.
-            if (!_fileWatchers.ContainsKey(path))
+            // Watcher events can arrive after RemoveKubeConfig stopped watching the file, or
+            // after Dispose; ignore them so no callback keeps the kubeconfig open after teardown.
+            if (_disposed || !_fileWatchers.ContainsKey(path))
             {
                 return;
             }
+
+            if (Interlocked.Increment(ref _watcherCallbacksInFlight) == 1)
+            {
+                _watcherCallbacksDrained.Reset();
+            }
         }
 
-        LoadFromConfigFromPath(path);
+        try
+        {
+            LoadFromConfigFromPath(path);
+        }
+        finally
+        {
+            if (Interlocked.Decrement(ref _watcherCallbacksInFlight) == 0)
+            {
+                _watcherCallbacksDrained.Set();
+            }
+        }
     }
 
     private void StartDiscoveryWatcher(string directory, int generation)
@@ -788,5 +816,12 @@ public sealed partial class ClusterManager : ObservableObject, IClusterRuntimeCa
         {
             watcher.Dispose();
         }
+
+        _fileWatchers.Clear();
+
+        // FileSystemWatcher.Dispose does not wait for callbacks already running on the
+        // thread pool. Let them finish so consumers can safely delete watched files.
+        _watcherCallbacksDrained.Wait(TimeSpan.FromSeconds(2));
+        _watcherCallbacksDrained.Dispose();
     }
 }

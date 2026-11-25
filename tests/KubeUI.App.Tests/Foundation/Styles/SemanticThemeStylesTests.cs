@@ -1,11 +1,11 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
-using SVCSystems.Avalonia.CSharpUI;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Shouldly;
+using SVCSystems.Avalonia.CSharpUI;
 
 namespace KubeUI.App.Tests.Foundation.Styles;
 

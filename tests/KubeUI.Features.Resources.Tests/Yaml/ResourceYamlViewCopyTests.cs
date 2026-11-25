@@ -29,7 +29,7 @@ public sealed class ResourceYamlViewCopyTests
         {
             window.Show();
             await TestApplicationExtensions.WaitForUiAsync();
-            view.FindControl<AvaloniaEdit.TextEditor>("Editor").ShouldNotBeNull();
+            view.FindControl<TextEditor>("Editor").ShouldNotBeNull();
         }
         finally
         {
@@ -72,7 +72,7 @@ public sealed class ResourceYamlViewCopyTests
             await TestApplicationExtensions.WaitForUiAsync();
             await TestApplicationExtensions.WaitForUiAsync();
 
-            var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+            var editor = view.FindControl<TextEditor>("Editor");
             editor.ShouldNotBeNull();
 
             editor.Select(0, editor.Text.Length);
@@ -141,7 +141,7 @@ public sealed class ResourceYamlViewCopyTests
             await TestApplicationExtensions.WaitForUiAsync();
             await TestApplicationExtensions.WaitForUiAsync();
 
-            var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor");
+            var editor = view.FindControl<TextEditor>("Editor");
             editor.ShouldNotBeNull();
 
             editor.Select(0, editor.Text.Length);

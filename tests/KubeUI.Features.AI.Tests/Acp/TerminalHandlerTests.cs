@@ -84,7 +84,7 @@ public sealed class TerminalHandlerTests
     {
         using var handler = new TerminalHandler(new ScriptedPermissionService(allowed: true));
         var terminalId = await handler.CreateAsync(
-            TerminalRequests.Create("session", "dotnet", ["build", "--tl:off", "-clp:ErrorsOnly", "this-path-does-not-exist.proj"]),
+            TerminalRequests.Create("session", "dotnet", ["build", "this-path-does-not-exist.proj"]),
             TestContext.Current.CancellationToken);
 
         var exitStatus = await handler.WaitForExitAsync(

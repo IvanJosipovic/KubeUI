@@ -11,26 +11,26 @@ namespace KubeUI.Controls.Layout;
 /// 32 pixels remain. Middle content receives a bounded width so it can adapt to available space.
 /// No application resources, commands, or domain models are required.
 /// </summary>
-public sealed class CompactToolbar : Panel
+public sealed partial class CompactToolbar : Panel
 {
     private const string CompactControlClass = "CompactToolbarControl";
 
-    /// <summary>Identifies <see cref="Leading"/>.</summary>
-    public static readonly DirectProperty<CompactToolbar, Control?> LeadingProperty =
-        AvaloniaProperty.RegisterDirect<CompactToolbar, Control?>(nameof(Leading), x => x.Leading, (x, value) => x.Leading = value);
+    /// <summary>Gets or sets the leading action/content, inset two pixels from the left.</summary>
+    [GeneratedDirectProperty]
+    public partial Control? Leading { get; set; }
 
-    /// <summary>Identifies <see cref="Middle"/>.</summary>
-    public static readonly DirectProperty<CompactToolbar, Control?> MiddleProperty =
-        AvaloniaProperty.RegisterDirect<CompactToolbar, Control?>(nameof(Middle), x => x.Middle, (x, value) => x.Middle = value);
+    /// <summary>Gets or sets optional middle content, inset two pixels after the leading slot.</summary>
+    [GeneratedDirectProperty]
+    public partial Control? Middle { get; set; }
 
-    /// <summary>Identifies <see cref="Trailing"/>.</summary>
-    public static readonly DirectProperty<CompactToolbar, Control?> TrailingProperty =
-        AvaloniaProperty.RegisterDirect<CompactToolbar, Control?>(nameof(Trailing), x => x.Trailing, (x, value) => x.Trailing = value);
+    /// <summary>
+    /// Gets or sets right-aligned, horizontally scrollable content. Callers own commands,
+    /// accessible names, visibility, and any wrapping or maximum widths within this slot.
+    /// </summary>
+    [GeneratedDirectProperty]
+    public partial Control? Trailing { get; set; }
 
     private readonly ScrollViewer _trailingScroll;
-    private Control? _leading;
-    private Control? _middle;
-    private Control? _trailing;
     private bool _wrapTrailing;
     private double _firstRowHeight;
 
@@ -107,54 +107,34 @@ public sealed class CompactToolbar : Panel
         return group;
     }
 
-    /// <summary>Gets or sets the leading action/content, inset two pixels from the left.</summary>
-    public Control? Leading
+    /// <inheritdoc />
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
-        get => _leading;
-        set
-        {
-            var previous = _leading;
-            if (SetAndRaise(LeadingProperty, ref _leading, value))
-            {
-                if (value is not null)
-                    MarkCompactControl(value);
-                ReplaceSlot(previous, value, 0);
-            }
-        }
-    }
+        base.OnPropertyChanged(change);
 
-    /// <summary>Gets or sets optional middle content, inset two pixels after the leading slot.</summary>
-    public Control? Middle
-    {
-        get => _middle;
-        set
+        if (change.Property == LeadingProperty)
         {
-            var previous = _middle;
-            if (SetAndRaise(MiddleProperty, ref _middle, value))
-            {
-                if (value is not null)
-                    MarkCompactControl(value);
-                ReplaceSlot(previous, value, _leading is null ? 0 : 1);
-            }
+            var previous = (Control?)change.OldValue;
+            var value = Leading;
+            if (value is not null)
+                MarkCompactControl(value);
+            ReplaceSlot(previous, value, 0);
         }
-    }
-
-    /// <summary>
-    /// Gets or sets right-aligned, horizontally scrollable content. Callers own commands,
-    /// accessible names, visibility, and any wrapping or maximum widths within this slot.
-    /// </summary>
-    public Control? Trailing
-    {
-        get => _trailing;
-        set
+        else if (change.Property == MiddleProperty)
         {
-            if (SetAndRaise(TrailingProperty, ref _trailing, value))
-            {
-                if (value is not null)
-                    MarkCompactControl(value);
-                _trailingScroll.Content = value;
-                InvalidateMeasure();
-            }
+            var previous = (Control?)change.OldValue;
+            var value = Middle;
+            if (value is not null)
+                MarkCompactControl(value);
+            ReplaceSlot(previous, value, Leading is null ? 0 : 1);
+        }
+        else if (change.Property == TrailingProperty)
+        {
+            var value = Trailing;
+            if (value is not null)
+                MarkCompactControl(value);
+            _trailingScroll.Content = value;
+            InvalidateMeasure();
         }
     }
 
@@ -162,10 +142,10 @@ public sealed class CompactToolbar : Panel
     protected override Size MeasureOverride(Size availableSize)
     {
         var width = availableSize.Width;
-        var leadingWidth = MeasureSlot(_leading, width, availableSize.Height);
-        var middleWidth = MeasureSlot(_middle, Math.Max(0, width - leadingWidth), availableSize.Height);
+        var leadingWidth = MeasureSlot(Leading, width, availableSize.Height);
+        var middleWidth = MeasureSlot(Middle, Math.Max(0, width - leadingWidth), availableSize.Height);
         var leftWidth = leadingWidth + middleWidth;
-        _firstRowHeight = Math.Max(VisibleHeight(_leading), VisibleHeight(_middle));
+        _firstRowHeight = Math.Max(VisibleHeight(Leading), VisibleHeight(Middle));
 
         _trailingScroll.Measure(new Size(double.PositiveInfinity, availableSize.Height));
         var trailingWidth = _trailingScroll.DesiredSize.Width;
@@ -183,8 +163,8 @@ public sealed class CompactToolbar : Panel
     protected override Size ArrangeOverride(Size finalSize)
     {
         var rowHeight = _wrapTrailing ? _firstRowHeight : finalSize.Height;
-        var x = ArrangeSlot(_leading, 0, rowHeight);
-        x += ArrangeSlot(_middle, x, rowHeight);
+        var x = ArrangeSlot(Leading, 0, rowHeight);
+        x += ArrangeSlot(Middle, x, rowHeight);
         _trailingScroll.Arrange(_wrapTrailing
             ? new Rect(0, rowHeight, finalSize.Width, Math.Max(0, finalSize.Height - rowHeight))
             : new Rect(x, 0, Math.Max(0, finalSize.Width - x), finalSize.Height));

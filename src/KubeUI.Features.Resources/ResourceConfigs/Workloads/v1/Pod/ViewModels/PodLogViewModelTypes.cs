@@ -1,7 +1,7 @@
-using Path = System.IO.Path;
-﻿using System.Text;
+using System.Text;
 using k8s;
 using k8s.Models;
+using Path = System.IO.Path;
 
 namespace KubeUI.Features.Resources.Workloads.v1.Pod.ViewModels;
 

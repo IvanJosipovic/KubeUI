@@ -1,3 +1,4 @@
+using Avalonia.Controls.Primitives;
 using Avalonia.Data.Converters;
 using Avalonia.Input;
 using Avalonia.Styling;
@@ -36,7 +37,7 @@ public sealed partial class ClusterListView : KubeUIView<ClusterListViewModel>
                                     BasedOn = Application.Current?.FindResource(typeof(MenuItem)) as ControlTheme,
                                     Setters =
                                     {
-                                        new Setter(Avalonia.Controls.Primitives.HeaderedSelectingItemsControl.HeaderProperty, CompiledBinding.Create<string, string>(x => x)),
+                                        new Setter(HeaderedSelectingItemsControl.HeaderProperty, CompiledBinding.Create<string, string>(x => x)),
                                         new Setter(MenuItem.CommandProperty, vm.RemoveKubeConfigCommand),
                                         new Setter(MenuItem.CommandParameterProperty, CompiledBinding.Create<string, string>(x => x)),
                                     }

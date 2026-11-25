@@ -2,7 +2,6 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
-using SVCSystems.Avalonia.CSharpUI;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
 using Avalonia.Styling;
@@ -19,6 +18,7 @@ using KubeUI.Features.Resources.Icons;
 using KubeUI.Features.Resources.Visualization;
 using KubeUI.Kubernetes.Resources.Relationships;
 using Shouldly;
+using SVCSystems.Avalonia.CSharpUI;
 
 namespace KubeUI.Features.Resources.Tests.Visualization;
 
@@ -2295,10 +2295,12 @@ public sealed class ResourceGraphControlTests
             await WaitForAsync(() => control.Area.VertexList.Count == initialPods.Count);
 
             control.Graph = new ResourceRelationshipGraph(expandedPods, []);
-            await WaitForAsync(() => control.Area.VertexList.Count == expandedPods.Count, timeoutMs: 30000);
+            // This test intentionally builds 520 GraphX vertex controls; on a loaded CI
+            // machine the dispatcher can take well over 30s to finish the layout.
+            await WaitForAsync(() => control.Area.VertexList.Count == expandedPods.Count, timeoutMs: 60_000);
 
             control.Dispose();
-            await WaitForAsync(() => control.Area.IsDisposed, timeoutMs: 30000);
+            await WaitForAsync(() => control.Area.IsDisposed, timeoutMs: 60_000);
         }
         finally
         {

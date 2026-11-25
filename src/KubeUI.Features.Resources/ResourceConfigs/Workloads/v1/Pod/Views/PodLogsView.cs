@@ -159,9 +159,11 @@ public sealed partial class PodLogsView : KubeUIView<PodLogsViewModel>
     private TextEditor CreateEditor(PodLogsViewModel vm)
     {
         PodLogsEditorBehavior behavior = new();
-        behavior.AutoScrollToBottom(vm, x => x.AutoScrollToBottom);
-        behavior.FollowLogsRequested(vm, x => x.FollowLogsRequested);
-        behavior.ScrollOffset(vm, x => x.ScrollOffset);
+        // The generated fluent setter overload produces a null binding expression for source-generated
+        // direct properties on behaviors. Bind the generated property directly until that is fixed.
+        behavior._setCompiledBinding(PodLogsEditorBehavior.AutoScrollToBottomProperty, vm, x => x.AutoScrollToBottom);
+        behavior._setCompiledBinding(PodLogsEditorBehavior.FollowLogsRequestedProperty, vm, x => x.FollowLogsRequested);
+        behavior._setCompiledBinding(PodLogsEditorBehavior.ScrollOffsetProperty, vm, x => x.ScrollOffset);
 
         var editor = new TextEditor()
             .Row(1)
