@@ -231,7 +231,7 @@ public partial class Cluster
 
     /// <summary>
     /// True when a namespace's rules review could not be completed. Used only to keep
-    /// navigation visibility Lens-like; destructive commands still fail closed.
+    /// navigation visibility fails open for incomplete rules reviews; destructive commands still fail closed.
     /// </summary>
     private bool HasIncompleteNamespaceRules(Verb verb, string? @namespace)
     {

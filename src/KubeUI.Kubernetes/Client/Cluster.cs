@@ -656,7 +656,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
         var container = (ContainerClass<T>)Objects.GetOrAdd(kind, _ => new ContainerClass<T>());
 
-        if (CanI<T>(Verb.List) && CanI<T>(Verb.Watch))
+        if (CanI(kind, Verb.List, null, null, skipIncompleteRulesFallback: true)
+            && CanI(kind, Verb.Watch, null, null, skipIncompleteRulesFallback: true))
         {
             var informer = new ResourceInformer<T>(client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), resourceListLimit: 10000);
             container.Informers.Add(informer);
@@ -685,7 +686,8 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
             {
                 var ns = item.Name();
 
-                if (CanI<T>(Verb.List, ns) && CanI<T>(Verb.Watch, ns))
+                if (CanI(kind, Verb.List, ns, null, skipIncompleteRulesFallback: true)
+                    && CanI(kind, Verb.Watch, ns, null, skipIncompleteRulesFallback: true))
                 {
                     var informer = new ResourceInformer<T>(client, _serviceProvider.GetRequiredService<IHostApplicationLifetime>(), _loggerFactory.CreateLogger<ResourceInformer<T>>(), @namespace: ns, resourceListLimit: 10000);
                     container.Informers.Add(informer);

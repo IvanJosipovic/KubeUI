@@ -371,6 +371,8 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         // CRD discovery, namespace fallback and RBAC informers are gated by cluster-scope
         // list/watch. Namespace rules cannot answer those checks, so warm only this small
         // set instead of every verb of every resource config.
+        // For non-namespaced kinds (e.g. nodes, namespaces), warm exact (kind, verb) entries
+        // so that non-admin users with exact cluster-scoped list/watch grants get CanListAndWatch == true.
         foreach (var kind in BootstrapClusterScopeKinds)
         {
             if (Runtime.IsResourceNamespaced(kind))
@@ -381,12 +383,60 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             await Runtime.Permissions.UpdateCanI(kind, Verb.List).ConfigureAwait(false);
             await Runtime.Permissions.UpdateCanI(kind, Verb.Watch).ConfigureAwait(false);
         }
+
+        // Also warm exact list/watch entries for every non-namespaced resource config
+        // beyond the bootstrap kinds, so that access decisions are available for those
+        // configs even when namespace rules cannot answer them.
+        foreach (var resourceConfig in GetResourceConfigs())
+        {
+            if (resourceConfig.IsNamespaced)
+            {
+                continue;
+            }
+
+            await Runtime.Permissions.UpdateCanI(resourceConfig.Kind, Verb.List).ConfigureAwait(false);
+            await Runtime.Permissions.UpdateCanI(resourceConfig.Kind, Verb.Watch).ConfigureAwait(false);
+        }
     }
 
     private async Task UpdateResourceConfigPermissionsAndEvaluateAsync(IClusterResourceConfig resourceConfig)
     {
         await Runtime.Permissions.RefreshAuthorizationSnapshotAsync(_disposeCancellation.Token).ConfigureAwait(false);
+
+        // For namespaced resources, run the exact access-review fallback for namespaces
+        // with incomplete rule sets before evaluating CanListAndWatch. This mirrors the
+        // behavior of UpdatePermissionsAllNamespaceAsync so that navigation visibility
+        // does not incorrectly deny access when a rules review fails.
+        if (resourceConfig.IsNamespaced)
+        {
+            await RefreshNamespacedConfigFallbackAsync(resourceConfig).ConfigureAwait(false);
+        }
+
         await EvaluateResourceConfigAccessCoreAsync(resourceConfig).ConfigureAwait(false);
+    }
+
+    private async Task RefreshNamespacedConfigFallbackAsync(IClusterResourceConfig resourceConfig)
+    {
+        // Reuse the fallback logic from UpdatePermissionsAllNamespaceAsync: for each
+        // namespace with incomplete rules, issue exact SSARs for list and watch so
+        // navigation visibility does not incorrectly deny access.
+        var kind = resourceConfig.Kind;
+        foreach (var ns in Runtime.Namespaces)
+        {
+            var @namespace = ns.Name();
+            if (string.IsNullOrWhiteSpace(@namespace))
+            {
+                continue;
+            }
+
+            if (!IsConnectGenerationCurrent(Volatile.Read(ref _connectGeneration)))
+            {
+                return;
+            }
+
+            await Runtime.Permissions.UpdateCanI(kind, Verb.List, @namespace).ConfigureAwait(false);
+            await Runtime.Permissions.UpdateCanI(kind, Verb.Watch, @namespace).ConfigureAwait(false);
+        }
     }
 
     public Task Disconnect()
