@@ -240,6 +240,10 @@ public sealed partial class Cluster : ObservableObject, IClusterRuntime, ICluste
 
                         await UpdateNamespacePermission().ConfigureAwait(true);
 
+                        // Establish the coarse capability snapshot before background
+                        // consumers (metrics, informers) start asking for permissions.
+                        await RefreshAuthorizationSnapshotAsync().ConfigureAwait(true);
+
                         await SeedResource<V1Namespace>(true).ConfigureAwait(true);
                         var namespaceCache = GetResourceSourceCache<V1Namespace>();
 

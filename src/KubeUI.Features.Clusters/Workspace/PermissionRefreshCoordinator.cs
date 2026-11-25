@@ -80,6 +80,10 @@ internal sealed class PermissionRefreshCoordinator : IDisposable
             return;
         }
 
+        // A manual refresh joins the pending pass instead of being followed by a
+        // duplicate worker pass for the same trigger.
+        Interlocked.Exchange(ref _requestedScope, 0);
+
         await RefreshCoreAsync(PermissionRefreshScope.All, cancellationToken).ConfigureAwait(false);
     }
 

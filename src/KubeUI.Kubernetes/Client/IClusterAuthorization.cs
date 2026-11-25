@@ -31,4 +31,10 @@ public interface IClusterAuthorization
     Task<bool> UpdateCanI<T>(Verb verb, string? @namespace = null, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new();
     /// <summary>Refreshes typed-resource permission for all namespaces.</summary>
     Task UpdatePermissionsAllNamespaceAsync<T>(Verb verb, string? subresource = null) where T : class, IKubernetesObject<V1ObjectMeta>, new();
+    /// <summary>
+    /// Ensures the connect-time authorization snapshot: one coarse probe and, when needed,
+    /// one rules review per known namespace. Implementations that do not own a client
+    /// can keep the default no-op.
+    /// </summary>
+    Task RefreshAuthorizationSnapshotAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
