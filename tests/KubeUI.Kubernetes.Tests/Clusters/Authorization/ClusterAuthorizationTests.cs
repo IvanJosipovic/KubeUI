@@ -502,6 +502,88 @@ public sealed class ClusterAuthorizationTests
         state.RequestCount.ShouldBeGreaterThan(requestsBeforeReload);
     }
 
+    [Fact]
+    public async Task admin_snapshot_uses_one_authorization_request_and_no_rules_reviews()
+    {
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig { Type = KubernetesBackend.Fake },
+            TestContext.Current.CancellationToken);
+        var cluster = harness.Cluster;
+        var fakeApi = harness.FakeApi!;
+
+        var reviewsBefore = fakeApi.AuthorizationRequestCount;
+        var rulesBefore = fakeApi.RulesReviewRequestCount;
+
+        // Connect establishes the snapshot: namespace list/watch plus one wildcard admin probe.
+        await cluster.Connect();
+        (fakeApi.AuthorizationRequestCount - reviewsBefore).ShouldBe(3);
+        (fakeApi.RulesReviewRequestCount - rulesBefore).ShouldBe(0);
+
+        var afterConnect = fakeApi.AuthorizationRequestCount;
+        await cluster.RefreshAuthorizationSnapshotAsync(TestContext.Current.CancellationToken);
+        fakeApi.AuthorizationRequestCount.ShouldBe(afterConnect);
+        cluster.CanI<V1Pod>(Verb.Create, "default").ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task limited_snapshot_uses_one_rules_review_per_namespace_and_no_cached_check_requests()
+    {
+        await using var harness = await new TestClusterGenerator().CreateAsync(
+            new TestClusterConfig
+            {
+                AuthenticatedUser = KubernetesRbac.ServiceAccountUser,
+                InitialResources =
+                [
+                    new V1Namespace { Metadata = new V1ObjectMeta { Name = "my-app" } },
+                    new V1ServiceAccount
+                    {
+                        Metadata = new V1ObjectMeta
+                        {
+                            Name = KubernetesRbac.ServiceAccountName,
+                            NamespaceProperty = KubernetesRbac.ServiceAccountNamespace,
+                        },
+                    },
+                    .. KubernetesRbac.ClusterWide(
+                        new RbacRule("namespaces", "list"),
+                        new RbacRule("namespaces", "watch")),
+                    .. KubernetesRbac.InNamespace("my-app", new RbacRule("pods", "list")),
+                ],
+            },
+            TestContext.Current.CancellationToken);
+        var cluster = harness.Cluster;
+        await cluster.Connect();
+
+        await TestWait.UntilAsync(
+            () => cluster.Namespaces.Count > 0,
+            TimeSpan.FromSeconds(10),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        var namespaceCount = cluster.Namespaces
+            .Select(static item => item.Name())
+            .Where(static name => !string.IsNullOrWhiteSpace(name))
+            .Distinct(StringComparer.Ordinal)
+            .Count();
+
+        var fakeApi = harness.FakeApi!;
+        var reviewsBefore = fakeApi.AuthorizationRequestCount;
+        var rulesBefore = fakeApi.RulesReviewRequestCount;
+
+        await cluster.Permissions.RefreshAuthorizationSnapshotAsync(TestContext.Current.CancellationToken);
+
+        (fakeApi.AuthorizationRequestCount - reviewsBefore).ShouldBeLessThanOrEqualTo(3);
+        (fakeApi.RulesReviewRequestCount - rulesBefore).ShouldBe(namespaceCount);
+
+        var reviewsAfterRefresh = fakeApi.AuthorizationRequestCount;
+        for (var i = 0; i < 20; i++)
+        {
+            cluster.CanI<V1Pod>(Verb.List, "my-app");
+            cluster.CanIAnyNamespace<V1Pod>(Verb.List);
+            cluster.CanI<V1Pod>(Verb.Get, "my-app", "log");
+        }
+
+        fakeApi.AuthorizationRequestCount.ShouldBe(reviewsAfterRefresh);
+    }
+
     [Theory, KubernetesBackendData]
     [Trait("Category", "Kind")]
     public async Task globally_allowed_namespaced_permission_skips_namespace_reviews(KubernetesBackend backend)

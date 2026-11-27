@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using System.Reactive.Concurrency;
 using k8s;
 using k8s.Models;
+using KubernetesClient.Informer.Client;
 using KubeUI.Kubernetes.Serialization;
 
 namespace KubeUI.Kubernetes;
@@ -31,7 +32,7 @@ internal sealed class KubernetesMetricsCollector(
 
     public async Task<bool> StartAsync(Cluster cluster, CancellationToken cancellationToken)
     {
-        if (cluster.Client is not k8s.Kubernetes kube || !await CanUseMetricsServerAsync(cluster, kube, cancellationToken).ConfigureAwait(false))
+        if (cluster.Client is not k8s.Kubernetes || !await CanUseMetricsServerAsync(cluster, cancellationToken).ConfigureAwait(false))
         {
             // Avoid allocating the logging args array when information logging is disabled.
             if (logger.IsEnabled(LogLevel.Information))
@@ -339,19 +340,17 @@ internal sealed class KubernetesMetricsCollector(
         return latestByPod.Values.ToImmutableArray();
     }
 
-    private async Task<bool> CanUseMetricsServerAsync(Cluster cluster, k8s.Kubernetes kube, CancellationToken cancellationToken)
+    private async Task<bool> CanUseMetricsServerAsync(Cluster cluster, CancellationToken cancellationToken)
     {
-        static V1SelfSubjectAccessReview CreateReview(string resource) => new()
-        {
-            ApiVersion = V1SelfSubjectAccessReview.KubeGroup + "/" + V1SelfSubjectAccessReview.KubeApiVersion,
-            Kind = V1SelfSubjectAccessReview.KubeKind,
-            Spec = new() { ResourceAttributes = new() { Group = "metrics.k8s.io", Resource = resource, Verb = "list" } },
-        };
-        var podResponse = await kube.CreateSelfSubjectAccessReviewAsync(CreateReview("pods"), cancellationToken: cancellationToken).ConfigureAwait(false);
-        var nodeResponse = await kube.CreateSelfSubjectAccessReviewAsync(CreateReview("nodes"), cancellationToken: cancellationToken).ConfigureAwait(false);
+        // Route capability checks through the shared authorization cache instead of
+        // issuing uncached access reviews outside the permission engine.
+        var podKind = new GroupApiVersionKind("metrics.k8s.io", "v1beta1", "PodMetrics", "pods");
+        var nodeKind = new GroupApiVersionKind("metrics.k8s.io", "v1beta1", "NodeMetrics", "nodes");
+        var podAllowed = await cluster.Permissions.UpdateCanI(podKind, Verb.List).WaitAsync(cancellationToken).ConfigureAwait(false);
+        var nodeAllowed = await cluster.Permissions.UpdateCanI(nodeKind, Verb.List).WaitAsync(cancellationToken).ConfigureAwait(false);
         var apiGroups = await cluster.Client!.Apis.GetAPIVersionsAsync(cancellationToken).ConfigureAwait(false);
         var available = apiGroups.Groups.Any(static group => group.Name == "metrics.k8s.io")
-            && podResponse.Status.Allowed && nodeResponse.Status.Allowed;
+            && podAllowed && nodeAllowed;
         // Avoid allocating the logging args array when debug logging is disabled.
         if (logger.IsEnabled(LogLevel.Debug))
         {

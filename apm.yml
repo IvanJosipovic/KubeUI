@@ -2,8 +2,6 @@ name: kubeui
 version: 1.0.0
 
 targets:
-  - codex
-  - copilot
   - opencode
 
 dependencies:

@@ -19,6 +19,14 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     private readonly ConcurrentDictionary<string, long> _customResourceDefinitionRevisions = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, long> _customResourceDefinitionObservedGenerations = new(StringComparer.Ordinal);
     private readonly CancellationTokenSource _disposeCancellation = new();
+    private static readonly GroupApiVersionKind[] BootstrapClusterScopeKinds =
+    [
+        GroupApiVersionKind.From<V1Namespace>(),
+        GroupApiVersionKind.From<V1CustomResourceDefinition>(),
+        GroupApiVersionKind.From<V1ClusterRole>(),
+        GroupApiVersionKind.From<V1ClusterRoleBinding>(),
+    ];
+
     private static readonly GroupApiVersionKind[] PermissionWatchKinds =
     [
         GroupApiVersionKind.From<V1ClusterRole>(),
@@ -321,6 +329,11 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
     {
         using var activity = StartWorkspaceActivity(nameof(UpdateResourceConfigsPermissionsAndEvaluateAsync));
 
+        // One snapshot refresh replaces the old per-config/per-verb review fan-out.
+        // Namespace rules answer every verb and subresource locally.
+        await Runtime.Permissions.RefreshAuthorizationSnapshotAsync(_disposeCancellation.Token).ConfigureAwait(false);
+        await RefreshBootstrapClusterScopePermissionsAsync().ConfigureAwait(false);
+
         var orderBatches = (resourceConfigs ?? GetResourceConfigs())
             .GroupBy(static config => config.Order)
             .OrderBy(static batch => batch.Key);
@@ -353,22 +366,77 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
         }
     }
 
-    private async Task UpdateResourceConfigPermissionsAsync(IClusterResourceConfig resourceConfig)
+    private async Task RefreshBootstrapClusterScopePermissionsAsync()
     {
-        foreach (var request in resourceConfig.AuthorizationRequests().Distinct())
+        // CRD discovery, namespace fallback and RBAC informers are gated by cluster-scope
+        // list/watch. Namespace rules cannot answer those checks, so warm only this small
+        // set instead of every verb of every resource config.
+        // For non-namespaced kinds (e.g. nodes, namespaces), warm exact (kind, verb) entries
+        // so that non-admin users with exact cluster-scoped list/watch grants get CanListAndWatch == true.
+        foreach (var kind in BootstrapClusterScopeKinds)
         {
-            await Runtime.Permissions.UpdatePermissionsAllNamespaceAsync(
-                request.ResourceKind,
-                resourceConfig.IsNamespaced,
-                request.Verb,
-                request.Subresource).ConfigureAwait(false);
+            if (Runtime.IsResourceNamespaced(kind))
+            {
+                continue;
+            }
+
+            await Runtime.Permissions.UpdateCanI(kind, Verb.List).ConfigureAwait(false);
+            await Runtime.Permissions.UpdateCanI(kind, Verb.Watch).ConfigureAwait(false);
+        }
+
+        // Also warm exact list/watch entries for every non-namespaced resource config
+        // beyond the bootstrap kinds, so that access decisions are available for those
+        // configs even when namespace rules cannot answer them.
+        foreach (var resourceConfig in GetResourceConfigs())
+        {
+            if (resourceConfig.IsNamespaced)
+            {
+                continue;
+            }
+
+            await Runtime.Permissions.UpdateCanI(resourceConfig.Kind, Verb.List).ConfigureAwait(false);
+            await Runtime.Permissions.UpdateCanI(resourceConfig.Kind, Verb.Watch).ConfigureAwait(false);
         }
     }
 
     private async Task UpdateResourceConfigPermissionsAndEvaluateAsync(IClusterResourceConfig resourceConfig)
     {
-        await UpdateResourceConfigPermissionsAsync(resourceConfig).ConfigureAwait(false);
+        await Runtime.Permissions.RefreshAuthorizationSnapshotAsync(_disposeCancellation.Token).ConfigureAwait(false);
+
+        // For namespaced resources, run the exact access-review fallback for namespaces
+        // with incomplete rule sets before evaluating CanListAndWatch. This mirrors the
+        // behavior of UpdatePermissionsAllNamespaceAsync so that navigation visibility
+        // does not incorrectly deny access when a rules review fails.
+        if (resourceConfig.IsNamespaced)
+        {
+            await RefreshNamespacedConfigFallbackAsync(resourceConfig).ConfigureAwait(false);
+        }
+
         await EvaluateResourceConfigAccessCoreAsync(resourceConfig).ConfigureAwait(false);
+    }
+
+    private async Task RefreshNamespacedConfigFallbackAsync(IClusterResourceConfig resourceConfig)
+    {
+        // Reuse the fallback logic from UpdatePermissionsAllNamespaceAsync: for each
+        // namespace with incomplete rules, issue exact SSARs for list and watch so
+        // navigation visibility does not incorrectly deny access.
+        var kind = resourceConfig.Kind;
+        foreach (var ns in Runtime.Namespaces)
+        {
+            var @namespace = ns.Name();
+            if (string.IsNullOrWhiteSpace(@namespace))
+            {
+                continue;
+            }
+
+            if (!IsConnectGenerationCurrent(Volatile.Read(ref _connectGeneration)))
+            {
+                return;
+            }
+
+            await Runtime.Permissions.UpdateCanI(kind, Verb.List, @namespace).ConfigureAwait(false);
+            await Runtime.Permissions.UpdateCanI(kind, Verb.Watch, @namespace).ConfigureAwait(false);
+        }
     }
 
     public Task Disconnect()
@@ -578,12 +646,12 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
                 && resourceConfig.PermissionsLoaded
                 && resourceConfig.CanListAndWatch)
             {
-                await EnsureResourceSeededAsync(resourceConfig, generation).ConfigureAwait(false);
+                await EnsureResourceSeededAsync(resourceConfig, generation, waitForReady: true).ConfigureAwait(false);
             }
         }
     }
 
-    private async Task EnsureResourceSeededAsync(IClusterResourceConfig resourceConfig, long? generation = null)
+    private async Task EnsureResourceSeededAsync(IClusterResourceConfig resourceConfig, long? generation = null, bool waitForReady = false)
     {
         using var activity = StartWorkspaceActivity(nameof(EnsureResourceSeededAsync));
 
@@ -598,7 +666,7 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
             return;
         }
 
-        await resourceConfig.SeedResource().ConfigureAwait(false);
+        await resourceConfig.SeedResource(waitForReady, _disposeCancellation.Token).ConfigureAwait(false);
     }
 
     private void NotifyResourceConfigProcessed(IClusterResourceConfig resourceConfig)
@@ -639,7 +707,9 @@ public sealed partial class ClusterWorkspace : ObservableObject, IDisposable
 
     private void OnNamespacesChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        _permissionRefreshCoordinator.Request(PermissionRefreshScope.Namespaces);
+        // All permission triggers use the same coalesced full refresh. Namespace-scoped
+        // invalidation was removed with the per-config review fan-out.
+        _permissionRefreshCoordinator.Request(PermissionRefreshScope.All);
     }
 
     private void OnRuntimePropertyChanged(object? sender, PropertyChangedEventArgs e)

@@ -39,6 +39,16 @@ public partial class Cluster
         public ConcurrentDictionary<string, NamespaceRuleSet> NamespaceRules { get; } = new(StringComparer.Ordinal);
 
         public ConcurrentDictionary<string, Lazy<Task<NamespaceRuleSet>>> NamespaceRuleLoads { get; } = new(StringComparer.Ordinal);
+
+        public ConcurrentDictionary<PermissionCacheKey, Lazy<Task<bool>>> PermissionLoads { get; } = new();
+
+        public ConcurrentDictionary<string, bool> WildcardDecisions { get; } = new(StringComparer.Ordinal);
+
+        public ConcurrentDictionary<string, Lazy<Task<bool>>> WildcardLoads { get; } = new(StringComparer.Ordinal);
+
+        public bool? IsWildcardAdmin { get; set; }
+
+        public Lazy<Task<bool>>? WildcardAdminLoad;
     }
 
     private static PermissionCacheKey BuildReviewKey(
@@ -146,43 +156,91 @@ public partial class Cluster
 
         var verbString = verb.ToString().ToLowerInvariant();
         var cache = Volatile.Read(ref _authorizationCache);
+        if (cache.IsWildcardAdmin == true
+            || (string.IsNullOrEmpty(@namespace) && string.IsNullOrEmpty(subresource) && HasWildcard(verb)))
+        {
+            return true;
+        }
+
         var keyCheck = BuildReviewKey(kind, verbString, @namespace, subresource);
         if (cache.PermissionIndex.TryGetValue(keyCheck, out var cached))
         {
             return cached;
         }
 
-        var model = new V1SelfSubjectAccessReview()
+        // One in-flight access review per key, bound to the cache generation it publishes into.
+        var load = cache.PermissionLoads.GetOrAdd(
+            keyCheck,
+            static (key, state) => new Lazy<Task<bool>>(
+                () => state.Cluster.LoadPermissionAsync(
+                    state.Cache,
+                    state.Kind,
+                    state.Verb,
+                    state.Namespace,
+                    state.Subresource),
+                LazyThreadSafetyMode.ExecutionAndPublication),
+            (Cluster: this, Cache: cache, Kind: kind, Verb: verb, Namespace: @namespace, Subresource: subresource));
+
+        return await load.Value.ConfigureAwait(false);
+    }
+
+    private async Task<bool> LoadPermissionAsync(
+        AuthorizationCacheState cache,
+        GroupApiVersionKind kind,
+        Verb verb,
+        string? @namespace,
+        string? subresource)
+    {
+        var verbString = verb.ToString().ToLowerInvariant();
+        var key = BuildReviewKey(kind, verbString, @namespace, subresource);
+
+        try
         {
-            ApiVersion = V1SelfSubjectAccessReview.KubeGroup + "/" + V1SelfSubjectAccessReview.KubeApiVersion,
-            Kind = V1SelfSubjectAccessReview.KubeKind,
-            Spec = new()
+            var model = new V1SelfSubjectAccessReview()
             {
-                ResourceAttributes = new()
+                ApiVersion = V1SelfSubjectAccessReview.KubeGroup + "/" + V1SelfSubjectAccessReview.KubeApiVersion,
+                Kind = V1SelfSubjectAccessReview.KubeKind,
+                Spec = new()
                 {
-                    Group = (string.IsNullOrEmpty(kind.Group) ? "" : kind.Group),
-                    NamespaceProperty = (string.IsNullOrEmpty(@namespace) ? "" : @namespace),
-                    Resource = kind.PluralName,
-                    Subresource = (string.IsNullOrEmpty(subresource) ? "" : subresource),
-                    Verb = verb.ToString().ToLowerInvariant(),
-                    Version = kind.ApiVersion
+                    ResourceAttributes = new()
+                    {
+                        Group = (string.IsNullOrEmpty(kind.Group) ? "" : kind.Group),
+                        NamespaceProperty = (string.IsNullOrEmpty(@namespace) ? "" : @namespace),
+                        Resource = kind.PluralName,
+                        Subresource = (string.IsNullOrEmpty(subresource) ? "" : subresource),
+                        Verb = verbString,
+                        Version = kind.ApiVersion
+                    }
                 }
+            };
+
+            var client = Client;
+            if (client is null)
+            {
+                // The cluster is not connected. Report the permission as denied instead of
+                // dereferencing a missing client.
+                return false;
             }
-        };
 
-        var client = Client;
-        if (client is null)
-        {
-            // The cluster is not connected. Report the permission as denied instead of
-            // dereferencing a missing client.
-            return false;
+            var resp = await client.AuthorizationV1.CreateSelfSubjectAccessReviewAsync(model).ConfigureAwait(false);
+            var allowed = resp.Status?.Allowed == true;
+
+            // A review started before an invalidation may only publish into its own generation.
+            if (!ReferenceEquals(Volatile.Read(ref _authorizationCache), cache))
+            {
+                return await BuildPermissionAsync(kind, verb, @namespace, subresource).ConfigureAwait(false);
+            }
+
+            SetPermissionResult(cache, kind, verbString, @namespace, subresource, allowed);
+
+            return allowed;
         }
-
-        var resp = await client.AuthorizationV1.CreateSelfSubjectAccessReviewAsync(model);
-        var allowed = resp.Status?.Allowed == true;
-        SetPermissionResult(cache, kind, verbString, @namespace, subresource, allowed);
-
-        return allowed;
+        catch
+        {
+            // Remove only this faulted load so the next call starts a new review.
+            cache.PermissionLoads.TryRemove(new KeyValuePair<PermissionCacheKey, Lazy<Task<bool>>>(key, default!));
+            throw;
+        }
     }
 
     private Task<NamespaceRuleSet> GetNamespaceRulesAsync(string @namespace, CancellationToken cancellationToken)
@@ -214,6 +272,8 @@ public partial class Cluster
             var client = Client;
             if (client is null)
             {
+                // Store incomplete rule set for fail-open behavior.
+                cache.NamespaceRules.TryAdd(@namespace, IncompleteNamespaceRules);
                 return IncompleteNamespaceRules;
             }
 
@@ -254,6 +314,8 @@ public partial class Cluster
                 _logger.LogDebug(ex, "Unable to load Kubernetes authorization rules for namespace {Namespace}", @namespace);
             }
 
+            // Store incomplete rule set for fail-open behavior.
+            cache.NamespaceRules.TryAdd(@namespace, IncompleteNamespaceRules);
             return IncompleteNamespaceRules;
         }
     }
@@ -360,10 +422,16 @@ public partial class Cluster
         return false;
     }
 
-    public bool CanI(GroupApiVersionKind kind, Verb verb, string? @namespace = null, string? subresource = null)
+    public bool CanI(GroupApiVersionKind kind, Verb verb, string? @namespace = null, string? subresource = null, bool skipIncompleteRulesFallback = false)
     {
         var verbString = verb.ToString().ToLowerInvariant();
         var cache = Volatile.Read(ref _authorizationCache);
+        if (cache.IsWildcardAdmin == true
+            || (string.IsNullOrEmpty(@namespace) && string.IsNullOrEmpty(subresource) && HasWildcard(verb)))
+        {
+            return true;
+        }
+
         if (!string.IsNullOrEmpty(@namespace)
             && cache.PermissionIndex.TryGetValue(BuildReviewKey(kind, verbString, null, subresource), out var globalAllowed)
             && globalAllowed)
@@ -386,7 +454,11 @@ public partial class Cluster
             return RuleSetAllows(namespaceRules, kind, verbString, subresource);
         }
 
-        return false;
+        // Navigation visibility fails open for incomplete rules reviews.
+        // Action verbs never take this path; they stay fail-closed.
+        // Informer scope selection passes skipIncompleteRulesFallback: true so that
+        // incomplete rules cannot authorize informer creation.
+        return !skipIncompleteRulesFallback && HasIncompleteNamespaceRules(verb, @namespace);
     }
 
     private IReadOnlyCollection<string> GetKnownNamespaceNames()
@@ -409,12 +481,22 @@ public partial class Cluster
 
     public bool CanIAnyNamespace(GroupApiVersionKind kind, bool namespaced, Verb verb, string? subresource = null)
     {
+        if (Volatile.Read(ref _authorizationCache).IsWildcardAdmin == true)
+        {
+            return true;
+        }
+
         return CanI(kind, verb, subresource: subresource)
             || (namespaced && GetKnownNamespaceNames().Any(@namespace => CanI(kind, verb, @namespace, subresource)));
     }
 
     public async Task UpdatePermissionsAllNamespaceAsync(GroupApiVersionKind kind, bool namespaced, Verb verb, string? subresource = null)
     {
+        if (Volatile.Read(ref _authorizationCache).IsWildcardAdmin == true)
+        {
+            return;
+        }
+
         await BuildPermissionAsync(kind, verb, subresource: subresource).ConfigureAwait(false);
         if (!namespaced || CanI(kind, verb, subresource: subresource))
         {
