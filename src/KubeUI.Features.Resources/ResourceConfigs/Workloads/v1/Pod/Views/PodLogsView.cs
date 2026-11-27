@@ -80,7 +80,8 @@ public sealed partial class PodLogsView : KubeUIView<PodLogsViewModel>
                         .TextTrimming(TextTrimming.CharacterEllipsis),
                     new Button()
                         .Command(vm, x => x.FollowLogsCommand)
-                        .Content(ResourcesLanguageManager.Instance.PodLogsView_ResumeFollowing.ToBinding()))
+                        .ToolTip_Tip(ResourcesLanguageManager.Instance.PodLogsView_ResumeFollowing.ToBinding())
+                        .Content(new FluentIcon().Icon(Icon.ArrowDownload)))
                     .IsVisible(vm, x => x.IsDisplayPaused)
             );
     }
