@@ -95,7 +95,7 @@ public sealed class HelmChartsViewModelTests : IDisposable
             Metadata = new k8s.Models.V1ObjectMeta { Name = "apps" }
         });
         using var services = new ServiceCollection().AddSingleton(charts).BuildServiceProvider();
-        var navigation = new HelmNavigationSectionProvider(enabled: true).Documents
+        var navigation = new HelmNavigationSectionProvider().Documents
             .Single(document => document.Id == HelmNavigationSectionProvider.ChartsDocumentId);
         navigation.CreateDockable(services, workspace).ShouldBeSameAs(charts);
         await charts.RefreshCommand.ExecuteAsync(null).WaitAsync(TestContext.Current.CancellationToken);

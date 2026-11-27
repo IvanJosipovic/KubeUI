@@ -84,11 +84,6 @@ public sealed class SettingsView() : KubeUIView<SettingsViewModel>
                         CreateHeading(AppLanguageManager.Instance.SettingsView_FeaturesHeading.CurrentValue()!),
                         CreateToggleRow(
                             vm,
-                            AppLanguageManager.Instance.SettingsView_HelmFeature_ToolTip.CurrentValue()!,
-                            AppLanguageManager.Instance.SettingsView_HelmFeature_Label.CurrentValue()!,
-                            x => x.SettingsService.Settings.PreviewFeatures.Helm),
-                        CreateToggleRow(
-                            vm,
                             AppLanguageManager.Instance.SettingsView_HubbleFeature_ToolTip.CurrentValue()!,
                             AppLanguageManager.Instance.SettingsView_HubbleFeature_Label.CurrentValue()!,
                             x => x.SettingsService.Settings.PreviewFeatures.Hubble),

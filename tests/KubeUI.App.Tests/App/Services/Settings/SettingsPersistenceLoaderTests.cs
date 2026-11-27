@@ -25,6 +25,7 @@ public sealed class SettingsPersistenceLoaderTests
     [Fact]
     public void load_reads_preview_feature_flags_from_file()
     {
+        // A legacy "Helm" value is intentionally present: removed flags must load without error.
         var path = CreateSettingsFile(
             "{\"Settings\":{\"PreviewFeatures\":{\"Helm\":true,\"Hubble\":false,\"DisableJsonSerializationReflection\":true,\"DisableYamlSerializationReflection\":false}}}");
 
@@ -32,7 +33,6 @@ public sealed class SettingsPersistenceLoaderTests
         {
             var result = SettingsPersistenceLoader.Load(path);
 
-            result.Settings.PreviewFeatures.Helm.ShouldBeTrue();
             result.Settings.PreviewFeatures.Hubble.ShouldBeFalse();
             result.Settings.PreviewFeatures.DisableJsonSerializationReflection.ShouldBeTrue();
             result.Settings.PreviewFeatures.DisableYamlSerializationReflection.ShouldBeFalse();
@@ -47,7 +47,7 @@ public sealed class SettingsPersistenceLoaderTests
     public void save_uses_preview_features_json_key()
     {
         var settings = new SettingsPersistenceData();
-        settings.Settings.PreviewFeatures.Helm = true;
+        settings.Settings.PreviewFeatures.Hubble = true;
 
         var json = System.Text.Json.JsonSerializer.Serialize(
             settings,
@@ -55,7 +55,7 @@ public sealed class SettingsPersistenceLoaderTests
         using var document = System.Text.Json.JsonDocument.Parse(json);
         var savedSettings = document.RootElement.GetProperty("Settings");
 
-        savedSettings.GetProperty("PreviewFeatures").GetProperty("Helm").GetBoolean().ShouldBeTrue();
+        savedSettings.GetProperty("PreviewFeatures").GetProperty("Hubble").GetBoolean().ShouldBeTrue();
         savedSettings.TryGetProperty("Features", out _).ShouldBeFalse();
     }
 
@@ -68,7 +68,6 @@ public sealed class SettingsPersistenceLoaderTests
         {
             var result = SettingsPersistenceLoader.Load(path);
 
-            result.Settings.PreviewFeatures.Helm.ShouldBeFalse();
             result.Settings.PreviewFeatures.Hubble.ShouldBeFalse();
             result.Settings.PreviewFeatures.DisableJsonSerializationReflection.ShouldBeFalse();
             result.Settings.PreviewFeatures.DisableYamlSerializationReflection.ShouldBeFalse();
@@ -88,7 +87,6 @@ public sealed class SettingsPersistenceLoaderTests
 
         result.Settings.TelemetryEnabled.ShouldBeTrue();
         result.Settings.LoggingEnabled.ShouldBeFalse();
-        result.Settings.PreviewFeatures.Helm.ShouldBeFalse();
         result.Settings.PreviewFeatures.Hubble.ShouldBeFalse();
         result.Settings.PreviewFeatures.DisableJsonSerializationReflection.ShouldBeFalse();
         result.Settings.PreviewFeatures.DisableYamlSerializationReflection.ShouldBeFalse();

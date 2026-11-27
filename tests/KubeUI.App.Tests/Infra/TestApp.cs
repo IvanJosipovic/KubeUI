@@ -205,7 +205,6 @@ public class TestApp : KubeUIApplication, IDisposable
             {
                 PreviewFeatures = new()
                 {
-                    Helm = true,
                     Hubble = true
                 }
             }

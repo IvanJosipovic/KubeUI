@@ -16,7 +16,7 @@ public sealed class SettingsServiceTests
         var service = CreateService(settings);
         _ = service.Settings;
 
-        settings.PreviewFeatures.Helm = true;
+        settings.PreviewFeatures.Hubble = true;
 
         service.SaveCount.ShouldBe(1);
     }
@@ -45,7 +45,7 @@ public sealed class SettingsServiceTests
 
         settings.PreviewFeatures = replacement;
         replacement.Hubble = true;
-        original.Helm = true;
+        original.DisableJsonSerializationReflection = true;
 
         service.SaveCount.ShouldBe(2);
     }
@@ -59,7 +59,7 @@ public sealed class SettingsServiceTests
         var replacementSettings = new AppSettings();
 
         service.Settings = replacementSettings;
-        replacementSettings.PreviewFeatures.Helm = true;
+        replacementSettings.PreviewFeatures.DisableYamlSerializationReflection = true;
         originalSettings.PreviewFeatures.Hubble = true;
 
         service.SaveCount.ShouldBe(2);

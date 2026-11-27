@@ -72,8 +72,7 @@ public static partial class KubeUIShellServiceCollectionExtensions
             ?? throw new InvalidOperationException("The settings service must provide cluster preferences."));
         services.AddSingleton<IFeatureProvider, SettingsFeatureProvider>();
         services.AddSingleton<IFeatureClient, FeatureClient>();
-        services.AddSingleton<INavigationSectionProvider>(sp => new HelmNavigationSectionProvider(
-            sp.GetRequiredService<IFeatureClient>().GetBooleanValue(FeatureFlagKeys.Helm, false)));
+        services.AddSingleton<INavigationSectionProvider, HelmNavigationSectionProvider>();
         services.AddSingleton<INavigationSectionProvider>(sp => new HubbleNavigationSectionProvider(
             sp.GetRequiredService<IFeatureClient>().GetBooleanValue(FeatureFlagKeys.Hubble, false)));
         services.AddSingleton<NavigationSectionCatalog>();
