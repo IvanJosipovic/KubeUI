@@ -82,6 +82,27 @@ public sealed class CompactToolbarTests
         spacedGroup.Spacing.ShouldBe(6d);
     }
 
+    [AvaloniaFact]
+    public void Text_blocks_in_groups_are_vertically_centered()
+    {
+        var label = new TextBlock { Text = "status" };
+        var nestedLabel = new TextBlock { Text = "nested status" };
+        var group = CompactToolbar.Group(
+            new Button { Content = "+" },
+            label,
+            CompactToolbar.Group(nestedLabel));
+        var toolbar = new CompactToolbar { Leading = group };
+        using var host = new ToolbarHost(toolbar, 600);
+        TestScreenshot.CaptureIfEnabled(host.Window, "CompactToolbarTextBlocks");
+
+        label.VerticalAlignment.ShouldBe(VerticalAlignment.Center);
+        nestedLabel.VerticalAlignment.ShouldBe(VerticalAlignment.Center);
+        label.Bounds.Height.ShouldBeLessThan(32d);
+        nestedLabel.Bounds.Height.ShouldBeLessThan(32d);
+        label.TranslatePoint(new Point(0, label.Bounds.Height / 2), toolbar)!.Value.Y
+            .ShouldBe(toolbar.Bounds.Height / 2, tolerance: 1d);
+    }
+
     private static bool IsScreenshotCaptureEnabled()
     {
         var value = Environment.GetEnvironmentVariable(TestScreenshot.EnableEnvironmentVariable);

@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
+using Avalonia.Layout;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Avalonia.Xaml.Interactivity;
@@ -929,6 +930,53 @@ public sealed class PodLogsViewTests
         {
             window.Close();
         }
+    }
+
+    [AvaloniaFact]
+    public async Task paused_status_is_vertically_centered_and_resume_following_is_an_icon_button()
+    {
+        using var workspace = await Application.Current.CreateClusterAsync();
+        var services = Application.Current.GetTestServices();
+        using PodLogsViewModel viewModel = new(
+            services.GetRequiredService<ILogger<PodLogsViewModel>>(),
+            services.GetRequiredService<IResourceAppearanceSettings>(),
+            new NoOpPodLogExportService(),
+            new PodLogSessionResolver(),
+            new NoOpPodLogStreamClient())
+        {
+            Cluster = workspace.Runtime,
+            Object = CreatePod(),
+            ContainerName = "app",
+        };
+        PodLogsView view = new() { DataContext = viewModel };
+        using var window = Application.Current.CreateTestWindow(width: 1200, height: 300, content: view);
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+        window.UpdateLayout();
+
+        viewModel.AutoScrollToBottom = false;
+        var pausedText = ResourcesLanguageManager.Instance.PodLogsView_UpdatesPaused.CurrentValue()!;
+        await WaitForAsync(() => view.GetVisualDescendants().OfType<TextBlock>()
+            .Any(text => text.Text == pausedText));
+        TestScreenshot.CaptureIfEnabled(window, "PodLogsToolbar");
+
+        var toolbar = view.GetVisualDescendants().OfType<CompactToolbar>().Single();
+        var status = view.GetVisualDescendants().OfType<TextBlock>()
+            .Single(text => text.Text == pausedText);
+        status.VerticalAlignment.ShouldBe(VerticalAlignment.Center);
+        status.Bounds.Height.ShouldBeLessThan(toolbar.Bounds.Height);
+        status.TranslatePoint(new Point(0, status.Bounds.Height / 2), toolbar)!.Value.Y
+            .ShouldBe(toolbar.Bounds.Height / 2, tolerance: 1d);
+
+        var resume = view.GetVisualDescendants().OfType<Button>()
+            .Single(button => ReferenceEquals(button.Command, viewModel.FollowLogsCommand));
+        resume.IsVisible.ShouldBeTrue();
+        ToolTip.GetTip(resume).ShouldBe(ResourcesLanguageManager.Instance.PodLogsView_ResumeFollowing.CurrentValue()!);
+        resume.Content.ShouldBeOfType<FluentIcon>()
+            .Icon.ShouldBe(FluentIcons.Common.Icon.ArrowDownload);
+
+        resume.Command!.Execute(null);
+        await WaitForAsync(() => viewModel.AutoScrollToBottom && !viewModel.IsDisplayPaused);
     }
 
     [AvaloniaFact]

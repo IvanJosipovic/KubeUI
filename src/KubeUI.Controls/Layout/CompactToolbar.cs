@@ -52,6 +52,9 @@ public sealed partial class CompactToolbar : Panel
         Styles.Add(new Style<Control>(style => style.Class(CompactControlClass))
             .Setter(MarginProperty, new Thickness(0))
             .Setter(VerticalAlignmentProperty, VerticalAlignment.Center));
+        Styles.Add(new Style<TextBlock>(style => style.Class(CompactControlClass))
+            .Setter(MarginProperty, new Thickness(0))
+            .Setter(VerticalAlignmentProperty, VerticalAlignment.Center));
         Styles.Add(new Style<TemplatedControl>(style => style.Class(CompactControlClass))
             .Setter(HeightProperty, 32d)
             .Setter(MinHeightProperty, 32d));
