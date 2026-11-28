@@ -31,6 +31,7 @@ public sealed class NavigationSectionTests
     public async Task helm_is_always_available_and_settings_control_hubble_navigation_after_restart(bool hubbleEnabled)
     {
         using var workspace = await Application.Current.CreateClusterAsync(config => config.Resources = [CreateCiliumCrd("cilium.io")]);
+        (await workspace.Runtime.IsCiliumInstalledAsync(TestContext.Current.CancellationToken)).ShouldBeTrue();
         SettingsPersistenceData settings = new();
         settings.Settings.PreviewFeatures.Hubble = hubbleEnabled;
         var persistence = new Mock<ISettingsPersistence>();
@@ -141,6 +142,7 @@ public sealed class NavigationSectionTests
             config => config.Resources = [CreateCiliumCrd("cilium.io")],
             connect: false);
         await workspace.Connect();
+        (await workspace.Runtime.IsCiliumInstalledAsync(TestContext.Current.CancellationToken)).ShouldBeTrue();
 
         using var node = new ClusterNavigationNode(workspace);
         var provider = new HubbleNavigationSectionProvider(enabled: true);

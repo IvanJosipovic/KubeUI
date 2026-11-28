@@ -3,6 +3,7 @@ using System.Reflection;
 using k8s;
 using k8s.Models;
 using KubernetesClient.Informer.Client;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
 namespace KubeUI.Kubernetes.Tests.Clusters.Authorization;
@@ -528,7 +529,13 @@ public sealed class ClusterAuthorizationTests
     [Fact]
     public async Task limited_snapshot_uses_one_rules_review_per_namespace_and_no_cached_check_requests()
     {
-        await using var harness = await new TestClusterGenerator().CreateAsync(
+        // Connect starts metrics initialization in the background. The production metrics service
+        // issues two access reviews that are unrelated to the snapshot under test, and under CI load
+        // they can land after the baseline is captured. Keep this test focused on authorization.
+        await using var services = KubernetesTestServiceProvider.Build(
+            new KubernetesTestSettingsStore(),
+            static collection => collection.AddSingleton<IMetricsService, NullMetricsService>());
+        await using var harness = await new TestClusterGenerator(services).CreateAsync(
             new TestClusterConfig
             {
                 AuthenticatedUser = KubernetesRbac.ServiceAccountUser,
