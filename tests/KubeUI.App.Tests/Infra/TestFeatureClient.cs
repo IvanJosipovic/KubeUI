@@ -6,9 +6,8 @@ internal sealed class TestFeatureClient : IFeatureClient
 {
     private readonly Dictionary<string, bool> _values = new(StringComparer.Ordinal);
 
-    public TestFeatureClient(bool helm = false, bool hubble = false)
+    public TestFeatureClient(bool hubble = false)
     {
-        _values[FeatureFlagKeys.Helm] = helm;
         _values[FeatureFlagKeys.Hubble] = hubble;
         _values[FeatureFlagKeys.DisableJsonSerializationReflection] = false;
         _values[FeatureFlagKeys.DisableYamlSerializationReflection] = false;

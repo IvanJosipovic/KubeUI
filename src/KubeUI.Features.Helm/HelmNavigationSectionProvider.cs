@@ -20,13 +20,9 @@ public sealed class HelmNavigationSectionProvider : INavigationSectionProvider
     /// <summary>Asset path of the official CNCF Helm white icon, used in the dark theme.</summary>
     public const string IconDarkAssetPath = "avares://KubeUI.Features.Helm/Assets/helm/helm-icon-white.svg";
 
-    private readonly bool _enabled;
-
     /// <summary>Creates the Helm navigation section.</summary>
-    /// <param name="enabled">Whether Helm is enabled by application configuration.</param>
-    public HelmNavigationSectionProvider(bool enabled)
+    public HelmNavigationSectionProvider()
     {
-        _enabled = enabled;
         Section = new NavigationSection(
             "helm",
             HelmLanguageManager.Instance.HelmNavigationSectionProvider_SectionTitle.CurrentValue()!,
@@ -82,5 +78,5 @@ public sealed class HelmNavigationSectionProvider : INavigationSectionProvider
 
     public NavigationPlacement? Place(IResourceConfig resource) => null;
 
-    private bool IsAvailable(ClusterWorkspace cluster) => _enabled && cluster.Runtime.Connected;
+    private static bool IsAvailable(ClusterWorkspace cluster) => cluster.Runtime.Connected;
 }

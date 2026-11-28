@@ -79,8 +79,6 @@
   "SettingsView_FeaturesHeading": "Preview Features",
   "SettingsView_FontSize_Label": "Font Size",
   "SettingsView_FontSize_ToolTip": "Font Size",
-  "SettingsView_HelmFeature_Label": "Helm Integration (Restart Required)",
-  "SettingsView_HelmFeature_ToolTip": "Enables the Helm integration.",
   "SettingsView_HubbleFeature_Label": "Hubble Integration (Restart Required)",
   "SettingsView_HubbleFeature_ToolTip": "Enables the Hubble integration.",
   "SettingsView_Logging_Label": "Enable Local File Logging (Restart Required)",

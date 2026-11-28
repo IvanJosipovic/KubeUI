@@ -31,7 +31,6 @@ public sealed class SettingsFeatureProvider : IFeatureProvider
 
         return flagKey switch
         {
-            FeatureFlagKeys.Helm => Resolve(flagKey, features.Helm),
             FeatureFlagKeys.Hubble => Resolve(flagKey, features.Hubble),
             FeatureFlagKeys.DisableJsonSerializationReflection => Resolve(flagKey, features.DisableJsonSerializationReflection),
             FeatureFlagKeys.DisableYamlSerializationReflection => Resolve(flagKey, features.DisableYamlSerializationReflection),

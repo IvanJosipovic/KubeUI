@@ -221,7 +221,6 @@ public sealed class SettingsViewModelTests
         {
             PreviewFeatures = new FeatureSettings
             {
-                Helm = true,
                 Hubble = false,
                 DisableJsonSerializationReflection = false,
                 DisableYamlSerializationReflection = true
@@ -242,26 +241,23 @@ public sealed class SettingsViewModelTests
 
         view.GetVisualDescendants().OfType<TextBlock>().Select(text => text.Text)
             .ShouldContain(AppLanguageManager.Instance.SettingsView_FeaturesHeading.CurrentValue()!);
+        view.GetVisualDescendants().OfType<TextBlock>()
+            .Any(text => text.Text?.Contains("Helm", StringComparison.Ordinal) == true).ShouldBeFalse();
 
-        var helmRow = FindToggleRow(view, AppLanguageManager.Instance.SettingsView_HelmFeature_Label.CurrentValue()!);
         var hubbleRow = FindToggleRow(view, AppLanguageManager.Instance.SettingsView_HubbleFeature_Label.CurrentValue()!);
         var jsonRow = FindToggleRow(view, AppLanguageManager.Instance.SettingsView_DisableJsonSerializationReflection_Label.CurrentValue()!);
         var yamlRow = FindToggleRow(view, AppLanguageManager.Instance.SettingsView_DisableYamlSerializationReflection_Label.CurrentValue()!);
-        var helm = helmRow.Children.OfType<CheckBox>().Single();
         var hubble = hubbleRow.Children.OfType<CheckBox>().Single();
         var json = jsonRow.Children.OfType<CheckBox>().Single();
         var yaml = yamlRow.Children.OfType<CheckBox>().Single();
 
-        helm.IsChecked.ShouldBe(true);
         hubble.IsChecked.ShouldBe(false);
         json.IsChecked.ShouldBe(false);
         yaml.IsChecked.ShouldBe(true);
 
-        helm.IsChecked = false;
         hubble.IsChecked = true;
         Dispatcher.UIThread.RunJobs();
 
-        settings.PreviewFeatures.Helm.ShouldBeFalse();
         settings.PreviewFeatures.Hubble.ShouldBeTrue();
         json.IsChecked = true;
         yaml.IsChecked = false;

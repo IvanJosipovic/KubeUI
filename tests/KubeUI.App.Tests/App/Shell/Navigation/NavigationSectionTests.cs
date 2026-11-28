@@ -26,15 +26,12 @@ namespace KubeUI.App.Tests.App.Shell;
 public sealed class NavigationSectionTests
 {
     [AvaloniaTheory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public async Task settings_control_helm_and_hubble_navigation_after_restart(bool helmEnabled, bool hubbleEnabled)
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task helm_is_always_available_and_settings_control_hubble_navigation_after_restart(bool hubbleEnabled)
     {
         using var workspace = await Application.Current.CreateClusterAsync(config => config.Resources = [CreateCiliumCrd("cilium.io")]);
         SettingsPersistenceData settings = new();
-        settings.Settings.PreviewFeatures.Helm = helmEnabled;
         settings.Settings.PreviewFeatures.Hubble = hubbleEnabled;
         var persistence = new Mock<ISettingsPersistence>();
         persistence.Setup(value => value.Load()).Returns(settings);
@@ -42,28 +39,27 @@ public sealed class NavigationSectionTests
         persistence.Setup(value => value.Save(It.IsAny<SettingsPersistenceData>())).Returns(true);
 
         using var original = CreateHost();
-        AssertNavigation(original, helmEnabled, hubbleEnabled);
+        AssertNavigation(original, hubbleEnabled);
 
-        settings.Settings.PreviewFeatures.Helm = !helmEnabled;
         settings.Settings.PreviewFeatures.Hubble = !hubbleEnabled;
-        AssertNavigation(original, helmEnabled, hubbleEnabled);
+        AssertNavigation(original, hubbleEnabled);
 
         using var restarted = CreateHost();
-        AssertNavigation(restarted, !helmEnabled, !hubbleEnabled);
-        AssertNavigation(original, helmEnabled, hubbleEnabled);
+        AssertNavigation(restarted, !hubbleEnabled);
+        AssertNavigation(original, hubbleEnabled);
 
         IHost CreateHost() => Program.CreateHostBuilder(
             [], includeOptionalServices: false,
             configureServices: services => services.AddSingleton(persistence.Object),
             settingsOverride: settings).Build();
 
-        void AssertNavigation(IHost host, bool expectedHelm, bool expectedHubble)
+        void AssertNavigation(IHost host, bool expectedHubble)
         {
             var catalog = host.Services.GetRequiredService<NavigationSectionCatalog>();
             foreach (var id in new[] { HelmNavigationSectionProvider.ChartsDocumentId, HelmNavigationSectionProvider.RepositoriesDocumentId, HelmNavigationSectionProvider.ReleasesDocumentId })
             {
                 catalog.TryGetDocument(id, out var document).ShouldBeTrue();
-                document.IsAvailable(workspace).ShouldBe(expectedHelm);
+                document.IsAvailable(workspace).ShouldBeTrue();
             }
 
             foreach (var id in new[] { HubbleNavigationSectionProvider.FlowsDocumentId, HubbleNavigationSectionProvider.ServiceMapDocumentId })
@@ -74,7 +70,7 @@ public sealed class NavigationSectionTests
 
             using var node = new ClusterNavigationNode(workspace);
             CreateBuilder(catalog).Reconcile(node);
-            node.NavigationItems.Any(item => item.Id == $"{workspace.Runtime.Name}-section-helm").ShouldBe(expectedHelm);
+            node.NavigationItems.Any(item => item.Id == $"{workspace.Runtime.Name}-section-helm").ShouldBeTrue();
             var cilium = node.NavigationItems.SingleOrDefault(item => item.Id == $"{workspace.Runtime.Name}-section-cilium");
             (cilium?.NavigationItems.Any(item => item.Name == CiliumLanguageManager.Instance.HubbleNavigationSectionProvider_GroupName.CurrentValue()) ?? false).ShouldBe(expectedHubble);
         }
@@ -83,7 +79,7 @@ public sealed class NavigationSectionTests
     [Fact]
     public void helm_section_contains_chart_repository_and_release_documents()
     {
-        var provider = new HelmNavigationSectionProvider(enabled: true);
+        var provider = new HelmNavigationSectionProvider();
 
         provider.Section.Id.ShouldBe("helm");
         provider.Section.Name.ShouldBe("Helm");
@@ -107,7 +103,7 @@ public sealed class NavigationSectionTests
         using var workspace = await Application.Current.CreateClusterAsync(connect: false);
         await workspace.Connect();
         using var node = new ClusterNavigationNode(workspace);
-        var builder = CreateBuilder(new NavigationSectionCatalog([new HelmNavigationSectionProvider(enabled: true)]));
+        var builder = CreateBuilder(new NavigationSectionCatalog([new HelmNavigationSectionProvider()]));
 
         builder.Reconcile(node);
 
@@ -136,20 +132,6 @@ public sealed class NavigationSectionTests
         builder.Reconcile(node);
 
         node.NavigationItems.ShouldNotContain(item => item.Id == $"{workspace.Runtime.Name}-section-cilium");
-    }
-
-    [AvaloniaFact]
-    public async Task helm_section_is_hidden_when_feature_flag_is_disabled()
-    {
-        using var workspace = await Application.Current.CreateClusterAsync(connect: false);
-        await workspace.Connect();
-        using var node = new ClusterNavigationNode(workspace);
-        var builder = CreateBuilder(new NavigationSectionCatalog(
-            [new HelmNavigationSectionProvider(enabled: false)]));
-
-        builder.Reconcile(node);
-
-        node.NavigationItems.ShouldNotContain(item => item.Id == $"{workspace.Runtime.Name}-section-helm");
     }
 
     [AvaloniaFact]
@@ -184,7 +166,7 @@ public sealed class NavigationSectionTests
         await workspace.Connect();
         using var node = new ClusterNavigationNode(workspace);
         var builder = CreateBuilder(new NavigationSectionCatalog(
-            [new HelmNavigationSectionProvider(enabled: true)]));
+            [new HelmNavigationSectionProvider()]));
 
         builder.Reconcile(node);
 
